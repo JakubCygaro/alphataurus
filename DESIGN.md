@@ -33,7 +33,7 @@ instructions: (instructions are resolved at runtime)
 - cmp
 
 labels:
-    lab_name: -> resolved to adresses by the assembler 
+    lab_name: -> resolved to adresses by the assembler
 
 @entry -> marks the begining of the code
 
@@ -83,6 +83,7 @@ call [procedure] ->
 
 ret ->
     pop ip
+
 ## object creation
 
 objects are quasi collections of primary type values, that need to be allocated in a special way
@@ -92,12 +93,33 @@ objects are quasi collections of primary type values, that need to be allocated 
     push [r0] 420 ; "push" the fields of this object into it
     push [r0] 69
     push [r0] "ur mum"
-    ; at this point the object could be represented as 
+    ; at this point the object could be represented as
     ; struct { int, int, string }
     mov [sp], [r0 + 0] ; get the value of the first field
     lea [r1], [r0 + 0] ; get the adress of the first field
     mov [r1], 9999 ; modify the first field
     freeobj [r0] ; deletes the object at the specified adress, makes the pointer invalid
+...
 
+
+struct {
+    int foo;
+    int bar;
+}
+function new_struct() {
+    ret = {}
+    ret.foo = 69;
+    ret.bar = 420;
+    return ret;
+}
+
+new_struct:
+    push bp
+    mov bp, sp
+    makeobj [bp + 1]
+    mov [[bp + 1] + 1], 69
+    mov [[bp + 1] + 2], 420
+    mov r0, [bp + 1]
+    ret
 
 ```
