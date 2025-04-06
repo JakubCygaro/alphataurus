@@ -123,3 +123,21 @@ new_struct:
     ret
 
 ```
+function main(array_sz) {
+    if(array_sz > 0)
+        get(0);
+}
+
+@entry
+main:
+    push bp
+    mov bp, sp
+    mov [bp + 1], r1
+    mov r1, [bp + 1]
+    mov r2, 0
+    cmp r1, r2
+    jle else
+    mov r1, 0
+    call EXTERNAL get
+else:
+    ret
