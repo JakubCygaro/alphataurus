@@ -24,7 +24,7 @@ objects are quasi collections of primary type values, that need to be allocated 
     push [r0] 420 ; "push" the fields of this object into it
     push [r0] 69
     push [r0] "ur mum"
-    ; at this point the object could be represented as 
+    ; at this point the object could be represented as
     ; struct { int, int, string }
     mov [sp], [r0 + 0] ; get the value of the first field
     lea [r1], [r0 + 0] ; get the adress of the first field
