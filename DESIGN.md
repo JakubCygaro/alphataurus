@@ -31,6 +31,8 @@ instructions: (instructions are resolved at runtime)
 - call [EXTERNAL] <func> -> push ip and jump to adress
 - jmp(and others) -> jump to adress
 - cmp
+- test
+- int -> interrupt signal, a way to implement pseudo syscalls
 
 labels:
     lab_name: -> resolved to adresses by the assembler
@@ -141,3 +143,18 @@ main:
     call EXTERNAL get
 else:
     ret
+
+# Alphataurus bytecode
+
+assembly instructions get translated into opcodes, 64-bit wide
+
+example:
+
+mov r0, r1 -> (different op code depending on the parameter types)
+
+movrr      r0  r1
+0x00010001 0x0 0x1
+
+mov [bp + 1], r1
+movbpoffr (mov to bp offset from register)
+0x00010069 0x1 0x1
