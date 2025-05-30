@@ -158,3 +158,28 @@ movrr      r0  r1
 mov [bp + 1], r1
 movbpoffr (mov to bp offset from register)
 0x00010069 0x1 0x1
+
+# Alphataurus Linkable Executable Format
+
+HEADER
+
+majic
+0xAF69
+
+
+DATA SECTION
+
+- the data could be typed?
+- length needs to be provided
+- the VM would load all data at load-time and it would be referenced in the assembly relative to the base of the data section
+- special instructions for moving stuff from the data section into registers and onto the stack
+
+```
+#DATA
+string <LENGTH> "string literal"
+number <8 bytes> 69
+
+#CODE
+    loadr r1, 0 ; "string literal" adress, load would get the pointer to the data
+    call ...
+```
