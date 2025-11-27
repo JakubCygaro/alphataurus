@@ -183,3 +183,18 @@ number <8 bytes> 69
     loadr r1, 0 ; "string literal" adress, load would get the pointer to the data
     call ...
 ```
+section '.symbols'
+    function printf
+
+
+(kwd)   (type)  (len)
+section '.data' 22
+    (type)  (len)   (data) 
+    01      06      "string"
+
+section '.code' <len>
+main:
+    push bp
+    mov bp, sp
+    load r0, 0(adress relative to data section)
+    call printf
