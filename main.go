@@ -12,15 +12,15 @@ func main() {
 	mov := opCodes[vm.OP_MOVIR]
 	bytecode = binary.BigEndian.AppendUint32(bytecode, uint32(mov))
 	bytecode[0] = 0b00000000 //r0
-	bytecode = binary.BigEndian.AppendUint64(bytecode, 69)
+	bytecode = binary.BigEndian.AppendUint64(bytecode, 2)
 
 	bytecode = binary.BigEndian.AppendUint32(bytecode, uint32(mov))
 	bytecode[len(bytecode)-4] = 0b00000001 //r1
-	bytecode = binary.BigEndian.AppendUint64(bytecode, 420)
+	bytecode = binary.BigEndian.AppendUint64(bytecode, 4)
 
-	addrr := opCodes[vm.OP_ADDRR]
-	bytecode = binary.BigEndian.AppendUint32(bytecode, uint32(addrr))
-	bytecode = binary.BigEndian.AppendUint64(bytecode, 0x00010100_00000000)
+	mulrr := opCodes[vm.OP_MULRR]
+	bytecode = binary.BigEndian.AppendUint32(bytecode, uint32(mulrr))
+	bytecode = binary.BigEndian.AppendUint64(bytecode, 0x0)
 
 	jmp := opCodes[vm.OP_JMP]
 	bytecode = binary.BigEndian.AppendUint32(bytecode, uint32(jmp))

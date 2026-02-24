@@ -12,17 +12,17 @@ type VmState struct {
 }
 
 const (
-	r1_IDX = 0
-	r2_IDX = iota
-	r3_IDX = iota
-	r4_IDX = iota
-	r5_IDX = iota
-	r6_IDX = iota
-	r7_IDX = iota
-	r8_IDX = iota
-	bp_IDX = iota
-	sp_IDX = iota
-	ip_IDX = iota
+	r0_IDX = 0
+	r1_IDX = iota
+	r2_IDX
+	r3_IDX
+	r4_IDX
+	r5_IDX
+	r6_IDX
+	r7_IDX
+	bp_IDX
+	sp_IDX
+	ip_IDX
 )
 
 const (
@@ -85,7 +85,15 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		case OP_ADDRR:
 			err = vm.arthRR(int(opcode), param)
 		case OP_SUBRR:
-			err = vm.arthRR(int(OP_SUBRR), param)
+			err = vm.arthRR(int(opcode), param)
+		case OP_MULRR:
+			err = vm.arthRR(int(opcode), param)
+		case OP_DIVRR:
+			err = vm.arthRR(int(opcode), param)
+		case OP_INCR:
+			err = vm.incR(param)
+		case OP_DECR:
+			err = vm.decR(param)
 		case OP_JMP:
 			vm.jmp(param)
 		default:
@@ -145,15 +153,31 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 	}
 	return nil
 }
+func (state *VmState) incR(param []byte) error {
+	reg := binary.BigEndian.Uint64(param)
+	if !isGpReg(byte(reg)){
+		return fmt.Errorf("Bad INCR parameter, disallowed register 0x%x", reg)
+	}
+	state.regs.r[reg]++
+	return nil
+}
+func (state *VmState) decR(param []byte) error {
+	reg := binary.BigEndian.Uint64(param)
+	if !isGpReg(byte(reg)){
+		return fmt.Errorf("Bad DECR parameter, disallowed register 0x%x", reg)
+	}
+	state.regs.r[reg]--
+	return nil
+}
 func arthRRGetParameters(param []byte) (src, dest, ty byte, err error) {
 	src = param[0]
 	dest = param[1]
 	ty = param[3]
 	if !isGpReg(src) {
-		return 0, 0, 0, fmt.Errorf("Bad ADDRR opcode, disallowed source register %04b", dest)
+		return 0, 0, 0, fmt.Errorf("Bad opcode, disallowed source register %04b", dest)
 	}
 	if !isGpReg(dest) {
-		return 0, 0, 0, fmt.Errorf("Bad ADDRR opcode, disallowed destination register %04b", dest)
+		return 0, 0, 0, fmt.Errorf("Bad opcode, disallowed destination register %04b", dest)
 	}
 	return src, dest, ty, nil
 }
@@ -167,12 +191,19 @@ func (state *VmState) arthRR(opType int, param []byte) error {
 	var out uint64
 	switch opType {
 	case OP_ADDRR:
-		err = addValues(srcV, destV, ty, &out)
+		addValues(srcV, destV, ty, &out)
 	case OP_SUBRR:
-		err = subValues(srcV, destV, ty, &out)
-	}
-	if err != nil {
-		return err
+		subValues(srcV, destV, ty, &out)
+	case OP_MULRR:
+		srcV := state.regs.r[r0_IDX]
+		destV := state.regs.r[r1_IDX]
+		dest = r2_IDX
+		mulValues(srcV, destV, ty, &out)
+	case OP_DIVRR:
+		srcV := state.regs.r[r0_IDX]
+		destV := state.regs.r[r1_IDX]
+		dest = r2_IDX
+		divValues(srcV, destV, ty, &out, &state.regs.r[r3_IDX])
 	}
 	state.regs.r[dest] = out
 	return nil

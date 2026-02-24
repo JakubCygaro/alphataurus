@@ -45,7 +45,7 @@ var (
 		2: handle(OP_SUBRR),
 		3: handle(OP_MULRR),
 		4: handle(OP_DIVRR),
-		5: handle(OP_MODRR),
+		5: handle(OP_INCR),
 	})
 	//jumps
 	p003X = nested(OpCodeMap{
@@ -92,34 +92,36 @@ const (
 	INSTRUCTION_SIZE = OPCODE_SIZE + ARGUMENT_SIZE // size of a single instruction in bytes
 )
 const (
-	OP_MOVIR = 0 // move imediate value to register
+	OP_MOVIR = 0    // move imediate value to register
 	OP_MOVRR = iota // move register to register
 
-	OP_ADDRR = iota // add register to register and store into second register, singedness and registers passed in parameter
-	OP_ADDIR = iota
-	OP_SUBRR = iota
-	OP_MULRR = iota
-	OP_DIVRR = iota
-	OP_MODRR = iota
-	OP_INCR = iota
+	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
+	OP_ADDIR
+	OP_SUBRR
+	OP_MULRR
+	OP_DIVRR
+	OP_INCR
+	OP_DECR
 
-	OP_JMP      = iota // jump to instruction
-	OP_JMPE     = iota // jump if equal
-	OP_TESTR0R1 = iota // test registers
+	OP_PUSH
+	OP_POP
+
+	OP_JMP      // jump to instruction
+	OP_JMPE     // jump if equal
+	OP_TESTRR // test registers
 )
 
 func recurseIntoOpCodeMap(layer int, opcodes *OpCodeMap, bytes []byte, ret *map[uint32]OpCodeVal) {
-		current := opcodes
-		for k, v := range *current {
-			bytes[layer] = byte(k)
-			if v.ty == HANDLE {
-				(*ret)[uint32(v.op)] = OpCodeVal(binary.BigEndian.Uint32(bytes))
-			} else {
-				recurseIntoOpCodeMap(layer-1, &v.nested, bytes, ret)
-			}
+	current := opcodes
+	for k, v := range *current {
+		bytes[layer] = byte(k)
+		if v.ty == HANDLE {
+			(*ret)[uint32(v.op)] = OpCodeVal(binary.BigEndian.Uint32(bytes))
+		} else {
+			recurseIntoOpCodeMap(layer-1, &v.nested, bytes, ret)
 		}
 	}
-
+}
 
 func GenerateOpcodeMap() map[uint32]OpCodeVal {
 	ret := make(map[uint32]OpCodeVal)

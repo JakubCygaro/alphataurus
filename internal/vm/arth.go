@@ -4,29 +4,46 @@ import (
 	"math"
 )
 
-func addValues(a, b any, ty byte, out *uint64) error {
-	aInt := a.(uint64)
-	bInt := b.(uint64)
+func addValues(a, b uint64, ty byte, out *uint64){
 	switch ty {
 	case TY_UINT64:
-		*out = aInt + bInt
+		*out = a + b
 	case TY_INT64:
-		*out = uint64(int64(aInt) + int64(bInt))
+		*out = uint64(int64(a) + int64(b))
 	case TY_FLOAT64:
-		*out = math.Float64bits(math.Float64frombits(aInt) + math.Float64frombits(bInt))
+		*out = math.Float64bits(math.Float64frombits(a) + math.Float64frombits(b))
 	}
-	return nil
 }
-func subValues(a, b any, ty byte, out *uint64) error {
-	aInt := a.(uint64)
-	bInt := b.(uint64)
+func subValues(a, b uint64, ty byte, out *uint64){
 	switch ty {
 	case TY_UINT64:
-		*out = aInt - bInt
+		*out = a - b
 	case TY_INT64:
-		*out = uint64(int64(aInt) - int64(bInt))
+		*out = uint64(int64(a) - int64(b))
 	case TY_FLOAT64:
-		*out = math.Float64bits(math.Float64frombits(aInt) - math.Float64frombits(bInt))
+		*out = math.Float64bits(math.Float64frombits(a) - math.Float64frombits(b))
 	}
-	return nil
+}
+func mulValues(a, b uint64, ty byte, out *uint64){
+	switch ty {
+	case TY_UINT64:
+		*out = a * b
+	case TY_INT64:
+		*out = uint64(int64(a) * int64(b))
+	case TY_FLOAT64:
+		*out = math.Float64bits(math.Float64frombits(a) * math.Float64frombits(b))
+	}
+}
+func divValues(a, b uint64, ty byte, quoitent, rem *uint64){
+	switch ty {
+	case TY_UINT64:
+		*quoitent = a / b
+		*rem = a % b
+	case TY_INT64:
+		*quoitent = uint64(int64(a) / int64(b))
+		*rem = uint64(int64(a) % int64(b))
+	case TY_FLOAT64:
+		*quoitent = math.Float64bits(math.Float64frombits(a) / math.Float64frombits(b))
+		*rem = 0
+	}
 }
