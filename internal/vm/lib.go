@@ -26,18 +26,17 @@ const (
 )
 
 const (
-	TY_INT64 = iota
-	TY_UINT64 = iota
+	TY_INT64   = iota
+	TY_UINT64  = iota
+	TY_FLOAT64 = iota
 )
 
 type Registers struct {
-	r [ip_IDX + 1]any
-	// ip, sp, bp uint64
-	// ip uint64
+	r [ip_IDX + 1]uint64
 }
 
 func (state *VmState) getIp() uint64 {
-	return (state.regs.r[ip_IDX]).(uint64)
+	return state.regs.r[ip_IDX]
 }
 
 func (state *VmState) setIp(v uint64) {
@@ -54,7 +53,7 @@ type Flags struct {
 func CreateVmState(stackSize uint64) VmState {
 	state := VmState{
 		regs: Registers{
-			r: [11]any{uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0)},
+			r: [11]uint64{uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0)},
 		},
 		flags: Flags{},
 		stack: make([]any, stackSize),
@@ -84,7 +83,9 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		case OP_MOVIR:
 			err = vm.movIR(opCodeBytes[0], param)
 		case OP_ADDRR:
-			err = vm.addRR(param)
+			err = vm.arthRR(int(opcode), param)
+		case OP_SUBRR:
+			err = vm.arthRR(int(OP_SUBRR), param)
 		case OP_JMP:
 			vm.jmp(param)
 		default:
@@ -103,7 +104,7 @@ func (vm *VmState) Execute(bytecode []byte) error {
 	return nil
 }
 func isGpReg(b byte) bool {
-	return b >= 0 && b < 8
+	return b < 8
 }
 func isMovRRAllowed(b byte) bool {
 	return b <= sp_IDX
@@ -124,53 +125,51 @@ func (state *VmState) movRR(lastByte byte) error {
 func (state *VmState) movIR(lastByte byte, param []byte) error {
 	var ty, dest byte
 	// type of value
-	ty |= (lastByte & 0xf0)
+	ty |= (lastByte & 0xf0) >> 4
 	dest |= (lastByte & 0x0f)
 	if !isGpReg(dest) {
 		return fmt.Errorf("Bad MOVIR opcode, disallowed destination register %04b", dest)
 	}
 	switch ty {
 	case TY_INT64:
-		i64 := int64(binary.BigEndian.Uint64(param))
+		i64 := binary.BigEndian.Uint64(param)
 		state.regs.r[dest] = i64
 	case TY_UINT64:
 		u64 := binary.BigEndian.Uint64(param)
 		state.regs.r[dest] = u64
+	case TY_FLOAT64:
+		bits := binary.BigEndian.Uint64(param)
+		state.regs.r[dest] = bits
 	default:
-		return fmt.Errorf("Bad MOVIR opcode, unknown type %04b", ty)
+		return fmt.Errorf("Bad MOVIR opcode, unknown type 0x%x", ty)
 	}
 	return nil
 }
-func addValuesSigned(a, b any) (int64, error) {
-	aInt, ok := a.(int64)
-	if !ok {
-		return 0, fmt.Errorf("First operand to signed addition was not an integer")
-	}
-	bInt, ok := b.(int64)
-	if !ok {
-		return 0, fmt.Errorf("Second operand to signed addition was not an integer")
-	}
-	return aInt + bInt, nil
-}
-func (state *VmState) addRR(param []byte) error {
-	var src, dest, sign byte
+func arthRRGetParameters(param []byte) (src, dest, ty byte, err error) {
 	src = param[0]
 	dest = param[1]
-	sign = param[2]
+	ty = param[3]
 	if !isGpReg(src) {
-		return fmt.Errorf("Bad ADDRR opcode, disallowed source register %04b", dest)
+		return 0, 0, 0, fmt.Errorf("Bad ADDRR opcode, disallowed source register %04b", dest)
 	}
 	if !isGpReg(dest) {
-		return fmt.Errorf("Bad ADDRR opcode, disallowed destination register %04b", dest)
+		return 0, 0, 0, fmt.Errorf("Bad ADDRR opcode, disallowed destination register %04b", dest)
+	}
+	return src, dest, ty, nil
+}
+func (state *VmState) arthRR(opType int, param []byte) error {
+	src, dest, ty, err := arthRRGetParameters(param)
+	if err != nil {
+		return err
 	}
 	srcV := state.regs.r[src]
 	destV := state.regs.r[dest]
-	var out any
-	var err error
-	if sign != 0 {
-		out, err = addValuesSigned(srcV, destV)
-	} else {
-		return fmt.Errorf("Unsigned ADDRR TODO")
+	var out uint64
+	switch opType {
+	case OP_ADDRR:
+		err = addValues(srcV, destV, ty, &out)
+	case OP_SUBRR:
+		err = subValues(srcV, destV, ty, &out)
 	}
 	if err != nil {
 		return err
@@ -178,7 +177,7 @@ func (state *VmState) addRR(param []byte) error {
 	state.regs.r[dest] = out
 	return nil
 }
-func (state *VmState) jmp(param []byte){
+func (state *VmState) jmp(param []byte) {
 	dest := binary.BigEndian.Uint64(param)
 	state.setIp(dest)
 }

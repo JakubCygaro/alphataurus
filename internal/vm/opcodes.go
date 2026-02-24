@@ -41,6 +41,11 @@ var (
 	//arth
 	p002X = nested(OpCodeMap{
 		0: handle(OP_ADDRR),
+		1: handle(OP_INCR),
+		2: handle(OP_SUBRR),
+		3: handle(OP_MULRR),
+		4: handle(OP_DIVRR),
+		5: handle(OP_MODRR),
 	})
 	//jumps
 	p003X = nested(OpCodeMap{
@@ -91,6 +96,12 @@ const (
 	OP_MOVRR = iota // move register to register
 
 	OP_ADDRR = iota // add register to register and store into second register, singedness and registers passed in parameter
+	OP_ADDIR = iota
+	OP_SUBRR = iota
+	OP_MULRR = iota
+	OP_DIVRR = iota
+	OP_MODRR = iota
+	OP_INCR = iota
 
 	OP_JMP      = iota // jump to instruction
 	OP_JMPE     = iota // jump if equal
