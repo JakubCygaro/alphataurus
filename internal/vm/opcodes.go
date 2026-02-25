@@ -45,18 +45,20 @@ var (
 		2: handle(OP_SUBRR),
 		3: handle(OP_MULRR),
 		4: handle(OP_DIVRR),
-		5: handle(OP_INCR),
+		5: handle(OP_DECR),
 	})
 	//jumps
 	p003X = nested(OpCodeMap{
 		0: handle(OP_JMP),
 		1: handle(OP_JMPE),
+		2: handle(OP_JMPG),
 	})
 	p00XX = nested(OpCodeMap{
 		0: handle(OP_MOVRR),
 		1: handle(OP_MOVIR),
 		2: p002X,
 		3: p003X,
+		4: handle(OP_CMP),
 	})
 	p0XXX = nested(OpCodeMap{
 		0: p00XX,
@@ -91,6 +93,7 @@ const (
 	ARGUMENT_SIZE    = 8                           // argument size in bytes (64-bits)
 	INSTRUCTION_SIZE = OPCODE_SIZE + ARGUMENT_SIZE // size of a single instruction in bytes
 )
+
 const (
 	OP_MOVIR = 0    // move imediate value to register
 	OP_MOVRR = iota // move register to register
@@ -108,7 +111,15 @@ const (
 
 	OP_JMP      // jump to instruction
 	OP_JMPE     // jump if equal
-	OP_TESTRR // test registers
+	OP_JMPG     // jump if greater
+	OP_CMP // test registers
+)
+
+const(
+	// last byte for OP_CMP that indicates an immediate value comparasion
+	OPLB_CMP_IM = iota
+	// last byte for OP_CMP that indicates a register-register cmp
+	OPLB_CMP_RR = iota
 )
 
 func recurseIntoOpCodeMap(layer int, opcodes *OpCodeMap, bytes []byte, ret *map[uint32]OpCodeVal) {

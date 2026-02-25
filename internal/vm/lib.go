@@ -3,6 +3,7 @@ package vm
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 )
 
 type VmState struct {
@@ -12,14 +13,14 @@ type VmState struct {
 }
 
 const (
-	r0_IDX = 0
-	r1_IDX = iota
-	r2_IDX
-	r3_IDX
-	r4_IDX
-	r5_IDX
-	r6_IDX
-	r7_IDX
+	R0_IDX = 0
+	R1_IDX = iota
+	R2_IDX
+	R3_IDX
+	R4_IDX
+	R5_IDX
+	R6_IDX
+	R7_IDX
 	bp_IDX
 	sp_IDX
 	ip_IDX
@@ -35,7 +36,15 @@ type Registers struct {
 	r [ip_IDX + 1]uint64
 }
 
-func (state *VmState) getIp() uint64 {
+func (state *VmState) GetBp() uint64 {
+	return state.regs.r[bp_IDX]
+}
+
+func (state *VmState) GetSp() uint64 {
+	return state.regs.r[sp_IDX]
+}
+
+func (state *VmState) GetIp() uint64 {
 	return state.regs.r[ip_IDX]
 }
 
@@ -43,7 +52,7 @@ func (state *VmState) setIp(v uint64) {
 	state.regs.r[ip_IDX] = v
 }
 func (state *VmState) incIp() {
-	state.setIp(state.getIp() + 1)
+	state.setIp(state.GetIp() + 1)
 }
 
 type Flags struct {
@@ -53,12 +62,39 @@ type Flags struct {
 func CreateVmState(stackSize uint64) VmState {
 	state := VmState{
 		regs: Registers{
-			r: [11]uint64{uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0), uint64(0)},
+			r: [11]uint64{},
 		},
 		flags: Flags{},
 		stack: make([]any, stackSize),
 	}
 	return state
+}
+
+// get X general purpose register value as uint64
+func (vm *VmState) GetGpRX(register byte) (uint64, error) {
+	if !isGpReg(register) {
+		return 0, fmt.Errorf("Disallowed register index %d", register)
+	}
+	return vm.regs.r[register], nil
+}
+// get X general purpose register value and cast it into a supported type value
+// returned via out
+func (vm *VmState) GetGpRXAs(register byte, ty byte, out *any) error {
+	val, err := vm.GetGpRX(register)
+	if err != nil {
+		return err
+	}
+	switch ty {
+	case TY_UINT64:
+		*out = val
+	case TY_INT64:
+		*out = int64(val)
+	case TY_FLOAT64:
+		*out = float64(math.Float64frombits(val))
+	default:
+		return fmt.Errorf("Unsupported type for register value conversion")
+	}
+	return nil
 }
 
 func (vm *VmState) Execute(bytecode []byte) error {
@@ -67,9 +103,9 @@ func (vm *VmState) Execute(bytecode []byte) error {
 	vm.setIp(0)
 	fmt.Println("STARTING REGISTER STATE")
 	fmt.Println(vm.regs.r)
-	for ; vm.getIp() < uint64(codeSize); vm.incIp() {
+	for ; vm.GetIp() < uint64(codeSize); vm.incIp() {
 		var err error = nil
-		instAddr := vm.getIp() * INSTRUCTION_SIZE
+		instAddr := vm.GetIp() * INSTRUCTION_SIZE
 		opCodeBytes := bytecode[instAddr : instAddr+OPCODE_SIZE]
 		param := bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
 		opcode, err := GetOpcode(opCodeBytes)
@@ -96,13 +132,20 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			err = vm.decR(param)
 		case OP_JMP:
 			vm.jmp(param)
+		case OP_JMPE:
+			vm.jmpE(param)
+		case OP_JMPG:
+			vm.jmpG(param)
+		case OP_CMP:
+			err = vm.cmp(opCodeBytes[0], param)
 		default:
 			return fmt.Errorf("Unhandled opcode %d, TODO", opcode)
 		}
 		if err != nil {
 			return err
 		}
-		fmt.Printf("ip: %d & REGSTATE\n", vm.getIp())
+		fmt.Printf("ip: %d & REGSTATE\n", vm.GetIp())
+		fmt.Println(vm.flags)
 		fmt.Println(vm.regs.r)
 	}
 
@@ -112,14 +155,14 @@ func (vm *VmState) Execute(bytecode []byte) error {
 	return nil
 }
 func isGpReg(b byte) bool {
-	return b < 8
+	return b <= R7_IDX
 }
 func isMovRRAllowed(b byte) bool {
 	return b <= sp_IDX
 }
 func (state *VmState) movRR(lastByte byte) error {
 	var src, dest byte
-	src |= (lastByte & 0xf0)
+	src |= (lastByte & 0xf0) >> 4
 	dest |= (lastByte & 0x0f)
 	if !isMovRRAllowed(src) {
 		return fmt.Errorf("Bad MOVRR opcode, disallowed source register")
@@ -155,7 +198,7 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 }
 func (state *VmState) incR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
-	if !isGpReg(byte(reg)){
+	if !isGpReg(byte(reg)) {
 		return fmt.Errorf("Bad INCR parameter, disallowed register 0x%x", reg)
 	}
 	state.regs.r[reg]++
@@ -163,7 +206,7 @@ func (state *VmState) incR(param []byte) error {
 }
 func (state *VmState) decR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
-	if !isGpReg(byte(reg)){
+	if !isGpReg(byte(reg)) {
 		return fmt.Errorf("Bad DECR parameter, disallowed register 0x%x", reg)
 	}
 	state.regs.r[reg]--
@@ -195,15 +238,15 @@ func (state *VmState) arthRR(opType int, param []byte) error {
 	case OP_SUBRR:
 		subValues(srcV, destV, ty, &out)
 	case OP_MULRR:
-		srcV := state.regs.r[r0_IDX]
-		destV := state.regs.r[r1_IDX]
-		dest = r2_IDX
+		srcV := state.regs.r[R0_IDX]
+		destV := state.regs.r[R1_IDX]
+		dest = R2_IDX
 		mulValues(srcV, destV, ty, &out)
 	case OP_DIVRR:
-		srcV := state.regs.r[r0_IDX]
-		destV := state.regs.r[r1_IDX]
-		dest = r2_IDX
-		divValues(srcV, destV, ty, &out, &state.regs.r[r3_IDX])
+		srcV := state.regs.r[R0_IDX]
+		destV := state.regs.r[R1_IDX]
+		dest = R2_IDX
+		divValues(srcV, destV, ty, &out, &state.regs.r[R3_IDX])
 	}
 	state.regs.r[dest] = out
 	return nil
@@ -211,4 +254,36 @@ func (state *VmState) arthRR(opType int, param []byte) error {
 func (state *VmState) jmp(param []byte) {
 	dest := binary.BigEndian.Uint64(param)
 	state.setIp(dest)
+}
+func (state *VmState) jmpE(param []byte) {
+	dest := binary.BigEndian.Uint64(param)
+	if state.flags.zf {
+		state.setIp(dest)
+	}
+}
+func (state *VmState) jmpG(param []byte) {
+	dest := binary.BigEndian.Uint64(param)
+	if !state.flags.zf && !state.flags.sf {
+		state.setIp(dest)
+	}
+}
+func (state *VmState) cmp(lastByte byte, param []byte) error {
+	var subtrahend, minuend byte
+	var diff int64
+	subtrahend |= (lastByte & 0xf0) >> 4
+	minuend |= (lastByte & 0x0f)
+	if !isGpReg(minuend){
+		return fmt.Errorf("Bad CMP instruction, minuend was not a valid register 0x%x", minuend)
+	}
+	switch {
+	// if subtrahend is not a valid gp reg, then this is an immediate value cmp
+	case !isGpReg(subtrahend):
+		imm := int64(binary.BigEndian.Uint64(param))
+		diff = int64(state.regs.r[minuend]) - imm
+	default:
+		diff = int64(state.regs.r[minuend]) - int64(state.regs.r[subtrahend])
+	}
+	state.flags.sf = diff <= 0
+	state.flags.zf = diff == 0
+	return nil
 }
