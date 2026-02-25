@@ -21,9 +21,12 @@ const (
 	R5_IDX
 	R6_IDX
 	R7_IDX
-	bp_IDX
-	sp_IDX
-	ip_IDX
+	BP_IDX
+	SP_IDX
+	IP_IDX
+)
+const (
+	GP_REG_MAX = R7_IDX
 )
 
 const (
@@ -33,23 +36,23 @@ const (
 )
 
 type Registers struct {
-	r [ip_IDX + 1]uint64
+	r [IP_IDX + 1]uint64
 }
 
 func (state *VmState) GetBp() uint64 {
-	return state.regs.r[bp_IDX]
+	return state.regs.r[BP_IDX]
 }
 
 func (state *VmState) GetSp() uint64 {
-	return state.regs.r[sp_IDX]
+	return state.regs.r[SP_IDX]
 }
 
 func (state *VmState) GetIp() uint64 {
-	return state.regs.r[ip_IDX]
+	return state.regs.r[IP_IDX]
 }
 
 func (state *VmState) setIp(v uint64) {
-	state.regs.r[ip_IDX] = v
+	state.regs.r[IP_IDX] = v
 }
 func (state *VmState) incIp() {
 	state.setIp(state.GetIp() + 1)
@@ -155,10 +158,10 @@ func (vm *VmState) Execute(bytecode []byte) error {
 	return nil
 }
 func isGpReg(b byte) bool {
-	return b <= R7_IDX
+	return b <= GP_REG_MAX
 }
 func isMovRRAllowed(b byte) bool {
-	return b <= sp_IDX
+	return b <= SP_IDX
 }
 func (state *VmState) movRR(lastByte byte) error {
 	var src, dest byte

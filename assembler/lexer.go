@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math"
 	"unicode"
+
+	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
 const (
@@ -39,11 +41,19 @@ func NewLexer(reader bufio.Reader) Lexer {
 		reader:       reader,
 	}
 }
-func (l *Lexer) currentPosition() string {
+func (l *Lexer) CurrentPosition() string {
 	return fmt.Sprintf("(line: %d, column: %d)", l.line, l.col)
 }
 func (l *Lexer) CurrentToken() Token {
 	return l.currentToken
+}
+func numberCheck(b byte) bool {
+	return b-'0' <= 9
+}
+func identCheck(b byte) bool {
+	return b == '_' ||
+		b-'a' <= 'z'-'a' ||
+		b-'A' <= 'Z'-'A'
 }
 func (l *Lexer) ReadNextToken() error {
 	var b byte
@@ -64,14 +74,6 @@ func (l *Lexer) ReadNextToken() error {
 		if !unicode.IsSpace(rune(b)) {
 			break
 		}
-	}
-	numberCheck := func(b byte) bool {
-		return b-'0' <= 9
-	}
-	identCheck := func(b byte) bool {
-		return b == '_' ||
-			b-'a' <= 'z'-'a' ||
-			b-'A' <= 'Z'-'A'
 	}
 	switch {
 	case b == ',':
@@ -94,7 +96,7 @@ func (l *Lexer) ReadNextToken() error {
 				l.col--
 				break
 			} else {
-				return fmt.Errorf("Malformed integer literal %s", l.currentPosition())
+				return fmt.Errorf("Malformed integer literal %s", l.CurrentPosition())
 			}
 		}
 		val, idx := 0, len(buf)-1
@@ -105,10 +107,10 @@ func (l *Lexer) ReadNextToken() error {
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER,
-			val: val,
+			val: uint64(val),
 		}
 	case identCheck(b):
-		buf := make([]byte, 16)
+		buf := make([]byte, 0)
 		buf = append(buf, b)
 		for {
 			next, err := l.reader.ReadByte()
@@ -118,21 +120,46 @@ func (l *Lexer) ReadNextToken() error {
 			}
 			if identCheck(next) || numberCheck(next) {
 				buf = append(buf, next)
-			} else if unicode.IsSpace(rune(next)) {
+			} else if unicode.IsSpace(rune(next)) || unicode.IsPunct(rune(next)) {
 				l.reader.UnreadByte()
 				l.col--
 				break
 			} else {
-				return fmt.Errorf("Malformed identifier %s", l.currentPosition())
+				return fmt.Errorf("Malformed identifier %s", l.CurrentPosition())
 			}
 		}
-		val := string(buf[:])
-		l.currentToken = Token{
-			Ty:  TOKEN_TIDENT,
-			val: val,
+		val := string(buf)
+		if reg, ok := recognizeRegister(val); ok {
+			l.currentToken = Token{
+				Ty:  TOKEN_TREG,
+				val: reg,
+			}
+		} else {
+			l.currentToken = Token{
+				Ty:  TOKEN_TIDENT,
+				val: val,
+			}
 		}
 	default:
-		return fmt.Errorf("Unrecognized character %s", l.currentPosition())
+		return fmt.Errorf("Unrecognized character %s", l.CurrentPosition())
 	}
 	return nil
+}
+
+func recognizeRegister(s string) (int, bool) {
+	if len(s) < 2 {
+		return -1, false
+	}
+	if s[0] == 'r' && numberCheck(s[1]) && s[1]-'0' <= vm.GP_REG_MAX {
+		return int(s[1]-'0'), true
+	}
+	switch s {
+	case "sp":
+		return vm.SP_IDX, true
+	case "bp":
+		return vm.BP_IDX, true
+	case "ip":
+		return vm.IP_IDX, true
+	}
+	return -1, false
 }

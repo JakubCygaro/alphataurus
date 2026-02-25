@@ -17,17 +17,13 @@ func main() {
 		os.Stderr.WriteString(err.Error())
 		os.Exit(-1)
 	}
-	l := assembler.NewLexer(*bufio.NewReader(file))
-	for {
-		err := l.ReadNextToken()
-		if err != nil {
-			os.Stderr.WriteString(err.Error())
-			os.Exit(-1)
-		}
-		if l.CurrentToken().Ty == assembler.TOKEN_TEOF {
-			fmt.Println("EOF")
-			os.Exit(0)
-		}
-		fmt.Println(l.CurrentToken())
+	p := assembler.NewParser(*bufio.NewReader(file))
+	var ok bool
+	ok, err = p.ParseNext()
+	for ; ok && err == nil ; ok, err = p.ParseNext(){
+		fmt.Println(p.CurrentInst())
+	}
+	if err != nil {
+		os.Stderr.WriteString(err.Error())
 	}
 }
