@@ -49,12 +49,15 @@ func (p *Parser) CurrentInst() Instruction {
 	return p.currentInst
 }
 func (p *Parser) ParseNext() (bool, error) {
-	p.lexer.ReadNextToken()
+	var err error = nil
+	err = p.lexer.ReadNextToken()
+	if err != nil {
+		return false, err
+	}
 	start := p.lexer.CurrentToken()
 	if start.Ty == TOKEN_TEOF {
 		return false, nil
 	}
-	var err error = nil
 	switch start.Ty {
 	case TOKEN_TIDENT:
 		err = p.parseStartIdent(start)
@@ -134,7 +137,10 @@ func (p *Parser) parseMov() error {
 	return nil
 }
 func (p *Parser) parseAdd() error {
-	p.lexer.ReadNextToken()
+	err := p.lexer.ReadNextToken()
+	if err != nil {
+		return err
+	}
 	op1 := p.lexer.CurrentToken()
 	addTy := ADD_TUNSIGNED
 	if op1.Ty == TOKEN_TSIGNED || op1.Ty == TOKEN_TFLOAT || op1.Ty == TOKEN_TUNSIGNED {
@@ -143,7 +149,10 @@ func (p *Parser) parseAdd() error {
 		} else {
 			addTy = ADD_TFLOAT
 		}
-		p.lexer.ReadNextToken()
+		err = p.lexer.ReadNextToken()
+		if err != nil {
+			return err
+		}
 		op1 = p.lexer.CurrentToken()
 	}
 	if op1.Ty == TOKEN_TEOF {
@@ -153,13 +162,19 @@ func (p *Parser) parseAdd() error {
 		return fmt.Errorf("First operand to add instruction must be a valid register %s", p.lexer.CurrentPosition())
 	}
 
-	p.lexer.ReadNextToken()
+	err = p.lexer.ReadNextToken()
+	if err != nil {
+		return err
+	}
 	comma := p.lexer.CurrentToken()
 
 	if comma.Ty != TOKEN_TCOMMA {
 		return fmt.Errorf("add instruction missing a comma %s", p.lexer.CurrentPosition())
 	}
-	p.lexer.ReadNextToken()
+	err = p.lexer.ReadNextToken()
+	if err != nil {
+		return err
+	}
 	op2 := p.lexer.CurrentToken()
 	if op2.Ty == TOKEN_TEOF {
 		return p.prematureEndError()
