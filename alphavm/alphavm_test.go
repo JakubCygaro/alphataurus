@@ -172,5 +172,75 @@ func TestAddIR1(t *testing.T) {
 	}
 }
 func TestArth1(t *testing.T) {
+	const (
+		ADD = iota
+		ADDI
+		SUB
+		SUBI
+		DIV
+		MUL
+	)
+	type OpStep struct {
+		op        int
+		src, dest uint64
+		imm       any
+		ty        int
+	}
+	regs := [vm.GP_REG_MAX + 1]any{}
+	sequence := []OpStep{
+		OpStep{
+			op:   ADDI,
+			dest: vm.R0_IDX,
+			imm:  int64(-100),
+			ty:   vm.TY_INT64,
+		},
+	}
+	code := ""
+	for _, step := range sequence {
+		var mnem, mod string
+		switch step.ty {
+		case vm.TY_UINT64:
+			mod = "UNSIGNED"
+		case vm.TY_INT64:
+			mod = "SIGNED"
+		case vm.TY_FLOAT64:
+			mod = "FLOAT"
+		}
+		switch step.op {
+		case ADD:
+			mnem = "add"
+		case ADDI:
+			mnem = "add"
+		case SUB:
+			mnem = "sub"
+		case SUBI:
+			mnem = "sub"
+		case MUL:
+			mnem = "mul"
+		case DIV:
+			mnem = "div"
+		}
+		dest := fmt.Sprintf("r%d", step.dest)
+		src := fmt.Sprintf("r%d", step.src)
+		var srcV, destV any
+		destV = regs[step.dest]
+		if step.op == ADDI || step.op == SUBI {
+			code = strings.Join([]string{
+				code,
+				fmt.Sprintf("%s %s %s, %v", mnem, mod, dest, step.imm),
+			}, "\n")
+			srcV = step.imm
+		} else {
+			code = strings.Join([]string{
+				code,
+				fmt.Sprintf("%s %s %s, %s", mnem, mod, dest, src),
+			}, "\n")
+			srcV = regs[step.src]
+		}
+		switch step.ty {
+		case vm.TY_UINT64:
 
+		}
+
+	}
 }
