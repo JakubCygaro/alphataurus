@@ -90,8 +90,11 @@ func (l *Lexer) ReadNextToken() error {
 		l.currentToken = Token{
 			Ty: TOKEN_TCOMMA,
 		}
-	case numberCheck(b):
-		l.readDigit(b)
+	case numberCheck(b) || b == '.':
+		err := l.readDigit(b)
+		if err != nil {
+			return err
+		}
 	case identCheck(b):
 		buf := make([]byte, 0, 16)
 		buf = append(buf, b)

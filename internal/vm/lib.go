@@ -229,7 +229,6 @@ func arthRRGetParameters(param []byte) (src, dest, ty byte, err error) {
 }
 func (state *VmState) arthRR(opType int, param []byte) error {
 	src, dest, ty, err := arthRRGetParameters(param)
-	fmt.Println(src, dest, ty)
 	if err != nil {
 		return err
 	}

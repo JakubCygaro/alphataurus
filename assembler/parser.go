@@ -75,7 +75,10 @@ func (p *Parser) parseStartIdent(t Token) error {
 	return fmt.Errorf("Unknown identifier '%s' %s", ident, p.lexer.CurrentPosition())
 }
 func (p *Parser) parseMov() error {
-	p.lexer.ReadNextToken()
+	err := p.lexer.ReadNextToken()
+	if err != nil {
+		return err
+	}
 	op1 := p.lexer.CurrentToken()
 	if op1.Ty == TOKEN_TEOF {
 		return p.prematureEndError()
@@ -83,13 +86,19 @@ func (p *Parser) parseMov() error {
 	if op1.Ty != TOKEN_TREG {
 		return fmt.Errorf("First operand to mov instruction must be a valid register %s", p.lexer.CurrentPosition())
 	}
-	p.lexer.ReadNextToken()
+	err = p.lexer.ReadNextToken()
+	if err != nil {
+		return err
+	}
 	comma := p.lexer.CurrentToken()
 
 	if comma.Ty != TOKEN_TCOMMA {
 		return fmt.Errorf("mov instruction missing a comma %s", p.lexer.CurrentPosition())
 	}
-	p.lexer.ReadNextToken()
+	err = p.lexer.ReadNextToken()
+	if err != nil {
+		return err
+	}
 	op2 := p.lexer.CurrentToken()
 	if op2.Ty == TOKEN_TEOF {
 		return p.prematureEndError()

@@ -29,11 +29,11 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 		inst := a.parser.CurrentInst()
 		switch inst.Ty {
 		case INST_TMOVIR:
-			a.emitMovIR(inst.Data.(InstMovData), &bytecode)
+			err = a.emitMovIR(inst.Data.(InstMovData), &bytecode)
 		case INST_TMOVRR:
-			a.emitMovRR(inst.Data.(InstMovData), &bytecode)
+			err = a.emitMovRR(inst.Data.(InstMovData), &bytecode)
 		case INST_TADDRR:
-			a.emitAddRR(inst.Data.(InstAddData), &bytecode)
+			err = a.emitAddRR(inst.Data.(InstAddData), &bytecode)
 		default:
 			pos := a.parser.lexer.CurrentPosition()
 			return bytecode, 0, fmt.Errorf("Instruction (%d) WIP %s", INST_TMOVIR, pos)
@@ -63,13 +63,11 @@ func (a *Assembler) emitMovRR(data InstMovData, out *[]byte) error {
 }
 
 func (a *Assembler) emitAddRR(data InstAddData, out *[]byte) error {
-	fmt.Println("EMMITING ADD")
 	add := a.opCodes[vm.OP_ADDRR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(add))
 	// src = param[0]
 	// dest = param[1]
 	// ty = param[3]
-	fmt.Println(data)
 	*out = append(*out, byte(data.Src))
 	*out = append(*out, byte(data.Dest))
 	*out = append(*out, byte(0))

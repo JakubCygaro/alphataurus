@@ -13,7 +13,7 @@ import (
 const assembly = `
 mov r1, 420
 mov r0, 69
-mov r3, 1.234
+mov r3, .1234
 mov r2, r0
 add UNSIGNED r2, r1
 mov r4, 2.5
