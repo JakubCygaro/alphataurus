@@ -92,3 +92,43 @@ func TestAddRR1(t *testing.T) {
 		t.Errorf("Register state not what it was supposed to be")
 	}
 }
+func TestAddRR2Signed(t *testing.T) {
+	r0_v, r1_v := 69, -420
+	r2_v := r0_v + r1_v
+	r3_v := 80.085
+	r4_v := -133.7
+	r5_v := r3_v + r4_v
+	asm := fmt.Sprintf(`
+	mov r0, %d
+	mov r1, %d
+	add SIGNED r0, r1
+	mov r2, r0
+	mov r3, %f
+	mov r4, %f
+	add FLOAT r3, r4
+	mov r5, r3
+	`, r0_v, r1_v, r3_v, r4_v)
+	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(asm)))
+	mach := vm.CreateVmState(16)
+	code, _, err := asmblr.EmitBytecode()
+	if err != nil {
+		t.Error(err)
+	}
+	err = mach.Execute(code)
+	if err != nil {
+		t.Error(err)
+	}
+	var r2, r5 any
+	err = mach.GetGpRXAs(vm.R2_IDX, vm.TY_UINT64, &r2)
+	if err != nil {
+		t.Error(err)
+	}
+	err = mach.GetGpRXAs(vm.R5_IDX, vm.TY_FLOAT64, &r5)
+	if err != nil {
+		t.Error(err)
+	}
+	if r2.(uint64) != uint64(r2_v) ||
+		r5.(float64) != float64(r5_v) {
+		t.Errorf("Register state not what it was supposed to be")
+	}
+}

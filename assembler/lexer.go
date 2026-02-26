@@ -3,10 +3,10 @@ package assembler
 import (
 	"bufio"
 	"fmt"
+	"github.com/JakubCygaro/alphataurus/internal/vm"
 	"math"
 	"strconv"
 	"unicode"
-	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
 const (
@@ -19,13 +19,15 @@ const (
 	TOKEN_TUNSIGNED
 	TOKEN_TSIGNED
 	TOKEN_TFLOAT
+	TOKEN_TMINUS
+	TOKEN_TDOT
 	TOKEN_TEOF
 )
 
-var keywords = map[string]int {
-	"SIGNED" : TOKEN_TSIGNED,
-	"UNSIGNED" : TOKEN_TUNSIGNED,
-	"FLOAT" : TOKEN_TFLOAT,
+var keywords = map[string]int{
+	"SIGNED":   TOKEN_TSIGNED,
+	"UNSIGNED": TOKEN_TUNSIGNED,
+	"FLOAT":    TOKEN_TFLOAT,
 }
 
 type Token struct {
@@ -90,7 +92,39 @@ func (l *Lexer) ReadNextToken() error {
 		l.currentToken = Token{
 			Ty: TOKEN_TCOMMA,
 		}
-	case numberCheck(b) || b == '.':
+	case b == '.':
+		next, err := l.reader.ReadByte()
+		if err != nil {
+			return err
+		}
+		if numberCheck(next) {
+			l.reader.UnreadByte()
+			err := l.readDigit(b)
+			if err != nil {
+				return err
+			}
+		} else {
+			l.currentToken = Token {
+				Ty: TOKEN_TDOT,
+			}
+		}
+	case b == '-':
+		next, err := l.reader.ReadByte()
+		if err != nil {
+			return err
+		}
+		if numberCheck(next) {
+			l.reader.UnreadByte()
+			err := l.readDigit(b)
+			if err != nil {
+				return err
+			}
+		} else {
+			l.currentToken = Token {
+				Ty: TOKEN_TMINUS,
+			}
+		}
+	case numberCheck(b):
 		err := l.readDigit(b)
 		if err != nil {
 			return err
@@ -122,7 +156,7 @@ func (l *Lexer) ReadNextToken() error {
 			}
 		} else if kwd, ok := keywords[val]; ok {
 			l.currentToken = Token{
-				Ty:  kwd,
+				Ty: kwd,
 			}
 		} else {
 			l.currentToken = Token{
@@ -140,6 +174,7 @@ func (l *Lexer) readDigit(b byte) error {
 	buf := make([]byte, 0, 16)
 	buf = append(buf, b)
 	dot := b == '.'
+	minus := b == '-'
 	for {
 		next, err := l.reader.ReadByte()
 		l.col++
@@ -148,27 +183,36 @@ func (l *Lexer) readDigit(b byte) error {
 		}
 		if numberCheck(next) {
 			buf = append(buf, next)
-		} else if unicode.IsSpace(rune(next)) {
-			l.reader.UnreadByte()
-			l.col--
-			break
 		} else if next == '.' && !dot {
 			buf = append(buf, next)
 			dot = true
+		} else if unicode.IsSpace(rune(next)) || !identCheck(next) {
+			l.reader.UnreadByte()
+			l.col--
+			break
 		} else {
 			return fmt.Errorf("Malformed integer literal %s", l.CurrentPosition())
 		}
 	}
 	if !dot {
-		val, idx := 0, len(buf)-1
-		for _, elem := range buf {
-			mul := int(math.Pow(10, float64(idx)))
-			val += int(elem-'0') * mul
-			idx--
-		}
-		l.currentToken = Token{
-			Ty:  TOKEN_TINTEGER_LIT,
-			val: uint64(val),
+		if !minus {
+			val, err := strconv.ParseUint(string(buf), 10, 64)
+			if err != nil {
+				return err
+			}
+			l.currentToken = Token{
+				Ty:  TOKEN_TINTEGER_LIT,
+				val: uint64(val),
+			}
+		} else {
+			val, err := strconv.ParseInt(string(buf), 10, 64)
+			if err != nil {
+				return err
+			}
+			l.currentToken = Token{
+				Ty:  TOKEN_TINTEGER_LIT,
+				val: uint64(val),
+			}
 		}
 	} else {
 		val, err := strconv.ParseFloat(string(buf), 64)
