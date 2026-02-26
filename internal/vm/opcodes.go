@@ -59,6 +59,8 @@ var (
 		2: p002X,
 		3: p003X,
 		4: handle(OP_CMP),
+		5: handle(OP_ADDIR),
+		6: handle(OP_SUBIR),
 	})
 	p0XXX = nested(OpCodeMap{
 		0: p00XX,
@@ -101,6 +103,7 @@ const (
 	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR
+	OP_SUBIR
 	OP_MULRR
 	OP_DIVRR
 	OP_INCR

@@ -11,6 +11,12 @@ const (
 	INST_TMOVRR = iota
 	INST_TMOVIR
 	INST_TADDRR
+	INST_TSUBRR
+	INST_TDIVRR
+	INST_TMULRR
+	INST_TADDIR
+	INST_TSUBIR
+	INST_TINCR
 )
 
 type InstMovData struct {
@@ -24,7 +30,11 @@ const (
 	ADD_TFLOAT    = vm.TY_FLOAT64
 )
 
-type InstAddData struct {
+type InstIncData struct {
+	Reg int
+}
+
+type InstArthData struct {
 	Src, Dest int
 	Ty        int
 	Imm       uint64
@@ -74,6 +84,8 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseMov()
 	case "add":
 		return p.parseAdd()
+	case "inc":
+		return p.parseInc()
 	}
 	return fmt.Errorf("Unknown identifier '%s' %s", ident, p.lexer.CurrentPosition())
 }
@@ -183,14 +195,52 @@ func (p *Parser) parseAdd() error {
 	case TOKEN_TREG:
 		p.currentInst = Instruction{
 			Ty: INST_TADDRR,
-			Data: InstAddData{
+			Data: InstArthData{
 				Src:  op2.val.(int),
 				Dest: op1.val.(int),
 				Ty:   addTy,
 			},
 		}
+	case TOKEN_TINTEGER_LIT:
+		p.currentInst = Instruction{
+			Ty: INST_TADDIR,
+			Data: InstArthData{
+				Imm:  op2.val.(uint64),
+				Dest: op1.val.(int),
+				Ty:   addTy,
+			},
+		}
+	case TOKEN_TFLOAT_LIT:
+		p.currentInst = Instruction{
+			Ty: INST_TADDIR,
+			Data: InstArthData{
+				Imm:  op2.val.(uint64),
+				Dest: op1.val.(int),
+				Ty:   addTy,
+			},
+		}
 	default:
-		return fmt.Errorf("Second operand to add instruction must be a valid register %s", p.lexer.CurrentPosition())
+		return fmt.Errorf("Second operand to add instruction must be a valid register or an immediate value %s", p.lexer.CurrentPosition())
+	}
+	return nil
+}
+func (p *Parser) parseInc() error {
+	err := p.lexer.ReadNextToken()
+	if err != nil {
+		return err
+	}
+	op1 := p.lexer.CurrentToken()
+	if op1.Ty == TOKEN_TEOF {
+		return p.prematureEndError()
+	}
+	if op1.Ty != TOKEN_TREG {
+		return fmt.Errorf("The operand to the inc instruction must be a valid register %s", p.lexer.CurrentPosition())
+	}
+	p.currentInst = Instruction{
+		Ty: INST_TADDRR,
+		Data: InstIncData{
+			Reg: op1.val.(int),
+		},
 	}
 	return nil
 }

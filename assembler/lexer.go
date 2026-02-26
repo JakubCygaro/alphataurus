@@ -104,7 +104,7 @@ func (l *Lexer) ReadNextToken() error {
 				return err
 			}
 		} else {
-			l.currentToken = Token {
+			l.currentToken = Token{
 				Ty: TOKEN_TDOT,
 			}
 		}
@@ -120,7 +120,7 @@ func (l *Lexer) ReadNextToken() error {
 				return err
 			}
 		} else {
-			l.currentToken = Token {
+			l.currentToken = Token{
 				Ty: TOKEN_TMINUS,
 			}
 		}

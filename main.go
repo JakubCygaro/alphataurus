@@ -11,13 +11,8 @@ import (
 )
 
 const assembly = `
-mov r1, 420
-mov r0, 69
-mov r3, .1234
-mov r2, r0
-add UNSIGNED r2, r1
-mov r4, 2.5
-add FLOAT r3, r4
+mov r0, 10
+add UNSIGNED r0, 10
 `
 
 func main() {
@@ -41,8 +36,8 @@ func main() {
 		fmt.Println(err)
 	}
 	var res any
-	mach.GetGpRXAs(vm.R3_IDX, vm.TY_FLOAT64, &res)
-	fmt.Printf("r3 = %f\n", res)
+	mach.GetGpRXAs(vm.R0_IDX, vm.TY_INT64, &res)
+	fmt.Printf("r0 = %d\n", res)
 	// mov := opCodes[vm.OP_MOVIR]
 	// //load in the loop register
 	// bytecode = binary.BigEndian.AppendUint32(bytecode, uint32(mov))

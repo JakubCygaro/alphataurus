@@ -6,10 +6,12 @@ import (
 	"math"
 )
 
+type VmStack []uint64
+
 type VmState struct {
 	regs  Registers
 	flags Flags
-	stack []any
+	stack VmStack
 }
 
 const (
@@ -68,7 +70,7 @@ func CreateVmState(stackSize uint64) VmState {
 			r: [11]uint64{},
 		},
 		flags: Flags{},
-		stack: make([]any, stackSize),
+		stack: make(VmStack, 0, stackSize),
 	}
 	return state
 }
@@ -80,6 +82,7 @@ func (vm *VmState) GetGpRX(register byte) (uint64, error) {
 	}
 	return vm.regs.r[register], nil
 }
+
 // get X general purpose register value and cast it into a supported type value
 // returned via out
 func (vm *VmState) GetGpRXAs(register byte, ty byte, out *any) error {
@@ -99,10 +102,14 @@ func (vm *VmState) GetGpRXAs(register byte, ty byte, out *any) error {
 	}
 	return nil
 }
+func (vm *VmState) ClearState() {
+	vm.regs.r = [11]uint64{}
+	vm.flags = Flags{}
+	vm.stack = make(VmStack, 0, cap(vm.stack))
+}
 
 func (vm *VmState) Execute(bytecode []byte) error {
 	codeSize := len(bytecode) / INSTRUCTION_SIZE
-	fmt.Printf("codeSize: %d\n", codeSize)
 	vm.setIp(0)
 	fmt.Println("STARTING REGISTER STATE")
 	fmt.Println(vm.regs.r)
@@ -129,6 +136,10 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			err = vm.arthRR(int(opcode), param)
 		case OP_DIVRR:
 			err = vm.arthRR(int(opcode), param)
+		case OP_ADDIR:
+			err = vm.arthIR(int(opcode), opCodeBytes[0], param)
+		case OP_SUBIR:
+			err = vm.arthIR(int(opcode), opCodeBytes[0], param)
 		case OP_INCR:
 			err = vm.incR(param)
 		case OP_DECR:
@@ -215,6 +226,14 @@ func (state *VmState) decR(param []byte) error {
 	state.regs.r[reg]--
 	return nil
 }
+func arthIRGetParameters(lastByte byte) (reg, ty byte, err error) {
+	ty |= (lastByte & 0xf0) >> 4
+	reg |= (lastByte & 0x0f)
+	if !isGpReg(reg) && reg != BP_IDX && reg != SP_IDX {
+		return reg, ty, fmt.Errorf("Bad ADDIR parameter, disallowed target register 0x%x", reg)
+	}
+	return reg, ty, nil
+}
 func arthRRGetParameters(param []byte) (src, dest, ty byte, err error) {
 	src = param[0]
 	dest = param[1]
@@ -254,6 +273,21 @@ func (state *VmState) arthRR(opType int, param []byte) error {
 	state.regs.r[dest] = out
 	return nil
 }
+func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
+	reg, ty, err := arthIRGetParameters(lastByte)
+	if err != nil {
+		return err
+	}
+	immV := binary.BigEndian.Uint64(param)
+	regV := state.regs.r[reg]
+	switch opType {
+	case OP_ADDIR:
+		addValues(regV, immV, ty, &state.regs.r[reg])
+	case OP_SUBIR:
+		subValues(regV, immV, ty, &state.regs.r[reg])
+	}
+	return nil
+}
 func (state *VmState) jmp(param []byte) {
 	dest := binary.BigEndian.Uint64(param)
 	state.setIp(dest)
@@ -275,7 +309,7 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 	var diff int64
 	subtrahend |= (lastByte & 0xf0) >> 4
 	minuend |= (lastByte & 0x0f)
-	if !isGpReg(minuend){
+	if !isGpReg(minuend) {
 		return fmt.Errorf("Bad CMP instruction, minuend was not a valid register 0x%x", minuend)
 	}
 	switch {
