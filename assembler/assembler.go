@@ -56,7 +56,7 @@ func (a *Assembler) emitMovRR(data InstMovData, out *[]byte) error {
 	mov := a.opCodes[vm.OP_MOVRR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	destsrc := 0b00001111 & byte(data.Dest)
-	destsrc |= (0b00001111 & byte(data.Src)) >> 4
+	destsrc |= (0b00001111 & byte(data.Src)) << 4
 	(*out)[len(*out)-4] = destsrc
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	return nil
