@@ -1,16 +1,20 @@
 package vm
 
 import (
+	"fmt"
 	"math"
 )
 
 func addValues(a, b uint64, ty byte, out *uint64){
 	switch ty {
 	case TY_UINT64:
+		fmt.Println("UNSIGNED ADDITION")
 		*out = a + b
 	case TY_INT64:
+		fmt.Println("SIGNED ADDITION")
 		*out = uint64(int64(a) + int64(b))
 	case TY_FLOAT64:
+		fmt.Println("FLOAT ADDITION")
 		*out = math.Float64bits(math.Float64frombits(a) + math.Float64frombits(b))
 	}
 }
