@@ -25,9 +25,16 @@ type InstMovData struct {
 }
 
 const (
-	ADD_TUNSIGNED = vm.TY_UINT64
-	ADD_TSIGNED   = vm.TY_INT64
-	ADD_TFLOAT    = vm.TY_FLOAT64
+	ARTH_TUNSIGNED = vm.TY_UINT64
+	ARTH_TSIGNED   = vm.TY_INT64
+	ARTH_TFLOAT    = vm.TY_FLOAT64
+)
+
+const (
+	ARTH_TADD = iota
+	ARTH_TSUB
+	ARTH_TDIV
+	ARTH_TMUL
 )
 
 type InstIncData struct {
@@ -83,7 +90,9 @@ func (p *Parser) parseStartIdent(t Token) error {
 	case "mov":
 		return p.parseMov()
 	case "add":
-		return p.parseAdd()
+		return p.parseAddOrSub(ARTH_TADD)
+	case "sub":
+		return p.parseAddOrSub(ARTH_TSUB)
 	case "inc":
 		return p.parseInc()
 	}
@@ -148,21 +157,21 @@ func (p *Parser) parseMov() error {
 	}
 	return nil
 }
-func (p *Parser) parseAdd() error {
+func (p *Parser) parseAddOrSub(arthTy int) error {
 	err := p.lexer.ReadNextToken()
 	if err != nil {
 		return err
 	}
 	op1 := p.lexer.CurrentToken()
-	addTy := ADD_TUNSIGNED
+	valTy := ARTH_TUNSIGNED
 	if op1.Ty == TOKEN_TSIGNED || op1.Ty == TOKEN_TFLOAT || op1.Ty == TOKEN_TUNSIGNED {
 		switch op1.Ty {
 		case TOKEN_TSIGNED:
-			addTy = ADD_TSIGNED
+			valTy = ARTH_TSIGNED
 		case TOKEN_TUNSIGNED:
-			addTy = ADD_TUNSIGNED
+			valTy = ARTH_TUNSIGNED
 		case TOKEN_TFLOAT:
-			addTy = ADD_TFLOAT
+			valTy = ARTH_TFLOAT
 		}
 		err = p.lexer.ReadNextToken()
 		if err != nil {
@@ -196,30 +205,51 @@ func (p *Parser) parseAdd() error {
 	}
 	switch op2.Ty {
 	case TOKEN_TREG:
+		var ty int
+		switch arthTy {
+		case ARTH_TADD:
+			ty = INST_TADDRR
+		case ARTH_TSUB:
+			ty = INST_TSUBRR
+		}
 		p.currentInst = Instruction{
-			Ty: INST_TADDRR,
+			Ty: ty,
 			Data: InstArthData{
 				Src:  op2.val.(int),
 				Dest: op1.val.(int),
-				Ty:   addTy,
+				Ty:   valTy,
 			},
 		}
 	case TOKEN_TINTEGER_LIT:
+		var ty int
+		switch arthTy {
+		case ARTH_TADD:
+			ty = INST_TADDIR
+		case ARTH_TSUB:
+			ty = INST_TSUBIR
+		}
 		p.currentInst = Instruction{
-			Ty: INST_TADDIR,
+			Ty: ty,
 			Data: InstArthData{
 				Imm:  op2.val.(uint64),
 				Dest: op1.val.(int),
-				Ty:   addTy,
+				Ty:   valTy,
 			},
 		}
 	case TOKEN_TFLOAT_LIT:
+		var ty int
+		switch arthTy {
+		case ARTH_TADD:
+			ty = INST_TADDIR
+		case ARTH_TSUB:
+			ty = INST_TSUBIR
+		}
 		p.currentInst = Instruction{
-			Ty: INST_TADDIR,
+			Ty: ty,
 			Data: InstArthData{
 				Imm:  op2.val.(uint64),
 				Dest: op1.val.(int),
-				Ty:   addTy,
+				Ty:   valTy,
 			},
 		}
 	default:

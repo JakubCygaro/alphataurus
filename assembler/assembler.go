@@ -34,6 +34,12 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitMovRR(inst.Data.(InstMovData), &bytecode)
 		case INST_TADDRR:
 			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+		case INST_TSUBRR:
+			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+		case INST_TMULRR:
+			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+		case INST_TDIVRR:
+			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
 		case INST_TADDIR:
 			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
 		case INST_TSUBIR:

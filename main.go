@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 
@@ -16,6 +17,13 @@ add UNSIGNED r0, 10
 `
 
 func main() {
+	r := 0
+	reg_v := rand.Float64()
+	reg_sub := rand.Float64()
+	assembly := fmt.Sprintf(`
+	mov r%v, %v
+	sub FLOAT r%v, %v
+	`, r, reg_v, r, reg_sub)
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
 	bytecode, iCount, err := asm.EmitBytecode()
 	if err != nil {
@@ -35,9 +43,9 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	var res any
-	mach.GetGpRXAs(vm.R0_IDX, vm.TY_INT64, &res)
-	fmt.Printf("r0 = %d\n", res)
+	res, _ := mach.GetGpRXAsFloat64(vm.R0_IDX)
+	fmt.Println(reg_v, reg_sub)
+	fmt.Printf("r0 = %v\n", res)
 	// mov := opCodes[vm.OP_MOVIR]
 	// //load in the loop register
 	// bytecode = binary.BigEndian.AppendUint32(bytecode, uint32(mov))
