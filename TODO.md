@@ -1,0 +1,2 @@
+- pointer dereference shit like in x86 [rax], [rbp]
+- expression parsing
