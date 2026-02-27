@@ -102,6 +102,27 @@ func (vm *VmState) GetGpRXAs(register byte, ty byte, out *any) error {
 	}
 	return nil
 }
+func (vm *VmState) GetGpRXAsUint64(register byte) (uint64, error) {
+	val, err := vm.GetGpRX(register)
+	if err != nil {
+		return 0, err
+	}
+	return val, nil
+}
+func (vm *VmState) GetGpRXAsInt64(register byte) (int64, error) {
+	val, err := vm.GetGpRX(register)
+	if err != nil {
+		return 0, err
+	}
+	return int64(val), nil
+}
+func (vm *VmState) GetGpRXAsFloat64(register byte) (float64, error) {
+	val, err := vm.GetGpRX(register)
+	if err != nil {
+		return 0, err
+	}
+	return math.Float64frombits(val), nil
+}
 func (vm *VmState) ClearState() {
 	vm.regs.r = [11]uint64{}
 	vm.flags = Flags{}
