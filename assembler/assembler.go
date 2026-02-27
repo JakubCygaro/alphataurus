@@ -93,8 +93,6 @@ func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 }
 func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
 	var opCode vm.OpCodeVal
-	fmt.Println("ARTHIR", data)
-
 	switch ty {
 		case INST_TADDIR:
 			opCode = a.opCodes[vm.OP_ADDIR]

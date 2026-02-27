@@ -156,9 +156,12 @@ func (p *Parser) parseAdd() error {
 	op1 := p.lexer.CurrentToken()
 	addTy := ADD_TUNSIGNED
 	if op1.Ty == TOKEN_TSIGNED || op1.Ty == TOKEN_TFLOAT || op1.Ty == TOKEN_TUNSIGNED {
-		if op1.Ty == TOKEN_TSIGNED {
+		switch op1.Ty {
+		case TOKEN_TSIGNED:
 			addTy = ADD_TSIGNED
-		} else {
+		case TOKEN_TUNSIGNED:
+			addTy = ADD_TUNSIGNED
+		case TOKEN_TFLOAT:
 			addTy = ADD_TFLOAT
 		}
 		err = p.lexer.ReadNextToken()

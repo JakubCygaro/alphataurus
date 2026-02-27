@@ -176,18 +176,14 @@ func randSign() int {
 	return int(math.Ceil(rand.Float64() - 0.5))
 }
 
-func TestArth1(t *testing.T) {
-	r0_v := rand.Int63() * int64(randSign())
-	r1_v := rand.Int63() * int64(randSign())
-	r0_v_add := rand.Int63() * int64(randSign())
-	r2_v := rand.Float64() * randSign()
+func TestAddIR2(t *testing.T) {
+	r := byte(rand.Int() % vm.GP_REG_MAX)
+	reg_v := rand.Uint64();
+	reg_add := rand.Uint64();
 	asm := fmt.Sprintf(`
-	mov r0, %v
-	mov r1, %v
-	add r0, %v
-	mov r2, %v
-	`, r0_v, r1_v, r0_v_add)
-	r0_v += r0_v_add
+	mov r%v, %v
+	add UNSIGNED r%v, %v
+	`, r, reg_v, r, reg_add)
 
 	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(asm)))
 	mach := vm.CreateVmState(16)
@@ -199,7 +195,7 @@ func TestArth1(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if v, _ := mach.GetGpRXAsInt64(vm.R0_IDX); v != r0_v {
-		t.Error("r0 value not what was desired")
+	if v, _ := mach.GetGpRXAsUint64(r); v != reg_v + reg_add {
+		t.Errorf("r0 value not what was desired (%v != %v)", v, reg_v + reg_add)
 	}
 }
