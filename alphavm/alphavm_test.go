@@ -3,6 +3,7 @@ package alphavm
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"math/rand"
 	"strings"
 	"testing"
@@ -171,76 +172,34 @@ func TestAddIR1(t *testing.T) {
 		t.Errorf("Register state not what it was supposed to be")
 	}
 }
+func randSign() int {
+	return int(math.Ceil(rand.Float64() - 0.5))
+}
+
 func TestArth1(t *testing.T) {
-	const (
-		ADD = iota
-		ADDI
-		SUB
-		SUBI
-		DIV
-		MUL
-	)
-	type OpStep struct {
-		op        int
-		src, dest uint64
-		imm       any
-		ty        int
-	}
-	regs := [vm.GP_REG_MAX + 1]any{}
-	sequence := []OpStep{
-		OpStep{
-			op:   ADDI,
-			dest: vm.R0_IDX,
-			imm:  int64(-100),
-			ty:   vm.TY_INT64,
-		},
-	}
-	code := ""
-	for _, step := range sequence {
-		var mnem, mod string
-		switch step.ty {
-		case vm.TY_UINT64:
-			mod = "UNSIGNED"
-		case vm.TY_INT64:
-			mod = "SIGNED"
-		case vm.TY_FLOAT64:
-			mod = "FLOAT"
-		}
-		switch step.op {
-		case ADD:
-			mnem = "add"
-		case ADDI:
-			mnem = "add"
-		case SUB:
-			mnem = "sub"
-		case SUBI:
-			mnem = "sub"
-		case MUL:
-			mnem = "mul"
-		case DIV:
-			mnem = "div"
-		}
-		dest := fmt.Sprintf("r%d", step.dest)
-		src := fmt.Sprintf("r%d", step.src)
-		var srcV, destV any
-		destV = regs[step.dest]
-		if step.op == ADDI || step.op == SUBI {
-			code = strings.Join([]string{
-				code,
-				fmt.Sprintf("%s %s %s, %v", mnem, mod, dest, step.imm),
-			}, "\n")
-			srcV = step.imm
-		} else {
-			code = strings.Join([]string{
-				code,
-				fmt.Sprintf("%s %s %s, %s", mnem, mod, dest, src),
-			}, "\n")
-			srcV = regs[step.src]
-		}
-		switch step.ty {
-		case vm.TY_UINT64:
+	r0_v := rand.Int63() * int64(randSign())
+	r1_v := rand.Int63() * int64(randSign())
+	r0_v_add := rand.Int63() * int64(randSign())
+	r2_v := rand.Float64() * randSign()
+	asm := fmt.Sprintf(`
+	mov r0, %v
+	mov r1, %v
+	add r0, %v
+	mov r2, %v
+	`, r0_v, r1_v, r0_v_add)
+	r0_v += r0_v_add
 
-		}
-
+	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(asm)))
+	mach := vm.CreateVmState(16)
+	code, _, err := asmblr.EmitBytecode()
+	if err != nil {
+		t.Error(err)
+	}
+	err = mach.Execute(code)
+	if err != nil {
+		t.Error(err)
+	}
+	if v, _ := mach.GetGpRXAsInt64(vm.R0_IDX); v != r0_v {
+		t.Error("r0 value not what was desired")
 	}
 }
