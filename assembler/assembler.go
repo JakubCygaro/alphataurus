@@ -79,7 +79,7 @@ func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 	switch op{
 	case INST_TADDRR:
 		opCode = a.opCodes[vm.OP_ADDRR]
-	case INST_TSUBIR:
+	case INST_TSUBRR:
 		opCode = a.opCodes[vm.OP_SUBRR]
 	case INST_TDIVRR:
 		opCode = a.opCodes[vm.OP_DIVRR]

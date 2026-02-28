@@ -132,8 +132,8 @@ func (vm *VmState) ClearState() {
 func (vm *VmState) Execute(bytecode []byte) error {
 	codeSize := len(bytecode) / INSTRUCTION_SIZE
 	vm.setIp(0)
-	fmt.Println("STARTING REGISTER STATE")
-	fmt.Println(vm.regs.r)
+	// fmt.Println("STARTING REGISTER STATE")
+	// fmt.Println(vm.regs.r)
 	for ; vm.GetIp() < uint64(codeSize); vm.incIp() {
 		var err error = nil
 		instAddr := vm.GetIp() * INSTRUCTION_SIZE
@@ -143,7 +143,7 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("opcode: %d\n", opcode)
+		// fmt.Printf("opcode: %d\n", opcode)
 		switch opcode {
 		case OP_MOVRR:
 			err = vm.movRR(opCodeBytes[0])
@@ -179,13 +179,13 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("ip: %d & REGSTATE\n", vm.GetIp())
-		fmt.Println(vm.flags)
-		fmt.Println(vm.regs.r)
+		// fmt.Printf("ip: %d & REGSTATE\n", vm.GetIp())
+		// fmt.Println(vm.flags)
+		// fmt.Println(vm.regs.r)
 	}
 
-	fmt.Println("ENDING REGISTER STATE")
-	fmt.Println(vm.regs.r)
+	// fmt.Println("ENDING REGISTER STATE")
+	// fmt.Println(vm.regs.r)
 
 	return nil
 }
@@ -274,24 +274,20 @@ func (state *VmState) arthRR(opType int, param []byte) error {
 	}
 	srcV := state.regs.r[src]
 	destV := state.regs.r[dest]
-	var out uint64
 	switch opType {
 	case OP_ADDRR:
-		addValues(srcV, destV, ty, &out)
+		addValues(srcV, destV, ty, &state.regs.r[dest])
 	case OP_SUBRR:
-		subValues(srcV, destV, ty, &out)
+		subValues(destV, srcV, ty, &state.regs.r[dest])
 	case OP_MULRR:
 		srcV := state.regs.r[R0_IDX]
 		destV := state.regs.r[R1_IDX]
-		dest = R2_IDX
-		mulValues(srcV, destV, ty, &out)
+		mulValues(srcV, destV, ty, &state.regs.r[R2_IDX])
 	case OP_DIVRR:
 		srcV := state.regs.r[R0_IDX]
 		destV := state.regs.r[R1_IDX]
-		dest = R2_IDX
-		divValues(srcV, destV, ty, &out, &state.regs.r[R3_IDX])
+		divValues(srcV, destV, ty, &state.regs.r[R2_IDX], &state.regs.r[R3_IDX])
 	}
-	state.regs.r[dest] = out
 	return nil
 }
 func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {

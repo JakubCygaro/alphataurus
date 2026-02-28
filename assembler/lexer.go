@@ -21,6 +21,7 @@ const (
 	TOKEN_TFLOAT
 	TOKEN_TMINUS
 	TOKEN_TDOT
+	TOKEN_TNEWLINE
 	TOKEN_TEOF
 )
 
@@ -38,6 +39,7 @@ type Token struct {
 type Lexer struct {
 	head, col, line uint64
 	currentToken    Token
+	unRead          bool
 	reader          bufio.Reader
 }
 
@@ -51,6 +53,7 @@ func NewLexer(reader bufio.Reader) Lexer {
 	return Lexer{
 		currentToken: nilToken(),
 		reader:       reader,
+		unRead:       false,
 	}
 }
 func (l *Lexer) CurrentPosition() string {
@@ -67,7 +70,14 @@ func identCheck(b byte) bool {
 		b-'a' <= 'z'-'a' ||
 		b-'A' <= 'Z'-'A'
 }
+func (l *Lexer) UnreadToken() {
+	l.unRead = true
+}
 func (l *Lexer) ReadNextToken() error {
+	if l.unRead {
+		l.unRead = false
+		return nil
+	}
 	var b byte
 	for {
 		var err error
@@ -82,12 +92,17 @@ func (l *Lexer) ReadNextToken() error {
 		if b == '\n' {
 			l.col = 0
 			l.line++
+			break
 		}
 		if !unicode.IsSpace(rune(b)) {
 			break
 		}
 	}
 	switch {
+	case b == '\n':
+		l.currentToken = Token{
+			Ty: TOKEN_TNEWLINE,
+		}
 	case b == ',':
 		l.currentToken = Token{
 			Ty: TOKEN_TCOMMA,
@@ -175,6 +190,7 @@ func (l *Lexer) readDigit(b byte) error {
 	buf = append(buf, b)
 	dot := b == '.'
 	minus := b == '-'
+	e := false
 	for {
 		next, err := l.reader.ReadByte()
 		l.col++
@@ -186,6 +202,26 @@ func (l *Lexer) readDigit(b byte) error {
 		} else if next == '.' && !dot {
 			buf = append(buf, next)
 			dot = true
+		} else if (next == 'e' || next == 'E') && !e {
+			buf = append(buf, next)
+			e = true
+			next, err := l.reader.ReadByte()
+			if err != nil {
+				return err
+			}
+			if next == '-' || next == '+' {
+				buf = append(buf, next)
+				next, err = l.reader.ReadByte()
+				if err != nil {
+					return err
+				}
+			}
+			if numberCheck(next) {
+				l.reader.UnreadByte()
+			} else {
+				return fmt.Errorf("Malformed float literal %s", l.CurrentPosition())
+			}
+
 		} else if unicode.IsSpace(rune(next)) || !identCheck(next) {
 			l.reader.UnreadByte()
 			l.col--

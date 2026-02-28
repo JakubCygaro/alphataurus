@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"math/rand"
+	// "math/rand"
 	"os"
 	"strings"
 
@@ -12,18 +12,21 @@ import (
 )
 
 const assembly = `
-mov r0, 10
-add UNSIGNED r0, 10
+mov r0, 1.0
+mov r1, 2.0
+sub FLOAT r0, r1
 `
 
 func main() {
-	r := 0
-	reg_v := rand.Float64()
-	reg_sub := rand.Float64()
-	assembly := fmt.Sprintf(`
-	mov r%v, %v
-	sub FLOAT r%v, %v
-	`, r, reg_v, r, reg_sub)
+	// rA := 0
+	// rB := 1
+	// reg_v := rand.Float64()
+	// // reg_sub := rand.Float64()
+	// assembly := fmt.Sprintf(`
+	// mov r%v, %v
+	// mov r%v, -%v
+	// sub FLOAT r%v, r%v
+	// `, rA, reg_v, rB, reg_v, rA, rB)
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
 	bytecode, iCount, err := asm.EmitBytecode()
 	if err != nil {
@@ -44,7 +47,7 @@ func main() {
 		fmt.Println(err)
 	}
 	res, _ := mach.GetGpRXAsFloat64(vm.R0_IDX)
-	fmt.Println(reg_v, reg_sub)
+	// fmt.Println(, 1)
 	fmt.Printf("r0 = %v\n", res)
 	// mov := opCodes[vm.OP_MOVIR]
 	// //load in the loop register

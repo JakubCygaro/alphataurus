@@ -67,13 +67,19 @@ func (p *Parser) CurrentInst() Instruction {
 }
 func (p *Parser) ParseNext() (bool, error) {
 	var err error = nil
-	err = p.lexer.ReadNextToken()
-	if err != nil {
-		return false, err
-	}
-	start := p.lexer.CurrentToken()
-	if start.Ty == TOKEN_TEOF {
-		return false, nil
+	var start Token
+	for {
+		err = p.lexer.ReadNextToken()
+		if err != nil {
+			return false, err
+		}
+		start = p.lexer.CurrentToken()
+		if start.Ty == TOKEN_TEOF {
+			return false, nil
+		}
+		if start.Ty != TOKEN_TNEWLINE {
+			break
+		}
 	}
 	switch start.Ty {
 	case TOKEN_TIDENT:
@@ -81,7 +87,10 @@ func (p *Parser) ParseNext() (bool, error) {
 	default:
 		return false, fmt.Errorf("Unimplemented instruction %s", p.lexer.CurrentPosition())
 	}
-
+	err = p.lexer.ReadNextToken()
+	if p.lexer.CurrentToken().Ty != TOKEN_TNEWLINE && p.lexer.CurrentToken().Ty != TOKEN_TEOF {
+		return false, fmt.Errorf("Extra tokens on line %s", p.lexer.CurrentPosition())
+	}
 	return true, err
 }
 func (p *Parser) parseStartIdent(t Token) error {
@@ -93,6 +102,8 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseAddOrSub(ARTH_TADD)
 	case "sub":
 		return p.parseAddOrSub(ARTH_TSUB)
+	case "div":
+		return p.parseDivOrMul(ARTH_TDIV)
 	case "inc":
 		return p.parseInc()
 	}
@@ -254,6 +265,49 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		}
 	default:
 		return fmt.Errorf("Second operand to add instruction must be a valid register or an immediate value %s", p.lexer.CurrentPosition())
+	}
+	return nil
+}
+func (p *Parser) parseDivOrMul(arthTy int) error {
+	err := p.lexer.ReadNextToken()
+	if err != nil {
+		return err
+	}
+	op1 := p.lexer.CurrentToken()
+	valTy := ARTH_TUNSIGNED
+	switch op1.Ty {
+	case TOKEN_TSIGNED:
+		valTy = ARTH_TSIGNED
+	case TOKEN_TUNSIGNED:
+		valTy = ARTH_TUNSIGNED
+	case TOKEN_TFLOAT:
+		valTy = ARTH_TFLOAT
+	case TOKEN_TNEWLINE:
+		p.lexer.UnreadToken()
+	case TOKEN_TEOF:
+		p.lexer.UnreadToken()
+	default:
+		var opName string
+		switch arthTy {
+		case ARTH_TDIV:
+			opName = "div"
+		case ARTH_TMUL:
+			opName = "mul"
+		}
+		return fmt.Errorf("Invalid %s instruction %s", opName, p.lexer.CurrentPosition())
+	}
+	var ty int
+	switch arthTy {
+	case ARTH_TDIV:
+		ty = INST_TDIVRR
+	case ARTH_TMUL:
+		ty = INST_TMULRR
+	}
+	p.currentInst = Instruction{
+		Ty: ty,
+		Data: InstArthData{
+			Ty: valTy,
+		},
 	}
 	return nil
 }
