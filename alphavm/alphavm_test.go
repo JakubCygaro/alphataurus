@@ -247,6 +247,52 @@ func TestAddIR4(t *testing.T) {
 }
 func TestSubIR1(t *testing.T) {
 	r := byte(rand.Int() % vm.GP_REG_MAX)
+	reg_v := (rand.Uint64())
+	reg_sub := (rand.Uint64())
+	asm := fmt.Sprintf(`
+	mov r%v, %v
+	sub UNSIGNED r%v, %v
+	`, r, reg_v, r, reg_sub)
+
+	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(asm)))
+	mach := vm.CreateVmState(16)
+	code, _, err := asmblr.EmitBytecode()
+	if err != nil {
+		t.Error(err)
+	}
+	err = mach.Execute(code)
+	if err != nil {
+		t.Error(err)
+	}
+	if v, _ := mach.GetGpRXAsUint64(r); v != reg_v-reg_sub {
+		t.Errorf("r%v value not what was desired (%v != %v)", r, v, reg_v-reg_sub)
+	}
+}
+func TestSubIR2(t *testing.T) {
+	r := byte(rand.Int() % vm.GP_REG_MAX)
+	reg_v := int64(rand.Uint64())
+	reg_sub := int64(rand.Uint64())
+	asm := fmt.Sprintf(`
+	mov r%v, %v
+	sub UNSIGNED r%v, %v
+	`, r, reg_v, r, reg_sub)
+
+	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(asm)))
+	mach := vm.CreateVmState(16)
+	code, _, err := asmblr.EmitBytecode()
+	if err != nil {
+		t.Error(err)
+	}
+	err = mach.Execute(code)
+	if err != nil {
+		t.Error(err)
+	}
+	if v, _ := mach.GetGpRXAsInt64(r); v != reg_v-reg_sub {
+		t.Errorf("r%v value not what was desired (%v != %v)", r, v, reg_v-reg_sub)
+	}
+}
+func TestSubIR3(t *testing.T) {
+	r := byte(rand.Int() % vm.GP_REG_MAX)
 	reg_v := rand.Float64()
 	reg_sub := rand.Float64()
 	asm := fmt.Sprintf(`
