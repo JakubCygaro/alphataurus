@@ -25,7 +25,9 @@ func assembleAndExecute(source string) (vm.VmState, error) {
 	}
 	return mach, nil
 }
+
 type ExpMap map[byte]uint64
+
 func expectGpRegisters(t *testing.T, asm string, mach *vm.VmState, regStates ExpMap) {
 	err := false
 	for k, v := range regStates {
@@ -102,7 +104,7 @@ func TestAddIR2(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		r: uint64(reg_v+reg_add),
+		r: uint64(reg_v + reg_add),
 	})
 }
 func TestAddIR3(t *testing.T) {
@@ -119,7 +121,7 @@ func TestAddIR3(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		r: uint64(reg_v+reg_add),
+		r: uint64(reg_v + reg_add),
 	})
 }
 func TestAddIR4(t *testing.T) {
@@ -136,7 +138,7 @@ func TestAddIR4(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		r: math.Float64bits(reg_v+reg_add),
+		r: math.Float64bits(reg_v + reg_add),
 	})
 }
 func TestSubIR1(t *testing.T) {
@@ -153,7 +155,7 @@ func TestSubIR1(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		r: uint64(reg_v-reg_sub),
+		r: uint64(reg_v - reg_sub),
 	})
 }
 func TestSubIR2(t *testing.T) {
@@ -170,7 +172,7 @@ func TestSubIR2(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		r: uint64(reg_v-reg_sub),
+		r: uint64(reg_v - reg_sub),
 	})
 }
 func TestSubIR3(t *testing.T) {
@@ -187,7 +189,7 @@ func TestSubIR3(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		r: math.Float64bits(reg_v-reg_sub),
+		r: math.Float64bits(reg_v - reg_sub),
 	})
 }
 func TestAddRR1(t *testing.T) {
@@ -205,7 +207,7 @@ func TestAddRR1(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		rA: rAV+rBV,
+		rA: rAV + rBV,
 		rB: rBV,
 	})
 }
@@ -224,7 +226,7 @@ func TestAddRR2(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		rA: uint64(rAV+rBV),
+		rA: uint64(rAV + rBV),
 		rB: uint64(rBV),
 	})
 }
@@ -243,7 +245,7 @@ func TestAddRR3(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		rA: math.Float64bits(rAV+rBV),
+		rA: math.Float64bits(rAV + rBV),
 		rB: math.Float64bits(rBV),
 	})
 }
@@ -262,7 +264,7 @@ func TestSubRR1(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		rA: uint64(rAV-rBV),
+		rA: uint64(rAV - rBV),
 		rB: uint64(rBV),
 	})
 }
@@ -281,7 +283,7 @@ func TestSubRR2(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		rA: uint64(rAV-rBV),
+		rA: uint64(rAV - rBV),
 		rB: uint64(rBV),
 	})
 }
@@ -300,7 +302,7 @@ func TestSubRR3(t *testing.T) {
 		t.Error(err)
 	}
 	expectGpRegisters(t, asm, &mach, ExpMap{
-		rA: math.Float64bits(rAV-rBV),
+		rA: math.Float64bits(rAV - rBV),
 		rB: math.Float64bits(rBV),
 	})
 }
@@ -319,8 +321,8 @@ func TestDivRR1(t *testing.T) {
 	expectGpRegisters(t, asm, &mach, ExpMap{
 		vm.R0_IDX: rAV,
 		vm.R1_IDX: rBV,
-		vm.R2_IDX: rAV/rBV,
-		vm.R3_IDX: rAV%rBV,
+		vm.R2_IDX: rAV / rBV,
+		vm.R3_IDX: rAV % rBV,
 	})
 }
 func TestDivRR2(t *testing.T) {
@@ -338,8 +340,8 @@ func TestDivRR2(t *testing.T) {
 	expectGpRegisters(t, asm, &mach, ExpMap{
 		vm.R0_IDX: uint64(rAV),
 		vm.R1_IDX: uint64(rBV),
-		vm.R2_IDX: uint64(rAV/rBV),
-		vm.R3_IDX: uint64(rAV%rBV),
+		vm.R2_IDX: uint64(rAV / rBV),
+		vm.R3_IDX: uint64(rAV % rBV),
 	})
 }
 func TestDivRR3(t *testing.T) {
@@ -357,7 +359,7 @@ func TestDivRR3(t *testing.T) {
 	expectGpRegisters(t, asm, &mach, ExpMap{
 		vm.R0_IDX: math.Float64bits(rAV),
 		vm.R1_IDX: math.Float64bits(rBV),
-		vm.R2_IDX: math.Float64bits(rAV/rBV),
+		vm.R2_IDX: math.Float64bits(rAV / rBV),
 		vm.R3_IDX: 0,
 	})
 }
@@ -376,7 +378,7 @@ func TestMulRR1(t *testing.T) {
 	expectGpRegisters(t, asm, &mach, ExpMap{
 		vm.R0_IDX: rAV,
 		vm.R1_IDX: rBV,
-		vm.R2_IDX: rAV*rBV,
+		vm.R2_IDX: rAV * rBV,
 	})
 }
 func TestMulRR2(t *testing.T) {
@@ -394,7 +396,7 @@ func TestMulRR2(t *testing.T) {
 	expectGpRegisters(t, asm, &mach, ExpMap{
 		vm.R0_IDX: uint64(rAV),
 		vm.R1_IDX: uint64(rBV),
-		vm.R2_IDX: uint64(rAV*rBV),
+		vm.R2_IDX: uint64(rAV * rBV),
 	})
 }
 func TestMulRR3(t *testing.T) {
@@ -412,7 +414,7 @@ func TestMulRR3(t *testing.T) {
 	expectGpRegisters(t, asm, &mach, ExpMap{
 		vm.R0_IDX: math.Float64bits(rAV),
 		vm.R1_IDX: math.Float64bits(rBV),
-		vm.R2_IDX: math.Float64bits(rAV*rBV),
+		vm.R2_IDX: math.Float64bits(rAV * rBV),
 	})
 }
 func TestIncAndDec1(t *testing.T) {
@@ -437,4 +439,44 @@ func TestIncAndDec1(t *testing.T) {
 		rA: rAV + incrT - decrT,
 	})
 
+}
+func TestCmp1(t *testing.T) {
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	rAV := uint64(rand.Float64() * 1000)
+	rBV := rAV + 1
+	asm := fmt.Sprintf(`
+		mov r%v, %v
+		cmp r%v, %v
+		mov r0, 1
+		cmp r0, 3
+	`, rA, rAV, rA, rBV)
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	flags := mach.GetFlags()
+	if !flags.Sf {
+		t.Errorf("Sign flag was not set")
+		t.Errorf("%+v", flags)
+	}
+}
+func TestJmpG1(t *testing.T) {
+	asm := `
+		mov r0, 10
+		mov r1, 0
+		inc r1
+		dec r0
+		cmp r0, 0
+		jg 1
+	`
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	expectGpRegisters(t, asm, &mach, ExpMap{
+		vm.R1_IDX: 10,
+		vm.R0_IDX: 0,
+	})
 }

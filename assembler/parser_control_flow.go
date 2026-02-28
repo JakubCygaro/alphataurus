@@ -49,7 +49,7 @@ func (p *Parser) parseCmp() error {
 		p.currentInst = Instruction{
 			Ty: INST_TCMPRR,
 			Data: InstCmpData{
-				Ty: ty,
+				Ty:  ty,
 				Min: op1.val.(int),
 				Sub: op2.val.(int),
 			},
@@ -58,7 +58,7 @@ func (p *Parser) parseCmp() error {
 		p.currentInst = Instruction{
 			Ty: INST_TCMPIR,
 			Data: InstCmpData{
-				Ty: ty,
+				Ty:  ty,
 				Min: op1.val.(int),
 				Imm: op2.val.(uint64),
 			},
@@ -67,12 +67,28 @@ func (p *Parser) parseCmp() error {
 		p.currentInst = Instruction{
 			Ty: INST_TCMPIR,
 			Data: InstCmpData{
-				Ty: ty,
+				Ty:  ty,
 				Min: op1.val.(int),
 				Imm: op2.val.(uint64),
 			},
 		}
 	}
 
+	return nil
+}
+func (p *Parser) parseJmpG() error {
+	if err := p.lexer.ReadNextToken(); err != nil {
+		return err
+	}
+	addr := p.lexer.CurrentToken()
+	if addr.Ty != TOKEN_TINTEGER_LIT {
+		return fmt.Errorf("jg instruction requires a valid address as a parameter %s", p.lexer.CurrentPosition())
+	}
+	p.currentInst = Instruction{
+		Ty: INST_TJMPG,
+		Data: InstJmpData{
+			Address: addr.val.(uint64),
+		},
+	}
 	return nil
 }

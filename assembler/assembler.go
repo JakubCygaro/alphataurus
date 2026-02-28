@@ -52,6 +52,8 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitCmpRR(inst.Data.(InstCmpData), &bytecode)
 		case INST_TCMPIR:
 			err = a.emitCmpIR(inst.Data.(InstCmpData), &bytecode)
+		case INST_TJMPG:
+			err = a.emitJmpG(inst.Data.(InstJmpData), &bytecode)
 		default:
 			pos := a.parser.lexer.CurrentPosition()
 			return bytecode, 0, fmt.Errorf("Instruction (%d) WIP %s", INST_TMOVIR, pos)
@@ -146,9 +148,15 @@ func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
 	// subtrahend |= (lastByte & 0xf0) >> 4
 	// minuend |= (lastByte & 0x0f)
-	regs := (0b00001111 & (byte(data.Ty) + vm.GP_REG_MAX)) << 4
+	regs := (0b00001111 & (byte(data.Ty) + 0b00001000)) << 4
 	regs |= 0b00001111 & byte(data.Min)
 	(*out)[len(*out)-4] = regs
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
+	return nil
+}
+func (a *Assembler) emitJmpG(data InstJmpData, out *[]byte) error {
+	cmp := a.opCodes[vm.OP_JMPG]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Address))
 	return nil
 }

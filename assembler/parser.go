@@ -20,6 +20,7 @@ const (
 	INST_TDECR
 	INST_TCMPRR
 	INST_TCMPIR
+	INST_TJMPG
 )
 
 type InstMovData struct {
@@ -52,6 +53,9 @@ type InstCmpData struct {
 	Ty       int
 	Sub, Min int
 	Imm      uint64
+}
+type InstJmpData struct {
+	Address uint64
 }
 type Instruction struct {
 	Ty   int
@@ -118,6 +122,8 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseDec()
 	case "cmp":
 		return p.parseCmp()
+	case "jg":
+		return p.parseJmpG()
 	}
 	return fmt.Errorf("Unknown identifier '%s' %s", ident, p.lexer.CurrentPosition())
 }

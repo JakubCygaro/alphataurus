@@ -61,7 +61,7 @@ func (state *VmState) incIp() {
 }
 
 type Flags struct {
-	cf, pf, zf, sf, of bool
+	Cf, Pf, Zf, Sf, Of bool
 }
 
 func CreateVmState(stackSize uint64) VmState {
@@ -101,6 +101,14 @@ func (vm *VmState) GetGpRXAs(register byte, ty byte, out *any) error {
 		return fmt.Errorf("Unsupported type for register value conversion")
 	}
 	return nil
+}
+func (vm *VmState) GetFlags() Flags {
+	return vm.flags
+}
+func (vm *VmState) GetRegisters() []uint64 {
+	regs := make([]uint64, len(vm.regs.r))
+	copy(regs[:], vm.regs.r[:])
+	return regs
 }
 func (vm *VmState) GetGpRXAsUint64(register byte) (uint64, error) {
 	val, err := vm.GetGpRX(register)
@@ -311,13 +319,13 @@ func (state *VmState) jmp(param []byte) {
 }
 func (state *VmState) jmpE(param []byte) {
 	dest := binary.BigEndian.Uint64(param)
-	if state.flags.zf {
+	if state.flags.Zf {
 		state.setIp(dest)
 	}
 }
 func (state *VmState) jmpG(param []byte) {
 	dest := binary.BigEndian.Uint64(param)
-	if !state.flags.zf && !state.flags.sf {
+	if !state.flags.Zf && !state.flags.Sf {
 		state.setIp(dest)
 	}
 }
@@ -346,11 +354,12 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 	subValues(minV, subV, ty, &diff)
 
 	if ty == TY_FLOAT64 {
-		state.flags.sf = math.Float64frombits(diff) <= 0.0
-		state.flags.zf = math.Float64frombits(diff) == 0.0
+		fmt.Printf("diff: %v\n", math.Float64frombits(diff))
+		state.flags.Sf = math.Float64frombits(diff) <= 0.0
+		state.flags.Zf = math.Float64frombits(diff) == 0.0
 	} else {
-		state.flags.sf = int64(diff) <= 0
-		state.flags.zf = int64(diff) == 0
+		state.flags.Sf = int64(diff) <= 0
+		state.flags.Zf = int64(diff) == 0
 	}
 
 	return nil
