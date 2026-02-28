@@ -15,6 +15,7 @@ const assembly = `
 mov r0, 1.0
 mov r1, 2.0
 sub FLOAT r0, r1
+cmp FLOAT r0, r1
 `
 
 func main() {

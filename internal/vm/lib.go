@@ -77,7 +77,7 @@ func CreateVmState(stackSize uint64) VmState {
 
 // get X general purpose register value as uint64
 func (vm *VmState) GetGpRX(register byte) (uint64, error) {
-	if !isGpReg(register) {
+	if !IsGpReg(register) {
 		return 0, fmt.Errorf("Disallowed register index %d", register)
 	}
 	return vm.regs.r[register], nil
@@ -189,7 +189,7 @@ func (vm *VmState) Execute(bytecode []byte) error {
 
 	return nil
 }
-func isGpReg(b byte) bool {
+func IsGpReg(b byte) bool {
 	return b <= GP_REG_MAX
 }
 func isMovRRAllowed(b byte) bool {
@@ -213,7 +213,7 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 	// type of value
 	ty |= (lastByte & 0xf0) >> 4
 	dest |= (lastByte & 0x0f)
-	if !isGpReg(dest) {
+	if !IsGpReg(dest) {
 		return fmt.Errorf("Bad MOVIR opcode, disallowed destination register %04b", dest)
 	}
 	switch ty {
@@ -233,7 +233,7 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 }
 func (state *VmState) incR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
-	if !isGpReg(byte(reg)) {
+	if !IsGpReg(byte(reg)) {
 		return fmt.Errorf("Bad INCR parameter, disallowed register 0x%x", reg)
 	}
 	state.regs.r[reg]++
@@ -241,7 +241,7 @@ func (state *VmState) incR(param []byte) error {
 }
 func (state *VmState) decR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
-	if !isGpReg(byte(reg)) {
+	if !IsGpReg(byte(reg)) {
 		return fmt.Errorf("Bad DECR parameter, disallowed register 0x%x", reg)
 	}
 	state.regs.r[reg]--
@@ -250,7 +250,7 @@ func (state *VmState) decR(param []byte) error {
 func arthIRGetParameters(lastByte byte) (reg, ty byte, err error) {
 	ty |= (lastByte & 0xf0) >> 4
 	reg |= (lastByte & 0x0f)
-	if !isGpReg(reg) && reg != BP_IDX && reg != SP_IDX {
+	if !IsGpReg(reg) && reg != BP_IDX && reg != SP_IDX {
 		return reg, ty, fmt.Errorf("Bad ADDIR parameter, disallowed target register 0x%x", reg)
 	}
 	return reg, ty, nil
@@ -259,10 +259,10 @@ func arthRRGetParameters(param []byte) (src, dest, ty byte, err error) {
 	src = param[0]
 	dest = param[1]
 	ty = param[3]
-	if !isGpReg(src) {
+	if !IsGpReg(src) {
 		return 0, 0, 0, fmt.Errorf("Bad opcode, disallowed source register %04b", dest)
 	}
-	if !isGpReg(dest) {
+	if !IsGpReg(dest) {
 		return 0, 0, 0, fmt.Errorf("Bad opcode, disallowed destination register %04b", dest)
 	}
 	return src, dest, ty, nil
@@ -323,21 +323,35 @@ func (state *VmState) jmpG(param []byte) {
 }
 func (state *VmState) cmp(lastByte byte, param []byte) error {
 	var subtrahend, minuend byte
-	var diff int64
 	subtrahend |= (lastByte & 0xf0) >> 4
 	minuend |= (lastByte & 0x0f)
-	if !isGpReg(minuend) {
+	if !IsGpReg(minuend) {
 		return fmt.Errorf("Bad CMP instruction, minuend was not a valid register 0x%x", minuend)
 	}
-	switch {
-	// if subtrahend is not a valid gp reg, then this is an immediate value cmp
-	case !isGpReg(subtrahend):
-		imm := int64(binary.BigEndian.Uint64(param))
-		diff = int64(state.regs.r[minuend]) - imm
-	default:
-		diff = int64(state.regs.r[minuend]) - int64(state.regs.r[subtrahend])
+	var subV, minV uint64
+	minV = state.regs.r[minuend]
+
+	var ty byte
+	if !IsGpReg(subtrahend) {
+		// in this case the subtrahend is an immediate value
+		// and the type of the operation is determined by
+		// subtrahend - GP_REG_MAX
+		ty = subtrahend - GP_REG_MAX
+		subV = binary.BigEndian.Uint64(param)
+	} else {
+		ty = param[0]
+		subV = state.regs.r[subtrahend]
 	}
-	state.flags.sf = diff <= 0
-	state.flags.zf = diff == 0
+	var diff uint64
+	subValues(minV, subV, ty, &diff)
+
+	if ty == TY_FLOAT64 {
+		state.flags.sf = math.Float64frombits(diff) <= 0.0
+		state.flags.zf = math.Float64frombits(diff) == 0.0
+	} else {
+		state.flags.sf = int64(diff) <= 0
+		state.flags.zf = int64(diff) == 0
+	}
+
 	return nil
 }

@@ -180,7 +180,7 @@ func (l *Lexer) ReadNextToken() error {
 			}
 		}
 	default:
-		return fmt.Errorf("Unrecognized character %s", l.CurrentPosition())
+		return fmt.Errorf("Unrecognized character `%c` %s", b, l.CurrentPosition())
 	}
 	return nil
 }

@@ -45,7 +45,13 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 		case INST_TSUBIR:
 			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
 		case INST_TINCR:
-			err = a.emitInc(inst.Data.(InstIncData), &bytecode)
+			err = a.emitInc(inst.Data.(InstIncDecData), &bytecode)
+		case INST_TDECR:
+			err = a.emitDec(inst.Data.(InstIncDecData), &bytecode)
+		case INST_TCMPRR:
+			err = a.emitCmpRR(inst.Data.(InstCmpData), &bytecode)
+		case INST_TCMPIR:
+			err = a.emitCmpIR(inst.Data.(InstCmpData), &bytecode)
 		default:
 			pos := a.parser.lexer.CurrentPosition()
 			return bytecode, 0, fmt.Errorf("Instruction (%d) WIP %s", INST_TMOVIR, pos)
@@ -112,9 +118,37 @@ func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitInc(data InstIncData, out *[]byte) error {
+func (a *Assembler) emitInc(data InstIncDecData, out *[]byte) error {
 	inc := a.opCodes[vm.OP_INCR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(inc))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
+	return nil
+}
+func (a *Assembler) emitDec(data InstIncDecData, out *[]byte) error {
+	dec := a.opCodes[vm.OP_DECR]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(dec))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
+	return nil
+}
+func (a *Assembler) emitCmpRR(data InstCmpData, out *[]byte) error {
+	cmp := a.opCodes[vm.OP_CMP]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
+	// subtrahend |= (lastByte & 0xf0) >> 4
+	// minuend |= (lastByte & 0x0f)
+	regs := (0b00001111 & byte(data.Sub)) << 4
+	regs |= 0b00001111 & byte(data.Min)
+	(*out)[len(*out)-4] = regs
+	*out = append(*out, byte(data.Ty), 0, 0, 0, 0, 0, 0, 0)
+	return nil
+}
+func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
+	cmp := a.opCodes[vm.OP_CMP]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
+	// subtrahend |= (lastByte & 0xf0) >> 4
+	// minuend |= (lastByte & 0x0f)
+	regs := (0b00001111 & (byte(data.Ty) + vm.GP_REG_MAX)) << 4
+	regs |= 0b00001111 & byte(data.Min)
+	(*out)[len(*out)-4] = regs
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }

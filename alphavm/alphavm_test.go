@@ -415,3 +415,26 @@ func TestMulRR3(t *testing.T) {
 		vm.R2_IDX: math.Float64bits(rAV*rBV),
 	})
 }
+func TestIncAndDec1(t *testing.T) {
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	rAV := uint64(rand.Float64() * 1000)
+	decrT, incrT := uint64(rand.Float64()*10), uint64(rand.Float64()*10)
+	asm := fmt.Sprintf(`
+	mov r%v, %v
+	`, rA, rAV)
+	for range incrT {
+		asm = fmt.Sprintf("%s\ninc r%v", asm, rA)
+	}
+	for range decrT {
+		asm = fmt.Sprintf("%s\ndec r%v", asm, rA)
+	}
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	expectGpRegisters(t, asm, &mach, ExpMap{
+		rA: rAV + incrT - decrT,
+	})
+
+}
