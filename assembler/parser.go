@@ -104,6 +104,8 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseAddOrSub(ARTH_TSUB)
 	case "div":
 		return p.parseDivOrMul(ARTH_TDIV)
+	case "mul":
+		return p.parseDivOrMul(ARTH_TMUL)
 	case "inc":
 		return p.parseInc()
 	}
@@ -324,7 +326,7 @@ func (p *Parser) parseInc() error {
 		return fmt.Errorf("The operand to the inc instruction must be a valid register %s", p.lexer.CurrentPosition())
 	}
 	p.currentInst = Instruction{
-		Ty: INST_TADDRR,
+		Ty: INST_TINCR,
 		Data: InstIncData{
 			Reg: op1.val.(int),
 		},

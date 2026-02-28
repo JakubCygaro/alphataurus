@@ -361,3 +361,57 @@ func TestDivRR3(t *testing.T) {
 		vm.R3_IDX: 0,
 	})
 }
+func TestMulRR1(t *testing.T) {
+	rAV, rBV := rand.Uint64()/1000, rand.Uint64()/1000
+	asm := fmt.Sprintf(`
+	mov r0, %v
+	mov r1, %v
+	mul UNSIGNED
+	`, rAV, rBV)
+
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+	}
+	expectGpRegisters(t, asm, &mach, ExpMap{
+		vm.R0_IDX: rAV,
+		vm.R1_IDX: rBV,
+		vm.R2_IDX: rAV*rBV,
+	})
+}
+func TestMulRR2(t *testing.T) {
+	rAV, rBV := rand.Int()/1000, rand.Int()/1000
+	asm := fmt.Sprintf(`
+	mov r0, %v
+	mov r1, %v
+	mul SIGNED
+	`, rAV, rBV)
+
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+	}
+	expectGpRegisters(t, asm, &mach, ExpMap{
+		vm.R0_IDX: uint64(rAV),
+		vm.R1_IDX: uint64(rBV),
+		vm.R2_IDX: uint64(rAV*rBV),
+	})
+}
+func TestMulRR3(t *testing.T) {
+	rAV, rBV := rand.Float64()/1000, rand.Float64()/1000
+	asm := fmt.Sprintf(`
+	mov r0, %v
+	mov r1, %v
+	mul FLOAT
+	`, rAV, rBV)
+
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+	}
+	expectGpRegisters(t, asm, &mach, ExpMap{
+		vm.R0_IDX: math.Float64bits(rAV),
+		vm.R1_IDX: math.Float64bits(rBV),
+		vm.R2_IDX: math.Float64bits(rAV*rBV),
+	})
+}
