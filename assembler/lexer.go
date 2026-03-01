@@ -21,6 +21,8 @@ const (
 	TOKEN_TFLOAT
 	TOKEN_TMINUS
 	TOKEN_TDOT
+	TOKEN_TOPENBRACKET
+	TOKEN_TCLOSEDBRACKET
 	TOKEN_TNEWLINE
 	TOKEN_TEOF
 )
@@ -99,6 +101,14 @@ func (l *Lexer) ReadNextToken() error {
 		}
 	}
 	switch {
+	case b == '[':
+		l.currentToken = Token{
+			Ty: TOKEN_TOPENBRACKET,
+		}
+	case b == ']':
+		l.currentToken = Token{
+			Ty: TOKEN_TCLOSEDBRACKET,
+		}
 	case b == '\n':
 		l.currentToken = Token{
 			Ty: TOKEN_TNEWLINE,
