@@ -76,12 +76,12 @@ func (p *Parser) parseCmp() error {
 
 	return nil
 }
-func (p *Parser) parseJmpG() error {
+func (p *Parser) parseJmp(ty int) error {
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
 	inst := Instruction{
-		Ty: INST_TJMPG,
+		Ty: ty,
 	}
 	addr := p.lexer.CurrentToken()
 	switch addr.Ty {

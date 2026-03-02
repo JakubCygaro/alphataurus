@@ -18,7 +18,10 @@ const assembly = `
 	inc r1
 	dec r0
 	cmp r0, 0
+	jmp L1
 	jg L0
+	L1:
+	mov r5, 69
 `
 
 func main() {

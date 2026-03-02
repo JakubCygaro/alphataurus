@@ -115,7 +115,7 @@ const (
 	OP_JMP   // jump to instruction
 	OP_JMPE  // jump if equal
 	OP_JMPZ  // jump if zero
-	OP_JMNE  // jump if not equal
+	OP_JMPNE  // jump if not equal
 	OP_JMPNZ // jump of not zero
 	OP_JMPG  // jump if greater
 	OP_JMPGE // jump if greater or equal

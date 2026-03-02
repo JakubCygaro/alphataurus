@@ -20,7 +20,15 @@ const (
 	INST_TDECR
 	INST_TCMPRR
 	INST_TCMPIR
+	INST_TJMP
+	INST_TJMPE
+	INST_TJMPZ
+	INST_TJMPNE
+	INST_TJMPNZ
 	INST_TJMPG
+	INST_TJMPGE
+	INST_TJMPL
+	INST_TJMPLE
 	INST_TLABEL
 )
 
@@ -132,8 +140,24 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseDec()
 	case "cmp":
 		return p.parseCmp()
+	case "jmp":
+		return p.parseJmp(INST_TJMP)
+	case "je":
+		return p.parseJmp(INST_TJMPE)
+	case "jne":
+		return p.parseJmp(INST_TJMPNE)
+	case "jz":
+		return p.parseJmp(INST_TJMPZ)
+	case "jnz":
+		return p.parseJmp(INST_TJMPNZ)
 	case "jg":
-		return p.parseJmpG()
+		return p.parseJmp(INST_TJMPG)
+	case "jge":
+		return p.parseJmp(INST_TJMPGE)
+	case "jl":
+		return p.parseJmp(INST_TJMPL)
+	case "jle":
+		return p.parseJmp(INST_TJMPLE)
 	default:
 		pos := p.lexer.CurrentPosition()
 		if _, ok := p.lexer.Expect(TOKEN_TCOLON); ok {

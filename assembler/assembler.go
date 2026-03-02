@@ -63,8 +63,24 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitCmpRR(inst.Data.(InstCmpData), &bytecode)
 		case INST_TCMPIR:
 			err = a.emitCmpIR(inst.Data.(InstCmpData), &bytecode)
+		case INST_TJMP:
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+		case INST_TJMPE:
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+		case INST_TJMPNE:
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+		case INST_TJMPZ:
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+		case INST_TJMPNZ:
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
 		case INST_TJMPG:
-			err = a.emitJmpG(inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+		case INST_TJMPGE:
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+		case INST_TJMPL:
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+		case INST_TJMPLE:
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
 		case INST_TLABEL:
 			err = a.declareLabel(inst.Data.(InstLabData), &bytecode)
 		default:
@@ -171,10 +187,16 @@ func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitJmpG(data InstJmpData, out *[]byte) error {
-	jmpg := a.opCodes[vm.OP_JMPG]
+func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
+	var opcode vm.OpCodeVal
+	switch ty {
+	case INST_TJMP:
+		opcode = a.opCodes[vm.OP_JMP]
+	case INST_TJMPG:
+		opcode = a.opCodes[vm.OP_JMPG]
+	}
 	opPos := len(*out)
-	*out = binary.BigEndian.AppendUint32(*out, uint32(jmpg))
+	*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
 	if addr, ok := data.Address.(uint64); ok {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
 	} else if lab, ok := data.Address.(string); ok {
@@ -185,7 +207,7 @@ func (a *Assembler) emitJmpG(data InstJmpData, out *[]byte) error {
 			*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 		}
 	} else {
-		return fmt.Errorf("Jg instruction bad internal assembler data")
+		return fmt.Errorf("Jump instruction bad internal assembler data")
 	}
 	return nil
 }
@@ -206,7 +228,7 @@ func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 		if !ok {
 			return fmt.Errorf("Could not resolve label '%s'", destLabel)
 		}
-		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:], label.pos)
+		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:], label.pos/vm.INSTRUCTION_SIZE)
 	}
 	return nil
 }

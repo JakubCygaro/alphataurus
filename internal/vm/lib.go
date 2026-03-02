@@ -140,8 +140,6 @@ func (vm *VmState) ClearState() {
 func (vm *VmState) Execute(bytecode []byte) error {
 	codeSize := len(bytecode) / INSTRUCTION_SIZE
 	vm.setIp(0)
-	// fmt.Println("STARTING REGISTER STATE")
-	// fmt.Println(vm.regs.r)
 	for ; vm.GetIp() < uint64(codeSize); vm.incIp() {
 		var err error = nil
 		instAddr := vm.GetIp() * INSTRUCTION_SIZE
@@ -151,7 +149,6 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		if err != nil {
 			return err
 		}
-		// fmt.Printf("opcode: %d\n", opcode)
 		switch opcode {
 		case OP_MOVRR:
 			err = vm.movRR(opCodeBytes[0])
@@ -177,8 +174,20 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			vm.jmp(opCodeBytes[0], param)
 		case OP_JMPE:
 			vm.jmpE(opCodeBytes[0], param)
+		case OP_JMPNE:
+			vm.jmpNE(opCodeBytes[0], param)
+		case OP_JMPZ:
+			vm.jmpZ(opCodeBytes[0], param)
+		case OP_JMPNZ:
+			vm.jmpNZ(opCodeBytes[0], param)
 		case OP_JMPG:
 			vm.jmpG(opCodeBytes[0], param)
+		case OP_JMPGE:
+			vm.jmpGE(opCodeBytes[0], param)
+		case OP_JMPL:
+			vm.jmpL(opCodeBytes[0], param)
+		case OP_JMPLE:
+			vm.jmpLE(opCodeBytes[0], param)
 		case OP_CMP:
 			err = vm.cmp(opCodeBytes[0], param)
 		default:
@@ -187,14 +196,7 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		if err != nil {
 			return err
 		}
-		// fmt.Printf("ip: %d & REGSTATE\n", vm.GetIp())
-		// fmt.Println(vm.flags)
-		// fmt.Println(vm.regs.r)
 	}
-
-	// fmt.Println("ENDING REGISTER STATE")
-	// fmt.Println(vm.regs.r)
-
 	return nil
 }
 func IsGpReg(b byte) bool {
@@ -315,6 +317,7 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 }
 func (state *VmState) jmp(lastByte byte, param []byte) {
 	dest := binary.BigEndian.Uint64(param)
+	fmt.Printf("dest: %v\n", dest)
 	state.setIp(dest)
 }
 func (state *VmState) jmpE(lastByte byte, param []byte) {
@@ -322,8 +325,34 @@ func (state *VmState) jmpE(lastByte byte, param []byte) {
 		state.jmp(lastByte, param)
 	}
 }
+func (state *VmState) jmpNE(lastByte byte, param []byte) {
+	if !state.flags.Zf {
+		state.jmp(lastByte, param)
+	}
+}
+func (state *VmState) jmpZ(lastByte byte, param []byte) {
+	state.jmpE(lastByte, param)
+}
+func (state *VmState) jmpNZ(lastByte byte, param []byte) {
+	state.jmpNE(lastByte, param)
+}
 func (state *VmState) jmpG(lastByte byte, param []byte) {
 	if !state.flags.Zf && !state.flags.Sf {
+		state.jmp(lastByte, param)
+	}
+}
+func (state *VmState) jmpGE(lastByte byte, param []byte) {
+	if state.flags.Zf || !state.flags.Sf {
+		state.jmp(lastByte, param)
+	}
+}
+func (state *VmState) jmpL(lastByte byte, param []byte) {
+	if !state.flags.Zf && state.flags.Sf {
+		state.jmp(lastByte, param)
+	}
+}
+func (state *VmState) jmpLE(lastByte byte, param []byte) {
+	if state.flags.Zf || state.flags.Sf {
 		state.jmp(lastByte, param)
 	}
 }
