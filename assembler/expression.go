@@ -6,18 +6,19 @@ const (
 	EXPR_TDEREF
 )
 const (
-	ARTHEXPR_TADD = iota
-	ARTHEXPR_TSUB
-	ARTHEXPR_TMUL
-	ARTHEXPR_TDIV
+	ARTHEXPR_TADD = TOKEN_TPLUS
+	ARTHEXPR_TSUB = TOKEN_TMINUS
+	ARTHEXPR_TMUL = TOKEN_TASTERISK
+	ARTHEXPR_TDIV = TOKEN_TSLASH
 )
 const (
 	// r0
 	// sp
 	CONSTEXPR_TREG = iota
-	// 1.23
 	// 1313
-	CONSTEXPR_TLIT
+	CONSTEXPR_TILIT
+	// 1.23
+	CONSTEXPR_TFLIT
 )
 
 type Expr struct {
@@ -32,8 +33,7 @@ type ConstExpr struct {
 
 type ArthExpr struct {
 	Ty    int
-	A, B  *ArthExpr
-	Const *ConstExpr
+	A, B  *Expr
 }
 
 // [r0]

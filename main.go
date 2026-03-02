@@ -12,12 +12,9 @@ import (
 )
 
 const assembly = `
-	mov r0, 10
-	mov r1, 0
-	inc r1
-	dec r0
-	cmp r0, 0
-	jg 1
+	add r0, 100
+	mov r1, 69
+	add r0, r1
 `
 
 func main() {

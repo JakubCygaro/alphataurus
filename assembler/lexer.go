@@ -19,12 +19,21 @@ const (
 	TOKEN_TUNSIGNED
 	TOKEN_TSIGNED
 	TOKEN_TFLOAT
+	//Ops
 	TOKEN_TMINUS
-	TOKEN_TDOT
+	TOKEN_TPLUS
+	TOKEN_TASTERISK
+	TOKEN_TSLASH
+	//
+	TOKEN_TDOT = iota
 	TOKEN_TOPENBRACKET
 	TOKEN_TCLOSEDBRACKET
 	TOKEN_TNEWLINE
 	TOKEN_TEOF
+)
+const (
+	TOKEN_OPSTART = TOKEN_TMINUS
+	TOKEN_OPEND   = TOKEN_TSLASH
 )
 
 var keywords = map[string]int{
@@ -72,6 +81,13 @@ func identCheck(b byte) bool {
 		b-'a' <= 'z'-'a' ||
 		b-'A' <= 'Z'-'A'
 }
+func (l *Lexer) Expect(tokenType int) (Token, bool) {
+	l.ReadNextToken()
+	if l.currentToken.Ty != tokenType {
+		return l.currentToken, false
+	}
+	return l.currentToken, true
+}
 func (l *Lexer) UnreadToken() {
 	l.unRead = true
 }
@@ -116,6 +132,14 @@ func (l *Lexer) ReadNextToken() error {
 	case b == ',':
 		l.currentToken = Token{
 			Ty: TOKEN_TCOMMA,
+		}
+	case b == '*':
+		l.currentToken = Token{
+			Ty: TOKEN_TASTERISK,
+		}
+	case b == '/':
+		l.currentToken = Token{
+			Ty: TOKEN_TSLASH,
 		}
 	case b == '.':
 		next, err := l.reader.ReadByte()

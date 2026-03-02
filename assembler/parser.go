@@ -94,12 +94,15 @@ func (p *Parser) ParseNext() (bool, error) {
 	switch start.Ty {
 	case TOKEN_TIDENT:
 		err = p.parseStartIdent(start)
+		if err != nil {
+			return false, err
+		}
 	default:
 		return false, fmt.Errorf("Unimplemented instruction %s", p.lexer.CurrentPosition())
 	}
 	err = p.lexer.ReadNextToken()
 	if p.lexer.CurrentToken().Ty != TOKEN_TNEWLINE && p.lexer.CurrentToken().Ty != TOKEN_TEOF {
-		return false, fmt.Errorf("Extra tokens on line %s", p.lexer.CurrentPosition())
+		return false, fmt.Errorf("Extra tokens on line (%v) %s", p.lexer.CurrentToken(), p.lexer.CurrentPosition())
 	}
 	return true, err
 }

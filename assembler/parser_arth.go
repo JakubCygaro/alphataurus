@@ -7,10 +7,12 @@ import (
 )
 
 func (p *Parser) parseAddOrSub(arthTy int) error {
-	err := p.lexer.ReadNextToken()
-	if err != nil {
+	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
+	// if err != nil {
+	// 	return err
+	// }
 	op1 := p.lexer.CurrentToken()
 	valTy := ARTH_TUNSIGNED
 	if op1.Ty == TOKEN_TSIGNED || op1.Ty == TOKEN_TFLOAT || op1.Ty == TOKEN_TUNSIGNED {
@@ -22,25 +24,35 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		case TOKEN_TFLOAT:
 			valTy = ARTH_TFLOAT
 		}
-		err = p.lexer.ReadNextToken()
-		if err != nil {
-			return err
-		}
-		op1 = p.lexer.CurrentToken()
+		// err = p.lexer.ReadNextToken()
+		// if err != nil {
+		// 	return err
+		// }
+		// op1 = p.lexer.CurrentToken()
+		// p.lexer.UnreadToken()
+	} else {
+		p.lexer.UnreadToken()
 	}
-	if op1.Ty == TOKEN_TEOF {
-		return p.prematureEndError()
-	}
-	if op1.Ty != TOKEN_TREG {
+	if expr, err := p.parseExpression(0); err != nil {
+		return err
+	} else if expr.Ty != EXPR_TCONST || expr.Val.(ConstExpr).Ty != CONSTEXPR_TREG {
 		return fmt.Errorf("First operand to instruction must be a valid register %s", p.lexer.CurrentPosition())
+	} else {
+		op1.Ty = TOKEN_TREG
+		op1.val = int(expr.Val.(ConstExpr).Val)
 	}
+	// if op1.Ty == TOKEN_TEOF {
+	// 	return p.prematureEndError()
+	// }
+	// if op1.Ty != TOKEN_TREG {
+	// 	return fmt.Errorf("First operand to instruction must be a valid register %s", p.lexer.CurrentPosition())
+	// }
 	switch op1.val.(int) {
 	case vm.IP_IDX:
 		return fmt.Errorf("Disallowed source register %s", p.lexer.CurrentPosition())
 	}
 
-	err = p.lexer.ReadNextToken()
-	if err != nil {
+	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
 	comma := p.lexer.CurrentToken()
@@ -48,14 +60,29 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	if comma.Ty != TOKEN_TCOMMA {
 		return fmt.Errorf("Instruction missing a comma %s", p.lexer.CurrentPosition())
 	}
-	err = p.lexer.ReadNextToken()
-	if err != nil {
+	var op2 Token
+	if expr, err := p.parseExpression(0); err != nil {
 		return err
+	} else if expr.Ty != EXPR_TCONST {
+		return fmt.Errorf("First operand to instruction must be a valid register %s", p.lexer.CurrentPosition())
+	} else if expr.Val.(ConstExpr).Ty == CONSTEXPR_TREG {
+		op2.Ty = TOKEN_TREG
+		op2.val = int(expr.Val.(ConstExpr).Val)
+	} else if expr.Val.(ConstExpr).Ty == CONSTEXPR_TILIT {
+		op2.Ty = TOKEN_TINTEGER_LIT
+		op2.val = expr.Val.(ConstExpr).Val
+	} else if expr.Val.(ConstExpr).Ty == CONSTEXPR_TFLIT {
+		op2.Ty = TOKEN_TFLOAT_LIT
+		op2.val = expr.Val.(ConstExpr).Val
 	}
-	op2 := p.lexer.CurrentToken()
-	if op2.Ty == TOKEN_TEOF {
-		return p.prematureEndError()
-	}
+	// err = p.lexer.ReadNextToken()
+	// if err != nil {
+	// 	return err
+	// }
+	// op2 := p.lexer.CurrentToken()
+	// if op2.Ty == TOKEN_TEOF {
+	// 	return p.prematureEndError()
+	// }
 	switch op2.Ty {
 	case TOKEN_TREG:
 		switch op2.val.(int) {
