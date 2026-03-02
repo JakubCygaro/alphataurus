@@ -1,3 +1,2 @@
 - pointer dereference shit like in x86 [rax], [rbp], [rbp+1]
-- expression parsing
-- labels
+- fix expression parsing

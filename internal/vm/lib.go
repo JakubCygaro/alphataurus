@@ -317,7 +317,6 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 }
 func (state *VmState) jmp(lastByte byte, param []byte) {
 	dest := binary.BigEndian.Uint64(param)
-	fmt.Printf("dest: %v\n", dest)
 	state.setIp(dest)
 }
 func (state *VmState) jmpE(lastByte byte, param []byte) {
