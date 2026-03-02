@@ -25,7 +25,7 @@ const (
 	TOKEN_TASTERISK
 	TOKEN_TSLASH
 	//
-	TOKEN_TDOT = iota
+	TOKEN_TDOT
 	TOKEN_TOPENBRACKET
 	TOKEN_TCLOSEDBRACKET
 	TOKEN_TNEWLINE
@@ -88,6 +88,14 @@ func (l *Lexer) Expect(tokenType int) (Token, bool) {
 	}
 	return l.currentToken, true
 }
+func (l *Lexer) readByte() (byte, error) {
+	l.col++
+	return l.reader.ReadByte()
+}
+func (l *Lexer) unreadByte() error {
+	l.col--
+	return l.reader.UnreadByte()
+}
 func (l *Lexer) UnreadToken() {
 	l.unRead = true
 }
@@ -99,8 +107,7 @@ func (l *Lexer) ReadNextToken() error {
 	var b byte
 	for {
 		var err error
-		b, err = l.reader.ReadByte()
-		l.col++
+		b, err = l.readByte()
 		if err != nil {
 			l.currentToken = Token{
 				Ty: TOKEN_TEOF,
@@ -120,34 +127,50 @@ func (l *Lexer) ReadNextToken() error {
 	case b == '[':
 		l.currentToken = Token{
 			Ty: TOKEN_TOPENBRACKET,
+			val: rune(b),
 		}
 	case b == ']':
 		l.currentToken = Token{
 			Ty: TOKEN_TCLOSEDBRACKET,
+			val: rune(b),
 		}
 	case b == '\n':
 		l.currentToken = Token{
 			Ty: TOKEN_TNEWLINE,
+			val: rune(b),
 		}
 	case b == ',':
 		l.currentToken = Token{
 			Ty: TOKEN_TCOMMA,
+			val: rune(b),
+		}
+	case b == '+':
+		l.currentToken = Token{
+			Ty: TOKEN_TPLUS,
+			val: rune(b),
+		}
+	case b == '-':
+		l.currentToken = Token{
+			Ty: TOKEN_TMINUS,
+			val: rune(b),
 		}
 	case b == '*':
 		l.currentToken = Token{
 			Ty: TOKEN_TASTERISK,
+			val: rune(b),
 		}
 	case b == '/':
 		l.currentToken = Token{
 			Ty: TOKEN_TSLASH,
+			val: rune(b),
 		}
 	case b == '.':
-		next, err := l.reader.ReadByte()
+		next, err := l.readByte()
 		if err != nil {
 			return err
 		}
 		if numberCheck(next) {
-			l.reader.UnreadByte()
+			l.unreadByte()
 			err := l.readDigit(b)
 			if err != nil {
 				return err
@@ -155,24 +178,26 @@ func (l *Lexer) ReadNextToken() error {
 		} else {
 			l.currentToken = Token{
 				Ty: TOKEN_TDOT,
+				val: rune(b),
 			}
 		}
-	case b == '-':
-		next, err := l.reader.ReadByte()
-		if err != nil {
-			return err
-		}
-		if numberCheck(next) {
-			l.reader.UnreadByte()
-			err := l.readDigit(b)
-			if err != nil {
-				return err
-			}
-		} else {
-			l.currentToken = Token{
-				Ty: TOKEN_TMINUS,
-			}
-		}
+	// case b == '-':
+	// 	next, err := l.readByte()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	if numberCheck(next) {
+	// 		l.unreadByte()
+	// 		err := l.readDigit(b)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	} else {
+	// 		l.currentToken = Token{
+	// 			Ty: TOKEN_TMINUS,
+	// 			val: rune(b),
+	// 		}
+	// 	}
 	case numberCheck(b):
 		err := l.readDigit(b)
 		if err != nil {
@@ -182,19 +207,15 @@ func (l *Lexer) ReadNextToken() error {
 		buf := make([]byte, 0, 16)
 		buf = append(buf, b)
 		for {
-			next, err := l.reader.ReadByte()
-			l.col++
+			next, err := l.readByte()
 			if err != nil {
 				break
 			}
 			if identCheck(next) || numberCheck(next) {
 				buf = append(buf, next)
-			} else if unicode.IsSpace(rune(next)) || unicode.IsPunct(rune(next)) {
-				l.reader.UnreadByte()
-				l.col--
-				break
 			} else {
-				return fmt.Errorf("Malformed identifier %s", l.CurrentPosition())
+				l.unreadByte()
+				break
 			}
 		}
 		val := string(buf)
@@ -206,6 +227,7 @@ func (l *Lexer) ReadNextToken() error {
 		} else if kwd, ok := keywords[val]; ok {
 			l.currentToken = Token{
 				Ty: kwd,
+				val: val,
 			}
 		} else {
 			l.currentToken = Token{
@@ -226,8 +248,7 @@ func (l *Lexer) readDigit(b byte) error {
 	minus := b == '-'
 	e := false
 	for {
-		next, err := l.reader.ReadByte()
-		l.col++
+		next, err := l.readByte()
 		if err != nil {
 			break
 		}
@@ -239,26 +260,25 @@ func (l *Lexer) readDigit(b byte) error {
 		} else if (next == 'e' || next == 'E') && !e {
 			buf = append(buf, next)
 			e = true
-			next, err := l.reader.ReadByte()
+			next, err := l.readByte()
 			if err != nil {
 				return err
 			}
 			if next == '-' || next == '+' {
 				buf = append(buf, next)
-				next, err = l.reader.ReadByte()
+				next, err = l.readByte()
 				if err != nil {
 					return err
 				}
 			}
 			if numberCheck(next) {
-				l.reader.UnreadByte()
+				l.unreadByte()
 			} else {
 				return fmt.Errorf("Malformed float literal %s", l.CurrentPosition())
 			}
 
 		} else if unicode.IsSpace(rune(next)) || !identCheck(next) {
-			l.reader.UnreadByte()
-			l.col--
+			l.unreadByte()
 			break
 		} else {
 			return fmt.Errorf("Malformed integer literal %s", l.CurrentPosition())

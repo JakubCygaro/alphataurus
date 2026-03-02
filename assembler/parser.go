@@ -62,8 +62,9 @@ type Instruction struct {
 	Data any
 }
 type Parser struct {
-	lexer       Lexer
-	currentInst Instruction
+	lexer        Lexer
+	currentInst  Instruction
+	currentIdent string
 }
 
 func NewParser(reader bufio.Reader) Parser {
@@ -108,6 +109,7 @@ func (p *Parser) ParseNext() (bool, error) {
 }
 func (p *Parser) parseStartIdent(t Token) error {
 	ident := t.val.(string)
+	p.currentIdent = ident
 	switch ident {
 	case "mov":
 		return p.parseMov()
@@ -128,64 +130,67 @@ func (p *Parser) parseStartIdent(t Token) error {
 	case "jg":
 		return p.parseJmpG()
 	}
+	p.currentIdent = ""
 	return fmt.Errorf("Unknown identifier '%s' %s", ident, p.lexer.CurrentPosition())
 }
 func (p *Parser) parseMov() error {
-	err := p.lexer.ReadNextToken()
-	if err != nil {
+	var op1 Token
+	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	}
-	op1 := p.lexer.CurrentToken()
-	if op1.Ty == TOKEN_TEOF {
-		return p.prematureEndError()
-	}
-	if op1.Ty != TOKEN_TREG {
+	} else if eval, _ := TryEvaluateExpression(&expr); eval.Ty != CONSTEXPR_TREG {
 		return fmt.Errorf("First operand to mov instruction must be a valid register %s", p.lexer.CurrentPosition())
+	} else {
+		op1.Ty = TOKEN_TREG
+		op1.val = int(expr.Val.(ConstExpr).Val)
 	}
-	err = p.lexer.ReadNextToken()
-	if err != nil {
+	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
 	comma := p.lexer.CurrentToken()
-
 	if comma.Ty != TOKEN_TCOMMA {
-		return fmt.Errorf("mov instruction missing a comma %s", p.lexer.CurrentPosition())
+		return fmt.Errorf("Instruction '%s' missing a comma %s", p.currentIdent, p.lexer.CurrentPosition())
 	}
-	err = p.lexer.ReadNextToken()
-	if err != nil {
+
+	var op2 ConstExpr
+	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	}
-	op2 := p.lexer.CurrentToken()
-	if op2.Ty == TOKEN_TEOF {
-		return p.prematureEndError()
+	} else {
+		eval, ok := TryEvaluateExpression(&expr)
+		if eval.Ty != CONSTEXPR_TREG && !ok {
+			return fmt.Errorf("Second operand to %s instruction has to be a valid register or a compile time expression %s",
+				p.currentIdent,
+				p.lexer.CurrentPosition())
+		}
+		op2 = eval
 	}
 	switch op2.Ty {
-	case TOKEN_TREG:
+	case CONSTEXPR_TREG:
 		p.currentInst = Instruction{
 			Ty: INST_TMOVRR,
 			Data: InstMovData{
-				Src:  op2.val.(int),
+				Src:  int(op2.Val),
 				Dest: op1.val.(int),
 			},
 		}
-	case TOKEN_TINTEGER_LIT:
+	case CONSTEXPR_TILIT:
 		p.currentInst = Instruction{
 			Ty: INST_TMOVIR,
 			Data: InstMovData{
-				Imm:  op2.val.(uint64),
+				Imm:  op2.Val,
 				Dest: op1.val.(int),
 			},
 		}
-	case TOKEN_TFLOAT_LIT:
+	case CONSTEXPR_TFLIT:
 		p.currentInst = Instruction{
 			Ty: INST_TMOVIR,
 			Data: InstMovData{
-				Imm:  op2.val.(uint64),
+				Imm:  op2.Val,
 				Dest: op1.val.(int),
 			},
 		}
 	default:
-		return fmt.Errorf("Second operand to mov instruction must be a valid register or an immediate value %s", p.lexer.CurrentPosition())
+		return fmt.Errorf("Second operand to mov instruction must be a valid register or an immediate value %s",
+			p.lexer.CurrentPosition())
 	}
 	return nil
 }

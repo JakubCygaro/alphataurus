@@ -10,9 +10,6 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
-	// if err != nil {
-	// 	return err
-	// }
 	op1 := p.lexer.CurrentToken()
 	valTy := ARTH_TUNSIGNED
 	if op1.Ty == TOKEN_TSIGNED || op1.Ty == TOKEN_TFLOAT || op1.Ty == TOKEN_TUNSIGNED {
@@ -24,29 +21,18 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		case TOKEN_TFLOAT:
 			valTy = ARTH_TFLOAT
 		}
-		// err = p.lexer.ReadNextToken()
-		// if err != nil {
-		// 	return err
-		// }
-		// op1 = p.lexer.CurrentToken()
-		// p.lexer.UnreadToken()
 	} else {
 		p.lexer.UnreadToken()
 	}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if expr.Ty != EXPR_TCONST || expr.Val.(ConstExpr).Ty != CONSTEXPR_TREG {
-		return fmt.Errorf("First operand to instruction must be a valid register %s", p.lexer.CurrentPosition())
+	} else if eval, _ := TryEvaluateExpression(&expr); eval.Ty != CONSTEXPR_TREG {
+		return fmt.Errorf("First operand to %s instruction must be a valid register %s", p.currentIdent,
+			p.lexer.CurrentPosition())
 	} else {
 		op1.Ty = TOKEN_TREG
 		op1.val = int(expr.Val.(ConstExpr).Val)
 	}
-	// if op1.Ty == TOKEN_TEOF {
-	// 	return p.prematureEndError()
-	// }
-	// if op1.Ty != TOKEN_TREG {
-	// 	return fmt.Errorf("First operand to instruction must be a valid register %s", p.lexer.CurrentPosition())
-	// }
 	switch op1.val.(int) {
 	case vm.IP_IDX:
 		return fmt.Errorf("Disallowed source register %s", p.lexer.CurrentPosition())
@@ -58,36 +44,25 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	comma := p.lexer.CurrentToken()
 
 	if comma.Ty != TOKEN_TCOMMA {
-		return fmt.Errorf("Instruction missing a comma %s", p.lexer.CurrentPosition())
+		return fmt.Errorf("Instruction '%s' missing a comma %s", p.currentIdent, p.lexer.CurrentPosition())
 	}
-	var op2 Token
+	var op2 ConstExpr
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if expr.Ty != EXPR_TCONST {
-		return fmt.Errorf("First operand to instruction must be a valid register %s", p.lexer.CurrentPosition())
-	} else if expr.Val.(ConstExpr).Ty == CONSTEXPR_TREG {
-		op2.Ty = TOKEN_TREG
-		op2.val = int(expr.Val.(ConstExpr).Val)
-	} else if expr.Val.(ConstExpr).Ty == CONSTEXPR_TILIT {
-		op2.Ty = TOKEN_TINTEGER_LIT
-		op2.val = expr.Val.(ConstExpr).Val
-	} else if expr.Val.(ConstExpr).Ty == CONSTEXPR_TFLIT {
-		op2.Ty = TOKEN_TFLOAT_LIT
-		op2.val = expr.Val.(ConstExpr).Val
+	} else {
+		eval, ok := TryEvaluateExpression(&expr)
+		if eval.Ty != CONSTEXPR_TREG && !ok {
+			return fmt.Errorf("Second operand to %s instruction has to be a valid register or a compile time expression %s",
+				p.currentIdent,
+				p.lexer.CurrentPosition())
+		}
+		op2 = eval
 	}
-	// err = p.lexer.ReadNextToken()
-	// if err != nil {
-	// 	return err
-	// }
-	// op2 := p.lexer.CurrentToken()
-	// if op2.Ty == TOKEN_TEOF {
-	// 	return p.prematureEndError()
-	// }
 	switch op2.Ty {
-	case TOKEN_TREG:
-		switch op2.val.(int) {
+	case CONSTEXPR_TREG:
+		switch int(op2.Val) {
 		case vm.IP_IDX:
-			return fmt.Errorf("Disallowed destination register %s", p.lexer.CurrentPosition())
+			return fmt.Errorf("Disallowed destination register for %s instruction %s", p.currentIdent, p.lexer.CurrentPosition())
 		}
 		var ty int
 		switch arthTy {
@@ -99,12 +74,12 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Ty: ty,
 			Data: InstArthData{
-				Src:  op2.val.(int),
+				Src:  int(op2.Val),
 				Dest: op1.val.(int),
 				Ty:   valTy,
 			},
 		}
-	case TOKEN_TINTEGER_LIT:
+	case CONSTEXPR_TILIT:
 		var ty int
 		switch arthTy {
 		case ARTH_TADD:
@@ -115,12 +90,12 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Ty: ty,
 			Data: InstArthData{
-				Imm:  op2.val.(uint64),
+				Imm:  op2.Val,
 				Dest: op1.val.(int),
 				Ty:   valTy,
 			},
 		}
-	case TOKEN_TFLOAT_LIT:
+	case CONSTEXPR_TFLIT:
 		var ty int
 		switch arthTy {
 		case ARTH_TADD:
@@ -131,13 +106,15 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Ty: ty,
 			Data: InstArthData{
-				Imm:  op2.val.(uint64),
+				Imm:  op2.Val,
 				Dest: op1.val.(int),
 				Ty:   valTy,
 			},
 		}
 	default:
-		return fmt.Errorf("Second operand to add instruction must be a valid register or an immediate value %s", p.lexer.CurrentPosition())
+		return fmt.Errorf("Second operand to %s instruction must be a valid register or an immediate value %s",
+			p.currentIdent,
+			p.lexer.CurrentPosition())
 	}
 	return nil
 }

@@ -75,23 +75,26 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 		if binding, ok := preBMap[lhsToken.Ty]; ok{
 			rhs, err := p.parseExpression(binding[1])
 			if err != nil {
-				return rhs, err
+				return lhs, err
 			}
 			lhs = Expr {
-				Ty: ARTHEXPR_TSUB,
+				Ty: EXPR_TARTH,
 				Val: ArthExpr {
-					A: &Expr{
-						Ty: CONSTEXPR_TILIT,
-						Val: 0,
+					Ty: ARTHEXPR_TSUB,
+					A: Expr{
+						Ty: EXPR_TCONST,
+						Val: ConstExpr {
+							Ty: CONSTEXPR_TILIT,
+							Val: 0,
+						},
 					},
-					B: &rhs,
+					B: rhs,
 				},
 			}
 		} else {
 			return Expr{}, fmt.Errorf("Bad expression %s", p.lexer.CurrentPosition())
 		}
 	}
-	var retExpr Expr
 	for {
 		if err := p.lexer.ReadNextToken(); err != nil {
 			return Expr{}, err
@@ -99,13 +102,13 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 		op := p.lexer.CurrentToken()
 		if op.Ty == TOKEN_TCLOSEDBRACKET || op.Ty == TOKEN_TEOF || op.Ty == TOKEN_TNEWLINE {
 			p.lexer.UnreadToken()
-			return lhs, nil
+			break
 		}
-		if op.Ty < TOKEN_OPSTART || op.Ty > TOKEN_OPEND {
+		binding, ok := inBMap[op.Ty]
+		if !ok {
 			p.lexer.UnreadToken()
-			return lhs, nil
+			break
 		}
-		binding := inBMap[op.Ty]
 		if binding[0] < minBp {
 			break
 		}
@@ -113,14 +116,15 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 		if err != nil {
 			return lhs, err
 		}
-		retExpr = Expr{
+		lhs = Expr{
 			Ty: EXPR_TARTH,
 			Val: ArthExpr{
 				Ty: op.Ty,
-				A:  &lhs,
-				B:  &rhs,
+				A:  lhs,
+				B:  rhs,
 			},
 		}
 	}
-	return retExpr, nil
+	return lhs, nil
 }
+
