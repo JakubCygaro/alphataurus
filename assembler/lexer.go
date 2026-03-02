@@ -28,6 +28,7 @@ const (
 	TOKEN_TDOT
 	TOKEN_TOPENBRACKET
 	TOKEN_TCLOSEDBRACKET
+	TOKEN_TCOLON
 	TOKEN_TNEWLINE
 	TOKEN_TEOF
 )
@@ -124,6 +125,11 @@ func (l *Lexer) ReadNextToken() error {
 		}
 	}
 	switch {
+	case b == ':':
+		l.currentToken = Token{
+			Ty: TOKEN_TCOLON,
+			val: rune(b),
+		}
 	case b == '[':
 		l.currentToken = Token{
 			Ty: TOKEN_TOPENBRACKET,
@@ -181,23 +187,6 @@ func (l *Lexer) ReadNextToken() error {
 				val: rune(b),
 			}
 		}
-	// case b == '-':
-	// 	next, err := l.readByte()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if numberCheck(next) {
-	// 		l.unreadByte()
-	// 		err := l.readDigit(b)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	} else {
-	// 		l.currentToken = Token{
-	// 			Ty: TOKEN_TMINUS,
-	// 			val: rune(b),
-	// 		}
-	// 	}
 	case numberCheck(b):
 		err := l.readDigit(b)
 		if err != nil {

@@ -48,7 +48,7 @@ var (
 		5: handle(OP_DECR),
 	})
 	//jumps
-	p003X = nested(OpCodeMap{
+	p03XX = nested(OpCodeMap{
 		0: handle(OP_JMP),
 		1: handle(OP_JMPE),
 		2: handle(OP_JMPG),
@@ -57,13 +57,13 @@ var (
 		0: handle(OP_MOVRR),
 		1: handle(OP_MOVIR),
 		2: p002X,
-		3: p003X,
 		4: handle(OP_CMP),
 		5: handle(OP_ADDIR),
 		6: handle(OP_SUBIR),
 	})
 	p0XXX = nested(OpCodeMap{
 		0: p00XX,
+		3: p03XX,
 	})
 	oPCODE_MAP = OpCodeMap{
 		0: p0XXX,
@@ -112,13 +112,19 @@ const (
 	OP_PUSH
 	OP_POP
 
-	OP_JMP      // jump to instruction
-	OP_JMPE     // jump if equal
-	OP_JMPG     // jump if greater
-	OP_CMP // test registers
+	OP_JMP   // jump to instruction
+	OP_JMPE  // jump if equal
+	OP_JMPZ  // jump if zero
+	OP_JMNE  // jump if not equal
+	OP_JMPNZ // jump of not zero
+	OP_JMPG  // jump if greater
+	OP_JMPGE // jump if greater or equal
+	OP_JMPL  // jump if less
+	OP_JMPLE // jump if less or equal
+	OP_CMP   // test registers
 )
 
-const(
+const (
 	// last byte for OP_CMP that indicates an immediate value comparasion
 	OPLB_CMP_IM = iota
 	// last byte for OP_CMP that indicates a register-register cmp

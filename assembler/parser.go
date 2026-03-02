@@ -21,6 +21,7 @@ const (
 	INST_TCMPRR
 	INST_TCMPIR
 	INST_TJMPG
+	INST_TLABEL
 )
 
 type InstMovData struct {
@@ -55,7 +56,11 @@ type InstCmpData struct {
 	Imm      uint64
 }
 type InstJmpData struct {
-	Address uint64
+	Address any
+}
+type InstLabData struct {
+	Label string
+	DeclaredAt string
 }
 type Instruction struct {
 	Ty   int
@@ -129,6 +134,18 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseCmp()
 	case "jg":
 		return p.parseJmpG()
+	default:
+		pos := p.lexer.CurrentPosition()
+		if _, ok := p.lexer.Expect(TOKEN_TCOLON); ok {
+			p.currentInst = Instruction{
+				Ty: INST_TLABEL,
+				Data: InstLabData{
+					Label: ident,
+					DeclaredAt: pos,
+				},
+			}
+			return nil
+		}
 	}
 	p.currentIdent = ""
 	return fmt.Errorf("Unknown identifier '%s' %s", ident, p.lexer.CurrentPosition())

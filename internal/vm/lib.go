@@ -174,11 +174,11 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		case OP_DECR:
 			err = vm.decR(param)
 		case OP_JMP:
-			vm.jmp(param)
+			vm.jmp(opCodeBytes[0], param)
 		case OP_JMPE:
-			vm.jmpE(param)
+			vm.jmpE(opCodeBytes[0], param)
 		case OP_JMPG:
-			vm.jmpG(param)
+			vm.jmpG(opCodeBytes[0], param)
 		case OP_CMP:
 			err = vm.cmp(opCodeBytes[0], param)
 		default:
@@ -313,20 +313,18 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 	}
 	return nil
 }
-func (state *VmState) jmp(param []byte) {
+func (state *VmState) jmp(lastByte byte, param []byte) {
 	dest := binary.BigEndian.Uint64(param)
 	state.setIp(dest)
 }
-func (state *VmState) jmpE(param []byte) {
-	dest := binary.BigEndian.Uint64(param)
+func (state *VmState) jmpE(lastByte byte, param []byte) {
 	if state.flags.Zf {
-		state.setIp(dest)
+		state.jmp(lastByte, param)
 	}
 }
-func (state *VmState) jmpG(param []byte) {
-	dest := binary.BigEndian.Uint64(param)
+func (state *VmState) jmpG(lastByte byte, param []byte) {
 	if !state.flags.Zf && !state.flags.Sf {
-		state.setIp(dest)
+		state.jmp(lastByte, param)
 	}
 }
 func (state *VmState) cmp(lastByte byte, param []byte) error {

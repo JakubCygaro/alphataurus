@@ -12,8 +12,13 @@ import (
 )
 
 const assembly = `
-	mov r4, 118856529506480456
-	sub SIGNED r4, -8413980612100018402
+	mov r0, 10
+	L0:
+	mov r1, 0
+	inc r1
+	dec r0
+	cmp r0, 0
+	jg L0
 `
 
 func main() {

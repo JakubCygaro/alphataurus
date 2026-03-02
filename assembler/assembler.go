@@ -7,15 +7,26 @@ import (
 	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
+type labelData struct {
+	pos        uint64
+	declaredAt string
+}
+type labelMap map[string]labelData
+type unresolvedJumpMap map[int]string
+
 type Assembler struct {
 	parser  Parser
 	opCodes map[uint32]vm.OpCodeVal
+	unresolvedJumps unresolvedJumpMap
+	labels  labelMap
 }
 
 func NewAssembler(reader bufio.Reader) Assembler {
 	return Assembler{
 		parser:  NewParser(reader),
 		opCodes: vm.GenerateOpcodeMap(),
+		labels: make(labelMap),
+		unresolvedJumps: make(unresolvedJumpMap),
 	}
 }
 
@@ -54,12 +65,18 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitCmpIR(inst.Data.(InstCmpData), &bytecode)
 		case INST_TJMPG:
 			err = a.emitJmpG(inst.Data.(InstJmpData), &bytecode)
+		case INST_TLABEL:
+			err = a.declareLabel(inst.Data.(InstLabData), &bytecode)
 		default:
 			pos := a.parser.lexer.CurrentPosition()
 			return bytecode, 0, fmt.Errorf("Instruction (%d) WIP %s", INST_TMOVIR, pos)
 		}
+		if err != nil {
+			return bytecode, instCount, err
+		}
 		instCount++
 	}
+	err = a.resolveJumpInsturctions(&bytecode)
 	return bytecode, instCount, err
 }
 
@@ -84,7 +101,7 @@ func (a *Assembler) emitMovRR(data InstMovData, out *[]byte) error {
 
 func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 	var opCode vm.OpCodeVal
-	switch op{
+	switch op {
 	case INST_TADDRR:
 		opCode = a.opCodes[vm.OP_ADDRR]
 	case INST_TSUBRR:
@@ -108,10 +125,10 @@ func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
 	var opCode vm.OpCodeVal
 	switch ty {
-		case INST_TADDIR:
-			opCode = a.opCodes[vm.OP_ADDIR]
-		case INST_TSUBIR:
-			opCode = a.opCodes[vm.OP_SUBIR]
+	case INST_TADDIR:
+		opCode = a.opCodes[vm.OP_ADDIR]
+	case INST_TSUBIR:
+		opCode = a.opCodes[vm.OP_SUBIR]
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
 	destTy := 0b00001111 & byte(data.Dest)
@@ -155,8 +172,41 @@ func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
 	return nil
 }
 func (a *Assembler) emitJmpG(data InstJmpData, out *[]byte) error {
-	cmp := a.opCodes[vm.OP_JMPG]
-	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
-	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Address))
+	jmpg := a.opCodes[vm.OP_JMPG]
+	opPos := len(*out)
+	*out = binary.BigEndian.AppendUint32(*out, uint32(jmpg))
+	if addr, ok := data.Address.(uint64); ok {
+		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
+	} else if lab, ok := data.Address.(string); ok {
+		if l, ok := a.labels[lab]; ok {
+			*out = binary.BigEndian.AppendUint64(*out, uint64(l.pos/vm.INSTRUCTION_SIZE))
+		} else {
+			a.unresolvedJumps[opPos] = lab
+			*out = binary.BigEndian.AppendUint64(*out, uint64(0))
+		}
+	} else {
+		return fmt.Errorf("Jg instruction bad internal assembler data")
+	}
+	return nil
+}
+func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
+	if lab, ok := a.labels[data.Label]; ok {
+		return fmt.Errorf("Label '%s' redeclared at %s, first declared at %s",
+			data.Label, data.DeclaredAt, lab.declaredAt)
+	}
+	a.labels[data.Label] = labelData{
+		pos:        uint64(len(*out)),
+		declaredAt: data.DeclaredAt,
+	}
+	return nil
+}
+func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
+	for codePos, destLabel := range a.unresolvedJumps {
+		label, ok := a.labels[destLabel]
+		if !ok {
+			return fmt.Errorf("Could not resolve label '%s'", destLabel)
+		}
+		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:], label.pos)
+	}
 	return nil
 }

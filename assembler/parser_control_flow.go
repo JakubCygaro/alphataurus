@@ -80,15 +80,22 @@ func (p *Parser) parseJmpG() error {
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
+	inst := Instruction{
+		Ty: INST_TJMPG,
+	}
 	addr := p.lexer.CurrentToken()
-	if addr.Ty != TOKEN_TINTEGER_LIT {
+	switch addr.Ty {
+	case TOKEN_TINTEGER_LIT:
+		inst.Data = InstJmpData {
+			Address: addr.val.(uint64),
+		}
+	case TOKEN_TIDENT:
+		inst.Data = InstJmpData {
+			Address: addr.val.(string),
+		}
+	default:
 		return fmt.Errorf("jg instruction requires a valid address as a parameter %s", p.lexer.CurrentPosition())
 	}
-	p.currentInst = Instruction{
-		Ty: INST_TJMPG,
-		Data: InstJmpData{
-			Address: addr.val.(uint64),
-		},
-	}
+	p.currentInst = inst
 	return nil
 }
