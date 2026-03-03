@@ -196,9 +196,7 @@ func (p *Parser) parseMov() error {
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else {
-		fmt.Printf("%+v\n", expr)
 		eval, ok := TryConstEvaluateExpression(&expr)
-		fmt.Printf("%+v\n", eval)
 		if !ok {
 			return fmt.Errorf("Second operand to %s instruction has to be a valid register or a compile time expression %s",
 				p.currentIdent,

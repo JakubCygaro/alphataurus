@@ -41,8 +41,8 @@ type ConstExpr struct {
 
 func MakeConstexpr(c ConstExpr) Expr {
 	return Expr{
-		Ty:  c.Ty,
-		Val: c.Val,
+		Ty:  EXPR_TCONST,
+		Val: c,
 	}
 }
 func MakeConstexprU64(v uint64) Expr {
