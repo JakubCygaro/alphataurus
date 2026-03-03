@@ -52,7 +52,7 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 		if p.lexer.CurrentToken().Ty != TOKEN_TCLOSEDBRACKET {
 			return inner, fmt.Errorf("Unclosed deref expression bracket %s", p.lexer.CurrentPosition())
 		}
-		deref := MakeDeref(inner.Val.(ArthExpr))
+		deref := MakeDeref(inner)
 		// deref := Expr{
 		// 	Ty: EXPR_TDEREF,
 		// 	Val: DerefExpr{

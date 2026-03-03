@@ -178,7 +178,7 @@ func (p *Parser) parseMov() error {
 	var op1 Token
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if eval, _ := TryEvaluateExpression(&expr); eval.Ty != CONSTEXPR_TREG {
+	} else if eval, _ := TryConstEvaluateExpression(&expr); eval.Ty != CONSTEXPR_TREG {
 		return fmt.Errorf("First operand to mov instruction must be a valid register %s", p.lexer.CurrentPosition())
 	} else {
 		op1.Ty = TOKEN_TREG
@@ -196,8 +196,10 @@ func (p *Parser) parseMov() error {
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else {
-		eval, ok := TryEvaluateExpression(&expr)
-		if eval.Ty != CONSTEXPR_TREG && !ok {
+		fmt.Printf("%+v\n", expr)
+		eval, ok := TryConstEvaluateExpression(&expr)
+		fmt.Printf("%+v\n", eval)
+		if !ok {
 			return fmt.Errorf("Second operand to %s instruction has to be a valid register or a compile time expression %s",
 				p.currentIdent,
 				p.lexer.CurrentPosition())

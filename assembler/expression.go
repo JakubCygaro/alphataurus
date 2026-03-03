@@ -39,6 +39,12 @@ type ConstExpr struct {
 	Val uint64
 }
 
+func MakeConstexpr(c ConstExpr) Expr {
+	return Expr{
+		Ty:  c.Ty,
+		Val: c.Val,
+	}
+}
 func MakeConstexprU64(v uint64) Expr {
 	return Expr{
 		Ty: EXPR_TCONST,
@@ -85,7 +91,7 @@ func MakeArth(a, b Expr, ty int) Expr {
 		},
 	}
 }
-func MakeDeref(inner ArthExpr) Expr {
+func MakeDeref(inner Expr) Expr {
 	return Expr{
 		Ty: EXPR_TDEREF,
 		Val: DerefExpr{
@@ -94,7 +100,7 @@ func MakeDeref(inner ArthExpr) Expr {
 	}
 }
 
-func (e*ConstExpr)AsFloat() float64 {
+func (e *ConstExpr) AsFloat() float64 {
 	switch e.Ty {
 	case CONSTEXPR_TFLIT:
 		return math.Float64frombits(e.Val)
@@ -207,44 +213,69 @@ type ArthExpr struct {
 // [bp+1]
 // [bp+r0]
 type DerefExpr struct {
-	Inner ArthExpr
+	Inner Expr
 }
 
-// basically try to evalueate an expression at compile time
-// fails if the expression contains any registers or a dereference
-func TryEvaluateExpression(e *Expr) (ConstExpr, bool) {
-	ret := ConstExpr{Ty: INVALID}
+// Does what TryEvaluateExpression does, but at the end verifies that the expression is constant
+func TryConstEvaluateExpression(e *Expr) (ConstExpr, bool) {
+	if expr, ok := TryEvaluateExpression(e); ok && expr.Ty == EXPR_TCONST {
+		return expr.Val.(ConstExpr), true
+	}
+	return ConstExpr{Ty: INVALID}, false
+}
+
+// Basically try to evalueate an expression at compile time.
+// Does a best effor evaluation - tries to evaluate all expressions that involve constant expressions,
+// otherwise returns them as is
+func TryEvaluateExpression(e *Expr) (Expr, bool) {
 	switch e.Ty {
+	//if this is a constant expression, pass it on
 	case EXPR_TCONST:
-		eAsConst := e.Val.(ConstExpr)
-		if eAsConst.Ty == CONSTEXPR_TREG {
-			return eAsConst, false
-		}
-		ret = eAsConst
+		// eAsConst := e.Val.(ConstExpr)
+		// if eAsConst.Ty == CONSTEXPR_TREG {
+		// 	return eAsConst, false
+		// }
+		return *e, true
+		//if this is an arthmetic expression, atttempt to evaluate it
 	case EXPR_TARTH:
 		eAsArth := e.Val.(ArthExpr)
-		if evalA, ok := TryEvaluateExpression(&eAsArth.A); !ok {
-			return ret, false
-		} else if evalB, ok := TryEvaluateExpression(&eAsArth.B); !ok {
-			return ret, false
-		} else {
+		evalA, okA := TryEvaluateExpression(&eAsArth.A)
+		evalB, okB := TryEvaluateExpression(&eAsArth.B)
+		// in case both have been succesfully evaluated and both are const,
+		// try to evaluate the arthmetic expression into a constant expression
+		bothOk := okA && okB
+		bothConst := evalA.Ty == EXPR_TCONST && evalB.Ty == EXPR_TCONST
+		if bothOk && bothConst {
+			valA := evalA.Val.(ConstExpr)
+			valB := evalB.Val.(ConstExpr)
+			ok := true
+			var res ConstExpr
 			switch eAsArth.Ty {
 			case ARTHEXPR_TADD:
-				return evalA.Add(&evalB)
+				res, ok = valA.Add(&valB)
 			case ARTHEXPR_TSUB:
-				return evalA.Sub(&evalB)
+				res, ok = valA.Sub(&valB)
 			case ARTHEXPR_TMUL:
-				return evalA.Mul(&evalB)
+				res, ok = valA.Mul(&valB)
 			case ARTHEXPR_TDIV:
-				return evalA.Div(&evalB)
+				res, ok = valA.Div(&valB)
 			default:
-				return ret, false
+				return *e, false
+			}
+			if ok {
+				return MakeConstexpr(res), true
 			}
 		}
+		// if all else fails, just pass the best effort attempt with whatever could've benn evaluated
+		return MakeArth(evalA, evalB, eAsArth.Ty), false
+	case EXPR_TDEREF:
+		inner := e.Val.(DerefExpr).Inner
+		inner, ok := TryEvaluateExpression(&inner)
+		return inner, ok
 	default:
-		return ret, false
+		return *e, false
 	}
-	return ret, true
+	return *e, false
 }
 func (e ArthExpr) Emit() (string, error) {
 	if a, err := e.A.Emit(); err != nil {
@@ -293,11 +324,12 @@ func (e *Expr) Emit() (string, error) {
 	case EXPR_TCONST:
 		return e.Val.(ConstExpr).Emit()
 	case EXPR_TDEREF:
-		inner, err := e.Val.(DerefExpr).Inner.Emit()
-		if err != nil {
+		deref, ok := e.Val.(DerefExpr)
+		if !ok {
 			return "", nil
 		}
-		return fmt.Sprintf("[%s]", inner), nil
+		emit, err := deref.Inner.Emit()
+		return fmt.Sprintf("[%s]", emit), err
 	case EXPR_TARTH:
 		inner, err := e.Val.(ArthExpr).Emit()
 		if err != nil {
