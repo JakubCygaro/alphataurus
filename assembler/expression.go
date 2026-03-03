@@ -1,7 +1,10 @@
 package assembler
 
 import (
+	"fmt"
 	"math"
+
+	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
 const (
@@ -39,8 +42,8 @@ type ConstExpr struct {
 func MakeConstexprU64(v uint64) Expr {
 	return Expr{
 		Ty: EXPR_TCONST,
-		Val: ConstExpr {
-			Ty: CONSTEXPR_TILIT,
+		Val: ConstExpr{
+			Ty:  CONSTEXPR_TILIT,
 			Val: v,
 		},
 	}
@@ -48,8 +51,8 @@ func MakeConstexprU64(v uint64) Expr {
 func MakeConstexprI64(v int64) Expr {
 	return Expr{
 		Ty: EXPR_TCONST,
-		Val: ConstExpr {
-			Ty: CONSTEXPR_TILIT,
+		Val: ConstExpr{
+			Ty:  CONSTEXPR_TILIT,
 			Val: uint64(v),
 		},
 	}
@@ -57,8 +60,8 @@ func MakeConstexprI64(v int64) Expr {
 func MakeConstexprF64(v float64) Expr {
 	return Expr{
 		Ty: EXPR_TCONST,
-		Val: ConstExpr {
-			Ty: CONSTEXPR_TFLIT,
+		Val: ConstExpr{
+			Ty:  CONSTEXPR_TFLIT,
 			Val: math.Float64bits(v),
 		},
 	}
@@ -66,8 +69,8 @@ func MakeConstexprF64(v float64) Expr {
 func MakeConstexprR(r int) Expr {
 	return Expr{
 		Ty: EXPR_TCONST,
-		Val: ConstExpr {
-			Ty: CONSTEXPR_TREG,
+		Val: ConstExpr{
+			Ty:  CONSTEXPR_TREG,
 			Val: uint64(r),
 		},
 	}
@@ -75,31 +78,31 @@ func MakeConstexprR(r int) Expr {
 func MakeArth(a, b Expr, ty int) Expr {
 	return Expr{
 		Ty: EXPR_TARTH,
-		Val: ArthExpr {
+		Val: ArthExpr{
 			Ty: ty,
-			A: a,
-			B: b,
+			A:  a,
+			B:  b,
 		},
 	}
 }
 func MakeDeref(inner ArthExpr) Expr {
 	return Expr{
 		Ty: EXPR_TDEREF,
-		Val: DerefExpr {
+		Val: DerefExpr{
 			Inner: inner,
 		},
 	}
 }
 
-func opTy(a, b*ConstExpr) int {
-	if a.Ty == CONSTEXPR_TFLIT || a.Ty == CONSTEXPR_TREG{
+func opTy(a, b *ConstExpr) int {
+	if a.Ty == CONSTEXPR_TFLIT || a.Ty == CONSTEXPR_TREG {
 		return a.Ty
 	} else {
 		return b.Ty
 	}
 }
 
-func (a*ConstExpr) Add(b*ConstExpr) (ConstExpr, bool) {
+func (a *ConstExpr) Add(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
 	if ty == CONSTEXPR_TREG {
 		return ConstExpr{}, false
@@ -108,19 +111,19 @@ func (a*ConstExpr) Add(b*ConstExpr) (ConstExpr, bool) {
 	case CONSTEXPR_TFLIT:
 		aV, bV := math.Float64frombits(a.Val), math.Float64frombits(b.Val)
 		return ConstExpr{
-			Ty: ty,
+			Ty:  ty,
 			Val: math.Float64bits(aV + bV),
 		}, true
 	case CONSTEXPR_TILIT:
 		aV, bV := a.Val, b.Val
 		return ConstExpr{
-			Ty: ty,
+			Ty:  ty,
 			Val: aV + bV,
 		}, true
 	}
 	return ConstExpr{}, false
 }
-func (a*ConstExpr) Sub(b*ConstExpr) (ConstExpr, bool) {
+func (a *ConstExpr) Sub(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
 	if ty == CONSTEXPR_TREG {
 		return ConstExpr{}, false
@@ -129,19 +132,19 @@ func (a*ConstExpr) Sub(b*ConstExpr) (ConstExpr, bool) {
 	case CONSTEXPR_TFLIT:
 		aV, bV := math.Float64frombits(a.Val), math.Float64frombits(b.Val)
 		return ConstExpr{
-			Ty: ty,
+			Ty:  ty,
 			Val: math.Float64bits(aV - bV),
 		}, true
 	case CONSTEXPR_TILIT:
 		aV, bV := a.Val, b.Val
 		return ConstExpr{
-			Ty: ty,
+			Ty:  ty,
 			Val: aV - bV,
 		}, true
 	}
 	return ConstExpr{}, false
 }
-func (a*ConstExpr) Mul(b*ConstExpr) (ConstExpr, bool) {
+func (a *ConstExpr) Mul(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
 	if ty == CONSTEXPR_TREG {
 		return ConstExpr{}, false
@@ -150,19 +153,19 @@ func (a*ConstExpr) Mul(b*ConstExpr) (ConstExpr, bool) {
 	case CONSTEXPR_TFLIT:
 		aV, bV := math.Float64frombits(a.Val), math.Float64frombits(b.Val)
 		return ConstExpr{
-			Ty: ty,
+			Ty:  ty,
 			Val: math.Float64bits(aV * bV),
 		}, true
 	case CONSTEXPR_TILIT:
 		aV, bV := a.Val, b.Val
 		return ConstExpr{
-			Ty: ty,
+			Ty:  ty,
 			Val: aV * bV,
 		}, true
 	}
 	return ConstExpr{}, false
 }
-func (a*ConstExpr) Div(b*ConstExpr) (ConstExpr, bool) {
+func (a *ConstExpr) Div(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
 	if ty == CONSTEXPR_TREG {
 		return ConstExpr{}, false
@@ -171,13 +174,13 @@ func (a*ConstExpr) Div(b*ConstExpr) (ConstExpr, bool) {
 	case CONSTEXPR_TFLIT:
 		aV, bV := math.Float64frombits(a.Val), math.Float64frombits(b.Val)
 		return ConstExpr{
-			Ty: ty,
+			Ty:  ty,
 			Val: math.Float64bits(aV / bV),
 		}, true
 	case CONSTEXPR_TILIT:
 		aV, bV := a.Val, b.Val
 		return ConstExpr{
-			Ty: ty,
+			Ty:  ty,
 			Val: aV / bV,
 		}, true
 	}
@@ -196,10 +199,11 @@ type ArthExpr struct {
 type DerefExpr struct {
 	Inner ArthExpr
 }
+
 // basically try to evalueate an expression at compile time
 // fails if the expression contains any registers or a dereference
 func TryEvaluateExpression(e *Expr) (ConstExpr, bool) {
-	ret := ConstExpr { Ty: INVALID }
+	ret := ConstExpr{Ty: INVALID}
 	// fmt.Printf("%+v\n", e)
 	switch e.Ty {
 	case EXPR_TCONST:
@@ -216,20 +220,82 @@ func TryEvaluateExpression(e *Expr) (ConstExpr, bool) {
 			return ret, false
 		} else {
 			switch eAsArth.Ty {
-				case ARTHEXPR_TADD:
-					return evalA.Add(&evalB)
-				case ARTHEXPR_TSUB:
-					return evalA.Sub(&evalB)
-				case ARTHEXPR_TMUL:
-					return evalA.Mul(&evalB)
-				case ARTHEXPR_TDIV:
-					return evalA.Div(&evalB)
-				default:
-					return ret, false
+			case ARTHEXPR_TADD:
+				return evalA.Add(&evalB)
+			case ARTHEXPR_TSUB:
+				return evalA.Sub(&evalB)
+			case ARTHEXPR_TMUL:
+				return evalA.Mul(&evalB)
+			case ARTHEXPR_TDIV:
+				return evalA.Div(&evalB)
+			default:
+				return ret, false
 			}
 		}
 	default:
 		return ret, false
 	}
 	return ret, true
+}
+func (e ArthExpr) Emit() (string, error) {
+	if a, err := e.A.Emit(); err != nil {
+		return "", err
+	} else if b, err := e.B.Emit(); err != nil {
+		return "", err
+	} else {
+		switch e.Ty {
+		case ARTHEXPR_TADD:
+			return fmt.Sprintf("%s + %s", a, b), nil
+		case ARTHEXPR_TSUB:
+			return fmt.Sprintf("%s - %s", a, b), nil
+		case ARTHEXPR_TMUL:
+			return fmt.Sprintf("%s * %s", a, b), nil
+		case ARTHEXPR_TDIV:
+			return fmt.Sprintf("%s / %s", a, b), nil
+		default:
+			return "", fmt.Errorf("Invalid arthmetic expression type")
+		}
+	}
+}
+func (e ConstExpr) Emit() (string, error) {
+	switch e.Ty {
+	case CONSTEXPR_TREG:
+		if e.Val <= vm.GP_REG_MAX {
+			return fmt.Sprintf("r%", e.Val), nil
+		} else if e.Val == vm.SP_IDX {
+			return fmt.Sprintf("sp", e.Val), nil
+		} else if e.Val == vm.BP_IDX {
+			return fmt.Sprintf("bp", e.Val), nil
+		} else if e.Val == vm.IP_IDX {
+			return fmt.Sprintf("ip", e.Val), nil
+		} else {
+			return "", fmt.Errorf("Invalid register type %v", e.Val)
+		}
+	case CONSTEXPR_TILIT:
+		return fmt.Sprintf("%v", e.Val), nil
+	case CONSTEXPR_TFLIT:
+		return fmt.Sprintf("%v", math.Float64frombits(e.Val)), nil
+	default:
+		return "", fmt.Errorf("Invalid constant expression type %v", e.Val)
+	}
+}
+func (e *Expr) Emit() (string, error) {
+	switch e.Ty {
+	case EXPR_TCONST:
+		return e.Val.(ConstExpr).Emit()
+	case EXPR_TDEREF:
+		inner, err := e.Val.(DerefExpr).Inner.Emit()
+		if err != nil {
+			return "", nil
+		}
+		return fmt.Sprintf("[%s]", inner), nil
+	case EXPR_TARTH:
+		inner, err := e.Val.(ArthExpr).Emit()
+		if err != nil {
+			return "", nil
+		}
+		return fmt.Sprintf("(%s)", inner), nil
+	default:
+		return "", fmt.Errorf("Invalid expression type")
+	}
 }
