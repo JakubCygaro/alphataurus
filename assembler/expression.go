@@ -271,7 +271,7 @@ func TryEvaluateExpression(e *Expr) (Expr, bool) {
 	case EXPR_TDEREF:
 		inner := e.Val.(DerefExpr).Inner
 		inner, ok := TryEvaluateExpression(&inner)
-		return inner, ok
+		return MakeDeref(inner), ok
 	default:
 		return *e, false
 	}

@@ -21,6 +21,7 @@ const assembly = `
 	jg L0
 	mov r5, (2+2)*2
 	mov r6, 1.23+3.30+1.1
+	mov r6, [10+10]
 `
 
 func main() {

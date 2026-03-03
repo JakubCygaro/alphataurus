@@ -197,7 +197,7 @@ func (p *Parser) parseMov() error {
 		return err
 	} else {
 		eval, ok := TryConstEvaluateExpression(&expr)
-		if !ok {
+		if !ok{
 			return fmt.Errorf("Second operand to %s instruction has to be a valid register or a compile time expression %s",
 				p.currentIdent,
 				p.lexer.CurrentPosition())
