@@ -47,4 +47,17 @@ func main() {
 	fmt.Printf("r6 = %+v\n", r6)
 	fmt.Printf("%+v\n", mach.GetRegisters())
 	fmt.Printf("%+v\n", mach.GetFlags())
+
+	expr := assembler.MakeArth(
+		assembler.MakeConstexprI64(1),
+		assembler.MakeArth(
+			assembler.MakeConstexprF64(2.2),
+			assembler.MakeConstexprF64(3.0),
+			assembler.ARTHEXPR_TMUL),
+		assembler.ARTHEXPR_TADD)
+	em, _ := expr.Emit()
+	ev, _ := assembler.TryEvaluateExpression(&expr)
+	fmt.Printf("%+v\n", em)
+	v, _ := ev.Emit()
+	fmt.Printf("%+v\n", v)
 }

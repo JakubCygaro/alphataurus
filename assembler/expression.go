@@ -94,6 +94,16 @@ func MakeDeref(inner ArthExpr) Expr {
 	}
 }
 
+func (e*ConstExpr)AsFloat() float64 {
+	switch e.Ty {
+	case CONSTEXPR_TFLIT:
+		return math.Float64frombits(e.Val)
+	case CONSTEXPR_TILIT:
+		return float64(e.Val)
+	default:
+		return math.NaN()
+	}
+}
 func opTy(a, b *ConstExpr) int {
 	if a.Ty == CONSTEXPR_TFLIT || a.Ty == CONSTEXPR_TREG {
 		return a.Ty
@@ -109,7 +119,7 @@ func (a *ConstExpr) Add(b *ConstExpr) (ConstExpr, bool) {
 	}
 	switch ty {
 	case CONSTEXPR_TFLIT:
-		aV, bV := math.Float64frombits(a.Val), math.Float64frombits(b.Val)
+		aV, bV := a.AsFloat(), b.AsFloat()
 		return ConstExpr{
 			Ty:  ty,
 			Val: math.Float64bits(aV + bV),
@@ -130,7 +140,7 @@ func (a *ConstExpr) Sub(b *ConstExpr) (ConstExpr, bool) {
 	}
 	switch ty {
 	case CONSTEXPR_TFLIT:
-		aV, bV := math.Float64frombits(a.Val), math.Float64frombits(b.Val)
+		aV, bV := a.AsFloat(), b.AsFloat()
 		return ConstExpr{
 			Ty:  ty,
 			Val: math.Float64bits(aV - bV),
@@ -151,7 +161,7 @@ func (a *ConstExpr) Mul(b *ConstExpr) (ConstExpr, bool) {
 	}
 	switch ty {
 	case CONSTEXPR_TFLIT:
-		aV, bV := math.Float64frombits(a.Val), math.Float64frombits(b.Val)
+		aV, bV := a.AsFloat(), b.AsFloat()
 		return ConstExpr{
 			Ty:  ty,
 			Val: math.Float64bits(aV * bV),
@@ -172,7 +182,7 @@ func (a *ConstExpr) Div(b *ConstExpr) (ConstExpr, bool) {
 	}
 	switch ty {
 	case CONSTEXPR_TFLIT:
-		aV, bV := math.Float64frombits(a.Val), math.Float64frombits(b.Val)
+		aV, bV := a.AsFloat(), b.AsFloat()
 		return ConstExpr{
 			Ty:  ty,
 			Val: math.Float64bits(aV / bV),
@@ -204,7 +214,6 @@ type DerefExpr struct {
 // fails if the expression contains any registers or a dereference
 func TryEvaluateExpression(e *Expr) (ConstExpr, bool) {
 	ret := ConstExpr{Ty: INVALID}
-	// fmt.Printf("%+v\n", e)
 	switch e.Ty {
 	case EXPR_TCONST:
 		eAsConst := e.Val.(ConstExpr)
@@ -261,13 +270,13 @@ func (e ConstExpr) Emit() (string, error) {
 	switch e.Ty {
 	case CONSTEXPR_TREG:
 		if e.Val <= vm.GP_REG_MAX {
-			return fmt.Sprintf("r%", e.Val), nil
+			return fmt.Sprintf("r%d", e.Val), nil
 		} else if e.Val == vm.SP_IDX {
-			return fmt.Sprintf("sp", e.Val), nil
+			return "sp", nil
 		} else if e.Val == vm.BP_IDX {
-			return fmt.Sprintf("bp", e.Val), nil
+			return "bp", nil
 		} else if e.Val == vm.IP_IDX {
-			return fmt.Sprintf("ip", e.Val), nil
+			return "ip", nil
 		} else {
 			return "", fmt.Errorf("Invalid register type %v", e.Val)
 		}
