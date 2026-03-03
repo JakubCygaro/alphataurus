@@ -12,7 +12,7 @@ var inBMap = precedenceMap{
 	TOKEN_TSLASH:    pair{3, 4},
 }
 var preBMap = precedenceMap{
-	TOKEN_TMINUS:    pair{0, 5},
+	TOKEN_TMINUS: pair{0, 5},
 }
 
 func (p *Parser) parseExpression(minBp int) (Expr, error) {
@@ -26,6 +26,18 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 		return Expr{}, fmt.Errorf("Premature end of input while parsing expression %s", p.lexer.CurrentPosition())
 	case TOKEN_TNEWLINE:
 		return Expr{}, fmt.Errorf("Premature end of input while parsing expression %s", p.lexer.CurrentPosition())
+	case TOKEN_TOPENPAREN:
+		inner, err := p.parseExpression(0)
+		if err != nil {
+			return inner, err
+		}
+		if err := p.lexer.ReadNextToken(); err != nil {
+			return inner, err
+		}
+		if p.lexer.CurrentToken().Ty != TOKEN_TCLOSEDPAREN {
+			return inner, fmt.Errorf("Unclosed expression parenthesies %s", p.lexer.CurrentPosition())
+		}
+		lhs = inner
 	case TOKEN_TOPENBRACKET:
 		inner, err := p.parseExpression(0)
 		if err != nil {
@@ -40,12 +52,13 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 		if p.lexer.CurrentToken().Ty != TOKEN_TCLOSEDBRACKET {
 			return inner, fmt.Errorf("Unclosed deref expression bracket %s", p.lexer.CurrentPosition())
 		}
-		deref := Expr{
-			Ty: EXPR_TDEREF,
-			Val: DerefExpr{
-				Inner: inner.Val.(ArthExpr),
-			},
-		}
+		deref := MakeDeref(inner.Val.(ArthExpr))
+		// deref := Expr{
+		// 	Ty: EXPR_TDEREF,
+		// 	Val: DerefExpr{
+		// 		Inner: inner.Val.(ArthExpr),
+		// 	},
+		// }
 		return deref, nil
 	case TOKEN_TREG:
 		lhs = Expr{
@@ -72,25 +85,35 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 			},
 		}
 	default:
-		if binding, ok := preBMap[lhsToken.Ty]; ok{
+		if binding, ok := preBMap[lhsToken.Ty]; ok {
 			rhs, err := p.parseExpression(binding[1])
 			if err != nil {
 				return lhs, err
 			}
-			lhs = Expr {
-				Ty: EXPR_TARTH,
-				Val: ArthExpr {
-					Ty: ARTHEXPR_TSUB,
-					A: Expr{
-						Ty: EXPR_TCONST,
-						Val: ConstExpr {
-							Ty: CONSTEXPR_TILIT,
-							Val: 0,
-						},
-					},
-					B: rhs,
-				},
+			switch lhsToken.Ty {
+			case TOKEN_TMINUS:
+				lhs = MakeArth(
+					MakeConstexprU64(0),
+					rhs,
+					lhsToken.Ty,
+				)
+			default:
+				return lhs, fmt.Errorf("Prefix operator TODO %s", p.lexer.CurrentPosition())
 			}
+			// lhs = Expr {
+			// 	Ty: EXPR_TARTH,
+			// 	Val: ArthExpr {
+			// 		Ty: ARTHEXPR_TSUB,
+			// 		A: Expr{
+			// 			Ty: EXPR_TCONST,
+			// 			Val: ConstExpr {
+			// 				Ty: CONSTEXPR_TILIT,
+			// 				Val: 0,
+			// 			},
+			// 		},
+			// 		B: rhs,
+			// 	},
+			// }
 		} else {
 			return Expr{}, fmt.Errorf("Bad expression %s", p.lexer.CurrentPosition())
 		}
@@ -100,7 +123,10 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 			return Expr{}, err
 		}
 		op := p.lexer.CurrentToken()
-		if op.Ty == TOKEN_TCLOSEDBRACKET || op.Ty == TOKEN_TEOF || op.Ty == TOKEN_TNEWLINE {
+		if op.Ty == TOKEN_TCLOSEDBRACKET ||
+			op.Ty == TOKEN_TEOF ||
+			op.Ty == TOKEN_TNEWLINE ||
+			op.Ty == TOKEN_TCLOSEDPAREN {
 			p.lexer.UnreadToken()
 			break
 		}
@@ -128,4 +154,3 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 	}
 	return lhs, nil
 }
-

@@ -92,6 +92,9 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 		}
 		instCount++
 	}
+	if err != nil {
+		return bytecode, instCount, err
+	}
 	err = a.resolveJumpInsturctions(&bytecode)
 	return bytecode, instCount, err
 }

@@ -28,6 +28,8 @@ const (
 	TOKEN_TDOT
 	TOKEN_TOPENBRACKET
 	TOKEN_TCLOSEDBRACKET
+	TOKEN_TOPENPAREN
+	TOKEN_TCLOSEDPAREN
 	TOKEN_TCOLON
 	TOKEN_TNEWLINE
 	TOKEN_TEOF
@@ -128,6 +130,16 @@ func (l *Lexer) ReadNextToken() error {
 	case b == ':':
 		l.currentToken = Token{
 			Ty: TOKEN_TCOLON,
+			val: rune(b),
+		}
+	case b == '(':
+		l.currentToken = Token{
+			Ty: TOKEN_TOPENPAREN,
+			val: rune(b),
+		}
+	case b == ')':
+		l.currentToken = Token{
+			Ty: TOKEN_TCLOSEDPAREN,
 			val: rune(b),
 		}
 	case b == '[':

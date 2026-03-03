@@ -36,6 +36,61 @@ type ConstExpr struct {
 	Val uint64
 }
 
+func MakeConstexprU64(v uint64) Expr {
+	return Expr{
+		Ty: EXPR_TCONST,
+		Val: ConstExpr {
+			Ty: CONSTEXPR_TILIT,
+			Val: v,
+		},
+	}
+}
+func MakeConstexprI64(v int64) Expr {
+	return Expr{
+		Ty: EXPR_TCONST,
+		Val: ConstExpr {
+			Ty: CONSTEXPR_TILIT,
+			Val: uint64(v),
+		},
+	}
+}
+func MakeConstexprF64(v float64) Expr {
+	return Expr{
+		Ty: EXPR_TCONST,
+		Val: ConstExpr {
+			Ty: CONSTEXPR_TFLIT,
+			Val: math.Float64bits(v),
+		},
+	}
+}
+func MakeConstexprR(r int) Expr {
+	return Expr{
+		Ty: EXPR_TCONST,
+		Val: ConstExpr {
+			Ty: CONSTEXPR_TREG,
+			Val: uint64(r),
+		},
+	}
+}
+func MakeArth(a, b Expr, ty int) Expr {
+	return Expr{
+		Ty: EXPR_TARTH,
+		Val: ArthExpr {
+			Ty: ty,
+			A: a,
+			B: b,
+		},
+	}
+}
+func MakeDeref(inner ArthExpr) Expr {
+	return Expr{
+		Ty: EXPR_TDEREF,
+		Val: DerefExpr {
+			Inner: inner,
+		},
+	}
+}
+
 func opTy(a, b*ConstExpr) int {
 	if a.Ty == CONSTEXPR_TFLIT || a.Ty == CONSTEXPR_TREG{
 		return a.Ty
