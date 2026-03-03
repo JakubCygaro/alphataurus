@@ -145,6 +145,7 @@ type DerefExpr struct {
 // fails if the expression contains any registers or a dereference
 func TryEvaluateExpression(e *Expr) (ConstExpr, bool) {
 	ret := ConstExpr { Ty: INVALID }
+	// fmt.Printf("%+v\n", e)
 	switch e.Ty {
 	case EXPR_TCONST:
 		eAsConst := e.Val.(ConstExpr)

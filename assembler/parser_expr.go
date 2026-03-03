@@ -110,6 +110,7 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 			break
 		}
 		if binding[0] < minBp {
+			p.lexer.UnreadToken()
 			break
 		}
 		rhs, err := p.parseExpression(binding[1])

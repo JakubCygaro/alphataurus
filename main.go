@@ -19,8 +19,8 @@ const assembly = `
 	dec r0
 	cmp r0, 0
 	jg L0
-	mov r5, 69+420
-	mov r6, 1.23+3.30
+	mov r5, 69+2137
+	mov r6, 1.23+3.30+1.1
 `
 
 func main() {
