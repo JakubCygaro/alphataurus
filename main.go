@@ -49,10 +49,14 @@ func main() {
 	fmt.Printf("%+v\n", mach.GetFlags())
 
 	expr := assembler.MakeArth(
-		assembler.MakeConstexprI64(1),
+		assembler.MakeConstexprR(vm.R0_IDX),
 		assembler.MakeArth(
 			assembler.MakeConstexprF64(2.2),
-			assembler.MakeConstexprF64(3.0),
+			assembler.MakeArth(
+				assembler.MakeConstexprI64(69),
+				assembler.MakeConstexprI64(1),
+				assembler.ARTHEXPR_TADD,
+			),
 			assembler.ARTHEXPR_TMUL),
 		assembler.ARTHEXPR_TADD)
 	em, _ := expr.Emit()
