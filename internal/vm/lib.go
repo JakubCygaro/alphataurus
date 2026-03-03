@@ -188,6 +188,12 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			vm.jmpL(opCodeBytes[0], param)
 		case OP_JMPLE:
 			vm.jmpLE(opCodeBytes[0], param)
+		case OP_PUSHI:
+			err = vm.push(int(opcode), param)
+		case OP_PUSHR:
+			err = vm.push(int(opcode), param)
+		case OP_POP:
+			err = vm.popR(param)
 		case OP_CMP:
 			err = vm.cmp(opCodeBytes[0], param)
 		default:
@@ -204,6 +210,9 @@ func IsGpReg(b byte) bool {
 }
 func isMovRRAllowed(b byte) bool {
 	return b <= SP_IDX
+}
+func isPushRAllowed(b byte) bool {
+	return IsGpReg(b) || b == SP_IDX || b == BP_IDX
 }
 func (state *VmState) movRR(lastByte byte) error {
 	var src, dest byte
@@ -388,5 +397,34 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 		state.flags.Zf = int64(diff) == 0
 	}
 
+	return nil
+}
+func (state *VmState) push(ty int, param []byte) error {
+	var val uint64
+	switch ty {
+	case OP_PUSHI:
+		val = binary.BigEndian.Uint64(param)
+	case OP_PUSHR:
+		reg := binary.BigEndian.Uint64(param)
+		if isPushRAllowed(byte(reg)) {
+			val = state.regs.r[reg]
+		} else {
+			return fmt.Errorf("Disallowed register for push instruction (%d)", reg)
+		}
+	}
+	state.stack = append(state.stack, val)
+	state.regs.r[SP_IDX]++
+	return nil
+}
+func (state *VmState) popR(param []byte) error {
+	if int64(state.regs.r[SP_IDX])-1 < 0 {
+		return fmt.Errorf("Stack underflow")
+	}
+	val := state.stack[state.regs.r[SP_IDX-1]]
+	state.regs.r[SP_IDX]--
+	reg := binary.BigEndian.Uint64(param)
+	if isPushRAllowed(byte(reg)){
+		state.regs.r[reg] = val
+	}
 	return nil
 }

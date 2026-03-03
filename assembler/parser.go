@@ -30,6 +30,9 @@ const (
 	INST_TJMPL
 	INST_TJMPLE
 	INST_TLABEL
+	INST_TPUSHR
+	INST_TPUSHI
+	INST_TPOP
 )
 
 type InstMovData struct {
@@ -69,6 +72,10 @@ type InstJmpData struct {
 type InstLabData struct {
 	Label string
 	DeclaredAt string
+}
+type PushPopData struct {
+	Reg uint64
+	Imm uint64
 }
 type Instruction struct {
 	Ty   int
@@ -158,6 +165,10 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseJmp(INST_TJMPL)
 	case "jle":
 		return p.parseJmp(INST_TJMPLE)
+	case "push":
+		return p.parsePush()
+	case "pop":
+		return p.parsePop()
 	default:
 		pos := p.lexer.CurrentPosition()
 		if _, ok := p.lexer.Expect(TOKEN_TCOLON); ok {

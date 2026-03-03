@@ -61,8 +61,18 @@ var (
 		5: handle(OP_ADDIR),
 		6: handle(OP_SUBIR),
 	})
+	//stack
+	p011X = nested(OpCodeMap{
+		0: handle(OP_PUSHR),
+		1: handle(OP_PUSHI),
+		2: handle(OP_POP),
+	})
+	p01XX = nested(OpCodeMap{
+		1: p011X,
+	})
 	p0XXX = nested(OpCodeMap{
 		0: p00XX,
+		1: p01XX,
 		3: p03XX,
 	})
 	oPCODE_MAP = OpCodeMap{
@@ -109,7 +119,8 @@ const (
 	OP_INCR
 	OP_DECR
 
-	OP_PUSH
+	OP_PUSHR
+	OP_PUSHI
 	OP_POP
 
 	OP_JMP   // jump to instruction

@@ -12,16 +12,11 @@ import (
 )
 
 const assembly = `
-	mov r0, 10
-	L0:
-	mov r1, 0
-	inc r1
-	dec r0
-	cmp r0, 0
-	jg L0
-	mov r5, (2+2)*2
-	mov r6, 1.23+3.30+1.1
-	mov r6, [10+10]
+	mov r0, 69
+	mov r1, 420
+	add r0, r1
+	push r0
+	pop r4
 `
 
 func main() {
@@ -49,17 +44,13 @@ func main() {
 	fmt.Printf("%+v\n", mach.GetRegisters())
 	fmt.Printf("%+v\n", mach.GetFlags())
 
-	expr := assembler.MakeArth(
-		assembler.MakeConstexprR(vm.R0_IDX),
+	expr := assembler.MakeDeref(
 		assembler.MakeArth(
-			assembler.MakeConstexprF64(2.2),
-			assembler.MakeArth(
-				assembler.MakeConstexprI64(69),
-				assembler.MakeConstexprI64(1),
-				assembler.ARTHEXPR_TADD,
-			),
-			assembler.ARTHEXPR_TMUL),
-		assembler.ARTHEXPR_TADD)
+			assembler.MakeConstexprI64(2),
+			assembler.MakeConstexprI64(2),
+			assembler.ARTHEXPR_TADD,
+		),
+	)
 	em, _ := expr.Emit()
 	ev, _ := assembler.TryEvaluateExpression(&expr)
 	fmt.Printf("%+v\n", em)
