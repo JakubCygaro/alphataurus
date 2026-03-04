@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
+
+	"github.com/JakubCygaro/alphataurus/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
@@ -83,6 +85,7 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
 		case INST_TLABEL:
 			err = a.declareLabel(inst.Data.(InstLabData), &bytecode)
+			instCount--
 		case INST_TPUSHR:
 			err = a.emitPushR(inst.Data.(PushPopData), &bytecode)
 		case INST_TPUSHI:
@@ -222,8 +225,8 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 }
 func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 	if lab, ok := a.labels[data.Label]; ok {
-		return fmt.Errorf("Label '%s' redeclared at %s, first declared at %s",
-			data.Label, data.DeclaredAt, lab.declaredAt)
+		return errors.RedeclaredLabel(data.Label, data.DeclaredAt, 
+			lab.declaredAt, a.parser.lexer.line, a.parser.lexer.col)
 	}
 	a.labels[data.Label] = labelData{
 		pos:        uint64(len(*out)),
@@ -235,7 +238,7 @@ func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 	for codePos, destLabel := range a.unresolvedJumps {
 		label, ok := a.labels[destLabel]
 		if !ok {
-			return fmt.Errorf("Could not resolve label '%s'", destLabel)
+			return errors.UnresolvedLabel(destLabel)
 		}
 		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:], (label.pos/vm.INSTRUCTION_SIZE)-1)
 	}
