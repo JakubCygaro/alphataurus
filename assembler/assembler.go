@@ -45,6 +45,8 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitMovIR(inst.Data.(InstMovData), &bytecode)
 		case INST_TMOVRR:
 			err = a.emitMovRR(inst.Data.(InstMovData), &bytecode)
+		case INST_TMOVDRI:
+			err = a.emitMovDRI(inst.Data.(InstDerefMovData), &bytecode)
 		case INST_TADDRR:
 			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
 		case INST_TSUBRR:
@@ -127,6 +129,13 @@ func (a *Assembler) emitMovRR(data InstMovData, out *[]byte) error {
 	return nil
 }
 
+func (a *Assembler) emitMovDRI(data InstDerefMovData, out *[]byte) error {
+	mov := a.opCodes[vm.OP_MOVDRI]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
+	(*out)[len(*out)-4] = byte(data.Reg)
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
+	return nil
+}
 func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 	var opCode vm.OpCodeVal
 	switch op {

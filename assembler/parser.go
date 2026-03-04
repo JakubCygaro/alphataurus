@@ -11,6 +11,7 @@ import (
 const (
 	INST_TMOVRR = iota
 	INST_TMOVIR
+	INST_TMOVDRI
 	INST_TADDRR
 	INST_TSUBRR
 	INST_TDIVRR
@@ -77,6 +78,11 @@ type InstLabData struct {
 type PushPopData struct {
 	Reg uint64
 	Imm uint64
+}
+type InstDerefMovData struct {
+	Reg    int
+	Offset int64
+	Label  string
 }
 type Instruction struct {
 	Ty   int
@@ -195,7 +201,6 @@ func (p *Parser) parseMov() error {
 			"First operand to instruction must be a valid register",
 			p.lexer.line, p.lexer.col)
 	} else {
-		op1.Ty = TOKEN_TREG
 		op1.val = int(expr.Val.(ConstExpr).Val)
 	}
 	if err := p.lexer.ReadNextToken(); err != nil {
@@ -212,13 +217,17 @@ func (p *Parser) parseMov() error {
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else {
-		eval, ok := TryConstEvaluateExpression(&expr)
-		if !ok {
+		eval, _ := TryEvaluateExpression(&expr)
+		switch eval.Ty {
+		case EXPR_TCONST:
+			op2 = eval.Val.(ConstExpr)
+		case EXPR_TDEREF:
+			return p.parseDerefMov(op1.val.(int), eval.Val.(DerefExpr).Inner)
+		default:
 			return errors.FailedToParse("mov instruction",
-				"Second operand to instruction has to be a valid register or a compile time expression",
+				"Second operand to instruction has to be a valid register, dereference, or a compile time expression",
 				p.lexer.line, p.lexer.col)
 		}
-		op2 = eval
 	}
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
@@ -247,7 +256,33 @@ func (p *Parser) parseMov() error {
 		}
 	default:
 		return errors.FailedToParse("mov instruction",
-			"Second operand to instruction has to be a valid register or a compile time expression",
+			"Second operand to instruction has to be a valid register, dereference or a compile time expression",
+			p.lexer.line, p.lexer.col)
+	}
+	return nil
+}
+func (p *Parser) parseDerefMov(reg int, inner Expr) error {
+	switch inner.Ty {
+	case EXPR_TCONST:
+		innerConst := inner.Val.(ConstExpr)
+		switch innerConst.Ty {
+		case CONSTEXPR_TILIT:
+			p.currentInst = Instruction{
+				Ty: INST_TMOVDRI,
+				Data: InstDerefMovData{
+					Reg:    reg,
+					Offset: int64(innerConst.Val),
+				},
+			}
+		// TODO: label dereference support
+		default:
+			return errors.FailedToParse("mov instruction",
+				"Invalid dereference expression parameter",
+				p.lexer.line, p.lexer.col)
+		}
+	default:
+		return errors.FailedToParse("mov instruction",
+			"Invalid dereference expression parameter",
 			p.lexer.line, p.lexer.col)
 	}
 	return nil

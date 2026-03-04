@@ -1,2 +1,5 @@
 - pointer dereference shit like in x86 [rax], [rbp], [rbp+1]
+- also other way around -> mov [rax], r0
 - implement stack nshit
+- add more tests
+- hex literal parsing

@@ -3,17 +3,20 @@ package vm
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
 	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
+	"math"
 )
 
 type VmStack []uint64
 
 type VmState struct {
-	regs        Registers
-	flags       Flags
-	stack       VmStack
+	regs  Registers
+	flags Flags
+	stack VmStack
+	// this is the virtual address of the stack, it is supposed to start right after the code section
+	stackBase   int
 	byteCodePos uint64
+	exeSecStart uint64
 }
 
 const (
@@ -51,6 +54,18 @@ func (state *VmState) GetSp() uint64 {
 	return state.regs.r[SP_IDX]
 }
 
+func (state *VmState) RealSp() int {
+	return state.VirtToRealSp(int(state.regs.r[SP_IDX]))
+}
+
+func (state *VmState) VirtToRealSp(virtual int) int {
+	return virtual - state.stackBase
+}
+
+func (state *VmState) RealToVirtSp(virtual int) int {
+	return virtual + state.stackBase
+}
+
 func (state *VmState) GetIp() uint64 {
 	return state.regs.r[IP_IDX]
 }
@@ -72,7 +87,7 @@ func CreateVmState(stackSize uint64) VmState {
 			r: [11]uint64{},
 		},
 		flags: Flags{},
-		stack: make(VmStack, 0, stackSize),
+		stack: make(VmStack, stackSize),
 	}
 	return state
 }
@@ -136,11 +151,15 @@ func (vm *VmState) GetGpRXAsFloat64(register byte) (float64, error) {
 func (vm *VmState) ClearState() {
 	vm.regs.r = [11]uint64{}
 	vm.flags = Flags{}
-	vm.stack = make(VmStack, 0, cap(vm.stack))
+	vm.stack = make(VmStack, cap(vm.stack))
 }
 
 func (vm *VmState) Execute(bytecode []byte) error {
 	codeSize := len(bytecode) / INSTRUCTION_SIZE
+	vm.exeSecStart = 0
+	vm.stackBase = len(bytecode)
+	vm.regs.r[SP_IDX] = uint64(vm.stackBase)
+	vm.regs.r[BP_IDX] = uint64(vm.stackBase)
 	vm.setIp(0)
 	for ; vm.GetIp() < uint64(codeSize); vm.incIp() {
 		var err error = nil
@@ -157,6 +176,8 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			err = vm.movRR(opCodeBytes[0])
 		case OP_MOVIR:
 			err = vm.movIR(opCodeBytes[0], param)
+		case OP_MOVDRI:
+			err = vm.movDRI(opCodeBytes[0], param)
 		case OP_ADDRR:
 			err = vm.arthRR(int(opcode), param)
 		case OP_SUBRR:
@@ -249,6 +270,19 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 		u64 := binary.BigEndian.Uint64(param)
 		state.regs.r[dest] = u64
 	}
+	return nil
+}
+func (state *VmState) movDRI(lastByte byte, param []byte) error {
+	dest := lastByte
+	if !isMovRRAllowed(dest) {
+		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
+	}
+	addr := binary.BigEndian.Uint64(param)
+	inStack := state.VirtToRealSp(int(addr))
+	if inStack < 0 || inStack >= len(state.stack) {
+		return errors.SegmentationFault(addr, state.byteCodePos)
+	}
+	state.regs.r[dest] = state.stack[inStack]
 	return nil
 }
 func (state *VmState) incR(param []byte) error {
@@ -412,15 +446,18 @@ func (state *VmState) push(ty int, param []byte) error {
 			return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 		}
 	}
-	state.stack = append(state.stack, val)
+	if state.RealSp() >= len(state.stack) {
+		return errors.StackOverflow(state.byteCodePos)
+	}
+	state.stack[state.RealSp()] = val
 	state.regs.r[SP_IDX]++
 	return nil
 }
 func (state *VmState) popR(param []byte) error {
-	if int64(state.regs.r[SP_IDX])-1 < 0 {
+	if state.RealSp()-1 < 0 {
 		return errors.StackUnderflow(state.byteCodePos)
 	}
-	val := state.stack[state.regs.r[SP_IDX-1]]
+	val := state.stack[state.RealSp()-1]
 	state.regs.r[SP_IDX]--
 	reg := binary.BigEndian.Uint64(param)
 	if isPushRAllowed(byte(reg)) {

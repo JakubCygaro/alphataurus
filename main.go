@@ -6,23 +6,16 @@ import (
 	// "math/rand"
 	"os"
 	"strings"
-
 	"github.com/JakubCygaro/alphataurus/assembler"
 	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
 const assembly = `
-	jmp L1
-L0:
-	mov r0, 69
-	mov r1, 420
-	jmp L2
-L1:
-	add r0, r1
-	push r0
-	pop r4
-	jmp L0
-L2:
+start:
+	push 69
+	add sp, 1
+	push 420
+	jmp start
 `
 
 func main() {
@@ -35,7 +28,7 @@ func main() {
 	}
 	fmt.Printf("emitted bytecode size: %d\n", len(bytecode))
 	fmt.Printf("emitted %d instructions\n", iCount)
-	mach := vm.CreateVmState(1024)
+	mach := vm.CreateVmState(4)
 	err = mach.Execute(bytecode)
 	if err != nil {
 		fmt.Println(err)
