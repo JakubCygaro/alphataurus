@@ -2,15 +2,17 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/JakubCygaro/alphataurus/assembler"
-	"github.com/JakubCygaro/alphataurus/internal/vm"
 	arg "github.com/alexflint/go-arg"
 )
 
 var args struct {
-	Input  string `arg:"required,positional"`
+	Input  string `arg:"positional,required"`
 	Output string `arg:"-o,--output" help:"output file path"`
 }
 
@@ -23,27 +25,25 @@ func main() {
 	}
 	defer file.Close()
 	asm := assembler.NewAssembler(*bufio.NewReader(file))
-	bytecode, iCount, err := asm.EmitBytecode()
+	bytecode, _, err := asm.EmitBytecode()
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
 	} else {
-		stride := int(len(bytecode) / iCount)
 		var out *os.File
 		if args.Output != "" {
-			out, err = os.Open(args.Output)
+			out, err = os.Create(args.Output)
 		} else {
-			out, err = os.Open(file.Name())
+			name := file.Name()
+			out, err = os.Create(fmt.Sprintf("%s.ao", strings.TrimSuffix(name, filepath.Ext(name))))
 		}
 		if err != nil {
 			os.Stderr.WriteString(err.Error())
 			os.Exit(-1)
 		}
 		defer out.Close()
-		for i := 0; i < stride/len(bytecode); i++ {
-			if _, err := out.Write(bytecode[i*vm.INSTRUCTION_SIZE : i*vm.INSTRUCTION_SIZE+stride]); err != nil {
-				os.Stderr.WriteString(err.Error())
-				os.Exit(-1)
-			}
+		if _, err := out.Write(bytecode); err != nil {
+			os.Stderr.WriteString(err.Error())
+			os.Exit(-1)
 		}
 	}
 }
