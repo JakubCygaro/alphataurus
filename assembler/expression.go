@@ -27,6 +27,8 @@ const (
 	CONSTEXPR_TILIT = iota
 	// 1.23
 	CONSTEXPR_TFLIT
+	// abcd
+	CONSTEXPR_TIDENT
 )
 
 type Expr struct {
@@ -37,6 +39,7 @@ type Expr struct {
 type ConstExpr struct {
 	Ty  int
 	Val uint64
+	Ident string
 }
 
 func MakeConstexpr(c ConstExpr) Expr {
@@ -69,6 +72,15 @@ func MakeConstexprF64(v float64) Expr {
 		Val: ConstExpr{
 			Ty:  CONSTEXPR_TFLIT,
 			Val: math.Float64bits(v),
+		},
+	}
+}
+func MakeConstexprIdent(v string) Expr {
+	return Expr{
+		Ty: EXPR_TCONST,
+		Val: ConstExpr{
+			Ty:  CONSTEXPR_TIDENT,
+			Ident: v,
 		},
 	}
 }
@@ -111,7 +123,7 @@ func (e *ConstExpr) AsFloat() float64 {
 	}
 }
 func opTy(a, b *ConstExpr) int {
-	if a.Ty == CONSTEXPR_TFLIT || a.Ty == CONSTEXPR_TREG {
+	if a.Ty == CONSTEXPR_TFLIT || a.Ty == CONSTEXPR_TREG  || a.Ty == CONSTEXPR_TIDENT{
 		return a.Ty
 	} else {
 		return b.Ty
@@ -120,7 +132,7 @@ func opTy(a, b *ConstExpr) int {
 
 func (a *ConstExpr) Add(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
-	if ty == CONSTEXPR_TREG {
+	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT{
 		return ConstExpr{}, false
 	}
 	switch ty {
@@ -141,7 +153,7 @@ func (a *ConstExpr) Add(b *ConstExpr) (ConstExpr, bool) {
 }
 func (a *ConstExpr) Sub(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
-	if ty == CONSTEXPR_TREG {
+	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT{
 		return ConstExpr{}, false
 	}
 	switch ty {
@@ -162,7 +174,7 @@ func (a *ConstExpr) Sub(b *ConstExpr) (ConstExpr, bool) {
 }
 func (a *ConstExpr) Mul(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
-	if ty == CONSTEXPR_TREG {
+	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT{
 		return ConstExpr{}, false
 	}
 	switch ty {
@@ -183,7 +195,7 @@ func (a *ConstExpr) Mul(b *ConstExpr) (ConstExpr, bool) {
 }
 func (a *ConstExpr) Div(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
-	if ty == CONSTEXPR_TREG {
+	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT{
 		return ConstExpr{}, false
 	}
 	switch ty {
@@ -275,7 +287,6 @@ func TryEvaluateExpression(e *Expr) (Expr, bool) {
 	default:
 		return *e, false
 	}
-	return *e, false
 }
 func (e ArthExpr) Emit() (string, error) {
 	if a, err := e.A.Emit(); err != nil {

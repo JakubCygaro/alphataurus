@@ -3,6 +3,7 @@ package assembler
 import (
 	"fmt"
 
+	"github.com/JakubCygaro/alphataurus/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
@@ -27,15 +28,18 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else if eval, _ := TryEvaluateExpression(&expr); eval.Ty != CONSTEXPR_TREG {
-		return fmt.Errorf("First operand to %s instruction must be a valid register %s", p.currentIdent,
-			p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"First operand to instruction must be a valid register",
+			p.lexer.line, p.lexer.col)
 	} else {
 		op1.Ty = TOKEN_TREG
 		op1.val = int(expr.Val.(ConstExpr).Val)
 	}
 	switch op1.val.(int) {
 	case vm.IP_IDX:
-		return fmt.Errorf("Disallowed source register %s", p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Disallowed source registers",
+			p.lexer.line, p.lexer.col)
 	}
 
 	if err := p.lexer.ReadNextToken(); err != nil {
@@ -44,7 +48,9 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	comma := p.lexer.CurrentToken()
 
 	if comma.Ty != TOKEN_TCOMMA {
-		return fmt.Errorf("Instruction '%s' missing a comma %s", p.currentIdent, p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Instruction missing a comma",
+			p.lexer.line, p.lexer.col)
 	}
 	var op2 ConstExpr
 	if expr, err := p.parseExpression(0); err != nil {
@@ -52,9 +58,9 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	} else {
 		eval, ok := TryConstEvaluateExpression(&expr)
 		if eval.Ty != CONSTEXPR_TREG && !ok {
-			return fmt.Errorf("Second operand to %s instruction has to be a valid register or a compile time expression %s",
-				p.currentIdent,
-				p.lexer.CurrentPosition())
+			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+				"Second operand to instruction has to be a valid register or a compile time expression",
+				p.lexer.line, p.lexer.col)
 		}
 		op2 = eval
 	}
@@ -62,7 +68,9 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	case CONSTEXPR_TREG:
 		switch int(op2.Val) {
 		case vm.IP_IDX:
-			return fmt.Errorf("Disallowed destination register for %s instruction %s", p.currentIdent, p.lexer.CurrentPosition())
+			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+				"Disallowed destination register",
+				p.lexer.line, p.lexer.col)
 		}
 		var ty int
 		switch arthTy {
@@ -112,9 +120,9 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			},
 		}
 	default:
-		return fmt.Errorf("Second operand to %s instruction must be a valid register or an immediate value %s",
-			p.currentIdent,
-			p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Second operand to instruction has to be a valid register or a compile time expression",
+			p.lexer.line, p.lexer.col)
 	}
 	return nil
 }
@@ -137,14 +145,9 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 	case TOKEN_TEOF:
 		p.lexer.UnreadToken()
 	default:
-		var opName string
-		switch arthTy {
-		case ARTH_TDIV:
-			opName = "div"
-		case ARTH_TMUL:
-			opName = "mul"
-		}
-		return fmt.Errorf("Invalid %s instruction %s", opName, p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Invalid instruction",
+			p.lexer.line, p.lexer.col)
 	}
 	var ty int
 	switch arthTy {
@@ -168,14 +171,18 @@ func (p *Parser) parseInc() error {
 	}
 	op1 := p.lexer.CurrentToken()
 	if op1.Ty == TOKEN_TEOF {
-		return p.prematureEndError()
+		return errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
 	}
 	if op1.Ty != TOKEN_TREG {
-		return fmt.Errorf("The operand to the inc instruction must be a valid register %s", p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"The instruction operand must be a valid register",
+			p.lexer.line, p.lexer.col)
 	}
 	switch op1.val.(int) {
 	case vm.IP_IDX:
-		return fmt.Errorf("Disallowed register %s", p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Disallowed operand register",
+			p.lexer.line, p.lexer.col)
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TINCR,
@@ -192,14 +199,18 @@ func (p *Parser) parseDec() error {
 	}
 	op1 := p.lexer.CurrentToken()
 	if op1.Ty == TOKEN_TEOF {
-		return p.prematureEndError()
+		return errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
 	}
 	if op1.Ty != TOKEN_TREG {
-		return fmt.Errorf("The operand to the dec instruction must be a valid register %s", p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"The instruction operand must be a valid register",
+			p.lexer.line, p.lexer.col)
 	}
 	switch op1.val.(int) {
 	case vm.IP_IDX:
-		return fmt.Errorf("Disallowed register %s", p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Disallowed operand register",
+			p.lexer.line, p.lexer.col)
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TDECR,

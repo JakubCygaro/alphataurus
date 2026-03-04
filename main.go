@@ -12,11 +12,17 @@ import (
 )
 
 const assembly = `
+	jmp L1
+L0:
 	mov r0, 69
 	mov r1, 420
+	jmp L2
+L1:
 	add r0, r1
 	push r0
 	pop r4
+	jmp L0
+L2:
 `
 
 func main() {
@@ -24,13 +30,8 @@ func main() {
 	bytecode, iCount, err := asm.EmitBytecode()
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
+		os.Stderr.WriteString("\n")
 		os.Exit(-1)
-	} else {
-		// stride := int(len(bytecode) / iCount)
-		// fmt.Printf("stride %d \n", stride)
-		// for i := 0; i < len(bytecode)/stride; i++ {
-		// 	fmt.Println(bytecode[i*stride : (i+1)*stride])
-		// }
 	}
 	fmt.Printf("emitted bytecode size: %d\n", len(bytecode))
 	fmt.Printf("emitted %d instructions\n", iCount)

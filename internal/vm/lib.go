@@ -4,14 +4,16 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
+	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
 )
 
 type VmStack []uint64
 
 type VmState struct {
-	regs  Registers
-	flags Flags
-	stack VmStack
+	regs        Registers
+	flags       Flags
+	stack       VmStack
+	byteCodePos uint64
 }
 
 const (
@@ -143,9 +145,10 @@ func (vm *VmState) Execute(bytecode []byte) error {
 	for ; vm.GetIp() < uint64(codeSize); vm.incIp() {
 		var err error = nil
 		instAddr := vm.GetIp() * INSTRUCTION_SIZE
+		vm.byteCodePos = instAddr
 		opCodeBytes := bytecode[instAddr : instAddr+OPCODE_SIZE]
 		param := bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
-		opcode, err := GetOpcode(opCodeBytes)
+		opcode, err := vm.GetOpcode(opCodeBytes)
 		if err != nil {
 			return err
 		}
@@ -219,9 +222,9 @@ func (state *VmState) movRR(lastByte byte) error {
 	src |= (lastByte & 0xf0) >> 4
 	dest |= (lastByte & 0x0f)
 	if !isMovRRAllowed(src) {
-		return fmt.Errorf("Bad MOVRR opcode, disallowed source register")
+		return errors.DisallowedSrcRegister(int(src), state.byteCodePos)
 	} else if !isMovRRAllowed(dest) {
-		return fmt.Errorf("Bad MOVRR opcode, disallowed destination register")
+		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	} else {
 		state.regs.r[dest] = state.regs.r[src]
 	}
@@ -233,27 +236,25 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 	ty |= (lastByte & 0xf0) >> 4
 	dest |= (lastByte & 0x0f)
 	if !IsGpReg(dest) {
-		return fmt.Errorf("Bad MOVIR opcode, disallowed destination register %04b", dest)
+		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
 	switch ty {
 	case TY_INT64:
 		i64 := binary.BigEndian.Uint64(param)
 		state.regs.r[dest] = i64
-	case TY_UINT64:
-		u64 := binary.BigEndian.Uint64(param)
-		state.regs.r[dest] = u64
 	case TY_FLOAT64:
 		bits := binary.BigEndian.Uint64(param)
 		state.regs.r[dest] = bits
 	default:
-		return fmt.Errorf("Bad MOVIR opcode, unknown type 0x%x", ty)
+		u64 := binary.BigEndian.Uint64(param)
+		state.regs.r[dest] = u64
 	}
 	return nil
 }
 func (state *VmState) incR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
 	if !IsGpReg(byte(reg)) {
-		return fmt.Errorf("Bad INCR parameter, disallowed register 0x%x", reg)
+		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
 	state.regs.r[reg]++
 	return nil
@@ -261,33 +262,33 @@ func (state *VmState) incR(param []byte) error {
 func (state *VmState) decR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
 	if !IsGpReg(byte(reg)) {
-		return fmt.Errorf("Bad DECR parameter, disallowed register 0x%x", reg)
+		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
 	state.regs.r[reg]--
 	return nil
 }
-func arthIRGetParameters(lastByte byte) (reg, ty byte, err error) {
+func (state *VmState) arthIRGetParameters(lastByte byte) (reg, ty byte, err error) {
 	ty |= (lastByte & 0xf0) >> 4
 	reg |= (lastByte & 0x0f)
 	if !IsGpReg(reg) && reg != BP_IDX && reg != SP_IDX {
-		return reg, ty, fmt.Errorf("Bad ADDIR parameter, disallowed target register 0x%x", reg)
+		return reg, ty, errors.DisallowedDestRegister(int(reg), state.byteCodePos)
 	}
 	return reg, ty, nil
 }
-func arthRRGetParameters(param []byte) (src, dest, ty byte, err error) {
+func (state *VmState) arthRRGetParameters(param []byte) (src, dest, ty byte, err error) {
 	src = param[0]
 	dest = param[1]
 	ty = param[3]
 	if !IsGpReg(src) {
-		return 0, 0, 0, fmt.Errorf("Bad opcode, disallowed source register %04b", dest)
+		return 0, 0, 0, errors.DisallowedSrcRegister(int(src), state.byteCodePos)
 	}
 	if !IsGpReg(dest) {
-		return 0, 0, 0, fmt.Errorf("Bad opcode, disallowed destination register %04b", dest)
+		return 0, 0, 0, errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
 	return src, dest, ty, nil
 }
 func (state *VmState) arthRR(opType int, param []byte) error {
-	src, dest, ty, err := arthRRGetParameters(param)
+	src, dest, ty, err := state.arthRRGetParameters(param)
 	if err != nil {
 		return err
 	}
@@ -310,7 +311,7 @@ func (state *VmState) arthRR(opType int, param []byte) error {
 	return nil
 }
 func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
-	reg, ty, err := arthIRGetParameters(lastByte)
+	reg, ty, err := state.arthIRGetParameters(lastByte)
 	if err != nil {
 		return err
 	}
@@ -369,7 +370,7 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 	subtrahend |= (lastByte & 0xf0) >> 4
 	minuend |= (lastByte & 0x0f)
 	if !IsGpReg(minuend) {
-		return fmt.Errorf("Bad CMP instruction, minuend was not a valid register 0x%x", minuend)
+		return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
 	}
 	var subV, minV uint64
 	minV = state.regs.r[minuend]
@@ -389,7 +390,6 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 	subValues(minV, subV, ty, &diff)
 
 	if ty == TY_FLOAT64 {
-		fmt.Printf("diff: %v\n", math.Float64frombits(diff))
 		state.flags.Sf = math.Float64frombits(diff) <= 0.0
 		state.flags.Zf = math.Float64frombits(diff) == 0.0
 	} else {
@@ -409,7 +409,7 @@ func (state *VmState) push(ty int, param []byte) error {
 		if isPushRAllowed(byte(reg)) {
 			val = state.regs.r[reg]
 		} else {
-			return fmt.Errorf("Disallowed register for push instruction (%d)", reg)
+			return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 		}
 	}
 	state.stack = append(state.stack, val)
@@ -418,12 +418,12 @@ func (state *VmState) push(ty int, param []byte) error {
 }
 func (state *VmState) popR(param []byte) error {
 	if int64(state.regs.r[SP_IDX])-1 < 0 {
-		return fmt.Errorf("Stack underflow")
+		return errors.StackUnderflow(state.byteCodePos)
 	}
 	val := state.stack[state.regs.r[SP_IDX-1]]
 	state.regs.r[SP_IDX]--
 	reg := binary.BigEndian.Uint64(param)
-	if isPushRAllowed(byte(reg)){
+	if isPushRAllowed(byte(reg)) {
 		state.regs.r[reg] = val
 	}
 	return nil

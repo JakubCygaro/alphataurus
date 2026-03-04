@@ -3,29 +3,40 @@ package assembler
 import (
 	"fmt"
 
+	"github.com/JakubCygaro/alphataurus/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
 func (p *Parser) parseCmp() error {
+
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
 	op1 := p.lexer.CurrentToken()
 	ty := vm.TY_INT64
 	switch op1.Ty {
-	case TOKEN_TEOF:
-		return p.prematureEndError()
-	case TOKEN_TNEWLINE:
-		return fmt.Errorf("Malformed cmp instruction %s", p.lexer.CurrentPosition())
+	// case TOKEN_TEOF:
+	// 	return errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
+	// case TOKEN_TNEWLINE:
+	// 	return fmt.Errorf("Malformed cmp instruction %s", p.lexer.CurrentPosition())
 	case TOKEN_TFLOAT:
 		ty = vm.TY_FLOAT64
 		if err := p.lexer.ReadNextToken(); err != nil {
 			return err
 		}
 		op1 = p.lexer.CurrentToken()
+	default:
+		p.lexer.UnreadToken()
 	}
-	if op1.Ty != TOKEN_TREG {
-		return fmt.Errorf("The first operand to the cmp instruction must be a valid register %s", p.lexer.CurrentPosition())
+	if expr, err := p.parseExpression(0); err != nil {
+		return err
+	} else if eval, _ := TryConstEvaluateExpression(&expr); eval.Ty == CONSTEXPR_TREG {
+		op1.Ty = TOKEN_TREG
+		op1.val = int(eval.Val)
+	} else {
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"First operand to instruction must be a valid register",
+			p.lexer.line, p.lexer.col)
 	}
 	if op1.val.(int) > vm.GP_REG_MAX {
 		return fmt.Errorf("Disallowed minuend register %s", p.lexer.CurrentPosition())
@@ -34,17 +45,41 @@ func (p *Parser) parseCmp() error {
 		return err
 	}
 	if p.lexer.CurrentToken().Ty != TOKEN_TCOMMA {
-		return fmt.Errorf("Instruction missing a comma %s", p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Instruction missing a comma",
+			p.lexer.line, p.lexer.col)
 	}
-	if err := p.lexer.ReadNextToken(); err != nil {
+	// if err := p.lexer.ReadNextToken(); err != nil {
+	// 	return err
+	// }
+	// op2 := p.lexer.CurrentToken()
+	op2 := Token{Ty: INVALID}
+	if expr, err := p.parseExpression(0); err != nil {
 		return err
+	} else if eval, ok := TryConstEvaluateExpression(&expr); eval.Ty == CONSTEXPR_TREG {
+		op2.Ty = TOKEN_TREG
+		op2.val = int(eval.Val)
+	} else if !ok {
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Second operand to instruction must be a valid register or a constant expression",
+			p.lexer.line, p.lexer.col)
+	} else if eval.Ty == CONSTEXPR_TILIT {
+		op2.Ty = TOKEN_TINTEGER_LIT
+		op2.val = eval.Val
+	} else if eval.Ty == CONSTEXPR_TFLIT {
+		op2.Ty = TOKEN_TFLOAT_LIT
+		op2.val = eval.Val
+	} else {
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Bad expression",
+			p.lexer.line, p.lexer.col)
 	}
-	op2 := p.lexer.CurrentToken()
-
 	switch op2.Ty {
 	case TOKEN_TREG:
 		if op2.val.(int) > vm.GP_REG_MAX {
-			return fmt.Errorf("Disallowed subtrahend register %s", p.lexer.CurrentPosition())
+			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+				"Disallowed subtrahend register",
+				p.lexer.line, p.lexer.col)
 		}
 		p.currentInst = Instruction{
 			Ty: INST_TCMPRR,
@@ -73,17 +108,30 @@ func (p *Parser) parseCmp() error {
 			},
 		}
 	}
-
 	return nil
 }
 func (p *Parser) parseJmp(ty int) error {
-	if err := p.lexer.ReadNextToken(); err != nil {
-		return err
-	}
 	inst := Instruction{
 		Ty: ty,
 	}
-	addr := p.lexer.CurrentToken()
+	addr := Token{Ty: INVALID}
+	if expr, err := p.parseExpression(0); err != nil {
+		return err
+	} else if eval, ok := TryConstEvaluateExpression(&expr); eval.Ty == CONSTEXPR_TIDENT {
+		addr.Ty = TOKEN_TIDENT
+		addr.val = eval.Ident
+	} else if !ok {
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Second operand to instruction must be a valid label or a an address",
+			p.lexer.line, p.lexer.col)
+	} else if eval.Ty == CONSTEXPR_TILIT {
+		addr.Ty = TOKEN_TINTEGER_LIT
+		addr.val = eval.Val
+	} else {
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Bad expression",
+			p.lexer.line, p.lexer.col)
+	}
 	switch addr.Ty {
 	case TOKEN_TINTEGER_LIT:
 		inst.Data = InstJmpData {
@@ -94,7 +142,9 @@ func (p *Parser) parseJmp(ty int) error {
 			Address: addr.val.(string),
 		}
 	default:
-		return fmt.Errorf("jg instruction requires a valid address as a parameter %s", p.lexer.CurrentPosition())
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"instruction requires a valid address or label as a parameter",
+			p.lexer.line, p.lexer.col)
 	}
 	p.currentInst = inst
 	return nil

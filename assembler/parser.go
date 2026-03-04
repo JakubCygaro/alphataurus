@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 
+	"github.com/JakubCygaro/alphataurus/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
@@ -70,7 +71,7 @@ type InstJmpData struct {
 	Address any
 }
 type InstLabData struct {
-	Label string
+	Label      string
 	DeclaredAt string
 }
 type PushPopData struct {
@@ -123,7 +124,7 @@ func (p *Parser) ParseNext() (bool, error) {
 	}
 	err = p.lexer.ReadNextToken()
 	if p.lexer.CurrentToken().Ty != TOKEN_TNEWLINE && p.lexer.CurrentToken().Ty != TOKEN_TEOF {
-		return false, fmt.Errorf("Extra tokens on line (%v) %s", p.lexer.CurrentToken(), p.lexer.CurrentPosition())
+		return false, errors.ExtraTokensOnLine(p.lexer.line, p.lexer.col)
 	}
 	return true, err
 }
@@ -175,7 +176,7 @@ func (p *Parser) parseStartIdent(t Token) error {
 			p.currentInst = Instruction{
 				Ty: INST_TLABEL,
 				Data: InstLabData{
-					Label: ident,
+					Label:      ident,
 					DeclaredAt: pos,
 				},
 			}
@@ -183,14 +184,16 @@ func (p *Parser) parseStartIdent(t Token) error {
 		}
 	}
 	p.currentIdent = ""
-	return fmt.Errorf("Unknown identifier '%s' %s", ident, p.lexer.CurrentPosition())
+	return errors.UnknownIdentifier(ident, p.lexer.line, p.lexer.col)
 }
 func (p *Parser) parseMov() error {
 	var op1 Token
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else if eval, _ := TryConstEvaluateExpression(&expr); eval.Ty != CONSTEXPR_TREG {
-		return fmt.Errorf("First operand to mov instruction must be a valid register %s", p.lexer.CurrentPosition())
+		return errors.FailedToParse("mov instruction",
+			"First operand to instruction must be a valid register",
+			p.lexer.line, p.lexer.col)
 	} else {
 		op1.Ty = TOKEN_TREG
 		op1.val = int(expr.Val.(ConstExpr).Val)
@@ -200,7 +203,9 @@ func (p *Parser) parseMov() error {
 	}
 	comma := p.lexer.CurrentToken()
 	if comma.Ty != TOKEN_TCOMMA {
-		return fmt.Errorf("Instruction '%s' missing a comma %s", p.currentIdent, p.lexer.CurrentPosition())
+		return errors.FailedToParse("mov instruction",
+			"Instruction missing a comma",
+			p.lexer.line, p.lexer.col)
 	}
 
 	var op2 ConstExpr
@@ -208,10 +213,10 @@ func (p *Parser) parseMov() error {
 		return err
 	} else {
 		eval, ok := TryConstEvaluateExpression(&expr)
-		if !ok{
-			return fmt.Errorf("Second operand to %s instruction has to be a valid register or a compile time expression %s",
-				p.currentIdent,
-				p.lexer.CurrentPosition())
+		if !ok {
+			return errors.FailedToParse("mov instruction",
+				"Second operand to instruction has to be a valid register or a compile time expression",
+				p.lexer.line, p.lexer.col)
 		}
 		op2 = eval
 	}
@@ -241,11 +246,9 @@ func (p *Parser) parseMov() error {
 			},
 		}
 	default:
-		return fmt.Errorf("Second operand to mov instruction must be a valid register or an immediate value %s",
-			p.lexer.CurrentPosition())
+		return errors.FailedToParse("mov instruction",
+			"Second operand to instruction has to be a valid register or a compile time expression",
+			p.lexer.line, p.lexer.col)
 	}
 	return nil
-}
-func (p *Parser) prematureEndError() error {
-	return fmt.Errorf("Premature end of input %s", p.lexer.CurrentPosition())
 }

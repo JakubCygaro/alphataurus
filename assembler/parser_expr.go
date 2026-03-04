@@ -1,6 +1,10 @@
 package assembler
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/JakubCygaro/alphataurus/assembler/errors"
+)
 
 type pair [2]int
 type precedenceMap map[int]pair
@@ -23,9 +27,9 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 	var lhs Expr
 	switch lhsToken.Ty {
 	case TOKEN_TEOF:
-		return Expr{}, fmt.Errorf("Premature end of input while parsing expression %s", p.lexer.CurrentPosition())
+		return Expr{}, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
 	case TOKEN_TNEWLINE:
-		return Expr{}, fmt.Errorf("Premature end of input while parsing expression %s", p.lexer.CurrentPosition())
+		return Expr{}, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
 	case TOKEN_TOPENPAREN:
 		inner, err := p.parseExpression(0)
 		if err != nil {
@@ -35,7 +39,7 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 			return inner, err
 		}
 		if p.lexer.CurrentToken().Ty != TOKEN_TCLOSEDPAREN {
-			return inner, fmt.Errorf("Unclosed expression parenthesies %s", p.lexer.CurrentPosition())
+			return inner, errors.UnclosedParen(p.lexer.line, p.lexer.col)
 		}
 		lhs = inner
 	case TOKEN_TOPENBRACKET:
@@ -44,21 +48,19 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 			return inner, err
 		}
 		if inner.Ty != EXPR_TARTH {
-			return inner, fmt.Errorf("Invalid inner expression of deref expression %s", p.lexer.CurrentPosition())
+			return inner, errors.FailedToParse("dereference expression",
+				"Invalid inner expression of deref expression",
+				p.lexer.line, p.lexer.col)
 		}
 		if err := p.lexer.ReadNextToken(); err != nil {
 			return inner, err
 		}
 		if p.lexer.CurrentToken().Ty != TOKEN_TCLOSEDBRACKET {
-			return inner, fmt.Errorf("Unclosed deref expression bracket %s", p.lexer.CurrentPosition())
+			return inner, errors.FailedToParse("dereference expression",
+				"Unclosed deref expression bracket",
+				p.lexer.line, p.lexer.col)
 		}
 		deref := MakeDeref(inner)
-		// deref := Expr{
-		// 	Ty: EXPR_TDEREF,
-		// 	Val: DerefExpr{
-		// 		Inner: inner.Val.(ArthExpr),
-		// 	},
-		// }
 		return deref, nil
 	case TOKEN_TREG:
 		lhs = Expr{
@@ -84,6 +86,8 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 				Val: lhsToken.val.(uint64),
 			},
 		}
+	case TOKEN_TIDENT:
+		lhs = MakeConstexprIdent(lhsToken.val.(string))
 	default:
 		if binding, ok := preBMap[lhsToken.Ty]; ok {
 			rhs, err := p.parseExpression(binding[1])
@@ -100,22 +104,8 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 			default:
 				return lhs, fmt.Errorf("Prefix operator TODO %s", p.lexer.CurrentPosition())
 			}
-			// lhs = Expr {
-			// 	Ty: EXPR_TARTH,
-			// 	Val: ArthExpr {
-			// 		Ty: ARTHEXPR_TSUB,
-			// 		A: Expr{
-			// 			Ty: EXPR_TCONST,
-			// 			Val: ConstExpr {
-			// 				Ty: CONSTEXPR_TILIT,
-			// 				Val: 0,
-			// 			},
-			// 		},
-			// 		B: rhs,
-			// 	},
-			// }
 		} else {
-			return Expr{}, fmt.Errorf("Bad expression %s", p.lexer.CurrentPosition())
+			return Expr{}, errors.FailedToParse("expression", "Bad expression", p.lexer.line, p.lexer.col)
 		}
 	}
 	for {

@@ -21,6 +21,7 @@ func main() {
 	file, err := os.Open(args.Input)
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
+		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
 	defer file.Close()
@@ -28,6 +29,7 @@ func main() {
 	bytecode, _, err := asm.EmitBytecode()
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
+		os.Stderr.WriteString("\n")
 	} else {
 		var out *os.File
 		if args.Output != "" {
@@ -38,11 +40,13 @@ func main() {
 		}
 		if err != nil {
 			os.Stderr.WriteString(err.Error())
+			os.Stderr.WriteString("\n")
 			os.Exit(-1)
 		}
 		defer out.Close()
 		if _, err := out.Write(bytecode); err != nil {
 			os.Stderr.WriteString(err.Error())
+			os.Stderr.WriteString("\n")
 			os.Exit(-1)
 		}
 	}

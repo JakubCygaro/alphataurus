@@ -210,7 +210,7 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
 	} else if lab, ok := data.Address.(string); ok {
 		if l, ok := a.labels[lab]; ok {
-			*out = binary.BigEndian.AppendUint64(*out, uint64(l.pos/vm.INSTRUCTION_SIZE))
+			*out = binary.BigEndian.AppendUint64(*out, uint64(l.pos/vm.INSTRUCTION_SIZE)-1)
 		} else {
 			a.unresolvedJumps[opPos] = lab
 			*out = binary.BigEndian.AppendUint64(*out, uint64(0))
@@ -237,7 +237,7 @@ func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 		if !ok {
 			return fmt.Errorf("Could not resolve label '%s'", destLabel)
 		}
-		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:], label.pos/vm.INSTRUCTION_SIZE)
+		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:], (label.pos/vm.INSTRUCTION_SIZE)-1)
 	}
 	return nil
 }

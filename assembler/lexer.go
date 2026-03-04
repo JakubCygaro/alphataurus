@@ -3,10 +3,12 @@ package assembler
 import (
 	"bufio"
 	"fmt"
-	"github.com/JakubCygaro/alphataurus/internal/vm"
 	"math"
 	"strconv"
 	"unicode"
+
+	"github.com/JakubCygaro/alphataurus/assembler/errors"
+	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
 const (
@@ -237,7 +239,7 @@ func (l *Lexer) ReadNextToken() error {
 			}
 		}
 	default:
-		return fmt.Errorf("Unrecognized character `%c` %s", b, l.CurrentPosition())
+		return errors.UnrecognizedChar(rune(b), l.line, l.col)
 	}
 	return nil
 }
@@ -275,21 +277,20 @@ func (l *Lexer) readDigit(b byte) error {
 			if numberCheck(next) {
 				l.unreadByte()
 			} else {
-				return fmt.Errorf("Malformed float literal %s", l.CurrentPosition())
+				return errors.MalformedFloatLit(l.line, l.col)
 			}
 
 		} else if unicode.IsSpace(rune(next)) || !identCheck(next) {
 			l.unreadByte()
 			break
 		} else {
-			return fmt.Errorf("Malformed integer literal %s", l.CurrentPosition())
-		}
+			return errors.MalformedIntegerLit(l.line, l.col)		}
 	}
 	if !dot {
 		if !minus {
 			val, err := strconv.ParseUint(string(buf), 10, 64)
 			if err != nil {
-				return err
+				return errors.MalformedFloatLit(l.line, l.col)
 			}
 			l.currentToken = Token{
 				Ty:  TOKEN_TINTEGER_LIT,
@@ -298,7 +299,7 @@ func (l *Lexer) readDigit(b byte) error {
 		} else {
 			val, err := strconv.ParseInt(string(buf), 10, 64)
 			if err != nil {
-				return err
+				return errors.MalformedFloatLit(l.line, l.col)
 			}
 			l.currentToken = Token{
 				Ty:  TOKEN_TINTEGER_LIT,
@@ -308,7 +309,7 @@ func (l *Lexer) readDigit(b byte) error {
 	} else {
 		val, err := strconv.ParseFloat(string(buf), 64)
 		if err != nil {
-			return fmt.Errorf("Malformed 64-bit floating point digit literal %s", l.CurrentPosition())
+			return errors.MalformedFloatLit(l.line, l.col)
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TFLOAT_LIT,

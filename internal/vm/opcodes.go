@@ -2,7 +2,7 @@ package vm
 
 import (
 	"encoding/binary"
-	"fmt"
+	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
 )
 
 // make it a bigass map
@@ -80,14 +80,14 @@ var (
 	}
 )
 
-func GetOpcode(opcodebytes []byte) (OpCodeVal, error) {
+func (state *VmState) GetOpcode(opcodebytes []byte) (OpCodeVal, error) {
 	ptr := 3
 	opmap := oPCODE_MAP
 	for {
 		v, ok := opmap[int8(opcodebytes[ptr])]
 		if !ok {
 			cd := binary.BigEndian.Uint32(opcodebytes)
-			return 0, fmt.Errorf("Bad opcode 0x%08x (%032b)", cd, cd)
+			return 0, errors.BadOpcode(cd, state.byteCodePos)
 		}
 		switch v.ty {
 		case HANDLE:
@@ -126,7 +126,7 @@ const (
 	OP_JMP   // jump to instruction
 	OP_JMPE  // jump if equal
 	OP_JMPZ  // jump if zero
-	OP_JMPNE  // jump if not equal
+	OP_JMPNE // jump if not equal
 	OP_JMPNZ // jump of not zero
 	OP_JMPG  // jump if greater
 	OP_JMPGE // jump if greater or equal
