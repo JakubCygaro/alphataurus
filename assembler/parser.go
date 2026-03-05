@@ -281,6 +281,35 @@ type DerefData struct {
 	OffsetExpr *Expr
 }
 
+func (p *Parser) processDerefNestedArth(arthExpr ArthExpr) (DerefData, error) {
+	ret := DerefData{
+		Reg1:       INVALID,
+		Reg2:       INVALID,
+		OffsetOp:   INVALID,
+		Offset:     INVALID,
+		OffsetExpr: nil,
+	}
+	switch {
+	case IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(&arthExpr.B, CONSTEXPR_TILIT):
+		ret.Ty = DEREF_T1RO
+		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
+		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
+		ret.OffsetOp = arthExpr.GetVMOpType()
+	case IsConstexpr(&arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(&arthExpr.B, CONSTEXPR_TREG) &&
+		(arthExpr.Ty == ARTHEXPR_TADD):
+		ret.Ty = DEREF_T1RO
+		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
+		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
+		ret.OffsetOp = arthExpr.GetVMOpType()
+	default:
+		return ret, errors.FailedToParse("mov instruction",
+			"Invalid dereference expression parameter",
+			p.lexer.line, p.lexer.col)
+		// TODO: label dereference support
+	}
+	return ret, nil
+}
+
 func (p *Parser) processDeref(inner Expr) (DerefData, error) {
 	ret := DerefData{
 		Reg1:       INVALID,
@@ -304,32 +333,15 @@ func (p *Parser) processDeref(inner Expr) (DerefData, error) {
 		// TODO: label dereference support
 		default:
 			return ret, errors.FailedToParse("dereference expression",
-				"Invalid dereference expression parameter",
+				"Invalid single parameter dereference expression",
 				p.lexer.line, p.lexer.col)
 		}
 	case EXPR_TARTH:
 		arthExpr := inner.Val.(ArthExpr)
-		switch {
-		case IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(&arthExpr.B, CONSTEXPR_TILIT):
-			ret.Ty = DEREF_T1RO
-			ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
-			ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
-			ret.OffsetOp = arthExpr.GetVMOpType()
-		case IsConstexpr(&arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(&arthExpr.B, CONSTEXPR_TREG) &&
-			(arthExpr.Ty == ARTHEXPR_TADD):
-			ret.Ty = DEREF_T1RO
-			ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
-			ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
-			ret.OffsetOp = arthExpr.GetVMOpType()
-		default:
-			return ret, errors.FailedToParse("mov instruction",
-				"Invalid dereference expression parameter",
-				p.lexer.line, p.lexer.col)
-			// TODO: label dereference support
-		}
+		return p.processDerefNestedArth(arthExpr)
 	default:
 		return ret, errors.FailedToParse("mov instruction",
-			"Invalid dereference expression parameter",
+			"Invalid dereference expression",
 			p.lexer.line, p.lexer.col)
 	}
 	return ret, nil
