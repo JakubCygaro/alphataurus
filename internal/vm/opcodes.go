@@ -116,7 +116,7 @@ const (
 	OP_MOVRR   = iota // move register to register
 	OP_MOVDRI         // move dereference to register, [<address>]
 	OP_MOVDRO1        // move dereference to register, like [rx + <signed offset>]
-	OP_MOVDRO2        // move dereference to register, like [rx <op> rx + <signed offset>]
+	OP_MOVDRO2        // move dereference to register, like [(rx + rx) +/- <signed offset>]
 	OP_ADDRR          // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR
