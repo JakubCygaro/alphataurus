@@ -42,6 +42,19 @@ type ConstExpr struct {
 	Ident string
 }
 
+func IsConstexpr(e*Expr, ty int) bool {
+	if e.Ty != EXPR_TCONST {
+		return false
+	}
+	return e.Val.(ConstExpr).Ty == ty
+}
+func IsArthexpr(e*Expr, ty int) bool {
+	if e.Ty != EXPR_TARTH {
+		return false
+	}
+	return e.Val.(ArthExpr).Ty == ty
+}
+
 func MakeConstexpr(c ConstExpr) Expr {
 	return Expr{
 		Ty:  EXPR_TCONST,

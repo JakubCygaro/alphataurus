@@ -11,11 +11,13 @@ import (
 )
 
 const assembly = `
+	jmp start
+	jmp exit
 start:
 	push 69
-	add sp, 1
-	push 420
-	jmp start
+	mov r0, [sp]
+	pop
+exit:
 `
 
 func main() {
@@ -28,7 +30,7 @@ func main() {
 	}
 	fmt.Printf("emitted bytecode size: %d\n", len(bytecode))
 	fmt.Printf("emitted %d instructions\n", iCount)
-	mach := vm.CreateVmState(4)
+	mach := vm.CreateVmState(64)
 	err = mach.Execute(bytecode)
 	if err != nil {
 		fmt.Println(err)

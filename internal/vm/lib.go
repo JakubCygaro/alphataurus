@@ -158,7 +158,7 @@ func (vm *VmState) Execute(bytecode []byte) error {
 	codeSize := len(bytecode) / INSTRUCTION_SIZE
 	vm.exeSecStart = 0
 	vm.stackBase = len(bytecode)
-	vm.regs.r[SP_IDX] = uint64(vm.stackBase)
+	vm.regs.r[SP_IDX] = uint64(vm.stackBase)-1
 	vm.regs.r[BP_IDX] = uint64(vm.stackBase)
 	vm.setIp(0)
 	for ; vm.GetIp() < uint64(codeSize); vm.incIp() {
@@ -178,6 +178,8 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			err = vm.movIR(opCodeBytes[0], param)
 		case OP_MOVDRI:
 			err = vm.movDRI(opCodeBytes[0], param)
+		case OP_MOVDRO1:
+			err = vm.movDRO1(opCodeBytes[0], param)
 		case OP_ADDRR:
 			err = vm.arthRR(int(opcode), param)
 		case OP_SUBRR:
@@ -237,53 +239,6 @@ func isMovRRAllowed(b byte) bool {
 }
 func isPushRAllowed(b byte) bool {
 	return IsGpReg(b) || b == SP_IDX || b == BP_IDX
-}
-func (state *VmState) movRR(lastByte byte) error {
-	var src, dest byte
-	src |= (lastByte & 0xf0) >> 4
-	dest |= (lastByte & 0x0f)
-	if !isMovRRAllowed(src) {
-		return errors.DisallowedSrcRegister(int(src), state.byteCodePos)
-	} else if !isMovRRAllowed(dest) {
-		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
-	} else {
-		state.regs.r[dest] = state.regs.r[src]
-	}
-	return nil
-}
-func (state *VmState) movIR(lastByte byte, param []byte) error {
-	var ty, dest byte
-	// type of value
-	ty |= (lastByte & 0xf0) >> 4
-	dest |= (lastByte & 0x0f)
-	if !IsGpReg(dest) {
-		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
-	}
-	switch ty {
-	case TY_INT64:
-		i64 := binary.BigEndian.Uint64(param)
-		state.regs.r[dest] = i64
-	case TY_FLOAT64:
-		bits := binary.BigEndian.Uint64(param)
-		state.regs.r[dest] = bits
-	default:
-		u64 := binary.BigEndian.Uint64(param)
-		state.regs.r[dest] = u64
-	}
-	return nil
-}
-func (state *VmState) movDRI(lastByte byte, param []byte) error {
-	dest := lastByte
-	if !isMovRRAllowed(dest) {
-		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
-	}
-	addr := binary.BigEndian.Uint64(param)
-	inStack := state.VirtToRealSp(int(addr))
-	if inStack < 0 || inStack >= len(state.stack) {
-		return errors.SegmentationFault(addr, state.byteCodePos)
-	}
-	state.regs.r[dest] = state.stack[inStack]
-	return nil
 }
 func (state *VmState) incR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
@@ -449,15 +404,15 @@ func (state *VmState) push(ty int, param []byte) error {
 	if state.RealSp() >= len(state.stack) {
 		return errors.StackOverflow(state.byteCodePos)
 	}
-	state.stack[state.RealSp()] = val
+	state.stack[state.RealSp()+1] = val
 	state.regs.r[SP_IDX]++
 	return nil
 }
 func (state *VmState) popR(param []byte) error {
-	if state.RealSp()-1 < 0 {
+	if state.RealSp() < 0 {
 		return errors.StackUnderflow(state.byteCodePos)
 	}
-	val := state.stack[state.RealSp()-1]
+	val := state.stack[state.RealSp()]
 	state.regs.r[SP_IDX]--
 	reg := binary.BigEndian.Uint64(param)
 	if isPushRAllowed(byte(reg)) {

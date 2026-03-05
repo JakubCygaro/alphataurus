@@ -12,6 +12,7 @@ const (
 	INST_TMOVRR = iota
 	INST_TMOVIR
 	INST_TMOVDRI
+	INST_TMOVDRO1
 	INST_TADDRR
 	INST_TSUBRR
 	INST_TDIVRR
@@ -80,8 +81,9 @@ type PushPopData struct {
 	Imm uint64
 }
 type InstDerefMovData struct {
-	Reg    int
+	Dest   int
 	Offset int64
+	OReg1  int
 	Label  string
 }
 type Instruction struct {
@@ -270,8 +272,17 @@ func (p *Parser) parseDerefMov(reg int, inner Expr) error {
 			p.currentInst = Instruction{
 				Ty: INST_TMOVDRI,
 				Data: InstDerefMovData{
-					Reg:    reg,
+					Dest:   reg,
 					Offset: int64(innerConst.Val),
+				},
+			}
+		case CONSTEXPR_TREG:
+			p.currentInst = Instruction{
+				Ty: INST_TMOVDRO1,
+				Data: InstDerefMovData{
+					Dest:   reg,
+					OReg1:  int(innerConst.Val),
+					Offset: int64(0),
 				},
 			}
 		// TODO: label dereference support
@@ -279,6 +290,24 @@ func (p *Parser) parseDerefMov(reg int, inner Expr) error {
 			return errors.FailedToParse("mov instruction",
 				"Invalid dereference expression parameter",
 				p.lexer.line, p.lexer.col)
+		}
+	case EXPR_TARTH:
+		arthExpr := inner.Val.(ArthExpr)
+		//ensure the first reg is on the left
+		if IsConstexpr(&arthExpr.B, CONSTEXPR_TREG) {
+			arthExpr.A, arthExpr.B = arthExpr.B, arthExpr.A
+		}
+		switch {
+		case IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(&arthExpr.B, CONSTEXPR_TILIT):
+			p.currentInst = Instruction{
+				Ty: INST_TMOVDRO1,
+				Data: InstDerefMovData{
+					Dest:   reg,
+					OReg1:  int(arthExpr.A.Val.(ConstExpr).Val),
+					Offset: int64(arthExpr.B.Val.(ConstExpr).Val),
+				},
+			}
+			// TODO: label dereference support
 		}
 	default:
 		return errors.FailedToParse("mov instruction",
