@@ -68,16 +68,12 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	switch opTy {
 	case OP_TADD:
 		addr = regV + p
-	case OP_TSUBRI:
+	case OP_TSUB:
 		addr = regV - p
-	case OP_TSUBIR:
-		addr = p - regV
 	case OP_TMUL:
 		addr = regV * p
-	case OP_TDIVRI:
+	case OP_TDIV:
 		addr = regV / p
-	case OP_TDIVIR:
-		addr = p / regV
 	default:
 		return errors.BadOpcode(state.currentOpcode, state.byteCodePos)
 	}

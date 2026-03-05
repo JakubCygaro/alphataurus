@@ -264,26 +264,29 @@ func (p *Parser) parseMov() error {
 	}
 	return nil
 }
+
 const (
 	DEREF_T0RO = iota
 	DEREF_T1RO
 	DEREF_T2RO
 )
+
 type DerefData struct {
-	Ty int
+	Ty         int
 	Reg1, Reg2 int
 	// plus or minus
 	OffsetOp int
-	Offset int64
+	Offset   int64
 	// in case there are labels to resolve
 	OffsetExpr *Expr
 }
-func (p *Parser) parseDerefMov(inner Expr) (DerefData, error) {
+
+func (p *Parser) processDeref(inner Expr) (DerefData, error) {
 	ret := DerefData{
-		Reg1: INVALID,
-		Reg2: INVALID,
-		OffsetOp: INVALID,
-		Offset: INVALID,
+		Reg1:       INVALID,
+		Reg2:       INVALID,
+		OffsetOp:   INVALID,
+		Offset:     INVALID,
 		OffsetExpr: nil,
 	}
 	switch inner.Ty {
@@ -297,6 +300,7 @@ func (p *Parser) parseDerefMov(inner Expr) (DerefData, error) {
 			ret.Ty = DEREF_T1RO
 			ret.Reg1 = int(innerConst.Val)
 			ret.Offset = int64(0)
+			ret.OffsetOp = vm.OP_TADD
 		// TODO: label dereference support
 		default:
 			return ret, errors.FailedToParse("dereference expression",
@@ -306,106 +310,54 @@ func (p *Parser) parseDerefMov(inner Expr) (DerefData, error) {
 	case EXPR_TARTH:
 		arthExpr := inner.Val.(ArthExpr)
 		switch {
-		case (IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(&arthExpr.B, CONSTEXPR_TILIT)) ||
-			(IsConstexpr(&arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(&arthExpr.B, CONSTEXPR_TREG)):
-			p.currentInst = Instruction{
-				Ty: INST_TMOVDRO1,
-				Data: InstDerefMovData{
-					Dest:   reg,
-					OReg1:  int(arthExpr.A.Val.(ConstExpr).Val),
-					Offset: int64(arthExpr.B.Val.(ConstExpr).Val),
-					OpTy:   op1Ty,
-				},
-			}
-			// case IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && arthExpr.B.Ty == EXPR_TARTH:
-			// 	// bAsArth := arthExpr.B.Val.(ArthExpr)
-			// 	switch {
-			// 	}
+		case IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(&arthExpr.B, CONSTEXPR_TILIT):
+			ret.Ty = DEREF_T1RO
+			ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
+			ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
+			ret.OffsetOp = arthExpr.GetVMOpType()
+		case IsConstexpr(&arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(&arthExpr.B, CONSTEXPR_TREG) &&
+			(arthExpr.Ty == ARTHEXPR_TADD):
+			ret.Ty = DEREF_T1RO
+			ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
+			ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
+			ret.OffsetOp = arthExpr.GetVMOpType()
 		default:
-			return errors.FailedToParse("mov instruction",
+			return ret, errors.FailedToParse("mov instruction",
 				"Invalid dereference expression parameter",
 				p.lexer.line, p.lexer.col)
+			// TODO: label dereference support
 		}
-		// TODO: label dereference support
 	default:
-		return errors.FailedToParse("mov instruction",
+		return ret, errors.FailedToParse("mov instruction",
 			"Invalid dereference expression parameter",
 			p.lexer.line, p.lexer.col)
 	}
 	return ret, nil
 }
 func (p *Parser) parseDerefMov(reg int, inner Expr) error {
-	switch inner.Ty {
-	case EXPR_TCONST:
-		innerConst := inner.Val.(ConstExpr)
-		switch innerConst.Ty {
-		case CONSTEXPR_TILIT:
-			p.currentInst = Instruction{
-				Ty: INST_TMOVDRI,
-				Data: InstDerefMovData{
-					Dest:   reg,
-					Offset: int64(innerConst.Val),
-				},
-			}
-		case CONSTEXPR_TREG:
-			p.currentInst = Instruction{
-				Ty: INST_TMOVDRO1,
-				Data: InstDerefMovData{
-					Dest:   reg,
-					OReg1:  int(innerConst.Val),
-					Offset: int64(0),
-					OpTy: vm.OP_TADD,
-				},
-			}
-		// TODO: label dereference support
-		default:
-			return errors.FailedToParse("mov instruction",
-				"Invalid dereference expression parameter",
-				p.lexer.line, p.lexer.col)
+	dData, err := p.processDeref(inner)
+	if err != nil {
+		return err
+	}
+	switch dData.Ty {
+	case DEREF_T0RO:
+		p.currentInst = Instruction{
+			Ty: INST_TMOVDRI,
+			Data: InstDerefMovData{
+				Dest:   reg,
+				Offset: dData.Offset,
+			},
 		}
-	case EXPR_TARTH:
-		arthExpr := inner.Val.(ArthExpr)
-		var op1Ty int
-		switch arthExpr.Ty {
-		case ARTHEXPR_TADD:
-			op1Ty = vm.OP_TADD
-		case ARTHEXPR_TSUB:
-			if IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) {
-				op1Ty = vm.OP_TSUBRI
-			} else {
-				op1Ty = vm.OP_TSUBIR
-			}
-		case ARTHEXPR_TMUL:
-			op1Ty = vm.OP_TMUL
-		case ARTHEXPR_TDIV:
-			if IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) {
-				op1Ty = vm.OP_TDIVRI
-			} else {
-				op1Ty = vm.OP_TDIVIR
-			}
+	case DEREF_T1RO:
+		p.currentInst = Instruction{
+			Ty: INST_TMOVDRO1,
+			Data: InstDerefMovData{
+				Dest:   reg,
+				OReg1:  dData.Reg1,
+				Offset: dData.Offset,
+				OpTy:   dData.OffsetOp,
+			},
 		}
-		switch {
-		case (IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(&arthExpr.B, CONSTEXPR_TILIT)) ||
-			(IsConstexpr(&arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(&arthExpr.B, CONSTEXPR_TREG)):
-			p.currentInst = Instruction{
-				Ty: INST_TMOVDRO1,
-				Data: InstDerefMovData{
-					Dest:   reg,
-					OReg1:  int(arthExpr.A.Val.(ConstExpr).Val),
-					Offset: int64(arthExpr.B.Val.(ConstExpr).Val),
-					OpTy:   op1Ty,
-				},
-			}
-			// case IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && arthExpr.B.Ty == EXPR_TARTH:
-			// 	// bAsArth := arthExpr.B.Val.(ArthExpr)
-			// 	switch {
-			// 	}
-		default:
-			return errors.FailedToParse("mov instruction",
-				"Invalid dereference expression parameter",
-				p.lexer.line, p.lexer.col)
-		}
-		// TODO: label dereference support
 	default:
 		return errors.FailedToParse("mov instruction",
 			"Invalid dereference expression parameter",

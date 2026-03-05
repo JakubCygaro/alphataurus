@@ -151,11 +151,9 @@ const (
 
 const (
 	OP_TADD = iota
-	OP_TSUBRI
-	OP_TSUBIR
+	OP_TSUB
 	OP_TMUL
-	OP_TDIVRI
-	OP_TDIVIR
+	OP_TDIV
 )
 
 func recurseIntoOpCodeMap(layer int, opcodes *OpCodeMap, bytes []byte, ret *map[uint32]OpCodeVal) {

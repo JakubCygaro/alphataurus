@@ -42,6 +42,22 @@ type ConstExpr struct {
 	Ident string
 }
 
+// op type as used by the vm
+func (e ArthExpr) GetVMOpType() int {
+	switch e.Ty {
+	case ARTHEXPR_TADD:
+		return vm.OP_TADD
+	case ARTHEXPR_TSUB:
+		return vm.OP_TSUB
+	case ARTHEXPR_TMUL:
+		return vm.OP_TMUL
+	case ARTHEXPR_TDIV:
+		return vm.OP_TDIV
+	default:
+		return INVALID
+	}
+}
+
 func IsConstexpr(e*Expr, ty int) bool {
 	if e.Ty != EXPR_TCONST {
 		return false
