@@ -109,12 +109,12 @@ const (
 )
 
 const (
-	OP_MOVIR  = 0    // move imediate value to register
-	OP_MOVRR  = iota // move register to register
-	OP_MOVDRR        // move dereference to register, like [rx <op> rx + <signed offset>]
+	OP_MOVIR   = 0    // move imediate value to register
+	OP_MOVRR   = iota // move register to register
+	OP_MOVDRI         // move dereference to register, [<address>]
 	OP_MOVDRO1        // move dereference to register, like [rx + <signed offset>]
-	OP_MOVDRI        // move dereference to register, [<address>]
-	OP_ADDRR         // add register to register and store into second register, singedness and registers passed in parameter
+	OP_MOVDRO2        // move dereference to register, like [rx <op> rx + <signed offset>]
+	OP_ADDRR          // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR
 	OP_SUBIR
@@ -144,6 +144,15 @@ const (
 	OPLB_CMP_IM = iota
 	// last byte for OP_CMP that indicates a register-register cmp
 	OPLB_CMP_RR = iota
+)
+
+const (
+	OP_TADD = iota
+	OP_TSUBRI
+	OP_TSUBIR
+	OP_TMUL
+	OP_TDIVRI
+	OP_TDIVIR
 )
 
 func recurseIntoOpCodeMap(layer int, opcodes *OpCodeMap, bytes []byte, ret *map[uint32]OpCodeVal) {

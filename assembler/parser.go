@@ -85,6 +85,7 @@ type InstDerefMovData struct {
 	Offset int64
 	OReg1  int
 	Label  string
+	OpTy   int
 }
 type Instruction struct {
 	Ty   int
@@ -293,9 +294,24 @@ func (p *Parser) parseDerefMov(reg int, inner Expr) error {
 		}
 	case EXPR_TARTH:
 		arthExpr := inner.Val.(ArthExpr)
-		//ensure the first reg is on the left
-		if IsConstexpr(&arthExpr.B, CONSTEXPR_TREG) {
-			arthExpr.A, arthExpr.B = arthExpr.B, arthExpr.A
+		var op1Ty int
+		switch arthExpr.Ty{
+		case ARTHEXPR_TADD:
+			op1Ty = vm.OP_TADD
+		case ARTHEXPR_TSUB:
+			if IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) {
+				op1Ty = vm.OP_TSUBRI
+			} else {
+				op1Ty = vm.OP_TSUBIR
+			}
+		case ARTHEXPR_TMUL:
+			op1Ty = vm.OP_TMUL
+		case ARTHEXPR_TDIV:
+			if IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) {
+				op1Ty = vm.OP_TDIVRI
+			} else {
+				op1Ty = vm.OP_TDIVIR
+			}
 		}
 		switch {
 		case IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(&arthExpr.B, CONSTEXPR_TILIT):
@@ -305,10 +321,25 @@ func (p *Parser) parseDerefMov(reg int, inner Expr) error {
 					Dest:   reg,
 					OReg1:  int(arthExpr.A.Val.(ConstExpr).Val),
 					Offset: int64(arthExpr.B.Val.(ConstExpr).Val),
+					OpTy: op1Ty,
 				},
 			}
-			// TODO: label dereference support
+		case IsConstexpr(&arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(&arthExpr.B, CONSTEXPR_TREG):
+			p.currentInst = Instruction{
+				Ty: INST_TMOVDRO1,
+				Data: InstDerefMovData{
+					Dest:   reg,
+					OReg1:  int(arthExpr.A.Val.(ConstExpr).Val),
+					Offset: int64(arthExpr.B.Val.(ConstExpr).Val),
+					OpTy: op1Ty,
+				},
+			}
+		case IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && arthExpr.B.Ty == EXPR_TARTH:
+			// bAsArth := arthExpr.B.Val.(ArthExpr)
+			switch {
+			}
 		}
+		// TODO: label dereference support
 	default:
 		return errors.FailedToParse("mov instruction",
 			"Invalid dereference expression parameter",
