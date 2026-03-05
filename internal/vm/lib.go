@@ -17,6 +17,7 @@ type VmState struct {
 	stackBase   int
 	byteCodePos uint64
 	exeSecStart uint64
+	currentOpcode uint32
 }
 
 const (
@@ -159,7 +160,7 @@ func (vm *VmState) Execute(bytecode []byte) error {
 	vm.exeSecStart = 0
 	vm.stackBase = len(bytecode)
 	vm.regs.r[SP_IDX] = uint64(vm.stackBase)-1
-	vm.regs.r[BP_IDX] = uint64(vm.stackBase)
+	vm.regs.r[BP_IDX] = uint64(vm.stackBase)-1
 	vm.setIp(0)
 	for ; vm.GetIp() < uint64(codeSize); vm.incIp() {
 		var err error = nil
@@ -168,6 +169,7 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		opCodeBytes := bytecode[instAddr : instAddr+OPCODE_SIZE]
 		param := bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
 		opcode, err := vm.GetOpcode(opCodeBytes)
+		vm.currentOpcode = uint32(opcode)
 		if err != nil {
 			return err
 		}
@@ -179,7 +181,7 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		case OP_MOVDRI:
 			err = vm.movDRI(opCodeBytes[0], param)
 		case OP_MOVDRO1:
-			err = vm.movDRO1(opCodeBytes[0], param)
+			err = vm.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_ADDRR:
 			err = vm.arthRR(int(opcode), param)
 		case OP_SUBRR:

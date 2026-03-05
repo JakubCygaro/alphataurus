@@ -2,7 +2,6 @@ package vm
 
 import (
 	"encoding/binary"
-
 	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
 )
 
@@ -53,9 +52,10 @@ func (state *VmState) movDRI(lastByte byte, param []byte) error {
 	state.regs.r[dest] = state.stack[inStack]
 	return nil
 }
-func (state *VmState) movDRO1(lastByte byte, param []byte) error {
-	dest := (lastByte & 0xf0) >> 4
-	reg := (lastByte & 0x0f)
+func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
+	dest := (byte4 & 0xf0) >> 4
+	reg := (byte4 & 0x0f)
+	opTy := byte3
 	if !isMovRRAllowed(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
@@ -63,7 +63,24 @@ func (state *VmState) movDRO1(lastByte byte, param []byte) error {
 		return errors.DisallowedOp2Register(int(reg), state.byteCodePos)
 	}
 	regV := int64(state.regs.r[reg])
-	addr := regV + int64(binary.BigEndian.Uint64(param))
+	var addr int64
+	p := int64(binary.BigEndian.Uint64(param))
+	switch opTy {
+	case OP_TADD:
+		addr = regV + p
+	case OP_TSUBRI:
+		addr = regV - p
+	case OP_TSUBIR:
+		addr = p - regV
+	case OP_TMUL:
+		addr = regV * p
+	case OP_TDIVRI:
+		addr = regV / p
+	case OP_TDIVIR:
+		addr = p / regV
+	default:
+		return errors.BadOpcode(state.currentOpcode, state.byteCodePos)
+	}
 	inStack := state.VirtToRealSp(int(addr))
 	if inStack < 0 || inStack >= len(state.stack) {
 		return errors.SegmentationFault(uint64(addr), state.byteCodePos)

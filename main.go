@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	// "math/rand"
 	"os"
 	"strings"
 	"github.com/JakubCygaro/alphataurus/assembler"
@@ -11,13 +10,18 @@ import (
 )
 
 const assembly = `
-	jmp start
-	jmp exit
-start:
+	push 1337
+	push 80085
+	mov bp, sp
 	push 69
-	mov r0, [sp]
+	push 420
+	push 2137
 	pop
-exit:
+	pop
+	pop
+	mov r0, [bp+1]
+	mov r1, [bp+2]
+	mov r2, [bp+3]
 `
 
 func main() {
@@ -33,23 +37,18 @@ func main() {
 	mach := vm.CreateVmState(64)
 	err = mach.Execute(bytecode)
 	if err != nil {
-		fmt.Println(err)
+		os.Stderr.WriteString(err.Error())
+		os.Stderr.WriteString("\n")
 	}
-	r6, _ := mach.GetGpRXAsFloat64(vm.R6_IDX)
-	fmt.Printf("r6 = %+v\n", r6)
+	if rx, err := mach.GetGpRXAsUint64(vm.R0_IDX); err == nil{
+		fmt.Printf("r0 = %+v\n", rx)
+	}
+	if rx, err := mach.GetGpRXAsUint64(vm.R1_IDX); err == nil{
+		fmt.Printf("r1 = %+v\n", rx)
+	}
+	if rx, err := mach.GetGpRXAsUint64(vm.R2_IDX); err == nil{
+		fmt.Printf("r2 = %+v\n", rx)
+	}
 	fmt.Printf("%+v\n", mach.GetRegisters())
 	fmt.Printf("%+v\n", mach.GetFlags())
-
-	expr := assembler.MakeDeref(
-		assembler.MakeArth(
-			assembler.MakeConstexprI64(2),
-			assembler.MakeConstexprI64(2),
-			assembler.ARTHEXPR_TADD,
-		),
-	)
-	em, _ := expr.Emit()
-	ev, _ := assembler.TryEvaluateExpression(&expr)
-	fmt.Printf("%+v\n", em)
-	v, _ := ev.Emit()
-	fmt.Printf("%+v\n", v)
 }

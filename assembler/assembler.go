@@ -144,6 +144,7 @@ func (a *Assembler) emitMovDRO1(data InstDerefMovData, out *[]byte) error {
 	param := byte(data.Dest) << 4
 	param |= (byte(data.OReg1) & 0x0f)
 	(*out)[len(*out)-4] = param
+	(*out)[len(*out)-3] = byte(data.OpTy)
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }

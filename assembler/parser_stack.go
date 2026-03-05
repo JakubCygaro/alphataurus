@@ -74,6 +74,7 @@ func (p *Parser) parsePop() error {
 		Ty: INST_TPOP,
 		Data: PushPopData{
 			Imm: uint64(math.MaxUint64),
+			Reg: 0xff,
 		},
 	}
 	return nil

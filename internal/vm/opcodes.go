@@ -61,7 +61,6 @@ var (
 		5: handle(OP_ADDIR),
 		6: handle(OP_SUBIR),
 		7: handle(OP_MOVDRI),
-		8: handle(OP_MOVDRO1),
 	})
 	//stack
 	p011X = nested(OpCodeMap{
@@ -72,6 +71,9 @@ var (
 	p01XX = nested(OpCodeMap{
 		1: p011X,
 	})
+	p1XXX = nested(OpCodeMap{
+		0: handle(OP_MOVDRO1),
+	})
 	p0XXX = nested(OpCodeMap{
 		0: p00XX,
 		1: p01XX,
@@ -79,6 +81,7 @@ var (
 	})
 	oPCODE_MAP = OpCodeMap{
 		0: p0XXX,
+		1: p1XXX,
 	}
 )
 
