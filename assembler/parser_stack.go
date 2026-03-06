@@ -10,7 +10,7 @@ func (p *Parser) parsePush() error {
 	if err != nil {
 		return err
 	}
-	eval, ok := TryConstEvaluateExpression(&arg)
+	eval, ok := TryConstEvaluateExpression(arg)
 	if !ok {
 		return fmt.Errorf("Operand to push instruction must be a constant expression or a register name %s",
 			p.lexer.CurrentPosition())
@@ -57,7 +57,7 @@ func (p *Parser) parsePop() error {
 		if err != nil {
 			return err
 		}
-		eval, ok := TryConstEvaluateExpression(&arg)
+		eval, ok := TryConstEvaluateExpression(arg)
 		if !ok || eval.Ty != CONSTEXPR_TREG {
 			return fmt.Errorf("Operand to pop instruction can only be a register name or none %s",
 				p.lexer.CurrentPosition())

@@ -27,7 +27,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if eval, _ := TryEvaluateExpression(&expr); eval.Ty != CONSTEXPR_TREG {
+	} else if eval, _ := TryEvaluateExpression(expr); eval.Ty != CONSTEXPR_TREG {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"First operand to instruction must be a valid register",
 			p.lexer.line, p.lexer.col)
@@ -56,7 +56,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else {
-		eval, ok := TryConstEvaluateExpression(&expr)
+		eval, ok := TryConstEvaluateExpression(expr)
 		if eval.Ty != CONSTEXPR_TREG && !ok {
 			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 				"Second operand to instruction has to be a valid register or a compile time expression",

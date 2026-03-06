@@ -19,20 +19,20 @@ var preBMap = precedenceMap{
 	TOKEN_TMINUS: pair{0, 5},
 }
 
-func (p *Parser) ParseExpression() (Expr, error) {
+func (p *Parser) ParseExpression() (*Expr, error) {
 	return p.parseExpression(0)
 }
-func (p *Parser) parseExpression(minBp int) (Expr, error) {
+func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 	if err := p.lexer.ReadNextToken(); err != nil {
-		return Expr{}, err
+		return nil, err
 	}
 	lhsToken := p.lexer.CurrentToken()
-	var lhs Expr
+	var lhs *Expr
 	switch lhsToken.Ty {
 	case TOKEN_TEOF:
-		return Expr{}, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
+		return nil, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
 	case TOKEN_TNEWLINE:
-		return Expr{}, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
+		return nil, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
 	case TOKEN_TOPENPAREN:
 		inner, err := p.parseExpression(0)
 		if err != nil {
@@ -66,7 +66,7 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 		deref := MakeDeref(inner)
 		return deref, nil
 	case TOKEN_TREG:
-		lhs = Expr{
+		lhs = &Expr{
 			Ty: EXPR_TCONST,
 			Val: ConstExpr{
 				Ty:  CONSTEXPR_TREG,
@@ -74,7 +74,7 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 			},
 		}
 	case TOKEN_TINTEGER_LIT:
-		lhs = Expr{
+		lhs = &Expr{
 			Ty: EXPR_TCONST,
 			Val: ConstExpr{
 				Ty:  CONSTEXPR_TILIT,
@@ -82,7 +82,7 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 			},
 		}
 	case TOKEN_TFLOAT_LIT:
-		lhs = Expr{
+		lhs = &Expr{
 			Ty: EXPR_TCONST,
 			Val: ConstExpr{
 				Ty:  CONSTEXPR_TFLIT,
@@ -108,12 +108,12 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 				return lhs, fmt.Errorf("Prefix operator TODO %s", p.lexer.CurrentPosition())
 			}
 		} else {
-			return Expr{}, errors.FailedToParse("expression", "Bad expression", p.lexer.line, p.lexer.col)
+			return nil, errors.FailedToParse("expression", "Bad expression", p.lexer.line, p.lexer.col)
 		}
 	}
 	for {
 		if err := p.lexer.ReadNextToken(); err != nil {
-			return Expr{}, err
+			return nil, err
 		}
 		op := p.lexer.CurrentToken()
 		if op.Ty == TOKEN_TCLOSEDBRACKET ||
@@ -136,7 +136,7 @@ func (p *Parser) parseExpression(minBp int) (Expr, error) {
 		if err != nil {
 			return lhs, err
 		}
-		lhs = Expr{
+		lhs = &Expr{
 			Ty: EXPR_TARTH,
 			Val: ArthExpr{
 				Ty: op.Ty,

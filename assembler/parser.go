@@ -199,7 +199,7 @@ func (p *Parser) parseMov() error {
 	var op1 Token
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if eval, _ := TryConstEvaluateExpression(&expr); eval.Ty != CONSTEXPR_TREG {
+	} else if eval, _ := TryConstEvaluateExpression(expr); eval.Ty != CONSTEXPR_TREG {
 		return errors.FailedToParse("mov instruction",
 			"First operand to instruction must be a valid register",
 			p.lexer.line, p.lexer.col)
@@ -220,7 +220,7 @@ func (p *Parser) parseMov() error {
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else {
-		eval, _ := TryEvaluateExpression(&expr)
+		eval, _ := TryEvaluateExpression(expr)
 		switch eval.Ty {
 		case EXPR_TCONST:
 			op2 = eval.Val.(ConstExpr)
@@ -290,12 +290,12 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr) (DerefData, error) {
 		OffsetExpr: nil,
 	}
 	switch {
-	case IsConstexpr(&arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(&arthExpr.B, CONSTEXPR_TILIT):
+	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(arthExpr.B, CONSTEXPR_TILIT):
 		ret.Ty = DEREF_T1RO
 		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
 		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
 		ret.OffsetOp = arthExpr.GetVMOpType()
-	case IsConstexpr(&arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(&arthExpr.B, CONSTEXPR_TREG) &&
+	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
 		ret.Ty = DEREF_T1RO
 		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
@@ -310,7 +310,7 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr) (DerefData, error) {
 	return ret, nil
 }
 
-func (p *Parser) processDeref(inner Expr) (DerefData, error) {
+func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 	ret := DerefData{
 		Reg1:       INVALID,
 		Reg2:       INVALID,
@@ -346,7 +346,7 @@ func (p *Parser) processDeref(inner Expr) (DerefData, error) {
 	}
 	return ret, nil
 }
-func (p *Parser) parseDerefMov(reg int, inner Expr) error {
+func (p *Parser) parseDerefMov(reg int, inner *Expr) error {
 	dData, err := p.processDeref(inner)
 	if err != nil {
 		return err

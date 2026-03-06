@@ -56,7 +56,7 @@ func main() {
 	p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
 	expr, _ := p.ParseExpression()
 	fmt.Println(expr.Emit())
-	assembler.PruneExpression(&expr, nil)
+	assembler.PruneExpression(expr, nil)
 	fmt.Println(expr.Emit())
 	
 }

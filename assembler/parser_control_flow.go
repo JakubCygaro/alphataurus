@@ -30,7 +30,7 @@ func (p *Parser) parseCmp() error {
 	}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if eval, _ := TryConstEvaluateExpression(&expr); eval.Ty == CONSTEXPR_TREG {
+	} else if eval, _ := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TREG {
 		op1.Ty = TOKEN_TREG
 		op1.val = int(eval.Val)
 	} else {
@@ -56,7 +56,7 @@ func (p *Parser) parseCmp() error {
 	op2 := Token{Ty: INVALID}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if eval, ok := TryConstEvaluateExpression(&expr); eval.Ty == CONSTEXPR_TREG {
+	} else if eval, ok := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TREG {
 		op2.Ty = TOKEN_TREG
 		op2.val = int(eval.Val)
 	} else if !ok {
@@ -117,7 +117,7 @@ func (p *Parser) parseJmp(ty int) error {
 	addr := Token{Ty: INVALID}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if eval, ok := TryConstEvaluateExpression(&expr); eval.Ty == CONSTEXPR_TIDENT {
+	} else if eval, ok := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TIDENT {
 		addr.Ty = TOKEN_TIDENT
 		addr.val = eval.Ident
 	} else if !ok {
