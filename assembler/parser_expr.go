@@ -19,6 +19,9 @@ var preBMap = precedenceMap{
 	TOKEN_TMINUS: pair{0, 5},
 }
 
+func (p *Parser) ParseExpression() (Expr, error) {
+	return p.parseExpression(0)
+}
 func (p *Parser) parseExpression(minBp int) (Expr, error) {
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return Expr{}, err

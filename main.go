@@ -3,10 +3,10 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"os"
-	"strings"
 	"github.com/JakubCygaro/alphataurus/assembler"
 	"github.com/JakubCygaro/alphataurus/internal/vm"
+	"os"
+	"strings"
 )
 
 const assembly = `
@@ -39,16 +39,24 @@ func main() {
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
 		os.Stderr.WriteString("\n")
+		os.Exit(-1)
 	}
-	if rx, err := mach.GetGpRXAsUint64(vm.R0_IDX); err == nil{
+	if rx, err := mach.GetGpRXAsUint64(vm.R0_IDX); err == nil {
 		fmt.Printf("r0 = %+v\n", rx)
 	}
-	if rx, err := mach.GetGpRXAsUint64(vm.R1_IDX); err == nil{
+	if rx, err := mach.GetGpRXAsUint64(vm.R1_IDX); err == nil {
 		fmt.Printf("r1 = %+v\n", rx)
 	}
-	if rx, err := mach.GetGpRXAsUint64(vm.R2_IDX); err == nil{
+	if rx, err := mach.GetGpRXAsUint64(vm.R2_IDX); err == nil {
 		fmt.Printf("r2 = %+v\n", rx)
 	}
 	fmt.Printf("%+v\n", mach.GetRegisters())
 	fmt.Printf("%+v\n", mach.GetFlags())
+	const in = " 1+r0+r1+2"
+	p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
+	expr, _ := p.ParseExpression()
+	fmt.Println(expr.Emit())
+	assembler.PruneExpression(&expr, nil)
+	fmt.Println(expr.Emit())
+	
 }

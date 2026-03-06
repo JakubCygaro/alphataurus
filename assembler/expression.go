@@ -37,8 +37,8 @@ type Expr struct {
 }
 
 type ConstExpr struct {
-	Ty  int
-	Val uint64
+	Ty    int
+	Val   uint64
 	Ident string
 }
 
@@ -58,13 +58,13 @@ func (e ArthExpr) GetVMOpType() int {
 	}
 }
 
-func IsConstexpr(e*Expr, ty int) bool {
+func IsConstexpr(e *Expr, ty int) bool {
 	if e.Ty != EXPR_TCONST {
 		return false
 	}
 	return e.Val.(ConstExpr).Ty == ty
 }
-func IsArthexpr(e*Expr, ty int) bool {
+func IsArthexpr(e *Expr, ty int) bool {
 	if e.Ty != EXPR_TARTH {
 		return false
 	}
@@ -108,7 +108,7 @@ func MakeConstexprIdent(v string) Expr {
 	return Expr{
 		Ty: EXPR_TCONST,
 		Val: ConstExpr{
-			Ty:  CONSTEXPR_TIDENT,
+			Ty:    CONSTEXPR_TIDENT,
 			Ident: v,
 		},
 	}
@@ -152,7 +152,7 @@ func (e *ConstExpr) AsFloat() float64 {
 	}
 }
 func opTy(a, b *ConstExpr) int {
-	if a.Ty == CONSTEXPR_TFLIT || a.Ty == CONSTEXPR_TREG  || a.Ty == CONSTEXPR_TIDENT{
+	if a.Ty == CONSTEXPR_TFLIT || a.Ty == CONSTEXPR_TREG || a.Ty == CONSTEXPR_TIDENT {
 		return a.Ty
 	} else {
 		return b.Ty
@@ -161,7 +161,7 @@ func opTy(a, b *ConstExpr) int {
 
 func (a *ConstExpr) Add(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
-	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT{
+	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT {
 		return ConstExpr{}, false
 	}
 	switch ty {
@@ -182,7 +182,7 @@ func (a *ConstExpr) Add(b *ConstExpr) (ConstExpr, bool) {
 }
 func (a *ConstExpr) Sub(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
-	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT{
+	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT {
 		return ConstExpr{}, false
 	}
 	switch ty {
@@ -203,7 +203,7 @@ func (a *ConstExpr) Sub(b *ConstExpr) (ConstExpr, bool) {
 }
 func (a *ConstExpr) Mul(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
-	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT{
+	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT {
 		return ConstExpr{}, false
 	}
 	switch ty {
@@ -224,7 +224,7 @@ func (a *ConstExpr) Mul(b *ConstExpr) (ConstExpr, bool) {
 }
 func (a *ConstExpr) Div(b *ConstExpr) (ConstExpr, bool) {
 	ty := opTy(a, b)
-	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT{
+	if ty == CONSTEXPR_TREG || ty == CONSTEXPR_TIDENT {
 		return ConstExpr{}, false
 	}
 	switch ty {
@@ -316,6 +316,56 @@ func TryEvaluateExpression(e *Expr) (Expr, bool) {
 	default:
 		return *e, false
 	}
+}
+func PruneExpression(e, swap *Expr) (Expr, bool) {
+	fmt.Printf("swap: %+v\n", swap)
+	//traverse the tree, find leaves that are not integer/float literals
+	//then try to move them up the tree
+	switch {
+	// if this is an ADD expression
+	case IsArthexpr(e, ARTHEXPR_TADD):
+		arthE := e.Val.(ArthExpr)
+		switch {
+		// if it has one node as a literal node and the other as a different ADD expr
+		case (IsConstexpr(&arthE.A, CONSTEXPR_TILIT) || IsConstexpr(&arthE.A, CONSTEXPR_TFLIT)) &&
+			IsArthexpr(&arthE.B, ARTHEXPR_TADD):
+			//then recurse into it with the other literal as swap
+			// if swap != nil {
+			// 	PruneExpression(&arthE.B, swap)
+			// } else {
+			// 	PruneExpression(&arthE.B, &arthE.A)
+			// }
+			PruneExpression(&arthE.B, &arthE.A)
+		//same case but branches are flipped
+		case (IsConstexpr(&arthE.B, CONSTEXPR_TILIT) || IsConstexpr(&arthE.B, CONSTEXPR_TFLIT)) &&
+			IsArthexpr(&arthE.A, ARTHEXPR_TADD):
+			// if swap != nil {
+			// 	PruneExpression(&arthE.A, swap)
+			// } else {
+			// 	PruneExpression(&arthE.A, &arthE.B)
+			// }
+				PruneExpression(&arthE.A, &arthE.B)
+		// we've hit the bottom and the other guy is not a comp-time evaluable expression
+		case (IsConstexpr(&arthE.A, CONSTEXPR_TILIT) || IsConstexpr(&arthE.A, CONSTEXPR_TFLIT)) &&
+			(!IsConstexpr(&arthE.B, CONSTEXPR_TILIT) && !IsConstexpr(&arthE.B, CONSTEXPR_TFLIT)) &&
+			swap != nil:
+			fmt.Println("Hewe")
+			arthE.B, *swap = *swap, arthE.B
+			fmt.Printf("spwa: %+v\n", swap)
+			e.Val = arthE
+			fmt.Println(e.Emit())
+			
+		case (IsConstexpr(&arthE.B, CONSTEXPR_TILIT) || IsConstexpr(&arthE.B, CONSTEXPR_TFLIT)) &&
+			(!IsConstexpr(&arthE.A, CONSTEXPR_TILIT) && !IsConstexpr(&arthE.A, CONSTEXPR_TFLIT)) &&
+			swap != nil:
+			arthE.A, *swap = *swap, arthE.A
+		case IsArthexpr(&arthE.A, ARTHEXPR_TADD):
+			PruneExpression(&arthE.A, swap)
+		case IsArthexpr(&arthE.B, ARTHEXPR_TADD):
+			PruneExpression(&arthE.B, swap)
+		}
+	}
+	fmt.Printf("leaving swap: %+v\n", swap)
 }
 func (e ArthExpr) Emit() (string, error) {
 	if a, err := e.A.Emit(); err != nil {
