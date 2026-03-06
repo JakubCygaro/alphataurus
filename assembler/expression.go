@@ -318,7 +318,6 @@ func TryEvaluateExpression(e *Expr) (*Expr, bool) {
 	}
 }
 func PruneExpression(e, swap *Expr) {
-	fmt.Printf("swap: %+v\n", swap)
 	//traverse the tree, find leaves that are not integer/float literals
 	//then try to move them up the tree
 	switch {
@@ -330,43 +329,37 @@ func PruneExpression(e, swap *Expr) {
 		case (IsConstexpr(arthE.A, CONSTEXPR_TILIT) || IsConstexpr(arthE.A, CONSTEXPR_TFLIT)) &&
 			IsArthexpr(arthE.B, ARTHEXPR_TADD):
 			//then recurse into it with the other literal as swap
-			// if swap != nil {
-			// 	PruneExpression(&arthE.B, swap)
-			// } else {
-			// 	PruneExpression(&arthE.B, &arthE.A)
-			// }
-			PruneExpression(arthE.B, arthE.A)
+			if swap != nil {
+				PruneExpression(arthE.B, swap)
+			} else {
+				PruneExpression(arthE.B, arthE.A)
+			}
+			// PruneExpression(arthE.B, arthE.A)
 		//same case but branches are flipped
 		case (IsConstexpr(arthE.B, CONSTEXPR_TILIT) || IsConstexpr(arthE.B, CONSTEXPR_TFLIT)) &&
 			IsArthexpr(arthE.A, ARTHEXPR_TADD):
-			// if swap != nil {
-			// 	PruneExpression(&arthE.A, swap)
-			// } else {
-			// 	PruneExpression(&arthE.A, &arthE.B)
-			// }
+			if swap != nil {
+				PruneExpression(arthE.A, swap)
+			} else {
 				PruneExpression(arthE.A, arthE.B)
+			}
+			// PruneExpression(arthE.A, arthE.B)
 		// we've hit the bottom and the other guy is not a comp-time evaluable expression
 		case (IsConstexpr(arthE.A, CONSTEXPR_TILIT) || IsConstexpr(arthE.A, CONSTEXPR_TFLIT)) &&
 			(!IsConstexpr(arthE.B, CONSTEXPR_TILIT) && !IsConstexpr(arthE.B, CONSTEXPR_TFLIT)) &&
 			swap != nil:
-			fmt.Println("Hewe")
 			*arthE.B, *swap = *swap, *arthE.B
-			fmt.Printf("spwa: %+v\n", swap)
-			e.Val = arthE
-			fmt.Println(e.Emit())
 			
 		case (IsConstexpr(arthE.B, CONSTEXPR_TILIT) || IsConstexpr(arthE.B, CONSTEXPR_TFLIT)) &&
 			(!IsConstexpr(arthE.A, CONSTEXPR_TILIT) && !IsConstexpr(arthE.A, CONSTEXPR_TFLIT)) &&
 			swap != nil:
-			fmt.Println("Hewe2")
-			arthE.A, swap = swap, arthE.A
+			*arthE.A, *swap = *swap, *arthE.A
 		case IsArthexpr(arthE.A, ARTHEXPR_TADD):
 			PruneExpression(arthE.A, swap)
 		case IsArthexpr(arthE.B, ARTHEXPR_TADD):
 			PruneExpression(arthE.B, swap)
 		}
 	}
-	fmt.Printf("leaving swap: %+v\n", swap)
 }
 func (e ArthExpr) Emit() (string, error) {
 	if a, err := e.A.Emit(); err != nil {

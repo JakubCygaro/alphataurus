@@ -52,11 +52,13 @@ func main() {
 	}
 	fmt.Printf("%+v\n", mach.GetRegisters())
 	fmt.Printf("%+v\n", mach.GetFlags())
-	const in = " 1+r0+r1+2"
+	const in = " 1+r0+3+r1+2"
 	p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
 	expr, _ := p.ParseExpression()
+	expr, _ = assembler.TryEvaluateExpression(expr)
 	fmt.Println(expr.Emit())
 	assembler.PruneExpression(expr, nil)
+	expr, _ = assembler.TryEvaluateExpression(expr)
 	fmt.Println(expr.Emit())
 	
 }
