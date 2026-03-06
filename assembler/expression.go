@@ -257,6 +257,22 @@ type DerefExpr struct {
 	Inner *Expr
 }
 
+func TryEvaluatePruneExpression(e *Expr) (*Expr, bool) {
+	ret1 := e
+	var ret2 bool
+	for pruned := true; pruned; {
+		ret1, ret2 = TryEvaluateExpression(ret1)
+		pruned = PruneExpression(ret1, nil)
+	}
+	return ret1, ret2
+}
+
+func TryConstEvaluatePruneExpression(e *Expr) (ConstExpr, bool) {
+	if expr, ok := TryEvaluatePruneExpression(e); ok && expr.Ty == EXPR_TCONST {
+		return expr.Val.(ConstExpr), true
+	}
+	return ConstExpr{Ty: INVALID}, false
+}
 // Does what TryEvaluateExpression does, but at the end verifies that the expression is constant
 func TryConstEvaluateExpression(e *Expr) (ConstExpr, bool) {
 	if expr, ok := TryEvaluateExpression(e); ok && expr.Ty == EXPR_TCONST {
@@ -317,9 +333,29 @@ func TryEvaluateExpression(e *Expr) (*Expr, bool) {
 		return e, false
 	}
 }
-func PruneExpression(e, swap *Expr) {
-	//traverse the tree, find leaves that are not integer/float literals
-	//then try to move them up the tree
+
+// traverse the tree, find leaves that are not integer/float literals
+// then try to move them up the tree so that addition chains of literals get coalesed
+//
+// basi-fucking-ly:
+// such an expression (1+r0+r1+2) tree will be transformed:
+//
+//	 /\+
+//	1 /\+
+//	 r0/\+
+//	  r1 2
+//
+// into this (r0+r1+1+2):
+//
+//	/\+
+//
+// r1 /\+
+//
+//	r0/\+
+//	 1  2
+//
+// which can then be evaluated once more
+func PruneExpression(e, swap *Expr) bool {
 	switch {
 	// if this is an ADD expression
 	case IsArthexpr(e, ARTHEXPR_TADD):
@@ -330,18 +366,18 @@ func PruneExpression(e, swap *Expr) {
 			IsArthexpr(arthE.B, ARTHEXPR_TADD):
 			//then recurse into it with the other literal as swap
 			if swap != nil {
-				PruneExpression(arthE.B, swap)
+				return PruneExpression(arthE.B, swap)
 			} else {
-				PruneExpression(arthE.B, arthE.A)
+				return PruneExpression(arthE.B, arthE.A)
 			}
 			// PruneExpression(arthE.B, arthE.A)
 		//same case but branches are flipped
 		case (IsConstexpr(arthE.B, CONSTEXPR_TILIT) || IsConstexpr(arthE.B, CONSTEXPR_TFLIT)) &&
 			IsArthexpr(arthE.A, ARTHEXPR_TADD):
 			if swap != nil {
-				PruneExpression(arthE.A, swap)
+				return PruneExpression(arthE.A, swap)
 			} else {
-				PruneExpression(arthE.A, arthE.B)
+				return PruneExpression(arthE.A, arthE.B)
 			}
 			// PruneExpression(arthE.A, arthE.B)
 		// we've hit the bottom and the other guy is not a comp-time evaluable expression
@@ -349,17 +385,20 @@ func PruneExpression(e, swap *Expr) {
 			(!IsConstexpr(arthE.B, CONSTEXPR_TILIT) && !IsConstexpr(arthE.B, CONSTEXPR_TFLIT)) &&
 			swap != nil:
 			*arthE.B, *swap = *swap, *arthE.B
-			
+			return true
+
 		case (IsConstexpr(arthE.B, CONSTEXPR_TILIT) || IsConstexpr(arthE.B, CONSTEXPR_TFLIT)) &&
 			(!IsConstexpr(arthE.A, CONSTEXPR_TILIT) && !IsConstexpr(arthE.A, CONSTEXPR_TFLIT)) &&
 			swap != nil:
 			*arthE.A, *swap = *swap, *arthE.A
+			return true
 		case IsArthexpr(arthE.A, ARTHEXPR_TADD):
-			PruneExpression(arthE.A, swap)
+			return PruneExpression(arthE.A, swap)
 		case IsArthexpr(arthE.B, ARTHEXPR_TADD):
-			PruneExpression(arthE.B, swap)
+			return PruneExpression(arthE.B, swap)
 		}
 	}
+	return false
 }
 func (e ArthExpr) Emit() (string, error) {
 	if a, err := e.A.Emit(); err != nil {

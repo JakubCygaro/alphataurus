@@ -13,6 +13,7 @@ const (
 	INST_TMOVIR
 	INST_TMOVDRI
 	INST_TMOVDRO1
+	INST_TMOVDRO2
 	INST_TADDRR
 	INST_TSUBRR
 	INST_TDIVRR
@@ -84,6 +85,7 @@ type InstDerefMovData struct {
 	Dest   int
 	Offset int64
 	OReg1  int
+	OReg2  int
 	Label  string
 	OpTy   int
 }
@@ -199,7 +201,7 @@ func (p *Parser) parseMov() error {
 	var op1 Token
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if eval, _ := TryConstEvaluateExpression(expr); eval.Ty != CONSTEXPR_TREG {
+	} else if eval, _ := TryConstEvaluatePruneExpression(expr); eval.Ty != CONSTEXPR_TREG {
 		return errors.FailedToParse("mov instruction",
 			"First operand to instruction must be a valid register",
 			p.lexer.line, p.lexer.col)
@@ -220,7 +222,7 @@ func (p *Parser) parseMov() error {
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else {
-		eval, _ := TryEvaluateExpression(expr)
+		eval, _ := TryEvaluatePruneExpression(expr)
 		switch eval.Ty {
 		case EXPR_TCONST:
 			op2 = eval.Val.(ConstExpr)
@@ -281,7 +283,7 @@ type DerefData struct {
 	OffsetExpr *Expr
 }
 
-func (p *Parser) processDerefNestedArth(arthExpr ArthExpr) (DerefData, error) {
+func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefData, error) {
 	ret := DerefData{
 		Reg1:       INVALID,
 		Reg2:       INVALID,
@@ -301,6 +303,34 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr) (DerefData, error) {
 		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
 		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
 		ret.OffsetOp = arthExpr.GetVMOpType()
+	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
+		(arthExpr.Ty == ARTHEXPR_TADD):
+		ret.Ty = DEREF_T2RO
+		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
+		ret.Reg2 = int(arthExpr.B.Val.(ConstExpr).Val)
+		ret.Offset = int64(0)
+		ret.OffsetOp = vm.OP_TADD
+	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsArthexpr(arthExpr.B, ARTHEXPR_TADD) && nestLvl == 0:
+		nestedD, err := p.processDerefNestedArth(arthExpr.B.Val.(ArthExpr), nestLvl+1)
+		if err != nil {
+			return ret, err
+		}
+		ret.Ty = DEREF_T2RO
+		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
+		ret.Reg2 = nestedD.Reg1
+		ret.Offset = nestedD.Offset
+		ret.OffsetOp = nestedD.OffsetOp
+	case IsConstexpr(arthExpr.B, CONSTEXPR_TREG) && IsArthexpr(arthExpr.A, ARTHEXPR_TADD) && nestLvl == 0 &&
+		(arthExpr.Ty == ARTHEXPR_TADD):
+		nestedD, err := p.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)
+		if err != nil {
+			return ret, err
+		}
+		ret.Ty = DEREF_T2RO
+		ret.Reg1 = int(arthExpr.B.Val.(ConstExpr).Val)
+		ret.Reg2 = nestedD.Reg1
+		ret.Offset = nestedD.Offset
+		ret.OffsetOp = nestedD.OffsetOp
 	default:
 		return ret, errors.FailedToParse("mov instruction",
 			"Invalid dereference expression parameter",
@@ -338,7 +368,7 @@ func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 		}
 	case EXPR_TARTH:
 		arthExpr := inner.Val.(ArthExpr)
-		return p.processDerefNestedArth(arthExpr)
+		return p.processDerefNestedArth(arthExpr, 0)
 	default:
 		return ret, errors.FailedToParse("mov instruction",
 			"Invalid dereference expression",
@@ -366,6 +396,17 @@ func (p *Parser) parseDerefMov(reg int, inner *Expr) error {
 			Data: InstDerefMovData{
 				Dest:   reg,
 				OReg1:  dData.Reg1,
+				Offset: dData.Offset,
+				OpTy:   dData.OffsetOp,
+			},
+		}
+	case DEREF_T2RO:
+		p.currentInst = Instruction{
+			Ty: INST_TMOVDRO2,
+			Data: InstDerefMovData{
+				Dest:   reg,
+				OReg1:  dData.Reg1,
+				OReg2:  dData.Reg2,
 				Offset: dData.Offset,
 				OpTy:   dData.OffsetOp,
 			},
