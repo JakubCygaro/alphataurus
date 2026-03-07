@@ -84,3 +84,36 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	state.regs.r[dest] = state.stack[inStack]
 	return nil
 }
+func (state *VmState) movDRO2(byte3, byte4 byte, param []byte) error {
+	dest := (byte4 & 0xf0) >> 4
+	reg1 := (byte4 & 0x0f)
+	reg2 := (byte3 & 0xf0) >> 4
+	opTy := (byte3 & 0x0f)
+	if !isMovRRAllowed(dest) {
+		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
+	}
+	if !isMovRRAllowed(reg1) {
+		return errors.DisallowedOp2Register(int(reg1), state.byteCodePos)
+	}
+	if !isMovRRAllowed(reg2) {
+		return errors.DisallowedOp2Register(int(reg2), state.byteCodePos)
+	}
+	reg1V := int64(state.regs.r[reg1])
+	reg2V := int64(state.regs.r[reg2])
+	var addr int64
+	p := int64(binary.BigEndian.Uint64(param))
+	switch opTy {
+	case OP_TADD:
+		addr = reg1V + reg2V + p
+	case OP_TSUB:
+		addr = reg1V + reg2V - p
+	default:
+		return errors.BadOpcode(state.currentOpcode, state.byteCodePos)
+	}
+	inStack := state.VirtToRealSp(int(addr))
+	if inStack < 0 || inStack >= len(state.stack) {
+		return errors.SegmentationFault(uint64(addr), state.byteCodePos)
+	}
+	state.regs.r[dest] = state.stack[inStack]
+	return nil
+}

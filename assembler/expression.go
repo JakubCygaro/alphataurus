@@ -31,6 +31,13 @@ const (
 	CONSTEXPR_TIDENT
 )
 
+type void struct{}
+
+var associativeOperators = map[int]void{
+	ARTHEXPR_TADD: void{},
+	ARTHEXPR_TMUL: void{},
+}
+
 type Expr struct {
 	Ty  int
 	Val any
@@ -69,6 +76,13 @@ func IsArthexpr(e *Expr, ty int) bool {
 		return false
 	}
 	return e.Val.(ArthExpr).Ty == ty
+}
+func AsArthExprTy(e *Expr) (int, bool) {
+	if asArth, ok := e.Val.(ArthExpr); ok && e.Ty == EXPR_TARTH {
+		return asArth.Ty, true
+	} else {
+		return INVALID, false
+	}
 }
 
 func MakeConstexpr(c ConstExpr) *Expr {
@@ -156,6 +170,20 @@ func opTy(a, b *ConstExpr) int {
 		return a.Ty
 	} else {
 		return b.Ty
+	}
+}
+func PerformOperation(a, b *ConstExpr, op int) (ConstExpr, bool) {
+	switch op {
+	case ARTHEXPR_TADD:
+		return a.Add(b)
+	case ARTHEXPR_TSUB:
+		return a.Sub(b)
+	case ARTHEXPR_TMUL:
+		return a.Mul(b)
+	case ARTHEXPR_TDIV:
+		return a.Div(b)
+	default:
+		return ConstExpr{}, false
 	}
 }
 
@@ -262,7 +290,7 @@ func TryEvaluatePruneExpression(e *Expr) (*Expr, bool) {
 	var ret2 bool
 	for pruned := true; pruned; {
 		ret1, ret2 = TryEvaluateExpression(ret1)
-		pruned = PruneExpression(ret1, nil)
+		pruned = PruneExpression(ret1, nil, 0)
 	}
 	return ret1, ret2
 }
@@ -273,6 +301,7 @@ func TryConstEvaluatePruneExpression(e *Expr) (ConstExpr, bool) {
 	}
 	return ConstExpr{Ty: INVALID}, false
 }
+
 // Does what TryEvaluateExpression does, but at the end verifies that the expression is constant
 func TryConstEvaluateExpression(e *Expr) (ConstExpr, bool) {
 	if expr, ok := TryEvaluateExpression(e); ok && expr.Ty == EXPR_TCONST {
@@ -305,25 +334,69 @@ func TryEvaluateExpression(e *Expr) (*Expr, bool) {
 		if bothOk && bothConst {
 			valA := evalA.Val.(ConstExpr)
 			valB := evalB.Val.(ConstExpr)
-			ok := true
-			var res ConstExpr
-			switch eAsArth.Ty {
-			case ARTHEXPR_TADD:
-				res, ok = valA.Add(&valB)
-			case ARTHEXPR_TSUB:
-				res, ok = valA.Sub(&valB)
-			case ARTHEXPR_TMUL:
-				res, ok = valA.Mul(&valB)
-			case ARTHEXPR_TDIV:
-				res, ok = valA.Div(&valB)
-			default:
-				return e, false
-			}
+			res, ok := PerformOperation(&valA, &valB, eAsArth.Ty)
 			if ok {
 				return MakeConstexpr(res), true
+			} else {
+				return e, false
+			}
+			// in case only the left one is const and the right is an Arth expr
+		} else if okB && IsArthexpr(evalA, ARTHEXPR_TADD) &&
+			(IsConstexpr(evalB, CONSTEXPR_TILIT) || IsConstexpr(evalB, CONSTEXPR_TFLIT)) {
+			leftArth := evalA.Val.(ArthExpr)
+			rightConst := evalB.Val.(ConstExpr)
+			if IsConstexpr(leftArth.A, CONSTEXPR_TILIT) || IsConstexpr(leftArth.A, CONSTEXPR_TFLIT) {
+				leftArthA := leftArth.A.Val.(ConstExpr)
+				res, ok := rightConst.Add(&leftArthA)
+				if !ok {
+					return e, false
+				}
+				return MakeArth(
+					leftArth.B,
+					MakeConstexpr(res),
+					ARTHEXPR_TADD,
+				), true
+			} else if IsConstexpr(leftArth.B, CONSTEXPR_TILIT) || IsConstexpr(leftArth.B, CONSTEXPR_TFLIT) {
+				leftArthB := leftArth.B.Val.(ConstExpr)
+				res, ok := rightConst.Add(&leftArthB)
+				if !ok {
+					return e, false
+				}
+				return MakeArth(
+					MakeConstexpr(res),
+					leftArth.A,
+					ARTHEXPR_TADD,
+				), true
+			}
+		} else if okA && IsArthexpr(evalB, ARTHEXPR_TADD) &&
+			(IsConstexpr(evalA, CONSTEXPR_TILIT) || IsConstexpr(evalA, CONSTEXPR_TFLIT)) {
+			rightArth := evalB.Val.(ArthExpr)
+			leftConst := evalA.Val.(ConstExpr)
+			if IsConstexpr(rightArth.A, CONSTEXPR_TILIT) || IsConstexpr(rightArth.A, CONSTEXPR_TFLIT) {
+				rightArthA := rightArth.A.Val.(ConstExpr)
+				res, ok := leftConst.Add(&rightArthA)
+				if !ok {
+					return e, false
+				}
+				return MakeArth(
+					MakeConstexpr(res),
+					rightArth.B,
+					ARTHEXPR_TADD,
+				), true
+			} else if IsConstexpr(rightArth.B, CONSTEXPR_TILIT) || IsConstexpr(rightArth.B, CONSTEXPR_TFLIT) {
+				rightArthB := rightArth.B.Val.(ConstExpr)
+				res, ok := leftConst.Add(&rightArthB)
+				if !ok {
+					return e, false
+				}
+				return MakeArth(
+					rightArth.A,
+					MakeConstexpr(res),
+					ARTHEXPR_TADD,
+				), true
 			}
 		}
-		// if all else fails, just pass the best effort attempt with whatever could've benn evaluated
+		// if all else fails, just pass the best effort attempt with whatever could've been evaluated
 		return MakeArth(evalA, evalB, eAsArth.Ty), false
 	case EXPR_TDEREF:
 		inner := e.Val.(DerefExpr).Inner
@@ -355,47 +428,60 @@ func TryEvaluateExpression(e *Expr) (*Expr, bool) {
 //	 1  2
 //
 // which can then be evaluated once more
-func PruneExpression(e, swap *Expr) bool {
+func PruneExpression(e, swap *Expr, pruneWith int) bool {
+	switch pruneWith {
+	case 0:
+		if arthTy, ok := AsArthExprTy(e); ok {
+			if _, isAssoc := associativeOperators[arthTy]; isAssoc {
+				pruneWith = arthTy
+			} else {
+				return false
+			}
+		}
+	default:
+		if _, isAssoc := associativeOperators[pruneWith]; !isAssoc {
+			return false
+		}
+	}
 	switch {
-	// if this is an ADD expression
-	case IsArthexpr(e, ARTHEXPR_TADD):
+	// if this is an associative operator expression
+	case IsArthexpr(e, pruneWith):
 		arthE := e.Val.(ArthExpr)
 		switch {
-		// if it has one node as a literal node and the other as a different ADD expr
+		// if it has one node as a literal node and the other as a different associative expr of the same op
 		case (IsConstexpr(arthE.A, CONSTEXPR_TILIT) || IsConstexpr(arthE.A, CONSTEXPR_TFLIT)) &&
-			IsArthexpr(arthE.B, ARTHEXPR_TADD):
+			IsArthexpr(arthE.B, pruneWith):
 			//then recurse into it with the other literal as swap
 			if swap != nil {
-				return PruneExpression(arthE.B, swap)
+				return PruneExpression(arthE.B, swap, pruneWith)
 			} else {
-				return PruneExpression(arthE.B, arthE.A)
+				return PruneExpression(arthE.B, arthE.A, pruneWith)
 			}
-			// PruneExpression(arthE.B, arthE.A)
 		//same case but branches are flipped
 		case (IsConstexpr(arthE.B, CONSTEXPR_TILIT) || IsConstexpr(arthE.B, CONSTEXPR_TFLIT)) &&
-			IsArthexpr(arthE.A, ARTHEXPR_TADD):
+			IsArthexpr(arthE.A, pruneWith):
 			if swap != nil {
-				return PruneExpression(arthE.A, swap)
+				return PruneExpression(arthE.A, swap, pruneWith)
 			} else {
-				return PruneExpression(arthE.A, arthE.B)
+				return PruneExpression(arthE.A, arthE.B, pruneWith)
 			}
-			// PruneExpression(arthE.A, arthE.B)
-		// we've hit the bottom and the other guy is not a comp-time evaluable expression
+		// we've hit the bottom and the other guy is not a comp-time evaluable expression, and swap is not nil
 		case (IsConstexpr(arthE.A, CONSTEXPR_TILIT) || IsConstexpr(arthE.A, CONSTEXPR_TFLIT)) &&
 			(!IsConstexpr(arthE.B, CONSTEXPR_TILIT) && !IsConstexpr(arthE.B, CONSTEXPR_TFLIT)) &&
 			swap != nil:
 			*arthE.B, *swap = *swap, *arthE.B
 			return true
-
+		// the same but in reverse
 		case (IsConstexpr(arthE.B, CONSTEXPR_TILIT) || IsConstexpr(arthE.B, CONSTEXPR_TFLIT)) &&
 			(!IsConstexpr(arthE.A, CONSTEXPR_TILIT) && !IsConstexpr(arthE.A, CONSTEXPR_TFLIT)) &&
 			swap != nil:
 			*arthE.A, *swap = *swap, *arthE.A
 			return true
-		case IsArthexpr(arthE.A, ARTHEXPR_TADD):
-			return PruneExpression(arthE.A, swap)
-		case IsArthexpr(arthE.B, ARTHEXPR_TADD):
-			return PruneExpression(arthE.B, swap)
+		// if this is a nested expression of the same op then recurse into it
+		case IsArthexpr(arthE.A, pruneWith):
+			return PruneExpression(arthE.A, swap, pruneWith)
+		case IsArthexpr(arthE.B, pruneWith):
+			return PruneExpression(arthE.B, swap, pruneWith)
 		}
 	}
 	return false

@@ -19,9 +19,12 @@ const assembly = `
 	pop
 	pop
 	pop
-	mov r0, [bp+1]
-	mov r1, [bp+2]
-	mov r2, [bp+3]
+	mov r3, 1
+	mov r0, [bp+r3]
+	inc r3
+	mov r1, [bp+r3]
+	inc r3
+	mov r2, [bp+r3]
 `
 
 func main() {
@@ -52,7 +55,7 @@ func main() {
 	}
 	fmt.Printf("%+v\n", mach.GetRegisters())
 	fmt.Printf("%+v\n", mach.GetFlags())
-	const in = "-1+r0+3+r1+2+r3"
+	const in = "[1+(bp+r3)+0+1]"
 	p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)

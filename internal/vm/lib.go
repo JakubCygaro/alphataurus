@@ -182,6 +182,8 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			err = vm.movDRI(opCodeBytes[0], param)
 		case OP_MOVDRO1:
 			err = vm.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
+		case OP_MOVDRO2:
+			err = vm.movDRO2(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_ADDRR:
 			err = vm.arthRR(int(opcode), param)
 		case OP_SUBRR:
