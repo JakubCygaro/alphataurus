@@ -17,17 +17,17 @@ type labelMap map[string]labelData
 type unresolvedJumpMap map[int]string
 
 type Assembler struct {
-	parser  Parser
-	opCodes map[uint32]vm.OpCodeVal
+	parser          Parser
+	opCodes         map[uint32]vm.OpCodeVal
 	unresolvedJumps unresolvedJumpMap
-	labels  labelMap
+	labels          labelMap
 }
 
 func NewAssembler(reader bufio.Reader) Assembler {
 	return Assembler{
-		parser:  NewParser(reader),
-		opCodes: vm.GenerateOpcodeMap(),
-		labels: make(labelMap),
+		parser:          NewParser(reader),
+		opCodes:         vm.GenerateOpcodeMap(),
+		labels:          make(labelMap),
 		unresolvedJumps: make(unresolvedJumpMap),
 	}
 }
@@ -240,8 +240,22 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 	switch ty {
 	case INST_TJMP:
 		opcode = a.opCodes[vm.OP_JMP]
+	case INST_TJMPE:
+		opcode = a.opCodes[vm.OP_JMPE]
+	case INST_TJMPNE:
+		opcode = a.opCodes[vm.OP_JMPNE]
+	case INST_TJMPZ:
+		opcode = a.opCodes[vm.OP_JMPZ]
+	case INST_TJMPNZ:
+		opcode = a.opCodes[vm.OP_JMPNZ]
 	case INST_TJMPG:
 		opcode = a.opCodes[vm.OP_JMPG]
+	case INST_TJMPGE:
+		opcode = a.opCodes[vm.OP_JMPGE]
+	case INST_TJMPL:
+		opcode = a.opCodes[vm.OP_JMPL]
+	case INST_TJMPLE:
+		opcode = a.opCodes[vm.OP_JMPLE]
 	}
 	opPos := len(*out)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
@@ -249,7 +263,7 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
 	} else if lab, ok := data.Address.(string); ok {
 		if l, ok := a.labels[lab]; ok {
-			*out = binary.BigEndian.AppendUint64(*out, uint64(l.pos/vm.INSTRUCTION_SIZE)-1)
+			*out = binary.BigEndian.AppendUint64(*out, uint64(l.pos)+vm.ADDRESSDEADZONE_SIZE)
 		} else {
 			a.unresolvedJumps[opPos] = lab
 			*out = binary.BigEndian.AppendUint64(*out, uint64(0))
@@ -261,7 +275,7 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 }
 func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 	if lab, ok := a.labels[data.Label]; ok {
-		return errors.RedeclaredLabel(data.Label, data.DeclaredAt, 
+		return errors.RedeclaredLabel(data.Label, data.DeclaredAt,
 			lab.declaredAt, a.parser.lexer.line, a.parser.lexer.col)
 	}
 	a.labels[data.Label] = labelData{
@@ -276,7 +290,7 @@ func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 		if !ok {
 			return errors.UnresolvedLabel(destLabel)
 		}
-		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:], (label.pos/vm.INSTRUCTION_SIZE)-1)
+		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:], (label.pos)+vm.ADDRESSDEADZONE_SIZE)
 	}
 	return nil
 }

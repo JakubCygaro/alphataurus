@@ -10,21 +10,12 @@ import (
 )
 
 const assembly = `
-	push 1337
-	push 80085
-	mov bp, sp
-	push 69
-	push 420
-	push 2137
-	pop
-	pop
-	pop
-	mov r3, 1
-	mov r0, [bp+r3]
-	inc r3
-	mov r1, [bp+r3]
-	inc r3
-	mov r2, [bp+r3]
+	mov r0, 10
+	mov r1, 0
+	inc r1
+	dec r0
+	cmp r0, 0
+	jg 0x0
 `
 
 func main() {

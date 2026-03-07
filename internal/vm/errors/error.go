@@ -91,7 +91,7 @@ func SegmentationFault(address uint64, pos uint64) AlphaVMError {
 		Type: ERR_DISALLOWED_DESTINATION_REGISTER,
 		Pos: pos,
 		construct: func() string {
-			return fmt.Sprintf("Segmentation fault, tried to dereference address (0x%08x)", address)
+			return fmt.Sprintf("Segmentation fault, address (0x%08x)", address)
 		},
 	}
 	return err

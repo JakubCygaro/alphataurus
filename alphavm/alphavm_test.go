@@ -468,7 +468,7 @@ func TestJmpG1(t *testing.T) {
 		inc r1
 		dec r0
 		cmp r0, 0
-		jg 1
+		jg 0xff
 	`
 	mach, err := assembleAndExecute(asm)
 	if err != nil {

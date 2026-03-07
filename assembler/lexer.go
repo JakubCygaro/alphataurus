@@ -81,6 +81,12 @@ func (l *Lexer) CurrentToken() Token {
 func numberCheck(b byte) bool {
 	return b-'0' <= 9
 }
+func hexNumberCheck(b byte) bool {
+	return numberCheck(b) || b-'a' <= 'f'-'a' || b-'A' <= 'F'-'A'
+}
+func binaryNumberCheck(b byte) bool {
+	return b-'0' <= 1
+}
 func identCheck(b byte) bool {
 	return b == '_' ||
 		b-'a' <= 'z'-'a' ||
@@ -131,57 +137,57 @@ func (l *Lexer) ReadNextToken() error {
 	switch {
 	case b == ':':
 		l.currentToken = Token{
-			Ty: TOKEN_TCOLON,
+			Ty:  TOKEN_TCOLON,
 			val: rune(b),
 		}
 	case b == '(':
 		l.currentToken = Token{
-			Ty: TOKEN_TOPENPAREN,
+			Ty:  TOKEN_TOPENPAREN,
 			val: rune(b),
 		}
 	case b == ')':
 		l.currentToken = Token{
-			Ty: TOKEN_TCLOSEDPAREN,
+			Ty:  TOKEN_TCLOSEDPAREN,
 			val: rune(b),
 		}
 	case b == '[':
 		l.currentToken = Token{
-			Ty: TOKEN_TOPENBRACKET,
+			Ty:  TOKEN_TOPENBRACKET,
 			val: rune(b),
 		}
 	case b == ']':
 		l.currentToken = Token{
-			Ty: TOKEN_TCLOSEDBRACKET,
+			Ty:  TOKEN_TCLOSEDBRACKET,
 			val: rune(b),
 		}
 	case b == '\n':
 		l.currentToken = Token{
-			Ty: TOKEN_TNEWLINE,
+			Ty:  TOKEN_TNEWLINE,
 			val: rune(b),
 		}
 	case b == ',':
 		l.currentToken = Token{
-			Ty: TOKEN_TCOMMA,
+			Ty:  TOKEN_TCOMMA,
 			val: rune(b),
 		}
 	case b == '+':
 		l.currentToken = Token{
-			Ty: TOKEN_TPLUS,
+			Ty:  TOKEN_TPLUS,
 			val: rune(b),
 		}
 	case b == '-':
 		l.currentToken = Token{
-			Ty: TOKEN_TMINUS,
+			Ty:  TOKEN_TMINUS,
 			val: rune(b),
 		}
 	case b == '*':
 		l.currentToken = Token{
-			Ty: TOKEN_TASTERISK,
+			Ty:  TOKEN_TASTERISK,
 			val: rune(b),
 		}
 	case b == '/':
 		l.currentToken = Token{
-			Ty: TOKEN_TSLASH,
+			Ty:  TOKEN_TSLASH,
 			val: rune(b),
 		}
 	case b == '.':
@@ -197,7 +203,7 @@ func (l *Lexer) ReadNextToken() error {
 			}
 		} else {
 			l.currentToken = Token{
-				Ty: TOKEN_TDOT,
+				Ty:  TOKEN_TDOT,
 				val: rune(b),
 			}
 		}
@@ -229,7 +235,7 @@ func (l *Lexer) ReadNextToken() error {
 			}
 		} else if kwd, ok := keywords[val]; ok {
 			l.currentToken = Token{
-				Ty: kwd,
+				Ty:  kwd,
 				val: val,
 			}
 		} else {
@@ -248,19 +254,41 @@ func (l *Lexer) readDigit(b byte) error {
 	buf := make([]byte, 0, 16)
 	buf = append(buf, b)
 	dot := b == '.'
-	minus := b == '-'
 	e := false
+	startedWithZero := b == '0'
+	hex := false
+	binary := false
+	if startedWithZero {
+		next, err := l.readByte()
+		if err != nil {
+			return err
+		}
+		switch next {
+		case 'x':
+			hex = true
+			dot = true
+		case 'b':
+			binary = true
+			dot = true
+		default:
+			l.unreadByte()
+		}
+	}
 	for {
 		next, err := l.readByte()
 		if err != nil {
 			break
 		}
-		if numberCheck(next) {
+		if !hex && !binary && numberCheck(next) {
+			buf = append(buf, next)
+		} else if hex && hexNumberCheck(next) {
+			buf = append(buf, next)
+		} else if binary && binaryNumberCheck(next) {
 			buf = append(buf, next)
 		} else if next == '.' && !dot {
 			buf = append(buf, next)
 			dot = true
-		} else if (next == 'e' || next == 'E') && !e {
+		} else if (next == 'e' || next == 'E') && !e && !hex && !binary {
 			buf = append(buf, next)
 			e = true
 			next, err := l.readByte()
@@ -279,32 +307,39 @@ func (l *Lexer) readDigit(b byte) error {
 			} else {
 				return errors.MalformedFloatLit(l.line, l.col)
 			}
-
 		} else if unicode.IsSpace(rune(next)) || !identCheck(next) {
 			l.unreadByte()
 			break
 		} else {
-			return errors.MalformedIntegerLit(l.line, l.col)		}
+			return errors.MalformedIntegerLit(l.line, l.col)
+		}
 	}
 	if !dot {
-		if !minus {
-			val, err := strconv.ParseUint(string(buf), 10, 64)
-			if err != nil {
-				return errors.MalformedFloatLit(l.line, l.col)
-			}
-			l.currentToken = Token{
-				Ty:  TOKEN_TINTEGER_LIT,
-				val: uint64(val),
-			}
-		} else {
-			val, err := strconv.ParseInt(string(buf), 10, 64)
-			if err != nil {
-				return errors.MalformedFloatLit(l.line, l.col)
-			}
-			l.currentToken = Token{
-				Ty:  TOKEN_TINTEGER_LIT,
-				val: uint64(val),
-			}
+		val, err := strconv.ParseUint(string(buf), 10, 64)
+		if err != nil {
+			return errors.MalformedIntegerLit(l.line, l.col)
+		}
+		l.currentToken = Token{
+			Ty:  TOKEN_TINTEGER_LIT,
+			val: uint64(val),
+		}
+	} else if hex {
+		val, err := strconv.ParseUint(string(buf), 16, 64)
+		if err != nil {
+			return errors.MalformedIntegerLit(l.line, l.col)
+		}
+		l.currentToken = Token{
+			Ty:  TOKEN_TINTEGER_LIT,
+			val: uint64(val),
+		}
+	} else if binary {
+		val, err := strconv.ParseUint(string(buf), 2, 64)
+		if err != nil {
+			return errors.MalformedIntegerLit(l.line, l.col)
+		}
+		l.currentToken = Token{
+			Ty:  TOKEN_TINTEGER_LIT,
+			val: uint64(val),
 		}
 	} else {
 		val, err := strconv.ParseFloat(string(buf), 64)
