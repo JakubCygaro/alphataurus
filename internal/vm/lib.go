@@ -12,14 +12,15 @@ type VmStack []uint64
 const (
 	ADDRESSDEADZONE_SIZE = 0xff
 )
+
 type VmState struct {
 	regs  Registers
 	flags Flags
 	stack VmStack
 	// this is the virtual address of the stack, it is supposed to start right after the code section
-	stackBase   int
-	byteCodePos uint64
-	exeSecStart uint64
+	stackBase     int
+	byteCodePos   uint64
+	exeSecStart   uint64
 	currentOpcode uint32
 }
 
@@ -78,7 +79,7 @@ func (state *VmState) setIp(v uint64) {
 	state.regs.r[IP_IDX] = v
 }
 func (state *VmState) incIp() {
-	state.setIp(state.GetIp() + INSTRUCTION_SIZE)
+	state.setIp(state.GetIp() + 1)
 }
 
 type Flags struct {
@@ -159,17 +160,16 @@ func (vm *VmState) ClearState() {
 }
 
 func (vm *VmState) Execute(bytecode []byte) error {
-	vm.setIp(ADDRESSDEADZONE_SIZE)
-	// codeSize := len(bytecode) / INSTRUCTION_SIZE
+	codeSize := len(bytecode) / INSTRUCTION_SIZE
 	vm.exeSecStart = ADDRESSDEADZONE_SIZE
 	vm.stackBase = len(bytecode) + int(vm.exeSecStart)
-	vm.regs.r[SP_IDX] = uint64(vm.stackBase)-1
-	vm.regs.r[BP_IDX] = uint64(vm.stackBase)-1
+	vm.regs.r[SP_IDX] = uint64(vm.stackBase) - 1
+	vm.regs.r[BP_IDX] = uint64(vm.stackBase) - 1
 	vm.setIp(0)
-	for ; vm.GetIp() < uint64(len(bytecode)); vm.incIp() {
+	for ; vm.GetIp() < uint64(codeSize); vm.incIp() {
 		var err error = nil
-		instAddr := vm.GetIp()
-		vm.byteCodePos = instAddr - ADDRESSDEADZONE_SIZE
+		instAddr := vm.GetIp() * INSTRUCTION_SIZE
+		vm.byteCodePos = instAddr
 		opCodeBytes := bytecode[instAddr : instAddr+OPCODE_SIZE]
 		param := bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
 		opcode, err := vm.GetOpcode(opCodeBytes)
@@ -324,9 +324,9 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 }
 func (state *VmState) jmp(lastByte byte, param []byte) error {
 	dest := binary.BigEndian.Uint64(param)
-	if dest < ADDRESSDEADZONE_SIZE || dest >= state.byteCodePos{
-		return errors.SegmentationFault(dest, uint64(state.byteCodePos))
-	}
+	// if dest < ADDRESSDEADZONE_SIZE || dest >= state.byteCodePos {
+	// 	return errors.SegmentationFault(dest, uint64(state.byteCodePos))
+	// }
 	state.setIp(dest)
 	return nil
 }

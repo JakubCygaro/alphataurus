@@ -15,7 +15,7 @@ const assembly = `
 	inc r1
 	dec r0
 	cmp r0, 0
-	jg 0x0
+	jg 0x1
 `
 
 func main() {
