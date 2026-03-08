@@ -165,11 +165,11 @@ func (vm *VmState) Execute(bytecode []byte) error {
 	vm.stackBase = len(bytecode) + int(vm.exeSecStart)
 	vm.regs.r[SP_IDX] = uint64(vm.stackBase) - 1
 	vm.regs.r[BP_IDX] = uint64(vm.stackBase) - 1
-	vm.setIp(0)
-	for ; vm.GetIp() < uint64(codeSize); vm.incIp() {
+	vm.setIp(ADDRESSDEADZONE_SIZE)
+	for ; vm.GetIp()-ADDRESSDEADZONE_SIZE < uint64(codeSize); vm.incIp() {
 		var err error = nil
-		instAddr := vm.GetIp() * INSTRUCTION_SIZE
-		vm.byteCodePos = instAddr
+		instAddr := (vm.GetIp()-ADDRESSDEADZONE_SIZE) * INSTRUCTION_SIZE
+		vm.byteCodePos = vm.GetIp()
 		opCodeBytes := bytecode[instAddr : instAddr+OPCODE_SIZE]
 		param := bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
 		opcode, err := vm.GetOpcode(opCodeBytes)
@@ -324,9 +324,9 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 }
 func (state *VmState) jmp(lastByte byte, param []byte) error {
 	dest := binary.BigEndian.Uint64(param)
-	// if dest < ADDRESSDEADZONE_SIZE || dest >= state.byteCodePos {
-	// 	return errors.SegmentationFault(dest, uint64(state.byteCodePos))
-	// }
+	if dest < state.exeSecStart || dest >= uint64(state.stackBase) {
+		return errors.SegmentationFault(dest, uint64(state.byteCodePos))
+	}
 	state.setIp(dest)
 	return nil
 }

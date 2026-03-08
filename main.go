@@ -11,11 +11,12 @@ import (
 
 const assembly = `
 	mov r0, 10
+loop_start:
 	mov r1, 0
 	inc r1
 	dec r0
 	cmp r0, 0
-	jg 0x1
+	jg loop_start
 `
 
 func main() {
