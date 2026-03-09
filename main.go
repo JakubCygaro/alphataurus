@@ -10,13 +10,10 @@ import (
 )
 
 const assembly = `
-	mov r0, 10
-loop_start:
-	mov r1, 0
-	inc r1
-	dec r0
-	cmp r0, 0
-	jg loop_start
+	push bp
+	mov [0xff+4], 69
+	mov r1, 420
+	mov [0xff+5], r1
 `
 
 func main() {
@@ -29,7 +26,7 @@ func main() {
 	}
 	fmt.Printf("emitted bytecode size: %d\n", len(bytecode))
 	fmt.Printf("emitted %d instructions\n", iCount)
-	mach := vm.CreateVmState(64)
+	mach := vm.CreateVmState(16)
 	err = mach.Execute(bytecode)
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
@@ -47,11 +44,12 @@ func main() {
 	}
 	fmt.Printf("%+v\n", mach.GetRegisters())
 	fmt.Printf("%+v\n", mach.GetFlags())
-	const in = "[1+(bp+r3)+0+1]"
-	p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
-	expr, _ := p.ParseExpression()
-	expr, _ = assembler.TryEvaluatePruneExpression(expr)
-	fmt.Println(expr.Emit())
+	fmt.Printf("stack:\n%+v\n", mach.GetStack())
+	// const in = "[1+(bp+r3)+0+1]"
+	// p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
+	// expr, _ := p.ParseExpression()
+	// expr, _ = assembler.TryEvaluatePruneExpression(expr)
+	// fmt.Println(expr.Emit())
 	// assembler.PruneExpression(expr, nil)
 	// expr, _ = assembler.TryEvaluateExpression(expr)
 	// fmt.Println(expr.Emit())

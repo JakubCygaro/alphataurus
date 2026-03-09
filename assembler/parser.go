@@ -14,6 +14,12 @@ const (
 	INST_TMOVDRI
 	INST_TMOVDRO1
 	INST_TMOVDRO2
+	INST_TMOVID
+	INST_TMOVRD
+	INST_TMOVRDO1
+	INST_TMOVIDO1
+	INST_TMOVRDO2
+	INST_TMOVIDO2
 	INST_TADDRR
 	INST_TSUBRR
 	INST_TDIVRR
@@ -83,6 +89,15 @@ type PushPopData struct {
 }
 type InstDerefMovData struct {
 	Dest   int
+	Offset int64
+	OReg1  int
+	OReg2  int
+	Label  string
+	OpTy   int
+}
+type InstMovDerefData struct {
+	SourceReg int
+	Imm    uint64
 	Offset int64
 	OReg1  int
 	OReg2  int
@@ -197,257 +212,4 @@ func (p *Parser) parseStartIdent(t Token) error {
 	p.currentIdent = ""
 	return errors.UnknownIdentifier(ident, p.lexer.line, p.lexer.col)
 }
-func (p *Parser) parseMov() error {
-	var op1 Token
-	if expr, err := p.parseExpression(0); err != nil {
-		return err
-	} else if eval, _ := TryConstEvaluatePruneExpression(expr); eval.Ty != CONSTEXPR_TREG {
-		return errors.FailedToParse("mov instruction",
-			"First operand to instruction must be a valid register",
-			p.lexer.line, p.lexer.col)
-	} else {
-		op1.val = int(expr.Val.(ConstExpr).Val)
-	}
-	if err := p.lexer.ReadNextToken(); err != nil {
-		return err
-	}
-	comma := p.lexer.CurrentToken()
-	if comma.Ty != TOKEN_TCOMMA {
-		return errors.FailedToParse("mov instruction",
-			"Instruction missing a comma",
-			p.lexer.line, p.lexer.col)
-	}
 
-	var op2 ConstExpr
-	if expr, err := p.parseExpression(0); err != nil {
-		return err
-	} else {
-		eval, _ := TryEvaluatePruneExpression(expr)
-		switch eval.Ty {
-		case EXPR_TCONST:
-			op2 = eval.Val.(ConstExpr)
-		case EXPR_TDEREF:
-			return p.parseDerefMov(op1.val.(int), eval.Val.(DerefExpr).Inner)
-		default:
-			return errors.FailedToParse("mov instruction",
-				"Second operand to instruction has to be a valid register, dereference, or a compile time expression",
-				p.lexer.line, p.lexer.col)
-		}
-	}
-	switch op2.Ty {
-	case CONSTEXPR_TREG:
-		p.currentInst = Instruction{
-			Ty: INST_TMOVRR,
-			Data: InstMovData{
-				Src:  int(op2.Val),
-				Dest: op1.val.(int),
-			},
-		}
-	case CONSTEXPR_TILIT:
-		p.currentInst = Instruction{
-			Ty: INST_TMOVIR,
-			Data: InstMovData{
-				Imm:  op2.Val,
-				Dest: op1.val.(int),
-			},
-		}
-	case CONSTEXPR_TFLIT:
-		p.currentInst = Instruction{
-			Ty: INST_TMOVIR,
-			Data: InstMovData{
-				Imm:  op2.Val,
-				Dest: op1.val.(int),
-			},
-		}
-	default:
-		return errors.FailedToParse("mov instruction",
-			"Second operand to instruction has to be a valid register, dereference or a compile time expression",
-			p.lexer.line, p.lexer.col)
-	}
-	return nil
-}
-
-const (
-	DEREF_T0RO = iota
-	DEREF_T1RO
-	DEREF_T2RO
-)
-
-type DerefData struct {
-	Ty         int
-	Reg1, Reg2 int
-	// plus or minus
-	OffsetOp int
-	Offset   int64
-	// in case there are labels to resolve
-	OffsetExpr *Expr
-}
-
-func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefData, error) {
-	ret := DerefData{
-		Reg1:       INVALID,
-		Reg2:       INVALID,
-		OffsetOp:   INVALID,
-		Offset:     INVALID,
-		OffsetExpr: nil,
-	}
-	switch {
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(arthExpr.B, CONSTEXPR_TILIT):
-		ret.Ty = DEREF_T1RO
-		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
-		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
-		ret.OffsetOp = arthExpr.GetVMOpType()
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
-		(arthExpr.Ty == ARTHEXPR_TADD):
-		ret.Ty = DEREF_T1RO
-		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
-		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
-		ret.OffsetOp = vm.OP_TADD
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
-		(arthExpr.Ty == ARTHEXPR_TADD):
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
-		ret.Reg2 = int(arthExpr.B.Val.(ConstExpr).Val)
-		ret.Offset = int64(0)
-		ret.OffsetOp = vm.OP_TADD
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsArthexpr(arthExpr.B, ARTHEXPR_TADD) && nestLvl == 0:
-		nestedD, err := p.processDerefNestedArth(arthExpr.B.Val.(ArthExpr), nestLvl+1)
-		if err != nil {
-			return ret, err
-		}
-		if nestedD.OffsetOp != vm.OP_TADD && nestedD.OffsetOp != vm.OP_TSUB {
-			return ret, errors.FailedToParse("dereference expression",
-				"Disallowed operation", p.lexer.line, p.lexer.col)
-		}
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
-		ret.Reg2 = nestedD.Reg1
-		ret.Offset = nestedD.Offset
-		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexpr(arthExpr.B, CONSTEXPR_TREG) && IsArthexpr(arthExpr.A, ARTHEXPR_TADD) && nestLvl == 0 &&
-		(arthExpr.Ty == ARTHEXPR_TADD):
-		nestedD, err := p.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)
-		if err != nil {
-			return ret, err
-		}
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = int(arthExpr.B.Val.(ConstExpr).Val)
-		ret.Reg2 = nestedD.Reg1
-		ret.Offset = nestedD.Offset
-		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) && IsArthexpr(arthExpr.B, ARTHEXPR_TADD) &&
-			nestLvl == 0 && (arthExpr.Ty == ARTHEXPR_TADD):
-		nestedD, err := p.processDerefNestedArth(arthExpr.B.Val.(ArthExpr), nestLvl+1)
-		if err != nil {
-			return ret, err
-		}
-		if nestedD.OffsetOp != vm.OP_TADD || nestedD.Ty != DEREF_T2RO {
-			return ret, errors.FailedToParse("dereference expression",
-				"Disallowed operation between registers", p.lexer.line, p.lexer.col)
-		}
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = nestedD.Reg1
-		ret.Reg2 = nestedD.Reg2
-		ret.Offset = int64(arthExpr.A.Val.(ConstExpr).Val)
-		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexpr(arthExpr.B, CONSTEXPR_TILIT) && IsArthexpr(arthExpr.A, ARTHEXPR_TADD) && nestLvl == 0:
-		nestedD, err := p.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)
-		if err != nil {
-			return ret, err
-		}
-		if nestedD.OffsetOp != vm.OP_TADD || nestedD.Ty != DEREF_T2RO {
-			return ret, errors.FailedToParse("dereference expression",
-				"Disallowed operation between registers", p.lexer.line, p.lexer.col)
-		}
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = nestedD.Reg1
-		ret.Reg2 = nestedD.Reg2
-		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
-		ret.OffsetOp = nestedD.OffsetOp
-	default:
-		return ret, errors.FailedToParse("dereference expression",
-			"Invalid dereference expression parameter",
-			p.lexer.line, p.lexer.col)
-		// TODO: label dereference support
-	}
-	return ret, nil
-}
-
-func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
-	ret := DerefData{
-		Reg1:       INVALID,
-		Reg2:       INVALID,
-		OffsetOp:   INVALID,
-		Offset:     INVALID,
-		OffsetExpr: nil,
-	}
-	switch inner.Ty {
-	case EXPR_TCONST:
-		innerConst := inner.Val.(ConstExpr)
-		switch innerConst.Ty {
-		case CONSTEXPR_TILIT:
-			ret.Ty = DEREF_T0RO
-			ret.Offset = int64(innerConst.Val)
-		case CONSTEXPR_TREG:
-			ret.Ty = DEREF_T1RO
-			ret.Reg1 = int(innerConst.Val)
-			ret.Offset = int64(0)
-			ret.OffsetOp = vm.OP_TADD
-		// TODO: label dereference support
-		default:
-			return ret, errors.FailedToParse("dereference expression",
-				"Invalid single parameter dereference expression",
-				p.lexer.line, p.lexer.col)
-		}
-	case EXPR_TARTH:
-		arthExpr := inner.Val.(ArthExpr)
-		return p.processDerefNestedArth(arthExpr, 0)
-	default:
-		return ret, errors.FailedToParse("mov instruction",
-			"Invalid dereference expression",
-			p.lexer.line, p.lexer.col)
-	}
-	return ret, nil
-}
-func (p *Parser) parseDerefMov(reg int, inner *Expr) error {
-	dData, err := p.processDeref(inner)
-	if err != nil {
-		return err
-	}
-	switch dData.Ty {
-	case DEREF_T0RO:
-		p.currentInst = Instruction{
-			Ty: INST_TMOVDRI,
-			Data: InstDerefMovData{
-				Dest:   reg,
-				Offset: dData.Offset,
-			},
-		}
-	case DEREF_T1RO:
-		p.currentInst = Instruction{
-			Ty: INST_TMOVDRO1,
-			Data: InstDerefMovData{
-				Dest:   reg,
-				OReg1:  dData.Reg1,
-				Offset: dData.Offset,
-				OpTy:   dData.OffsetOp,
-			},
-		}
-	case DEREF_T2RO:
-		p.currentInst = Instruction{
-			Ty: INST_TMOVDRO2,
-			Data: InstDerefMovData{
-				Dest:   reg,
-				OReg1:  dData.Reg1,
-				OReg2:  dData.Reg2,
-				Offset: dData.Offset,
-				OpTy:   dData.OffsetOp,
-			},
-		}
-	default:
-		return errors.FailedToParse("mov instruction",
-			"Invalid dereference expression",
-			p.lexer.line, p.lexer.col)
-	}
-	return nil
-}

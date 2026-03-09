@@ -51,6 +51,10 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitMovDRO1(inst.Data.(InstDerefMovData), &bytecode)
 		case INST_TMOVDRO2:
 			err = a.emitMovDRO2(inst.Data.(InstDerefMovData), &bytecode)
+		case INST_TMOVID:
+			err = a.emitMovID(inst.Data.(InstMovDerefData), &bytecode)
+		case INST_TMOVRD:
+			err = a.emitMovRD(inst.Data.(InstMovDerefData), &bytecode)
 		case INST_TADDRR:
 			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
 		case INST_TSUBRR:
@@ -161,6 +165,21 @@ func (a *Assembler) emitMovDRO2(data InstDerefMovData, out *[]byte) error {
 	param |= (byte(data.OpTy) & 0x0f)
 	(*out)[len(*out)-3] = param
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
+	return nil
+}
+func (a *Assembler) emitMovID(data InstMovDerefData, out *[]byte) error {
+	mov := a.opCodes[vm.OP_MOVID]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
+	*out = binary.BigEndian.AppendUint32(*out, uint32(data.Offset))
+	*out = binary.BigEndian.AppendUint32(*out, uint32(data.Imm))
+	return nil
+}
+func (a *Assembler) emitMovRD(data InstMovDerefData, out *[]byte) error {
+	mov := a.opCodes[vm.OP_MOVRD]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
+	param := data.Offset << 8
+	param |= int64(byte(data.SourceReg))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(param))
 	return nil
 }
 func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {

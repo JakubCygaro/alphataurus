@@ -70,6 +70,8 @@ var (
 	})
 	p01XX = nested(OpCodeMap{
 		1: p011X,
+		2: handle(OP_MOVID),
+		3: handle(OP_MOVRD),
 	})
 	p1XXX = nested(OpCodeMap{
 		0: handle(OP_MOVDRO1),
@@ -118,7 +120,13 @@ const (
 	OP_MOVDRI         // move dereference to register, [<address>]
 	OP_MOVDRO1        // move dereference to register, like [rx + <signed offset>]
 	OP_MOVDRO2        // move dereference to register, like [(rx + rx) +/- <signed offset>]
-	OP_ADDRR          // add register to register and store into second register, singedness and registers passed in parameter
+	OP_MOVID          // move immediate value to deref
+	OP_MOVRD          // move register value into deref
+	OP_MOVRDO1
+	OP_MOVIDO1
+	OP_MOVRDO2
+	OP_MOVIDO2
+	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR
 	OP_SUBIR

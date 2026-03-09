@@ -18,9 +18,9 @@ type VmState struct {
 	flags Flags
 	stack VmStack
 	// this is the virtual address of the stack, it is supposed to start right after the code section
-	stackBase     int
+	stackSegBase     int
 	byteCodePos   uint64
-	exeSecStart   uint64
+	exeSegBase   uint64
 	currentOpcode uint32
 }
 
@@ -58,17 +58,23 @@ func (state *VmState) GetBp() uint64 {
 func (state *VmState) GetSp() uint64 {
 	return state.regs.r[SP_IDX]
 }
+func (state *VmState) VirtToRealIp(virtual uint64) uint64{
+	return virtual - state.exeSegBase
+}
+func (state *VmState) RealToVirtIp(r uint64) uint64{
+	return r + state.exeSegBase
+}
 
-func (state *VmState) RealSp() int {
+func (state *VmState) GetRealSp() int {
 	return state.VirtToRealSp(int(state.regs.r[SP_IDX]))
 }
 
 func (state *VmState) VirtToRealSp(virtual int) int {
-	return virtual - state.stackBase
+	return virtual - state.stackSegBase
 }
 
-func (state *VmState) RealToVirtSp(virtual int) int {
-	return virtual + state.stackBase
+func (state *VmState) RealToVirtSp(r int) int {
+	return r + state.stackSegBase
 }
 
 func (state *VmState) GetIp() uint64 {
@@ -127,6 +133,11 @@ func (vm *VmState) GetGpRXAs(register byte, ty byte, out *any) error {
 func (vm *VmState) GetFlags() Flags {
 	return vm.flags
 }
+func (vm *VmState) GetStack() VmStack {
+	ret := make(VmStack, len(vm.stack))
+	copy(ret[:], vm.stack[:])
+	return ret
+}
 func (vm *VmState) GetRegisters() []uint64 {
 	regs := make([]uint64, len(vm.regs.r))
 	copy(regs[:], vm.regs.r[:])
@@ -161,14 +172,18 @@ func (vm *VmState) ClearState() {
 
 func (vm *VmState) Execute(bytecode []byte) error {
 	codeSize := len(bytecode) / INSTRUCTION_SIZE
-	vm.exeSecStart = ADDRESSDEADZONE_SIZE
-	vm.stackBase = len(bytecode) + int(vm.exeSecStart)
-	vm.regs.r[SP_IDX] = uint64(vm.stackBase) - 1
-	vm.regs.r[BP_IDX] = uint64(vm.stackBase) - 1
-	vm.setIp(ADDRESSDEADZONE_SIZE)
+	// the code section starts after the deadzone (for now)
+	vm.exeSegBase = ADDRESSDEADZONE_SIZE
+	// the stack starts after the code section
+	vm.stackSegBase =  int(vm.exeSegBase) + codeSize
+	// the base pointer points right before the beggining of the stack section
+	vm.regs.r[BP_IDX] = uint64(vm.stackSegBase) - 1
+	// the stack pointer points to the base pointer
+	vm.regs.r[SP_IDX] = vm.regs.r[BP_IDX]
+	vm.setIp(vm.exeSegBase)
 	for ; vm.GetIp()-ADDRESSDEADZONE_SIZE < uint64(codeSize); vm.incIp() {
 		var err error = nil
-		instAddr := (vm.GetIp()-ADDRESSDEADZONE_SIZE) * INSTRUCTION_SIZE
+		instAddr := (vm.VirtToRealIp(vm.GetIp())) * INSTRUCTION_SIZE
 		vm.byteCodePos = vm.GetIp()
 		opCodeBytes := bytecode[instAddr : instAddr+OPCODE_SIZE]
 		param := bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
@@ -188,6 +203,10 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			err = vm.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_MOVDRO2:
 			err = vm.movDRO2(opCodeBytes[1], opCodeBytes[0], param)
+		case OP_MOVID:
+			err = vm.movID(param)
+		case OP_MOVRD:
+			err = vm.movRD(param)
 		case OP_ADDRR:
 			err = vm.arthRR(int(opcode), param)
 		case OP_SUBRR:
@@ -322,56 +341,6 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 	}
 	return nil
 }
-func (state *VmState) jmp(lastByte byte, param []byte) error {
-	dest := binary.BigEndian.Uint64(param)
-	if dest < state.exeSecStart || dest >= uint64(state.stackBase) {
-		return errors.SegmentationFault(dest, uint64(state.byteCodePos))
-	}
-	state.setIp(dest)
-	return nil
-}
-func (state *VmState) jmpE(lastByte byte, param []byte) error {
-	if state.flags.Zf {
-		return state.jmp(lastByte, param)
-	}
-	return nil
-}
-func (state *VmState) jmpNE(lastByte byte, param []byte) error {
-	if !state.flags.Zf {
-		return state.jmp(lastByte, param)
-	}
-	return nil
-}
-func (state *VmState) jmpZ(lastByte byte, param []byte) error {
-	return state.jmpE(lastByte, param)
-}
-func (state *VmState) jmpNZ(lastByte byte, param []byte) error {
-	return state.jmpNE(lastByte, param)
-}
-func (state *VmState) jmpG(lastByte byte, param []byte) error {
-	if !state.flags.Zf && !state.flags.Sf {
-		return state.jmp(lastByte, param)
-	}
-	return nil
-}
-func (state *VmState) jmpGE(lastByte byte, param []byte) error {
-	if state.flags.Zf || !state.flags.Sf {
-		return state.jmp(lastByte, param)
-	}
-	return nil
-}
-func (state *VmState) jmpL(lastByte byte, param []byte) error {
-	if !state.flags.Zf && state.flags.Sf {
-		return state.jmp(lastByte, param)
-	}
-	return nil
-}
-func (state *VmState) jmpLE(lastByte byte, param []byte) error {
-	if state.flags.Zf || state.flags.Sf {
-		return state.jmp(lastByte, param)
-	}
-	return nil
-}
 func (state *VmState) cmp(lastByte byte, param []byte) error {
 	var subtrahend, minuend byte
 	subtrahend |= (lastByte & 0xf0) >> 4
@@ -419,18 +388,18 @@ func (state *VmState) push(ty int, param []byte) error {
 			return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 		}
 	}
-	if state.RealSp() >= len(state.stack) {
+	if state.GetRealSp() >= len(state.stack) {
 		return errors.StackOverflow(state.byteCodePos)
 	}
-	state.stack[state.RealSp()+1] = val
+	state.stack[state.GetRealSp()+1] = val
 	state.regs.r[SP_IDX]++
 	return nil
 }
 func (state *VmState) popR(param []byte) error {
-	if state.RealSp() < 0 {
+	if state.GetRealSp() < 0 {
 		return errors.StackUnderflow(state.byteCodePos)
 	}
-	val := state.stack[state.RealSp()]
+	val := state.stack[state.GetRealSp()]
 	state.regs.r[SP_IDX]--
 	reg := binary.BigEndian.Uint64(param)
 	if isPushRAllowed(byte(reg)) {

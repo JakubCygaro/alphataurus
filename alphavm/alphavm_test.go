@@ -480,6 +480,26 @@ func TestJmpG1(t *testing.T) {
 		vm.R0_IDX: 0,
 	})
 }
+func TestJmpG2(t *testing.T) {
+	asm := `
+		mov r0, 10
+	L0:
+		mov r1, 0
+		inc r1
+		dec r0
+		cmp r0, 0
+		jg L0
+	`
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	expectGpRegisters(t, asm, &mach, ExpMap{
+		vm.R1_IDX: 10,
+		vm.R0_IDX: 0,
+	})
+}
 func TestExpressions1(t *testing.T) {
 	// rA := byte(rand.Int() % vm.GP_REG_MAX)
 	// rAV := uint64(rand.Float64() * 1000)
