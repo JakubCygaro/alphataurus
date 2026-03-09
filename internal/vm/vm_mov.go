@@ -144,3 +144,19 @@ func (state *VmState) movRD(param []byte) error {
 	state.stack[inStack] = state.regs.r[source]
 	return nil
 }
+func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
+	dest, reg1, reg2, opTy := state.getDerefParams(byte3, byte4)
+	return nil
+}
+func (state *VmState) movRDO1(param []byte) error {
+
+	return nil
+}
+func (state *VmState) movIDO2(param []byte) error {
+
+	return nil
+}
+func (state *VmState) movRDO2(param []byte) error {
+
+	return nil
+}

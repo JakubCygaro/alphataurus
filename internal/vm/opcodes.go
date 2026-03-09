@@ -76,6 +76,10 @@ var (
 	p1XXX = nested(OpCodeMap{
 		0: handle(OP_MOVDRO1),
 		1: handle(OP_MOVDRO2),
+		2: handle(OP_MOVRDO1),
+		3: handle(OP_MOVIDO1),
+		4: handle(OP_MOVRDO2),
+		5: handle(OP_MOVIDO2),
 	})
 	p0XXX = nested(OpCodeMap{
 		0: p00XX,
