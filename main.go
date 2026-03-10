@@ -11,9 +11,13 @@ import (
 
 const assembly = `
 	push bp
-	mov [0xff+4], 69
-	mov r1, 420
-	mov [0xff+5], r1
+	mov bp, sp
+	mov [bp+1], 420
+	mov [bp+2], 69
+	mov r1, [bp+1]
+	mov r2, [bp+2]
+	add r1, r2
+	mov [bp+3], r1
 `
 
 func main() {
