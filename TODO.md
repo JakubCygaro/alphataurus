@@ -1,7 +1,4 @@
-- pointer dereference shit like in x86 [rax], [rbp], [rbp+1]
 - pointer dereference for jump instructions and other instructions (call instruction)
 - label deref [start]
-- also other way around -> mov [rax], r0
-- implement stack nshit
 - add more tests
 - lea
