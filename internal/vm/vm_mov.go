@@ -67,9 +67,9 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	if !isMovRRAllowed(reg1) {
 		return errors.DisallowedOp2Register(int(reg1), state.byteCodePos)
 	}
-	regV := int64(state.regs.r[reg1])
-	var addr int64
-	p := int64(binary.BigEndian.Uint64(param))
+	regV := uint64(state.regs.r[reg1])
+	var addr uint64
+	p := binary.BigEndian.Uint64(param)
 	switch opTy {
 	case OP_TADD:
 		addr = regV + p
@@ -145,10 +145,57 @@ func (state *VmState) movRD(param []byte) error {
 	return nil
 }
 func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
-	dest, reg1, reg2, opTy := state.getDerefParams(byte3, byte4)
+	_, reg1, _, opTy := state.getDerefParams(byte3, byte4)
+	p := binary.BigEndian.Uint64(param)
+	imm := (p & 0x0000_0000_ffff_ffff)
+	offset := (p & 0xffff_ffff_0000_0000) >> 32
+	regV := uint64(state.regs.r[reg1])
+	var addr uint64
+	switch opTy {
+	case OP_TADD:
+		addr = regV + offset
+	case OP_TSUB:
+		addr = regV - offset
+	case OP_TMUL:
+		addr = regV * offset
+	case OP_TDIV:
+		addr = regV / offset
+	default:
+		return errors.BadOpcode(state.currentOpcode, state.byteCodePos)
+	}
+	inStack := state.VirtToRealSp(int(addr))
+	if inStack < 0 || inStack >= len(state.stack) {
+		return errors.SegmentationFault(uint64(addr), state.byteCodePos)
+	}
+	state.stack[inStack] = imm
 	return nil
 }
-func (state *VmState) movRDO1(param []byte) error {
+func (state *VmState) movRDO1(byte3, byte4 byte, param []byte) error {
+	source, reg1, _, opTy := state.getDerefParams(byte3, byte4)
+	if !isMovRRAllowed(source) {
+		return errors.DisallowedSrcRegister(int(source), state.byteCodePos)
+	}
+	p := binary.BigEndian.Uint64(param)
+	regV := uint64(state.regs.r[reg1])
+	var addr uint64
+	switch opTy {
+	case OP_TADD:
+		addr = regV + p
+	case OP_TSUB:
+		addr = regV - p
+	case OP_TMUL:
+		addr = regV * p
+	case OP_TDIV:
+		addr = regV / p
+	default:
+		return errors.BadOpcode(state.currentOpcode, state.byteCodePos)
+	}
+	inStack := state.VirtToRealSp(int(addr))
+	if inStack < 0 || inStack >= len(state.stack) {
+		return errors.SegmentationFault(uint64(addr), state.byteCodePos)
+	}
+	state.stack[inStack] = imm
+	return nil
 
 	return nil
 }
