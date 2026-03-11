@@ -1,4 +1,6 @@
-- pointer dereference for jump instructions and other instructions (call instruction)
+- call, calling convention
+- ret
+- lea
+- syscall
 - label deref [start]
 - add more tests
-- lea

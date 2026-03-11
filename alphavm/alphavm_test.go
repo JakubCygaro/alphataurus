@@ -461,7 +461,28 @@ func TestCmp1(t *testing.T) {
 		t.Errorf("%+v", flags)
 	}
 }
-func TestJmpG1(t *testing.T) {
+func TestCmp2(t *testing.T) {
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	rAV := uint64(rand.Float64() * 1000)
+	rBV := rAV + 1
+	asm := fmt.Sprintf(`
+		mov r%v, %v
+		cmp FLOAT r%v, %v
+		mov r0, 1
+		cmp FLOAT r0, 3
+	`, rA, rAV, rA, rBV)
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	flags := mach.GetFlags()
+	if !flags.Sf {
+		t.Errorf("Sign flag was not set")
+		t.Errorf("%+v", flags)
+	}
+}
+func TestJmpE1(t *testing.T) {
 	asm := `
 		mov r0, 10
 		mov r1, 0
@@ -500,15 +521,61 @@ func TestJmpG2(t *testing.T) {
 		vm.R0_IDX: 0,
 	})
 }
+func TestJmpG1(t *testing.T) {
+	asm := `
+		mov r0, 10
+		mov r1, 0
+		inc r1
+		dec r0
+		cmp r0, 0
+		jg 0x100
+	`
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	expectGpRegisters(t, asm, &mach, ExpMap{
+		vm.R1_IDX: 10,
+		vm.R0_IDX: 0,
+	})
+}
 func TestExpressions1(t *testing.T) {
-	// rA := byte(rand.Int() % vm.GP_REG_MAX)
-	// rAV := uint64(rand.Float64() * 1000)
-	// asm := fmt.Sprintf(`
-	// 	mov r%v, %v
-	// `, rA, rAV)
-	// mach, err := assembleAndExecute(asm)
-	// if err != nil {
-	// 	t.Error(err)
-	// 	t.FailNow()
-	// }
+	startingVal := rand.Intn(100)
+	expr := fmt.Sprintf("%v", startingVal)
+	endVal := startingVal
+	for range rand.Intn(10) {
+		op := rand.Intn(vm.OP_TDIV+1)
+		arg := rand.Intn(100)
+		res := endVal
+		var opCh rune
+		switch op {
+		case vm.OP_TADD:
+			opCh = '+'
+			res += arg
+		case vm.OP_TSUB:
+			opCh = '-'
+			res -= arg
+		case vm.OP_TDIV:
+			opCh = '/'
+			res /= arg
+		case vm.OP_TMUL:
+			opCh = '*'
+			res *= arg
+		}
+		expr = fmt.Sprintf("(%v %c %v)", endVal, opCh, arg)
+		endVal = res
+	}
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	asm := fmt.Sprintf(`
+		mov r%v, %v
+	`, rA, expr)
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+	expectGpRegisters(t, asm, &mach, ExpMap{
+		rA: uint64(endVal),
+	})
 }

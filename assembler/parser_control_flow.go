@@ -15,16 +15,8 @@ func (p *Parser) parseCmp() error {
 	op1 := p.lexer.CurrentToken()
 	ty := vm.TY_INT64
 	switch op1.Ty {
-	// case TOKEN_TEOF:
-	// 	return errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
-	// case TOKEN_TNEWLINE:
-	// 	return fmt.Errorf("Malformed cmp instruction %s", p.lexer.CurrentPosition())
 	case TOKEN_TFLOAT:
 		ty = vm.TY_FLOAT64
-		if err := p.lexer.ReadNextToken(); err != nil {
-			return err
-		}
-		op1 = p.lexer.CurrentToken()
 	default:
 		p.lexer.UnreadToken()
 	}
