@@ -200,10 +200,10 @@ func (a *ConstExpr) Add(b *ConstExpr) (ConstExpr, bool) {
 			Val: math.Float64bits(aV + bV),
 		}, true
 	case CONSTEXPR_TILIT:
-		aV, bV := a.Val, b.Val
+		aV, bV := a.AsFloat(), b.AsFloat()
 		return ConstExpr{
 			Ty:  ty,
-			Val: aV + bV,
+			Val: uint64(aV + bV),
 		}, true
 	}
 	return ConstExpr{}, false
@@ -221,10 +221,10 @@ func (a *ConstExpr) Sub(b *ConstExpr) (ConstExpr, bool) {
 			Val: math.Float64bits(aV - bV),
 		}, true
 	case CONSTEXPR_TILIT:
-		aV, bV := a.Val, b.Val
+		aV, bV := int64(a.Val), int64(b.Val)
 		return ConstExpr{
 			Ty:  ty,
-			Val: aV - bV,
+			Val: uint64(aV - bV),
 		}, true
 	}
 	return ConstExpr{}, false
@@ -242,10 +242,10 @@ func (a *ConstExpr) Mul(b *ConstExpr) (ConstExpr, bool) {
 			Val: math.Float64bits(aV * bV),
 		}, true
 	case CONSTEXPR_TILIT:
-		aV, bV := a.Val, b.Val
+		aV, bV := int64(a.Val), int64(b.Val)
 		return ConstExpr{
 			Ty:  ty,
-			Val: aV * bV,
+			Val: uint64(aV * bV),
 		}, true
 	}
 	return ConstExpr{}, false
@@ -258,15 +258,21 @@ func (a *ConstExpr) Div(b *ConstExpr) (ConstExpr, bool) {
 	switch ty {
 	case CONSTEXPR_TFLIT:
 		aV, bV := a.AsFloat(), b.AsFloat()
+		if bV == 0 || bV == -0 {
+			return ConstExpr{}, false
+		}
 		return ConstExpr{
 			Ty:  ty,
 			Val: math.Float64bits(aV / bV),
 		}, true
 	case CONSTEXPR_TILIT:
-		aV, bV := a.Val, b.Val
+		aV, bV := int64(a.Val), int64(b.Val)
+		if bV == 0 {
+			return ConstExpr{}, false
+		}
 		return ConstExpr{
 			Ty:  ty,
-			Val: aV / bV,
+			Val: uint64(aV / bV),
 		}, true
 	}
 	return ConstExpr{}, false

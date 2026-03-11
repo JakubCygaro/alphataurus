@@ -10,14 +10,21 @@ import (
 )
 
 const assembly = `
-	push bp
-	mov bp, sp
-	mov [bp+1], 420
-	mov [bp+2], 69
-	mov r1, [bp+1]
-	mov r2, [bp+2]
-	add r1, r2
-	mov [bp+3], r1
+	ENTRY:
+		jmp START
+	ZERO:
+		mov r4, 420
+		jmp END
+	START:
+		mov r0, 10
+		mov r1, 0
+		inc r1
+		dec r0
+		cmp r0, r0
+		je ZERO
+		jg START
+	END:
+		mov r6, 1337
 `
 
 func main() {
@@ -49,13 +56,10 @@ func main() {
 	fmt.Printf("%+v\n", mach.GetRegisters())
 	fmt.Printf("%+v\n", mach.GetFlags())
 	fmt.Printf("stack:\n%+v\n", mach.GetStack())
-	// const in = "[1+(bp+r3)+0+1]"
-	// p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
-	// expr, _ := p.ParseExpression()
-	// expr, _ = assembler.TryEvaluatePruneExpression(expr)
-	// fmt.Println(expr.Emit())
-	// assembler.PruneExpression(expr, nil)
-	// expr, _ = assembler.TryEvaluateExpression(expr)
-	// fmt.Println(expr.Emit())
+	const in = "(-16 / 37)"
+	p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
+	expr, _ := p.ParseExpression()
+	expr, _ = assembler.TryEvaluatePruneExpression(expr)
+	fmt.Println(expr.Emit())
 	
 }
