@@ -11,21 +11,34 @@ import (
 
 const assembly = `
 	ENTRY:
+		mov r0, 10
+		mov r1, 0
 		jmp START
 	ZERO:
 		mov r4, 420
 		jmp END
 	START:
-		mov r0, 10
-		mov r1, 0
 		inc r1
 		dec r0
-		cmp r0, r0
+		cmp r0, 0
 		je ZERO
 		jg START
 	END:
-		mov r6, 1337
+		mov r5, 1337
 `
+// const assembly = `
+// 	ENTRY:
+// 		jmp L0
+// 	L2:
+// 	mov r0, 1
+// 	mov r1, 2
+// 		jmp END
+// 	L0:
+// 		mov r0, 69
+// 		jmp L2
+// 	END:
+// 		nop
+// `
 
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
@@ -56,7 +69,7 @@ func main() {
 	fmt.Printf("%+v\n", mach.GetRegisters())
 	fmt.Printf("%+v\n", mach.GetFlags())
 	fmt.Printf("stack:\n%+v\n", mach.GetStack())
-	const in = "(-16 / 37)"
+	const in = "(-3 + 8)"
 	p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)

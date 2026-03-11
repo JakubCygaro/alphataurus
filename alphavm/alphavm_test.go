@@ -535,19 +535,20 @@ func TestCmp2(t *testing.T) {
 func TestJmpE1(t *testing.T) {
 	asm := `
 	ENTRY:
+		mov r0, 10
+		mov r1, 0
 		jmp START
 	ZERO:
 		mov r4, 420
 		jmp END
 	START:
-		mov r0, 10
-		mov r1, 0
 		inc r1
 		dec r0
 		cmp r0, 0
 		je ZERO
 		jg START
 	END:
+		mov r5, 1337
 	`
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
@@ -555,9 +556,10 @@ func TestJmpE1(t *testing.T) {
 		t.FailNow()
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R1_IDX: 10,
 		vm.R0_IDX: 0,
+		vm.R1_IDX: 10,
 		vm.R4_IDX: 420,
+		vm.R5_IDX: 1337,
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -565,8 +567,8 @@ func TestJmpE1(t *testing.T) {
 func TestJmpG2(t *testing.T) {
 	asm := `
 		mov r0, 10
-	L0:
 		mov r1, 0
+	L0:
 		inc r1
 		dec r0
 		cmp r0, 0

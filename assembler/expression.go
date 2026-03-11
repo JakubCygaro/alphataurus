@@ -200,7 +200,7 @@ func (a *ConstExpr) Add(b *ConstExpr) (ConstExpr, bool) {
 			Val: math.Float64bits(aV + bV),
 		}, true
 	case CONSTEXPR_TILIT:
-		aV, bV := a.AsFloat(), b.AsFloat()
+		aV, bV := int64(a.Val), int64(b.Val)
 		return ConstExpr{
 			Ty:  ty,
 			Val: uint64(aV + bV),

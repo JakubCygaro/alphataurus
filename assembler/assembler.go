@@ -110,6 +110,8 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitPushI(inst.Data.(PushPopData), &bytecode)
 		case INST_TPOP:
 			err = a.emitPop(inst.Data.(PushPopData), &bytecode)
+		case INST_TNOP:
+			err = a.emitNop(&bytecode)
 		default:
 			pos := a.parser.lexer.CurrentPosition()
 			return bytecode, 0, fmt.Errorf("Instruction (%d) WIP %s", INST_TMOVIR, pos)
@@ -344,7 +346,7 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
 	} else if lab, ok := data.Address.(string); ok {
 		if l, ok := a.labels[lab]; ok {
-			*out = binary.BigEndian.AppendUint64(*out, uint64(l.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE)
+			*out = binary.BigEndian.AppendUint64(*out, uint64(l.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
 		} else {
 			a.unresolvedJumps[opPos] = lab
 			*out = binary.BigEndian.AppendUint64(*out, uint64(0))
@@ -371,7 +373,8 @@ func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 		if !ok {
 			return errors.UnresolvedLabel(destLabel)
 		}
-		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:], uint64(label.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE)
+		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:],
+			uint64(label.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
 	}
 	return nil
 }
@@ -391,5 +394,11 @@ func (a *Assembler) emitPop(data PushPopData, out *[]byte) error {
 	pop := a.opCodes[vm.OP_POP]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(pop))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
+	return nil
+}
+func (a *Assembler) emitNop(out *[]byte) error {
+	nop := a.opCodes[vm.OP_NOP]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(nop))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	return nil
 }

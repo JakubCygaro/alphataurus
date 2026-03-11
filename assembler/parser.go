@@ -43,6 +43,8 @@ const (
 	INST_TPUSHR
 	INST_TPUSHI
 	INST_TPOP
+	INST_TCLR
+	INST_TNOP
 )
 
 type InstMovData struct {
@@ -196,6 +198,16 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parsePush()
 	case "pop":
 		return p.parsePop()
+	case "nop":
+		p.currentInst = Instruction{
+			Ty: INST_TNOP,
+		}
+		return nil
+	case "clr":
+		p.currentInst = Instruction{
+			Ty: INST_TCLR,
+		}
+		return nil
 	default:
 		pos := p.lexer.CurrentPosition()
 		if _, ok := p.lexer.Expect(TOKEN_TCOLON); ok {

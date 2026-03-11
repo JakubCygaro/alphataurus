@@ -257,6 +257,9 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			err = vm.popR(param)
 		case OP_CMP:
 			err = vm.cmp(opCodeBytes[0], param)
+		case OP_NOP:
+		case OP_CLR:
+			err = vm.clr()
 		default:
 			return fmt.Errorf("Unhandled opcode %d, TODO", opcode)
 		}
@@ -349,6 +352,10 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 	}
 	return nil
 }
+func (state *VmState) clr() error {
+	state.flags = Flags{}
+	return nil
+}
 func (state *VmState) cmp(lastByte byte, param []byte) error {
 	var subtrahend, minuend byte
 	subtrahend |= (lastByte & 0xf0) >> 4
@@ -372,6 +379,7 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 	}
 	var diff uint64
 	subValues(minV, subV, ty, &diff)
+	state.flags = Flags{}
 
 	if ty == TY_FLOAT64 {
 		state.flags.Sf = math.Float64frombits(diff) <= 0.0
