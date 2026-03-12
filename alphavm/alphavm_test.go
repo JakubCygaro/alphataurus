@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -12,6 +13,25 @@ import (
 	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
+const (
+	DEFAULT_STACK_SIZE = 16
+)
+
+func execute(code []byte) (vm.VmState, error) {
+	return executeStackSize(code, DEFAULT_STACK_SIZE)
+}
+func executeStackSize(code []byte, stacksz uint64) (vm.VmState, error) {
+	mach := vm.CreateVmState(stacksz)
+	if err := mach.Execute(code); err != nil {
+		return mach, err
+	}
+	return mach, nil
+}
+func assemble(source string) ([]byte, error) {
+	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(source)))
+	code, _, err := asmblr.EmitBytecode()
+	return code, err
+}
 func assembleAndExecute(source string) (vm.VmState, error) {
 	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(source)))
 	mach := vm.CreateVmState(16)
@@ -35,9 +55,9 @@ func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 		if r, _ := mach.GetGpRXAsUint64(k); r != v {
 			msg = strings.Join([]string{
 				fmt.Sprintf("State of general purpose register r%v was different from expected", k),
-				fmt.Sprintf("\tuint64  (%v != %v)", v, r),
-				fmt.Sprintf("\tint64   (%v != %v)", int64(v), int64(r)),
-				fmt.Sprintf("\tfloat64 (%v != %v)", math.Float64frombits(v), math.Float64frombits(r)),
+				fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)", v, r),
+				fmt.Sprintf("\t[int64]   expected (%v) \t got (%v)", int64(v), int64(r)),
+				fmt.Sprintf("\t[float64] expected (%v) \t got (%v)", math.Float64frombits(v), math.Float64frombits(r)),
 			}, "\n")
 			err = true
 		}
@@ -609,7 +629,6 @@ func TestJmpG1(t *testing.T) {
 }
 func TestExpressions1(t *testing.T) {
 	for range 100 {
-
 		startingVal := rand.Intn(100)
 		expr := fmt.Sprintf("%v", startingVal)
 		endVal := startingVal
@@ -654,5 +673,156 @@ func TestExpressions1(t *testing.T) {
 			t.Errorf(err.Error())
 			break
 		}
+	}
+}
+
+func TestExpressions2(t *testing.T) {
+	for range 100 {
+		startingVal := rand.Float64()
+		expr := fmt.Sprintf("%v", startingVal)
+		endVal := startingVal
+		for range rand.Intn(10) {
+			op := rand.Intn(vm.OP_TDIV + 1)
+			arg := rand.Float64()
+			res := endVal
+			var opCh rune
+			switch op {
+			case vm.OP_TADD:
+				opCh = '+'
+				res += arg
+			case vm.OP_TSUB:
+				opCh = '-'
+				res -= arg
+			case vm.OP_TDIV:
+				if arg == 0 {
+					arg = 1
+				}
+				opCh = '/'
+				res /= arg
+			case vm.OP_TMUL:
+				opCh = '*'
+				res *= arg
+			}
+			expr = fmt.Sprintf("(%v %c %v)", endVal, opCh, arg)
+			endVal = res
+		}
+		rA := byte(rand.Int() % vm.GP_REG_MAX)
+		asm := fmt.Sprintf(`
+			mov r%v, %v
+		`, rA, expr)
+		mach, err := assembleAndExecute(asm)
+		if err != nil {
+			t.Error(err)
+			t.Errorf("Compilation of:\n %s", asm)
+			t.FailNow()
+		}
+		if err := expectGpRegisters(asm, &mach, ExpMap{
+			rA: uint64(math.Float64bits(endVal)),
+		}); err != nil {
+			t.Errorf(err.Error())
+			break
+		}
+	}
+}
+
+func TestExpressions1F(t *testing.T) {
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	asm := fmt.Sprintf(`
+			mov r%v, ( 0 / 0 )
+		`, rA)
+	_, err := assemble(asm)
+	if err == nil {
+		t.Errorf("Expected assembling failure")
+		t.Errorf("Compilation of:\n %s", asm)
+	}
+}
+
+func TestExpressions2F(t *testing.T) {
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	asm := fmt.Sprintf(`
+			mov r%v, [[0]]
+		`, rA)
+	_, err := assemble(asm)
+	if err == nil {
+		t.Errorf("Expected assembling failure")
+		t.Errorf("Compilation of:\n %s", asm)
+	}
+}
+func TestDeref1F(t *testing.T) {
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	asm := fmt.Sprintf(`
+			mov r%v, [0x0]
+		`, rA)
+	b, err := assemble(asm)
+	if err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n %s", asm)
+	}
+	if _, err := execute(b); err == nil {
+		t.Errorf("Expected execution failure")
+		t.Errorf("Compilation of:\n %s", asm)
+	} else if ok, err := regexp.MatchString("Segmentation fault", err.Error()); !ok || err != nil {
+		t.Errorf("Expected segmentation fault")
+		t.Error(err)
+	}
+}
+func TestStack1(t *testing.T) {
+	var asm string
+	lines := make([]string, 0, DEFAULT_STACK_SIZE)
+	for range DEFAULT_STACK_SIZE{
+		val := rand.Intn(10000) - 5000
+		if rand.Intn(100) < 50 {
+			lines = append(lines, fmt.Sprintf("push %v", val))
+		} else {
+			rA := byte(rand.Int() % vm.GP_REG_MAX)
+			lines = append(lines, fmt.Sprintf("mov r%v, %v", rA, val))
+			lines = append(lines, fmt.Sprintf("push r%v", rA))
+		}
+	}
+	for range DEFAULT_STACK_SIZE{
+		rA := byte(rand.Int() % vm.GP_REG_MAX)
+		lines = append(lines, fmt.Sprintf("pop r%v", rA))
+	}
+	asm = strings.Join(lines, "\n")
+	if _, err := assembleAndExecute(asm); err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n %s", asm)
+	}
+}
+func TestStack1F(t *testing.T) {
+	var asm string
+	lines := make([]string, 0, DEFAULT_STACK_SIZE)
+	for range DEFAULT_STACK_SIZE + 1 {
+		lines = append(lines, "push 1")
+	}
+	asm = strings.Join(lines, "\n")
+	b, err := assemble(asm)
+	if err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n %s", asm)
+	}
+	if _, err := execute(b); err == nil {
+		t.Errorf("Expected execution failure")
+		t.Errorf("Compilation of:\n%s", asm)
+	} else if ok, err := regexp.MatchString("Stack overflow", err.Error()); !ok || err != nil {
+		t.Errorf("Expected stack overflow")
+		t.Error(err)
+	}
+}
+func TestStack2F(t *testing.T) {
+	asm := `
+		pop
+	`
+	b, err := assemble(asm)
+	if err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n %s", asm)
+	}
+	if _, err := execute(b); err == nil {
+		t.Errorf("Expected execution failure")
+		t.Errorf("Compilation of:\n%s", asm)
+	} else if ok, err := regexp.MatchString("Stack underflow", err.Error()); !ok || err != nil {
+		t.Errorf("Expected stack underflow")
+		t.Error(err)
 	}
 }

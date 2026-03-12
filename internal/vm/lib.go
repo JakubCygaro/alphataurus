@@ -404,11 +404,11 @@ func (state *VmState) push(ty int, param []byte) error {
 			return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 		}
 	}
-	if state.GetRealSp() >= len(state.stack) {
+	if state.GetRealSp()+1 >= len(state.stack) {
 		return errors.StackOverflow(state.byteCodePos)
 	}
-	state.stack[state.GetRealSp()+1] = val
 	state.regs.r[SP_IDX]++
+	state.stack[state.GetRealSp()] = val
 	return nil
 }
 func (state *VmState) popR(param []byte) error {
