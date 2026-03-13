@@ -908,6 +908,38 @@ func TestStack1(t *testing.T) {
 		t.Errorf("Compilation of:\n%s", asm)
 	}
 }
+func TestStack2(t *testing.T) {
+	const stackSize = DEFAULT_STACK_SIZE
+	stack := make(vm.VmStack, stackSize)
+	for i := range 2 {
+		stack[i] = uint64(rand.Intn(101)-50)
+	}
+	stack[2] = uint64(int64(stack[0]) + int64(stack[1]))
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	rB := (rA+1) % vm.GP_REG_MAX
+	asm := fmt.Sprintf(`
+		mov bp, sp
+		mov [bp+1], %v
+		mov [bp+2], %v
+		mov r%v, [bp+1]
+		mov r%v, [bp+2]
+		add SIGNED r%v, r%v
+		mov [bp+3], r%v
+	`, stack[0], stack[1], rA, rB, rA, rB, rA)
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	} else if err := expectStack(&mach, stack); err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	} else if err := expectGpRegisters(asm, &mach, ExpMap{
+		rA: stack[2],
+		rB: stack[1],
+	}); err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	}
+}
 func TestStack1F(t *testing.T) {
 	var asm string
 	lines := make([]string, 0, DEFAULT_STACK_SIZE)

@@ -10,24 +10,15 @@ import (
 )
 
 const assembly = `
-	push -17
-	mov [bp+2], -17
-	mov [bp+3], 17
+	push bp
+	mov bp, sp
+	mov [bp+1], 420
+	mov [bp+2], 69
+	mov r0, [bp+1]
+	mov r1, [bp+2]
+	add SIGNED r0, r1
+	mov [bp+3], r0
 `
-// const assembly = `
-// 	ENTRY:
-// 		jmp L0
-// 	L2:
-// 	mov r0, 1
-// 	mov r1, 2
-// 		jmp END
-// 	L0:
-// 		mov r0, 69
-// 		jmp L2
-// 	END:
-// 		nop
-// `
-
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
 	bytecode, iCount, err := asm.EmitBytecode()
