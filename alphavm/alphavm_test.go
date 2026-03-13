@@ -796,6 +796,59 @@ func TestDeref1(t *testing.T) {
 		t.Errorf("Compilation of:\n%s", asm)
 	}
 }
+func TestDeref2(t *testing.T) {
+	stackSize := rand.Intn(32-5) + 5
+	stack := make(vm.VmStack, 0, stackSize)
+	for range stackSize {
+		stack = append(stack, uint64(rand.Intn(101)-50))
+	}
+	lines := make([]string, 0)
+	for i, v := range stack {
+		rA := byte(rand.Int() % vm.GP_REG_MAX)
+		lines = append(lines, fmt.Sprintf("mov r%v, %v", rA, int64(v)))
+		lines = append(lines, fmt.Sprintf("mov [bp+%v], %v", i+1, int64(v)))
+	}
+	asm := strings.Join(lines, "\n")
+	b, err := assemble(asm)
+	if err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	}
+	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	} else if err := expectStack(&mach, stack); err != nil {
+		t.Error(err.Error())
+		t.Errorf("Compilation of:\n%s", asm)
+	}
+}
+func TestDeref3(t *testing.T) {
+	stackSize := rand.Intn(32-5) + 5
+	stack := make(vm.VmStack, 0, stackSize)
+	for range stackSize {
+		stack = append(stack, uint64(rand.Intn(101)-50))
+	}
+	lines := make([]string, 0)
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	lines = append(lines, fmt.Sprintf("mov r%v, 1", rA))
+	for _, v := range stack {
+		lines = append(lines, fmt.Sprintf("mov [bp+r%v], %v", rA, int64(v)))
+		lines = append(lines, fmt.Sprintf("inc r%v", rA))
+	}
+	asm := strings.Join(lines, "\n")
+	b, err := assemble(asm)
+	if err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	}
+	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	} else if err := expectStack(&mach, stack); err != nil {
+		t.Error(err.Error())
+		t.Errorf("Compilation of:\n%s", asm)
+	}
+}
 func TestDeref1F(t *testing.T) {
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
 	asm := fmt.Sprintf(`
