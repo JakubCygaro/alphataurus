@@ -10,21 +10,9 @@ import (
 )
 
 const assembly = `
-	ENTRY:
-		mov r0, 10
-		mov r1, 0
-		jmp START
-	ZERO:
-		mov r4, 420
-		jmp END
-	START:
-		inc r1
-		dec r0
-		cmp r0, 0
-		je ZERO
-		jg START
-	END:
-		mov r5, 1337
+	push -17
+	mov [bp+2], -17
+	mov [bp+3], 17
 `
 // const assembly = `
 // 	ENTRY:

@@ -193,6 +193,8 @@ func (a *Assembler) emitMovRD(data InstMovDerefData, out *[]byte) error {
 	return nil
 }
 func (a *Assembler) emitMovIDO1(data InstMovDerefData, out *[]byte) error {
+	fmt.Printf("%+v\n", data)
+	fmt.Printf("sImm: %+v\n", uint32(data.Imm))
 	mov := a.opCodes[vm.OP_MOVIDO1]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	param := (byte(0) & 0x0f) << 4

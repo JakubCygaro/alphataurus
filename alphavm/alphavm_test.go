@@ -71,6 +71,30 @@ func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 	}
 	return nil
 }
+func expectStack(mach *vm.VmState, stack vm.VmStack) error {
+	lines := make([]string, 0)
+	vmStack := mach.GetStack()
+	if len(vmStack) != len(stack) {
+		lines = append(lines,
+			fmt.Sprintf("Input stack and vm stack sizes do not match\nlen(vm) = %v\tlen(input) = %v",
+				len(vmStack), len(stack)))
+		return fmt.Errorf("%s", strings.Join(lines, "\n"))
+	}
+	for i, v := range stack {
+		if vmStack[i] != v {
+			lines = append(lines, fmt.Sprintf("Stack value at [%v] was different from expected", i))
+			lines = append(lines,
+				fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)", v, vmStack[i]),
+				fmt.Sprintf("\t[int64]   expected (%v) \t got (%v)", int64(v), int64(vmStack[i])),
+				fmt.Sprintf("\t[float64] expected (%v) \t got (%v)", math.Float64frombits(v), math.Float64frombits(vmStack[i])),
+			)
+		}
+	}
+	if len(lines) > 0 {
+		return fmt.Errorf("%s", strings.Join(lines, "\n"))
+	}
+	return nil
+}
 
 func TestMov1(t *testing.T) {
 	r0_v, r1_v, r2_v, r3_v := 69, 420, 1.23, 1.23
@@ -748,6 +772,30 @@ func TestExpressions2F(t *testing.T) {
 		t.Errorf("Compilation of:\n %s", asm)
 	}
 }
+func TestDeref1(t *testing.T) {
+	stackSize := rand.Intn(32-5) + 5
+	stack := make(vm.VmStack, 0, stackSize)
+	for range stackSize {
+		stack = append(stack, uint64(rand.Intn(101)-50))
+	}
+	lines := make([]string, 0)
+	for i, v := range stack {
+		lines = append(lines, fmt.Sprintf("mov [bp+%v], %v", i+1, int64(v)))
+	}
+	asm := strings.Join(lines, "\n")
+	b, err := assemble(asm)
+	if err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	}
+	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	} else if err := expectStack(&mach, stack); err != nil {
+		t.Error(err.Error())
+		t.Errorf("Compilation of:\n%s", asm)
+	}
+}
 func TestDeref1F(t *testing.T) {
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
 	asm := fmt.Sprintf(`
@@ -760,6 +808,24 @@ func TestDeref1F(t *testing.T) {
 	}
 	if _, err := execute(b); err == nil {
 		t.Errorf("Expected execution failure")
+		t.Errorf("Compilation of:\n%s", asm)
+	} else if ok, err := regexp.MatchString("Segmentation fault", err.Error()); !ok || err != nil {
+		t.Errorf("Expected segmentation fault")
+		t.Error(err)
+	}
+}
+func TestDeref2F(t *testing.T) {
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	asm := fmt.Sprintf(`
+			mov r%v, [0xffffffff]
+		`, rA)
+	b, err := assemble(asm)
+	if err != nil {
+		t.Error(err)
+		t.Errorf("Compilation of:\n%s", asm)
+	}
+	if _, err := execute(b); err == nil {
+		t.Errorf("Expected execution failure")
 		t.Errorf("Compilation of:\n %s", asm)
 	} else if ok, err := regexp.MatchString("Segmentation fault", err.Error()); !ok || err != nil {
 		t.Errorf("Expected segmentation fault")
@@ -769,7 +835,7 @@ func TestDeref1F(t *testing.T) {
 func TestStack1(t *testing.T) {
 	var asm string
 	lines := make([]string, 0, DEFAULT_STACK_SIZE)
-	for range DEFAULT_STACK_SIZE{
+	for range DEFAULT_STACK_SIZE {
 		val := rand.Intn(10000) - 5000
 		if rand.Intn(100) < 50 {
 			lines = append(lines, fmt.Sprintf("push %v", val))
@@ -779,14 +845,14 @@ func TestStack1(t *testing.T) {
 			lines = append(lines, fmt.Sprintf("push r%v", rA))
 		}
 	}
-	for range DEFAULT_STACK_SIZE{
+	for range DEFAULT_STACK_SIZE {
 		rA := byte(rand.Int() % vm.GP_REG_MAX)
 		lines = append(lines, fmt.Sprintf("pop r%v", rA))
 	}
 	asm = strings.Join(lines, "\n")
 	if _, err := assembleAndExecute(asm); err != nil {
 		t.Error(err)
-		t.Errorf("Compilation of:\n %s", asm)
+		t.Errorf("Compilation of:\n%s", asm)
 	}
 }
 func TestStack1F(t *testing.T) {
@@ -799,7 +865,7 @@ func TestStack1F(t *testing.T) {
 	b, err := assemble(asm)
 	if err != nil {
 		t.Error(err)
-		t.Errorf("Compilation of:\n %s", asm)
+		t.Errorf("Compilation of:\n%s", asm)
 	}
 	if _, err := execute(b); err == nil {
 		t.Errorf("Expected execution failure")

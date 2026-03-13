@@ -122,7 +122,7 @@ func (state *VmState) movDRO2(byte3, byte4 byte, param []byte) error {
 func (state *VmState) movID(param []byte) error {
 	p := binary.BigEndian.Uint64(param)
 	dest := (p & 0xffff_ffff_0000_0000) >> 32
-	imm := (p & 0x0000_0000_ffff_ffff)
+	imm := uint64(int32((p & 0x0000_0000_ffff_ffff)))
 	inStack := state.VirtToRealSp(int(dest))
 	if inStack < 0 || inStack >= len(state.stack) {
 		return errors.SegmentationFault(dest, state.byteCodePos)
@@ -150,7 +150,7 @@ func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
 		return errors.DisallowedOp1Register(int(reg1), state.byteCodePos)
 	}
 	p := binary.BigEndian.Uint64(param)
-	imm := (p & 0x0000_0000_ffff_ffff)
+	imm := uint64(int32((p & 0x0000_0000_ffff_ffff)))
 	offset := (p & 0xffff_ffff_0000_0000) >> 32
 	regV := uint64(state.regs.r[reg1])
 	var addr uint64
@@ -215,7 +215,7 @@ func (state *VmState) movIDO2(byte3, byte4 byte, param []byte) error {
 		return errors.DisallowedOp2Register(int(reg2), state.byteCodePos)
 	}
 	p := binary.BigEndian.Uint64(param)
-	imm := (p & 0x0000_0000_ffff_ffff)
+	imm := uint64(int32((p & 0x0000_0000_ffff_ffff)))
 	offset := (p & 0xffff_ffff_0000_0000) >> 32
 	reg1V := uint64(state.regs.r[reg1])
 	reg2V := uint64(state.regs.r[reg2])
