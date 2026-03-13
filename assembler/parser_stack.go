@@ -19,21 +19,21 @@ func (p *Parser) parsePush() error {
 	case CONSTEXPR_TREG:
 		p.currentInst = Instruction{
 			Ty: INST_TPUSHR,
-			Data: PushPopData{
+			Data: InstPushPopData{
 				Reg: eval.Val,
 			},
 		}
 	case CONSTEXPR_TILIT:
 		p.currentInst = Instruction{
 			Ty: INST_TPUSHI,
-			Data: PushPopData{
+			Data: InstPushPopData{
 				Imm: eval.Val,
 			},
 		}
 	case CONSTEXPR_TFLIT:
 		p.currentInst = Instruction{
 			Ty: INST_TPUSHI,
-			Data: PushPopData{
+			Data: InstPushPopData{
 				Imm: eval.Val,
 			},
 		}
@@ -64,7 +64,7 @@ func (p *Parser) parsePop() error {
 		}
 		p.currentInst = Instruction{
 			Ty: INST_TPOP,
-			Data: PushPopData{
+			Data: InstPushPopData{
 				Reg: eval.Val,
 			},
 		}
@@ -72,7 +72,7 @@ func (p *Parser) parsePop() error {
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TPOP,
-		Data: PushPopData{
+		Data: InstPushPopData{
 			Imm: uint64(math.MaxUint64),
 			Reg: 0xff,
 		},

@@ -45,6 +45,8 @@ const (
 	INST_TPOP
 	INST_TCLR
 	INST_TNOP
+	INST_TCALL
+	INST_TRET
 )
 
 type InstMovData struct {
@@ -85,7 +87,7 @@ type InstLabData struct {
 	Label      string
 	DeclaredAt string
 }
-type PushPopData struct {
+type InstPushPopData struct {
 	Reg uint64
 	Imm uint64
 }
@@ -99,12 +101,12 @@ type InstDerefMovData struct {
 }
 type InstMovDerefData struct {
 	SourceReg int
-	Imm    uint64
-	Offset int64
-	OReg1  int
-	OReg2  int
-	Label  string
-	OpTy   int
+	Imm       uint64
+	Offset    int64
+	OReg1     int
+	OReg2     int
+	Label     string
+	OpTy      int
 }
 type Instruction struct {
 	Ty   int
@@ -114,6 +116,11 @@ type Parser struct {
 	lexer        Lexer
 	currentInst  Instruction
 	currentIdent string
+}
+type InstCallData struct {
+	Addr uint64
+	Ident string
+	Expr *Expr
 }
 
 func NewParser(reader bufio.Reader) Parser {
@@ -208,6 +215,13 @@ func (p *Parser) parseStartIdent(t Token) error {
 			Ty: INST_TCLR,
 		}
 		return nil
+	case "call":
+		return p.parseCall()
+	case "ret":
+		p.currentInst = Instruction{
+			Ty: INST_TRET,
+		}
+		return nil
 	default:
 		pos := p.lexer.CurrentPosition()
 		if _, ok := p.lexer.Expect(TOKEN_TCOLON); ok {
@@ -224,4 +238,3 @@ func (p *Parser) parseStartIdent(t Token) error {
 	p.currentIdent = ""
 	return errors.UnknownIdentifier(ident, p.lexer.line, p.lexer.col)
 }
-

@@ -105,13 +105,17 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.declareLabel(inst.Data.(InstLabData), &bytecode)
 			instCount--
 		case INST_TPUSHR:
-			err = a.emitPushR(inst.Data.(PushPopData), &bytecode)
+			err = a.emitPushR(inst.Data.(InstPushPopData), &bytecode)
 		case INST_TPUSHI:
-			err = a.emitPushI(inst.Data.(PushPopData), &bytecode)
+			err = a.emitPushI(inst.Data.(InstPushPopData), &bytecode)
 		case INST_TPOP:
-			err = a.emitPop(inst.Data.(PushPopData), &bytecode)
+			err = a.emitPop(inst.Data.(InstPushPopData), &bytecode)
 		case INST_TNOP:
 			err = a.emitNop(&bytecode)
+		case INST_TCALL:
+			err = a.emitCall(inst.Data.(InstCallData), &bytecode)
+		case INST_TRET:
+			err = a.emitRet(&bytecode)
 		default:
 			pos := a.parser.lexer.CurrentPosition()
 			return bytecode, 0, fmt.Errorf("Instruction (%d) WIP %s", INST_TMOVIR, pos)
@@ -378,19 +382,19 @@ func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 	}
 	return nil
 }
-func (a *Assembler) emitPushR(data PushPopData, out *[]byte) error {
+func (a *Assembler) emitPushR(data InstPushPopData, out *[]byte) error {
 	push := a.opCodes[vm.OP_PUSHR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(push))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
 	return nil
 }
-func (a *Assembler) emitPushI(data PushPopData, out *[]byte) error {
+func (a *Assembler) emitPushI(data InstPushPopData, out *[]byte) error {
 	push := a.opCodes[vm.OP_PUSHI]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(push))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitPop(data PushPopData, out *[]byte) error {
+func (a *Assembler) emitPop(data InstPushPopData, out *[]byte) error {
 	pop := a.opCodes[vm.OP_POP]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(pop))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
@@ -399,6 +403,28 @@ func (a *Assembler) emitPop(data PushPopData, out *[]byte) error {
 func (a *Assembler) emitNop(out *[]byte) error {
 	nop := a.opCodes[vm.OP_NOP]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(nop))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
+	return nil
+}
+func (a *Assembler) emitCall(data InstCallData, out *[]byte) error {
+	call := a.opCodes[vm.OP_CALL]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(call))
+	if data.Addr != 0 {
+		*out = binary.BigEndian.AppendUint64(*out, uint64(data.Addr))
+	} else {
+		if lab, ok := a.labels[data.Ident]; ok {
+			*out = binary.BigEndian.AppendUint64(*out, uint64(lab.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
+		} else {
+			opPos := len(*out)
+			a.unresolvedJumps[opPos] = data.Ident
+			*out = binary.BigEndian.AppendUint64(*out, uint64(0))
+		}
+	}
+	return nil
+}
+func (a *Assembler) emitRet(out *[]byte) error {
+	ret := a.opCodes[vm.OP_RET]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(ret))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	return nil
 }

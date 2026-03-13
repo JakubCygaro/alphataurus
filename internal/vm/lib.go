@@ -260,6 +260,8 @@ func (vm *VmState) Execute(bytecode []byte) error {
 		case OP_NOP:
 		case OP_CLR:
 			err = vm.clr()
+		case OP_CALL: err = vm.call(param)
+		case OP_RET: err = vm.ret()
 		default:
 			return fmt.Errorf("Unhandled opcode %d, TODO", opcode)
 		}
@@ -391,6 +393,14 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 
 	return nil
 }
+func (state *VmState) pushImpl(val uint64) error {
+	if state.GetRealSp()+1 >= len(state.stack) {
+		return errors.StackOverflow(state.byteCodePos)
+	}
+	state.regs.r[SP_IDX]++
+	state.stack[state.GetRealSp()] = val
+	return nil
+}
 func (state *VmState) push(ty int, param []byte) error {
 	var val uint64
 	switch ty {
@@ -404,19 +414,21 @@ func (state *VmState) push(ty int, param []byte) error {
 			return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 		}
 	}
-	if state.GetRealSp()+1 >= len(state.stack) {
-		return errors.StackOverflow(state.byteCodePos)
-	}
-	state.regs.r[SP_IDX]++
-	state.stack[state.GetRealSp()] = val
-	return nil
+	return state.pushImpl(val)
 }
-func (state *VmState) popR(param []byte) error {
+func (state *VmState) popImpl() (uint64, error) {
 	if state.GetRealSp() < 0 {
-		return errors.StackUnderflow(state.byteCodePos)
+		return 0, errors.StackUnderflow(state.byteCodePos)
 	}
 	val := state.stack[state.GetRealSp()]
 	state.regs.r[SP_IDX]--
+	return val, nil
+}
+func (state *VmState) popR(param []byte) error {
+	val, err := state.popImpl()
+	if err != nil {
+		return err
+	}
 	reg := binary.BigEndian.Uint64(param)
 	if isPushRAllowed(byte(reg)) {
 		state.regs.r[reg] = val

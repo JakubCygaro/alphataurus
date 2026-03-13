@@ -126,11 +126,11 @@ func (p *Parser) parseJmp(ty int) error {
 	}
 	switch addr.Ty {
 	case TOKEN_TINTEGER_LIT:
-		inst.Data = InstJmpData {
+		inst.Data = InstJmpData{
 			Address: addr.val.(uint64),
 		}
 	case TOKEN_TIDENT:
-		inst.Data = InstJmpData {
+		inst.Data = InstJmpData{
 			Address: addr.val.(string),
 		}
 	default:
@@ -139,5 +139,38 @@ func (p *Parser) parseJmp(ty int) error {
 			p.lexer.line, p.lexer.col)
 	}
 	p.currentInst = inst
+	return nil
+}
+func (p *Parser) parseCall() error {
+	ok := false
+	var pruned ConstExpr
+	if param, err := p.parseExpression(0); err != nil {
+		return err
+	} else if pruned, ok = TryConstEvaluatePruneExpression(param); !ok {
+		return errors.FailedToParse("call instruction",
+			"Parameter of call instruction must be an address literal or label", p.lexer.line, p.lexer.col)
+	}
+	switch pruned.Ty {
+	case CONSTEXPR_TILIT:
+		p.currentInst = Instruction{
+			Ty: INST_TCALL,
+			Data: InstCallData{
+				Addr: pruned.Val,
+				Expr: nil,
+			},
+		}
+	case CONSTEXPR_TIDENT:
+		p.currentInst = Instruction{
+			Ty: INST_TCALL,
+			Data: InstCallData{
+				Addr:  pruned.Val,
+				Ident: pruned.Ident,
+				Expr:  nil,
+			},
+		}
+	default:
+		return errors.FailedToParse("call instruction",
+			"Parameter of call instruction must be an address literal or label", p.lexer.line, p.lexer.col)
+	}
 	return nil
 }

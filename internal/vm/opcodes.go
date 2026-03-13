@@ -48,6 +48,8 @@ var (
 		5: handle(OP_DECR),
 		6: handle(OP_NOP),
 		7: handle(OP_CLR),
+		8: handle(OP_CALL),
+		9: handle(OP_RET),
 	})
 	//jumps
 	p03XX = nested(OpCodeMap{
@@ -156,6 +158,8 @@ const (
 	OP_JMPLE // jump if less or equal
 	OP_CMP   // test registers
 	OP_CLR // clear all flags (set them to false)
+	OP_CALL
+	OP_RET
 	OP_NOP
 )
 

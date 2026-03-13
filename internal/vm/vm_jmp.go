@@ -6,13 +6,16 @@ import (
 	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
 )
 
-func (state *VmState) jmp(lastByte byte, param []byte) error {
-	dest := binary.BigEndian.Uint64(param)
+func (state *VmState) jmpImpl(dest uint64) error {
 	if dest < state.exeSegBase || dest >= uint64(state.stackSegBase) {
 		return errors.SegmentationFault(dest, uint64(state.byteCodePos))
 	}
 	state.setIp(dest)
 	return nil
+}
+func (state *VmState) jmp(lastByte byte, param []byte) error {
+	dest := binary.BigEndian.Uint64(param)
+	return state.jmpImpl(dest)
 }
 func (state *VmState) jmpE(lastByte byte, param []byte) error {
 	if state.flags.Zf {

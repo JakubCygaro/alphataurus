@@ -10,14 +10,24 @@ import (
 )
 
 const assembly = `
+	jmp START
+_add:
 	push bp
 	mov bp, sp
-	mov [bp+1], 420
-	mov [bp+2], 69
-	mov r0, [bp+1]
-	mov r1, [bp+2]
-	add SIGNED r0, r1
-	mov [bp+3], r0
+	add SIGNED r1, r2
+	mov r0, r1
+	mov r1, 0
+	mov r2, 0
+	pop bp
+	ret
+START:
+	mov r1, 420
+	mov r2, 69
+	call _add
+	cmp r0, 420+69
+	jne L0
+	mov [bp+1], 1234
+L0:
 `
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
