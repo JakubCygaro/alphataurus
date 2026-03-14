@@ -71,6 +71,10 @@ func (p *Parser) parseLogical(logTy int) error {
 			ty = INST_TANDRR
 		case LOG_TXOR:
 			ty = INST_TXORRR
+		case LOG_TLSH:
+			ty = INST_TLSHRR
+		case LOG_TRSH:
+			ty = INST_TRSHRR
 		}
 		p.currentInst = Instruction{
 			Ty: ty,
@@ -88,6 +92,10 @@ func (p *Parser) parseLogical(logTy int) error {
 			ty = INST_TANDIR
 		case LOG_TXOR:
 			ty = INST_TXORIR
+		case LOG_TLSH:
+			ty = INST_TLSHIR
+		case LOG_TRSH:
+			ty = INST_TRSHIR
 		}
 		p.currentInst = Instruction{
 			Ty: ty,

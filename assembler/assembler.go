@@ -83,11 +83,19 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
 		case INST_TXORRR:
 			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TLSHRR:
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TRSHRR:
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
 		case INST_TANDIR:
 			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
 		case INST_TORIR:
 			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
 		case INST_TXORIR:
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TLSHIR:
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TRSHIR:
 			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
 		case INST_TINCR:
 			err = a.emitInc(inst.Data.(InstIncDecData), &bytecode)
@@ -296,6 +304,10 @@ func (a *Assembler) emitLogRR(op int, data InstLogicalData, out *[]byte) error {
 		opCode = a.opCodes[vm.OP_ORRR]
 	case INST_TXORRR:
 		opCode = a.opCodes[vm.OP_XORRR]
+	case INST_TLSHRR:
+		opCode = a.opCodes[vm.OP_LSHRR]
+	case INST_TRSHRR:
+		opCode = a.opCodes[vm.OP_RSHRR]
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
 	// first = param[0]
@@ -316,6 +328,10 @@ func (a *Assembler) emitLogIR(ty int, data InstLogicalData, out *[]byte) error {
 		opCode = a.opCodes[vm.OP_ORIR]
 	case INST_TXORIR:
 		opCode = a.opCodes[vm.OP_XORIR]
+	case INST_TLSHIR:
+		opCode = a.opCodes[vm.OP_LSHIR]
+	case INST_TRSHIR:
+		opCode = a.opCodes[vm.OP_RSHIR]
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
 	(*out)[len(*out)-4] = byte(data.First)

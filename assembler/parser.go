@@ -35,6 +35,10 @@ const (
 	INST_TANDRR
 	INST_TXORIR
 	INST_TXORRR
+	INST_TLSHRR
+	INST_TLSHIR
+	INST_TRSHRR
+	INST_TRSHIR
 	INST_TCMPRR
 	INST_TCMPIR
 	INST_TJMP
@@ -78,6 +82,8 @@ const (
 	LOG_TAND
 	LOG_TOR
 	LOG_TXOR
+	LOG_TLSH
+	LOG_TRSH
 )
 
 type InstIncDecData struct {
@@ -202,6 +208,10 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseLogical(LOG_TAND)
 	case "xor":
 		return p.parseLogical(LOG_TXOR)
+	case "lsh":
+		return p.parseLogical(LOG_TLSH)
+	case "rsh":
+		return p.parseLogical(LOG_TRSH)
 	case "inc":
 		return p.parseInc()
 	case "dec":

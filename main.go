@@ -11,8 +11,9 @@ import (
 
 const assembly = `
 	mov r0, 1
-	mov r1, 7
-	xor r0, r1
+	lsh r0, 5
+	mov r1, 0
+	rsh r0, r1
 `
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
@@ -32,7 +33,7 @@ func main() {
 		os.Exit(-1)
 	}
 	if rx, err := mach.GetGpRXAsUint64(vm.R0_IDX); err == nil {
-		fmt.Printf("r0 = 0%b\n", rx)
+		fmt.Printf("r0 = %064b\n", rx)
 	}
 	if rx, err := mach.GetGpRXAsUint64(vm.R1_IDX); err == nil {
 		fmt.Printf("r1 = %+v\n", rx)

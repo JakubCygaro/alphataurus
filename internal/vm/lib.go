@@ -235,11 +235,19 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			err = vm.logRR(int(opcode), param)
 		case OP_XORRR:
 			err = vm.logRR(int(opcode), param)
+		case OP_LSHRR:
+			err = vm.logRR(int(opcode), param)
+		case OP_RSHRR:
+			err = vm.logRR(int(opcode), param)
 		case OP_ORIR:
 			err = vm.logIR(int(opcode), opCodeBytes[0], param)
 		case OP_ANDIR:
 			err = vm.logIR(int(opcode), opCodeBytes[0], param)
 		case OP_XORIR:
+			err = vm.logIR(int(opcode), opCodeBytes[0], param)
+		case OP_LSHIR:
+			err = vm.logIR(int(opcode), opCodeBytes[0], param)
+		case OP_RSHIR:
 			err = vm.logIR(int(opcode), opCodeBytes[0], param)
 		case OP_INCR:
 			err = vm.incR(param)
@@ -340,6 +348,10 @@ func (state *VmState) logIR(opType int, lastByte byte, param []byte) error {
 		fVal = fVal & sVal
 	case OP_XORIR:
 		fVal = fVal ^ sVal
+	case OP_LSHIR:
+		fVal = fVal << sVal
+	case OP_RSHIR:
+		fVal = fVal >> sVal
 	}
 	state.regs.r[first] = fVal
 	return nil
@@ -357,6 +369,10 @@ func (state *VmState) logRR(opType int, param []byte) error {
 		fVal = fVal & sVal
 	case OP_XORRR:
 		fVal = fVal ^ sVal
+	case OP_LSHRR:
+		fVal = fVal << sVal
+	case OP_RSHRR:
+		fVal = fVal >> sVal
 	}
 	state.regs.r[first] = fVal
 	return nil

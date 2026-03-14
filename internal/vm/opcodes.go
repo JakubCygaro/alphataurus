@@ -54,6 +54,8 @@ var (
 		11: handle(OP_ORRR),
 		12: handle(OP_ANDRR),
 		13: handle(OP_XORRR),
+		14: handle(OP_LSHRR),
+		15: handle(OP_RSHRR),
 	})
 	//jumps
 	p03XX = nested(OpCodeMap{
@@ -72,6 +74,8 @@ var (
 		8:  handle(OP_ORIR),
 		9:  handle(OP_ANDIR),
 		10: handle(OP_XORIR),
+		11: handle(OP_LSHIR),
+		12: handle(OP_RSHIR),
 	})
 	//stack
 	p011X = nested(OpCodeMap{
