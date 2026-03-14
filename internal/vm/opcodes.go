@@ -40,16 +40,20 @@ func nested(nest OpCodeMap) OpMapVal {
 var (
 	//arth
 	p002X = nested(OpCodeMap{
-		0: handle(OP_ADDRR),
-		1: handle(OP_INCR),
-		2: handle(OP_SUBRR),
-		3: handle(OP_MULRR),
-		4: handle(OP_DIVRR),
-		5: handle(OP_DECR),
-		6: handle(OP_NOP),
-		7: handle(OP_CLR),
-		8: handle(OP_CALL),
-		9: handle(OP_RET),
+		0:  handle(OP_ADDRR),
+		1:  handle(OP_INCR),
+		2:  handle(OP_SUBRR),
+		3:  handle(OP_MULRR),
+		4:  handle(OP_DIVRR),
+		5:  handle(OP_DECR),
+		6:  handle(OP_NOP),
+		7:  handle(OP_CLR),
+		8:  handle(OP_CALL),
+		9:  handle(OP_RET),
+		10: handle(OP_NOT),
+		11: handle(OP_ORRR),
+		12: handle(OP_ANDRR),
+		13: handle(OP_XORRR),
 	})
 	//jumps
 	p03XX = nested(OpCodeMap{
@@ -58,13 +62,16 @@ var (
 		2: handle(OP_JMPG),
 	})
 	p00XX = nested(OpCodeMap{
-		0: handle(OP_MOVRR),
-		1: handle(OP_MOVIR),
-		2: p002X,
-		4: handle(OP_CMP),
-		5: handle(OP_ADDIR),
-		6: handle(OP_SUBIR),
-		7: handle(OP_MOVDRI),
+		0:  handle(OP_MOVRR),
+		1:  handle(OP_MOVIR),
+		2:  p002X,
+		4:  handle(OP_CMP),
+		5:  handle(OP_ADDIR),
+		6:  handle(OP_SUBIR),
+		7:  handle(OP_MOVDRI),
+		8:  handle(OP_ORIR),
+		9:  handle(OP_ANDIR),
+		10: handle(OP_XORIR),
 	})
 	//stack
 	p011X = nested(OpCodeMap{
@@ -140,6 +147,17 @@ const (
 	OP_SUBIR
 	OP_MULRR
 	OP_DIVRR
+	OP_NOT
+	OP_ANDRR
+	OP_ANDIR
+	OP_ORRR
+	OP_ORIR
+	OP_XORRR
+	OP_XORIR
+	OP_LSHRR
+	OP_LSHIR
+	OP_RSHRR
+	OP_RSHIR
 	OP_INCR
 	OP_DECR
 
@@ -157,7 +175,7 @@ const (
 	OP_JMPL  // jump if less
 	OP_JMPLE // jump if less or equal
 	OP_CMP   // test registers
-	OP_CLR // clear all flags (set them to false)
+	OP_CLR   // clear all flags (set them to false)
 	OP_CALL
 	OP_RET
 	OP_NOP

@@ -38,7 +38,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	switch op1.val.(int) {
 	case vm.IP_IDX:
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Disallowed source registers",
+			"Disallowed source register",
 			p.lexer.line, p.lexer.col)
 	}
 
@@ -82,7 +82,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Ty: ty,
 			Data: InstArthData{
-				Src:  int(op2.Val),
+				Source:  int(op2.Val),
 				Dest: op1.val.(int),
 				Ty:   valTy,
 			},

@@ -227,6 +227,20 @@ func (vm *VmState) Execute(bytecode []byte) error {
 			err = vm.arthIR(int(opcode), opCodeBytes[0], param)
 		case OP_SUBIR:
 			err = vm.arthIR(int(opcode), opCodeBytes[0], param)
+		case OP_NOT:
+			err = vm.not(param)
+		case OP_ORRR:
+			err = vm.logRR(int(opcode), param)
+		case OP_ANDRR:
+			err = vm.logRR(int(opcode), param)
+		case OP_XORRR:
+			err = vm.logRR(int(opcode), param)
+		case OP_ORIR:
+			err = vm.logIR(int(opcode), opCodeBytes[0], param)
+		case OP_ANDIR:
+			err = vm.logIR(int(opcode), opCodeBytes[0], param)
+		case OP_XORIR:
+			err = vm.logIR(int(opcode), opCodeBytes[0], param)
 		case OP_INCR:
 			err = vm.incR(param)
 		case OP_DECR:
@@ -315,6 +329,46 @@ func (state *VmState) arthRRGetParameters(param []byte) (src, dest, ty byte, err
 		return 0, 0, 0, errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
 	return src, dest, ty, nil
+}
+func (state *VmState) logIR(opType int, lastByte byte, param []byte) error {
+	first := lastByte
+	fVal, sVal := state.regs.r[first], binary.BigEndian.Uint64(param)
+	switch opType {
+	case OP_ORIR:
+		fVal = fVal | sVal
+	case OP_ANDIR:
+		fVal = fVal & sVal
+	case OP_XORIR:
+		fVal = fVal ^ sVal
+	}
+	state.regs.r[first] = fVal
+	return nil
+}
+func (state *VmState) logRR(opType int, param []byte) error {
+	first, second, _, err := state.arthRRGetParameters(param)
+	if err != nil {
+		return err
+	}
+	fVal, sVal := state.regs.r[first], state.regs.r[second]
+	switch opType {
+	case OP_ORRR:
+		fVal = fVal | sVal
+	case OP_ANDRR:
+		fVal = fVal & sVal
+	case OP_XORRR:
+		fVal = fVal ^ sVal
+	}
+	state.regs.r[first] = fVal
+	return nil
+}
+func (state *VmState) not(param []byte) error {
+	reg := binary.BigEndian.Uint64(param)
+	if !IsGpReg(byte(reg)) {
+		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
+	}
+	regV := state.regs.r[reg]
+	state.regs.r[reg] = ^regV
+	return nil
 }
 func (state *VmState) arthRR(opType int, param []byte) error {
 	src, dest, ty, err := state.arthRRGetParameters(param)

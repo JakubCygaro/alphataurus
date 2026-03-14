@@ -75,6 +75,20 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
 		case INST_TSUBIR:
 			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+		case INST_TNOT:
+			err = a.emitNot(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TANDRR:
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TORRR:
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TXORRR:
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TANDIR:
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TORIR:
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+		case INST_TXORIR:
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
 		case INST_TINCR:
 			err = a.emitInc(inst.Data.(InstIncDecData), &bytecode)
 		case INST_TDECR:
@@ -266,11 +280,46 @@ func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 	// src = param[0]
 	// dest = param[1]
 	// ty = param[3]
-	*out = append(*out, byte(data.Src))
+	*out = append(*out, byte(data.Source))
 	*out = append(*out, byte(data.Dest))
 	*out = append(*out, byte(0))
 	*out = append(*out, byte(data.Ty))
 	*out = append(*out, 0, 0, 0, 0)
+	return nil
+}
+func (a *Assembler) emitLogRR(op int, data InstLogicalData, out *[]byte) error {
+	var opCode vm.OpCodeVal
+	switch op {
+	case INST_TANDRR:
+		opCode = a.opCodes[vm.OP_ANDRR]
+	case INST_TORRR:
+		opCode = a.opCodes[vm.OP_ORRR]
+	case INST_TXORRR:
+		opCode = a.opCodes[vm.OP_XORRR]
+	}
+	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
+	// first = param[0]
+	// second = param[1]
+	*out = append(*out, byte(data.First))
+	*out = append(*out, byte(data.Second))
+	*out = append(*out, byte(0))
+	*out = append(*out, byte(0))
+	*out = append(*out, 0, 0, 0, 0)
+	return nil
+}
+func (a *Assembler) emitLogIR(ty int, data InstLogicalData, out *[]byte) error {
+	var opCode vm.OpCodeVal
+	switch ty {
+	case INST_TANDIR:
+		opCode = a.opCodes[vm.OP_ANDIR]
+	case INST_TORIR:
+		opCode = a.opCodes[vm.OP_ORIR]
+	case INST_TXORIR:
+		opCode = a.opCodes[vm.OP_XORIR]
+	}
+	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
+	(*out)[len(*out)-4] = byte(data.First)
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
 func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
@@ -286,6 +335,12 @@ func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
 	destTy |= (0b00001111 & byte(data.Ty)) << 4
 	(*out)[len(*out)-4] = destTy
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
+	return nil
+}
+func (a *Assembler) emitNot(ty int, data InstLogicalData, out *[]byte) error {
+	opCode := a.opCodes[vm.OP_NOT]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.First))
 	return nil
 }
 func (a *Assembler) emitInc(data InstIncDecData, out *[]byte) error {

@@ -28,6 +28,13 @@ const (
 	INST_TSUBIR
 	INST_TINCR
 	INST_TDECR
+	INST_TNOT
+	INST_TORIR
+	INST_TORRR
+	INST_TANDIR
+	INST_TANDRR
+	INST_TXORIR
+	INST_TXORRR
 	INST_TCMPRR
 	INST_TCMPIR
 	INST_TJMP
@@ -66,13 +73,23 @@ const (
 	ARTH_TDIV
 	ARTH_TMUL
 )
+const (
+	LOG_TNOT = iota
+	LOG_TAND
+	LOG_TOR
+	LOG_TXOR
+)
 
 type InstIncDecData struct {
 	Reg int
 }
 type InstArthData struct {
-	Src, Dest int
+	Source, Dest int
+	Imm       uint64
 	Ty        int
+}
+type InstLogicalData struct {
+	First, Second int
 	Imm       uint64
 }
 type InstCmpData struct {
@@ -177,6 +194,14 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseDivOrMul(ARTH_TDIV)
 	case "mul":
 		return p.parseDivOrMul(ARTH_TMUL)
+	case "not":
+		return p.parseLogical(LOG_TNOT)
+	case "or":
+		return p.parseLogical(LOG_TOR)
+	case "and":
+		return p.parseLogical(LOG_TAND)
+	case "xor":
+		return p.parseLogical(LOG_TXOR)
 	case "inc":
 		return p.parseInc()
 	case "dec":

@@ -10,24 +10,9 @@ import (
 )
 
 const assembly = `
-	jmp START
-_add:
-	push bp
-	mov bp, sp
-	add SIGNED r1, r2
-	mov r0, r1
-	mov r1, 0
-	mov r2, 0
-	pop bp
-	ret
-START:
-	mov r1, 420
-	mov r2, 69
-	call _add
-	cmp r0, 420+69
-	jne L0
-	mov [bp+1], 1234
-L0:
+	mov r0, 1
+	mov r1, 7
+	xor r0, r1
 `
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
@@ -47,7 +32,7 @@ func main() {
 		os.Exit(-1)
 	}
 	if rx, err := mach.GetGpRXAsUint64(vm.R0_IDX); err == nil {
-		fmt.Printf("r0 = %+v\n", rx)
+		fmt.Printf("r0 = 0%b\n", rx)
 	}
 	if rx, err := mach.GetGpRXAsUint64(vm.R1_IDX); err == nil {
 		fmt.Printf("r1 = %+v\n", rx)
