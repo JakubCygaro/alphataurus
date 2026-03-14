@@ -1,5 +1,5 @@
 - TryEvalConstExprWithLabels -> takes a map of label-value pairs that it uses while trying to evaluate expressions
-- xor, and, or
+- left shift and right shift
 - call, calling convention
 - ret
 - lea
