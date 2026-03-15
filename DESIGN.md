@@ -189,7 +189,7 @@ section '.symbols'
 
 (kwd)   (type)  (len)
 section '.data' 22
-    (type)  (len)   (data) 
+    (type)  (len)   (data)
     01      06      "string"
 
 section '.code' <len>
