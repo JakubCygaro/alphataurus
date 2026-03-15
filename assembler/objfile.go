@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/JakubCygaro/alphataurus/internal/vm"
 )
 
 const (
@@ -95,7 +97,19 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 	ret := ObjFile{}
 	ret.Header = h
+	if len(binary) < int(h.CodeStart)+int(h.CodeSize) {
+		return ret, fmt.Errorf("Bad header code sec data")
+	}
+	if (int(h.CodeStart)+int(h.CodeSize)-int(h.CodeStart))%vm.INSTRUCTION_SIZE != 0 {
+		return ret, fmt.Errorf("Bad code section size")
+	}
+	ret.Code = binary[h.CodeStart : h.CodeStart+h.CodeSize]
 
-
+	if h.StaticDataSize != 0 {
+		return ret, fmt.Errorf("sdata todo")
+	}
+	if h.SymbolsSize != 0 {
+		return ret, fmt.Errorf("sym todo")
+	}
 	return ret, nil
 }
