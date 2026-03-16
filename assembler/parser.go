@@ -58,6 +58,8 @@ const (
 	INST_TNOP
 	INST_TCALL
 	INST_TRET
+	INST_TSECCODE
+	INST_TSECDATA
 )
 
 type InstMovData struct {
@@ -91,12 +93,12 @@ type InstIncDecData struct {
 }
 type InstArthData struct {
 	Source, Dest int
-	Imm       uint64
-	Ty        int
+	Imm          uint64
+	Ty           int
 }
 type InstLogicalData struct {
 	First, Second int
-	Imm       uint64
+	Imm           uint64
 }
 type InstCmpData struct {
 	Ty       int
@@ -141,9 +143,9 @@ type Parser struct {
 	currentIdent string
 }
 type InstCallData struct {
-	Addr uint64
+	Addr  uint64
 	Ident string
-	Expr *Expr
+	Expr  *Expr
 }
 
 func NewParser(reader bufio.Reader) Parser {
@@ -187,8 +189,24 @@ func (p *Parser) ParseNext() (bool, error) {
 	return true, err
 }
 func (p *Parser) parseStartIdent(t Token) error {
-	ident := t.val.(string)
+	ident := t.Val.(string)
 	p.currentIdent = ident
+
+	if err := p.lexer.ReadNextToken(); err != nil {
+		p.lexer.UnreadToken()
+	} else if next := p.lexer.CurrentToken(); next.Ty != TOKEN_TCOLON {
+		p.lexer.UnreadToken()
+	} else {
+		p.currentInst = Instruction{
+			Ty: INST_TLABEL,
+			Data: InstLabData{
+				Label:      ident,
+				DeclaredAt: p.lexer.CurrentPosition(),
+			},
+		}
+		return nil
+	}
+
 	switch ident {
 	case "mov":
 		return p.parseMov()
@@ -257,19 +275,32 @@ func (p *Parser) parseStartIdent(t Token) error {
 			Ty: INST_TRET,
 		}
 		return nil
-	default:
-		pos := p.lexer.CurrentPosition()
-		if _, ok := p.lexer.Expect(TOKEN_TCOLON); ok {
-			p.currentInst = Instruction{
-				Ty: INST_TLABEL,
-				Data: InstLabData{
-					Label:      ident,
-					DeclaredAt: pos,
-				},
-			}
-			return nil
-		}
+	case "section":
+		return p.parseSection()
 	}
 	p.currentIdent = ""
 	return errors.UnknownIdentifier(ident, p.lexer.line, p.lexer.col)
+}
+func (p *Parser) parseSection() error {
+	if err := p.lexer.ReadNextToken(); err != nil {
+		return err
+	}
+	op := p.lexer.CurrentToken()
+	switch op.Ty {
+	case TOKEN_TSINGLEQ:
+		ty := op.Val.(string)
+		switch ty {
+		case ".code":
+			p.currentInst = Instruction{
+				Ty: INST_TSECCODE,
+			}
+		default:
+			return errors.FailedToParse("section",
+				fmt.Sprintf("Unknown section type '%s'", ty), p.lexer.line, p.lexer.col)
+		}
+	default:
+		return errors.FailedToParse("section",
+			"Bad argument", p.lexer.line, p.lexer.col)
+	}
+	return nil
 }

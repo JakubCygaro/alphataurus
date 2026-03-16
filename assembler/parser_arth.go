@@ -33,9 +33,9 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			p.lexer.line, p.lexer.col)
 	} else {
 		op1.Ty = TOKEN_TREG
-		op1.val = int(expr.Val.(ConstExpr).Val)
+		op1.Val = int(expr.Val.(ConstExpr).Val)
 	}
-	switch op1.val.(int) {
+	switch op1.Val.(int) {
 	case vm.IP_IDX:
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Disallowed source register",
@@ -83,7 +83,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			Ty: ty,
 			Data: InstArthData{
 				Source:  int(op2.Val),
-				Dest: op1.val.(int),
+				Dest: op1.Val.(int),
 				Ty:   valTy,
 			},
 		}
@@ -99,7 +99,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			Ty: ty,
 			Data: InstArthData{
 				Imm:  op2.Val,
-				Dest: op1.val.(int),
+				Dest: op1.Val.(int),
 				Ty:   valTy,
 			},
 		}
@@ -115,7 +115,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			Ty: ty,
 			Data: InstArthData{
 				Imm:  op2.Val,
-				Dest: op1.val.(int),
+				Dest: op1.Val.(int),
 				Ty:   valTy,
 			},
 		}
@@ -178,7 +178,7 @@ func (p *Parser) parseInc() error {
 			"The instruction operand must be a valid register",
 			p.lexer.line, p.lexer.col)
 	}
-	switch op1.val.(int) {
+	switch op1.Val.(int) {
 	case vm.IP_IDX:
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Disallowed operand register",
@@ -187,7 +187,7 @@ func (p *Parser) parseInc() error {
 	p.currentInst = Instruction{
 		Ty: INST_TINCR,
 		Data: InstIncDecData{
-			Reg: op1.val.(int),
+			Reg: op1.Val.(int),
 		},
 	}
 	return nil
@@ -206,7 +206,7 @@ func (p *Parser) parseDec() error {
 			"The instruction operand must be a valid register",
 			p.lexer.line, p.lexer.col)
 	}
-	switch op1.val.(int) {
+	switch op1.Val.(int) {
 	case vm.IP_IDX:
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Disallowed operand register",
@@ -215,7 +215,7 @@ func (p *Parser) parseDec() error {
 	p.currentInst = Instruction{
 		Ty: INST_TDECR,
 		Data: InstIncDecData{
-			Reg: op1.val.(int),
+			Reg: op1.Val.(int),
 		},
 	}
 	return nil

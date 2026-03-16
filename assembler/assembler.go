@@ -21,6 +21,8 @@ type Assembler struct {
 	opCodes         map[uint32]vm.OpCodeVal
 	unresolvedJumps unresolvedJumpMap
 	labels          labelMap
+	lastInst        Instruction
+	bytecode        []byte
 }
 
 func NewAssembler(reader bufio.Reader) Assembler {
@@ -29,11 +31,11 @@ func NewAssembler(reader bufio.Reader) Assembler {
 		opCodes:         vm.GenerateOpcodeMap(),
 		labels:          make(labelMap),
 		unresolvedJumps: make(unresolvedJumpMap),
+		bytecode: make([]byte, 0, 64),
 	}
 }
 
 func (a *Assembler) EmitBytecode() ([]byte, int, error) {
-	bytecode := make([]byte, 0, 64)
 	instCount := 0
 	var ok bool
 	var err error = nil
@@ -42,105 +44,106 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 		inst := a.parser.CurrentInst()
 		switch inst.Ty {
 		case INST_TMOVIR:
-			err = a.emitMovIR(inst.Data.(InstMovData), &bytecode)
+			err = a.emitMovIR(inst.Data.(InstMovData), &(a.bytecode))
 		case INST_TMOVRR:
-			err = a.emitMovRR(inst.Data.(InstMovData), &bytecode)
+			err = a.emitMovRR(inst.Data.(InstMovData), &(a.bytecode))
 		case INST_TMOVDRI:
-			err = a.emitMovDRI(inst.Data.(InstDerefMovData), &bytecode)
+			err = a.emitMovDRI(inst.Data.(InstDerefMovData), &(a.bytecode))
 		case INST_TMOVDRO1:
-			err = a.emitMovDRO1(inst.Data.(InstDerefMovData), &bytecode)
+			err = a.emitMovDRO1(inst.Data.(InstDerefMovData), &(a.bytecode))
 		case INST_TMOVDRO2:
-			err = a.emitMovDRO2(inst.Data.(InstDerefMovData), &bytecode)
+			err = a.emitMovDRO2(inst.Data.(InstDerefMovData), &(a.bytecode))
 		case INST_TMOVID:
-			err = a.emitMovID(inst.Data.(InstMovDerefData), &bytecode)
+			err = a.emitMovID(inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVRD:
-			err = a.emitMovRD(inst.Data.(InstMovDerefData), &bytecode)
+			err = a.emitMovRD(inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVIDO1:
-			err = a.emitMovIDO1(inst.Data.(InstMovDerefData), &bytecode)
+			err = a.emitMovIDO1(inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVRDO1:
-			err = a.emitMovRDO1(inst.Data.(InstMovDerefData), &bytecode)
+			err = a.emitMovRDO1(inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVIDO2:
-			err = a.emitMovIDO2(inst.Data.(InstMovDerefData), &bytecode)
+			err = a.emitMovIDO2(inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVRDO2:
-			err = a.emitMovRDO2(inst.Data.(InstMovDerefData), &bytecode)
+			err = a.emitMovRDO2(inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TADDRR:
-			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TSUBRR:
-			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TMULRR:
-			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TDIVRR:
-			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TADDIR:
-			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TSUBIR:
-			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &bytecode)
+			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TNOT:
-			err = a.emitNot(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitNot(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TANDRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TORRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TXORRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TLSHRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TRSHRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TANDIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TORIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TXORIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TLSHIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TRSHIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &bytecode)
+			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TINCR:
-			err = a.emitInc(inst.Data.(InstIncDecData), &bytecode)
+			err = a.emitInc(inst.Data.(InstIncDecData), &(a.bytecode))
 		case INST_TDECR:
-			err = a.emitDec(inst.Data.(InstIncDecData), &bytecode)
+			err = a.emitDec(inst.Data.(InstIncDecData), &(a.bytecode))
 		case INST_TCMPRR:
-			err = a.emitCmpRR(inst.Data.(InstCmpData), &bytecode)
+			err = a.emitCmpRR(inst.Data.(InstCmpData), &(a.bytecode))
 		case INST_TCMPIR:
-			err = a.emitCmpIR(inst.Data.(InstCmpData), &bytecode)
+			err = a.emitCmpIR(inst.Data.(InstCmpData), &(a.bytecode))
 		case INST_TJMP:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPE:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPNE:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPZ:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPNZ:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPG:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPGE:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPL:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPLE:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &bytecode)
+			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TLABEL:
-			err = a.declareLabel(inst.Data.(InstLabData), &bytecode)
+			err = a.declareLabel(inst.Data.(InstLabData), &(a.bytecode))
 			instCount--
 		case INST_TPUSHR:
-			err = a.emitPushR(inst.Data.(InstPushPopData), &bytecode)
+			err = a.emitPushR(inst.Data.(InstPushPopData), &(a.bytecode))
 		case INST_TPUSHI:
-			err = a.emitPushI(inst.Data.(InstPushPopData), &bytecode)
+			err = a.emitPushI(inst.Data.(InstPushPopData), &(a.bytecode))
 		case INST_TPOP:
-			err = a.emitPop(inst.Data.(InstPushPopData), &bytecode)
+			err = a.emitPop(inst.Data.(InstPushPopData), &(a.bytecode))
 		case INST_TNOP:
-			err = a.emitNop(&bytecode)
+			err = a.emitNop(&(a.bytecode))
 		case INST_TCALL:
-			err = a.emitCall(inst.Data.(InstCallData), &bytecode)
+			err = a.emitCall(inst.Data.(InstCallData), &(a.bytecode))
 		case INST_TRET:
-			err = a.emitRet(&bytecode)
+			err = a.emitRet(&(a.bytecode))
 		default:
+			a.lastInst = inst
 			pos := a.parser.lexer.CurrentPosition()
-			return bytecode, 0, fmt.Errorf("Instruction (%d) WIP %s", INST_TMOVIR, pos)
+			return bytecode, instCount, fmt.Errorf("Instruction (%d) WIP %s", INST_TMOVIR, pos)
 		}
 		if err != nil {
 			return bytecode, instCount, err

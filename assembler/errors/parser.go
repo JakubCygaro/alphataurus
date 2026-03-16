@@ -60,6 +60,16 @@ func PrematureEndOfInput(line, col uint64) ParserError {
 	}
 	return err
 }
+func UnclosedSingleQuote(line, col uint64) ParserError {
+	err := ParserError {
+		Line: line,
+		Col: col,
+		construct: func() string {
+			return "Unclosed single quote"
+		},
+	}
+	return err
+}
 func UnclosedParen(line, col uint64) ParserError {
 	err := ParserError {
 		Line: line,

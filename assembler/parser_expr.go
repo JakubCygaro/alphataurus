@@ -70,7 +70,7 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			Ty: EXPR_TCONST,
 			Val: ConstExpr{
 				Ty:  CONSTEXPR_TREG,
-				Val: uint64(lhsToken.val.(int)),
+				Val: uint64(lhsToken.Val.(int)),
 			},
 		}
 	case TOKEN_TINTEGER_LIT:
@@ -78,7 +78,7 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			Ty: EXPR_TCONST,
 			Val: ConstExpr{
 				Ty:  CONSTEXPR_TILIT,
-				Val: lhsToken.val.(uint64),
+				Val: lhsToken.Val.(uint64),
 			},
 		}
 	case TOKEN_TFLOAT_LIT:
@@ -86,11 +86,11 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			Ty: EXPR_TCONST,
 			Val: ConstExpr{
 				Ty:  CONSTEXPR_TFLIT,
-				Val: lhsToken.val.(uint64),
+				Val: lhsToken.Val.(uint64),
 			},
 		}
 	case TOKEN_TIDENT:
-		lhs = MakeConstexprIdent(lhsToken.val.(string))
+		lhs = MakeConstexprIdent(lhsToken.Val.(string))
 	default:
 		if binding, ok := preBMap[lhsToken.Ty]; ok {
 			rhs, err := p.parseExpression(binding[1])

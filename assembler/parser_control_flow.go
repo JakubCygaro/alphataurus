@@ -24,13 +24,13 @@ func (p *Parser) parseCmp() error {
 		return err
 	} else if eval, _ := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TREG {
 		op1.Ty = TOKEN_TREG
-		op1.val = int(eval.Val)
+		op1.Val = int(eval.Val)
 	} else {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"First operand to instruction must be a valid register",
 			p.lexer.line, p.lexer.col)
 	}
-	if op1.val.(int) > vm.GP_REG_MAX {
+	if op1.Val.(int) > vm.GP_REG_MAX {
 		return fmt.Errorf("Disallowed minuend register %s", p.lexer.CurrentPosition())
 	}
 	if err := p.lexer.ReadNextToken(); err != nil {
@@ -50,17 +50,17 @@ func (p *Parser) parseCmp() error {
 		return err
 	} else if eval, ok := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TREG {
 		op2.Ty = TOKEN_TREG
-		op2.val = int(eval.Val)
+		op2.Val = int(eval.Val)
 	} else if !ok {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Second operand to instruction must be a valid register or a constant expression",
 			p.lexer.line, p.lexer.col)
 	} else if eval.Ty == CONSTEXPR_TILIT {
 		op2.Ty = TOKEN_TINTEGER_LIT
-		op2.val = eval.Val
+		op2.Val = eval.Val
 	} else if eval.Ty == CONSTEXPR_TFLIT {
 		op2.Ty = TOKEN_TFLOAT_LIT
-		op2.val = eval.Val
+		op2.Val = eval.Val
 	} else {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Bad expression",
@@ -68,7 +68,7 @@ func (p *Parser) parseCmp() error {
 	}
 	switch op2.Ty {
 	case TOKEN_TREG:
-		if op2.val.(int) > vm.GP_REG_MAX {
+		if op2.Val.(int) > vm.GP_REG_MAX {
 			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 				"Disallowed subtrahend register",
 				p.lexer.line, p.lexer.col)
@@ -77,8 +77,8 @@ func (p *Parser) parseCmp() error {
 			Ty: INST_TCMPRR,
 			Data: InstCmpData{
 				Ty:  ty,
-				Min: op1.val.(int),
-				Sub: op2.val.(int),
+				Min: op1.Val.(int),
+				Sub: op2.Val.(int),
 			},
 		}
 	case TOKEN_TINTEGER_LIT:
@@ -86,8 +86,8 @@ func (p *Parser) parseCmp() error {
 			Ty: INST_TCMPIR,
 			Data: InstCmpData{
 				Ty:  ty,
-				Min: op1.val.(int),
-				Imm: op2.val.(uint64),
+				Min: op1.Val.(int),
+				Imm: op2.Val.(uint64),
 			},
 		}
 	case TOKEN_TFLOAT_LIT:
@@ -95,8 +95,8 @@ func (p *Parser) parseCmp() error {
 			Ty: INST_TCMPIR,
 			Data: InstCmpData{
 				Ty:  ty,
-				Min: op1.val.(int),
-				Imm: op2.val.(uint64),
+				Min: op1.Val.(int),
+				Imm: op2.Val.(uint64),
 			},
 		}
 	}
@@ -111,14 +111,14 @@ func (p *Parser) parseJmp(ty int) error {
 		return err
 	} else if eval, ok := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TIDENT {
 		addr.Ty = TOKEN_TIDENT
-		addr.val = eval.Ident
+		addr.Val = eval.Ident
 	} else if !ok {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Second operand to instruction must be a valid label or a an address",
 			p.lexer.line, p.lexer.col)
 	} else if eval.Ty == CONSTEXPR_TILIT {
 		addr.Ty = TOKEN_TINTEGER_LIT
-		addr.val = eval.Val
+		addr.Val = eval.Val
 	} else {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Bad expression",
@@ -127,11 +127,11 @@ func (p *Parser) parseJmp(ty int) error {
 	switch addr.Ty {
 	case TOKEN_TINTEGER_LIT:
 		inst.Data = InstJmpData{
-			Address: addr.val.(uint64),
+			Address: addr.Val.(uint64),
 		}
 	case TOKEN_TIDENT:
 		inst.Data = InstJmpData{
-			Address: addr.val.(string),
+			Address: addr.Val.(string),
 		}
 	default:
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),

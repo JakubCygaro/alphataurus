@@ -14,7 +14,7 @@ func (p *Parser) parseMov() error {
 			"First operand to instruction must be a valid register or dereference expression",
 			p.lexer.line, p.lexer.col)
 	} else {
-		op1.val = int(eval.Val)
+		op1.Val = int(eval.Val)
 	}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
@@ -35,7 +35,7 @@ func (p *Parser) parseMov() error {
 		case EXPR_TCONST:
 			op2 = eval.Val.(ConstExpr)
 		case EXPR_TDEREF:
-			return p.parseDerefMov(op1.val.(int), eval.Val.(DerefExpr).Inner)
+			return p.parseDerefMov(op1.Val.(int), eval.Val.(DerefExpr).Inner)
 		default:
 			return errors.FailedToParse("mov instruction",
 				"Second operand to instruction has to be a valid register, dereference, or a compile time expression",
@@ -48,7 +48,7 @@ func (p *Parser) parseMov() error {
 			Ty: INST_TMOVRR,
 			Data: InstMovData{
 				Src:  int(op2.Val),
-				Dest: op1.val.(int),
+				Dest: op1.Val.(int),
 			},
 		}
 	case CONSTEXPR_TILIT:
@@ -56,7 +56,7 @@ func (p *Parser) parseMov() error {
 			Ty: INST_TMOVIR,
 			Data: InstMovData{
 				Imm:  op2.Val,
-				Dest: op1.val.(int),
+				Dest: op1.Val.(int),
 			},
 		}
 	case CONSTEXPR_TFLIT:
@@ -64,7 +64,7 @@ func (p *Parser) parseMov() error {
 			Ty: INST_TMOVIR,
 			Data: InstMovData{
 				Imm:  op2.Val,
-				Dest: op1.val.(int),
+				Dest: op1.Val.(int),
 			},
 		}
 	default:

@@ -3,6 +3,7 @@ package assembler
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"math"
 	"strconv"
 	"unicode"
@@ -34,6 +35,7 @@ const (
 	TOKEN_TCLOSEDPAREN
 	TOKEN_TCOLON
 	TOKEN_TNEWLINE
+	TOKEN_TSINGLEQ
 	TOKEN_TEOF
 )
 const (
@@ -49,7 +51,7 @@ var keywords = map[string]int{
 
 type Token struct {
 	Ty  int
-	val any
+	Val any
 }
 
 type Lexer struct {
@@ -135,60 +137,62 @@ func (l *Lexer) ReadNextToken() error {
 		}
 	}
 	switch {
+	case b == '\'':
+		return l.readSingleQuoted()
 	case b == ':':
 		l.currentToken = Token{
 			Ty:  TOKEN_TCOLON,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == '(':
 		l.currentToken = Token{
 			Ty:  TOKEN_TOPENPAREN,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == ')':
 		l.currentToken = Token{
 			Ty:  TOKEN_TCLOSEDPAREN,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == '[':
 		l.currentToken = Token{
 			Ty:  TOKEN_TOPENBRACKET,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == ']':
 		l.currentToken = Token{
 			Ty:  TOKEN_TCLOSEDBRACKET,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == '\n':
 		l.currentToken = Token{
 			Ty:  TOKEN_TNEWLINE,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == ',':
 		l.currentToken = Token{
 			Ty:  TOKEN_TCOMMA,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == '+':
 		l.currentToken = Token{
 			Ty:  TOKEN_TPLUS,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == '-':
 		l.currentToken = Token{
 			Ty:  TOKEN_TMINUS,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == '*':
 		l.currentToken = Token{
 			Ty:  TOKEN_TASTERISK,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == '/':
 		l.currentToken = Token{
 			Ty:  TOKEN_TSLASH,
-			val: rune(b),
+			Val: rune(b),
 		}
 	case b == '.':
 		next, err := l.readByte()
@@ -204,7 +208,7 @@ func (l *Lexer) ReadNextToken() error {
 		} else {
 			l.currentToken = Token{
 				Ty:  TOKEN_TDOT,
-				val: rune(b),
+				Val: rune(b),
 			}
 		}
 	case numberCheck(b):
@@ -231,21 +235,42 @@ func (l *Lexer) ReadNextToken() error {
 		if reg, ok := recognizeRegister(val); ok {
 			l.currentToken = Token{
 				Ty:  TOKEN_TREG,
-				val: reg,
+				Val: reg,
 			}
 		} else if kwd, ok := keywords[val]; ok {
 			l.currentToken = Token{
 				Ty:  kwd,
-				val: val,
+				Val: val,
 			}
 		} else {
 			l.currentToken = Token{
 				Ty:  TOKEN_TIDENT,
-				val: val,
+				Val: val,
 			}
 		}
 	default:
 		return errors.UnrecognizedChar(rune(b), l.line, l.col)
+	}
+	return nil
+}
+func (l *Lexer) readSingleQuoted() error {
+	buf := make([]byte, 0, 64)
+	for {
+		next, err := l.readByte()
+		if err == io.EOF {
+			return errors.UnclosedSingleQuote(l.line, l.col)
+		} else if err != nil {
+			return err
+		}
+		if next == '\'' {
+			break
+		} else {
+			buf = append(buf, next)
+		}
+	}
+	l.currentToken = Token {
+		Ty: TOKEN_TSINGLEQ,
+		Val: string(buf),
 	}
 	return nil
 }
@@ -321,7 +346,7 @@ func (l *Lexer) readDigit(b byte) error {
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER_LIT,
-			val: uint64(val),
+			Val: uint64(val),
 		}
 	} else if hex {
 		val, err := strconv.ParseUint(string(buf), 16, 64)
@@ -330,7 +355,7 @@ func (l *Lexer) readDigit(b byte) error {
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER_LIT,
-			val: uint64(val),
+			Val: uint64(val),
 		}
 	} else if binary {
 		val, err := strconv.ParseUint(string(buf), 2, 64)
@@ -339,7 +364,7 @@ func (l *Lexer) readDigit(b byte) error {
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER_LIT,
-			val: uint64(val),
+			Val: uint64(val),
 		}
 	} else {
 		val, err := strconv.ParseFloat(string(buf), 64)
@@ -348,7 +373,7 @@ func (l *Lexer) readDigit(b byte) error {
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TFLOAT_LIT,
-			val: uint64(math.Float64bits(val)),
+			Val: uint64(math.Float64bits(val)),
 		}
 	}
 	return nil
