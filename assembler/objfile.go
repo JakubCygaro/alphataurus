@@ -11,6 +11,7 @@ import (
 
 const (
 	OBJ_FILE_MAG = "AELF"
+	OBJ_FILE_HEADER_SIZE = 128
 )
 
 type ObjFileHeader struct {
@@ -50,7 +51,7 @@ type ObjFile struct {
 // staticDataSize 8b
 // symbolsStart 8b
 // symbolsSize 8b
-// free space 64b (for now)
+// free space up to 128 bytes (for now)
 
 func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 	ret := ObjFileHeader{}

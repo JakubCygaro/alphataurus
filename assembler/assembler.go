@@ -35,7 +35,7 @@ func NewAssembler(reader bufio.Reader) Assembler {
 	}
 }
 
-func (a *Assembler) EmitBytecode() ([]byte, int, error) {
+func (a *Assembler) EmitBytecode() (int, error) {
 	instCount := 0
 	var ok bool
 	var err error = nil
@@ -142,19 +142,17 @@ func (a *Assembler) EmitBytecode() ([]byte, int, error) {
 			err = a.emitRet(&(a.bytecode))
 		default:
 			a.lastInst = inst
-			pos := a.parser.lexer.CurrentPosition()
-			return bytecode, instCount, fmt.Errorf("Instruction (%d) WIP %s", INST_TMOVIR, pos)
+			return instCount, err
 		}
 		if err != nil {
-			return bytecode, instCount, err
+			return instCount, err
 		}
 		instCount++
 	}
 	if err != nil {
-		return bytecode, instCount, err
+		return instCount, err
 	}
-	err = a.resolveJumpInsturctions(&bytecode)
-	return bytecode, instCount, err
+	return instCount, err
 }
 
 func (a *Assembler) emitMovIR(data InstMovData, out *[]byte) error {
