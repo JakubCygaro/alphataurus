@@ -3,30 +3,40 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/JakubCygaro/alphataurus/assembler"
-	"github.com/JakubCygaro/alphataurus/internal/vm"
 	"os"
 	"strings"
+
+	"github.com/JakubCygaro/alphataurus/assembler"
+	"github.com/JakubCygaro/alphataurus/internal/vm"
+	"github.com/JakubCygaro/alphataurus/linker"
 )
 
 const assembly = `
-	mov r0, 1
-	lsh r0, 5
-	mov r1, 0
-	rsh r0, r1
+section '.code'
+	mov r0, 420
 `
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
-	bytecode, iCount, err := asm.EmitBytecode()
+	bytecode, err := asm.Assemble()
 	if err != nil {
+		os.Stderr.WriteString("assembling error\n")
 		os.Stderr.WriteString(err.Error())
 		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
+	iCount := asm.InstructionCount()
 	fmt.Printf("emitted bytecode size: %d\n", len(bytecode))
 	fmt.Printf("emitted %d instructions\n", iCount)
+	ld := linker.NewLinker()
+	elf, err := ld.LinkBytes([]linker.Bytes{bytecode})
+	if err != nil {
+		os.Stderr.WriteString("linking error\n")
+		os.Stderr.WriteString(err.Error())
+		os.Stderr.WriteString("\n")
+		os.Exit(-1)
+	}
 	mach := vm.CreateVmState(16)
-	err = mach.Execute(bytecode)
+	err = mach.Execute(elf)
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
 		os.Stderr.WriteString("\n")

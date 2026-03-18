@@ -11,35 +11,43 @@ import (
 
 	"github.com/JakubCygaro/alphataurus/assembler"
 	"github.com/JakubCygaro/alphataurus/internal/vm"
+	"github.com/JakubCygaro/alphataurus/linker"
 )
 
 const (
 	DEFAULT_STACK_SIZE = 16
 )
 
-func execute(code []byte) (vm.VmState, error) {
-	return executeStackSize(code, DEFAULT_STACK_SIZE)
+func execute(elf vm.AlphaELFFile) (vm.VmState, error) {
+	return executeStackSize(elf, DEFAULT_STACK_SIZE)
 }
-func executeStackSize(code []byte, stacksz uint64) (vm.VmState, error) {
+func executeStackSize(elf vm.AlphaELFFile, stacksz uint64) (vm.VmState, error) {
 	mach := vm.CreateVmState(stacksz)
-	if err := mach.Execute(code); err != nil {
+	if err := mach.Execute(elf); err != nil {
 		return mach, err
 	}
 	return mach, nil
 }
 func assemble(source string) ([]byte, error) {
 	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(source)))
-	code, _, err := asmblr.EmitBytecode()
+	code, err := asmblr.Assemble()
 	return code, err
 }
+func assembleAndLink(source string) (vm.AlphaELFFile, error) {
+	code, err := assemble(source)
+	if err != nil {
+		return vm.AlphaELFFile{}, err
+	}
+	ld := linker.NewLinker()
+	return ld.LinkBytes([]linker.Bytes{code})
+}
 func assembleAndExecute(source string) (vm.VmState, error) {
-	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(source)))
+	elf, err := assembleAndLink(source)
 	mach := vm.CreateVmState(16)
-	code, _, err := asmblr.EmitBytecode()
 	if err != nil {
 		return mach, err
 	}
-	err = mach.Execute(code)
+	err = mach.Execute(elf)
 	if err != nil {
 		return mach, err
 	}
@@ -912,11 +920,11 @@ func TestStack2(t *testing.T) {
 	const stackSize = DEFAULT_STACK_SIZE
 	stack := make(vm.VmStack, stackSize)
 	for i := range 2 {
-		stack[i] = uint64(rand.Intn(101)-50)
+		stack[i] = uint64(rand.Intn(101) - 50)
 	}
 	stack[2] = uint64(int64(stack[0]) + int64(stack[1]))
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
-	rB := (rA+1) % vm.GP_REG_MAX
+	rB := (rA + 1) % vm.GP_REG_MAX
 	asm := fmt.Sprintf(`
 		mov bp, sp
 		mov [bp+1], %v

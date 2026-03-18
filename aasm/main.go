@@ -26,7 +26,7 @@ func main() {
 	}
 	defer file.Close()
 	asm := assembler.NewAssembler(*bufio.NewReader(file))
-	bytecode, _, err := asm.EmitBytecode()
+	obj, err := asm.Assemble()
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
 		os.Stderr.WriteString("\n")
@@ -44,7 +44,7 @@ func main() {
 			os.Exit(-1)
 		}
 		defer out.Close()
-		if _, err := out.Write(bytecode); err != nil {
+		if _, err := out.Write(obj); err != nil {
 			os.Stderr.WriteString(err.Error())
 			os.Stderr.WriteString("\n")
 			os.Exit(-1)

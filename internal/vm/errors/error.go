@@ -36,6 +36,16 @@ func DisallowedDestRegister(reg int, pos uint64) AlphaVMError {
 	}
 	return err
 }
+func BadCodeSectionSize() AlphaVMError {
+	err := AlphaVMError{
+		Type: ERR_BAD_CODE_SEC_SIZE,
+		Pos: 0x0,
+		construct: func() string {
+			return "Bad code section size"
+		},
+	}
+	return err
+}
 func BadOpcode(opcode uint32, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_BAD_OPCODE,

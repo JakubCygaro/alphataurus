@@ -23,6 +23,11 @@ type Assembler struct {
 	labels          labelMap
 	lastInst        Instruction
 	bytecode        []byte
+	instCount       int
+}
+
+func (a *Assembler) InstructionCount() int {
+	return a.instCount
 }
 
 func NewAssembler(reader bufio.Reader) Assembler {
@@ -31,7 +36,7 @@ func NewAssembler(reader bufio.Reader) Assembler {
 		opCodes:         vm.GenerateOpcodeMap(),
 		labels:          make(labelMap),
 		unresolvedJumps: make(unresolvedJumpMap),
-		bytecode: make([]byte, 0, 64),
+		bytecode:        make([]byte, 0, 64),
 	}
 }
 

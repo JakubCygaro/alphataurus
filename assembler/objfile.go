@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	OBJ_FILE_MAG = "AELF"
+	OBJ_FILE_MAG = "AOBJ"
 	OBJ_FILE_HEADER_SIZE = 128
 )
 
@@ -43,7 +43,7 @@ type ObjFile struct {
 }
 
 // Obj file header
-// AELF 4b
+// AOBJ 4b
 // version 4b
 // codeSecStart 8b
 // codeSecLen 8b
@@ -92,6 +92,7 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.SymbolsSize = binary.BigEndian.Uint64(buf)
+	fmt.Printf("Header:\n%+v\n", ret)
 	return ret, nil
 }
 

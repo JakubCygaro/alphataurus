@@ -3,20 +3,22 @@ package vm
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
 	"math"
+	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
 )
 
 type VmStack []uint64
 
 const (
-	ADDRESSDEADZONE_SIZE = 0xff
+	ADDRESSDEADZONE_SIZE = 0x1000
 )
 
 type VmState struct {
 	regs  Registers
 	flags Flags
 	stack VmStack
+	codeSize uint64
+	bytecode []byte
 	// this is the virtual address of the stack, it is supposed to start right after the code section
 	stackSegBase     int
 	byteCodePos   uint64
@@ -170,7 +172,12 @@ func (vm *VmState) ClearState() {
 	vm.stack = make(VmStack, cap(vm.stack))
 }
 
-func (vm *VmState) Execute(bytecode []byte) error {
+func (vm *VmState) load(elf AlphaELFFile) error {
+	bytecode := elf.Data[elf.CodeStart:elf.CodeStart+elf.CodeSize]
+	fmt.Println(bytecode)
+	if len(bytecode) % INSTRUCTION_SIZE != 0 {
+		return errors.BadCodeSectionSize()
+	}
 	codeSize := len(bytecode) / INSTRUCTION_SIZE
 	// the code section starts after the deadzone (for now)
 	vm.exeSegBase = ADDRESSDEADZONE_SIZE
@@ -181,12 +188,21 @@ func (vm *VmState) Execute(bytecode []byte) error {
 	// the stack pointer points to the base pointer
 	vm.regs.r[SP_IDX] = vm.regs.r[BP_IDX]
 	vm.setIp(vm.exeSegBase)
-	for ; vm.GetIp()-ADDRESSDEADZONE_SIZE < uint64(codeSize); vm.incIp() {
+
+	vm.bytecode = bytecode
+	vm.codeSize = uint64(codeSize)
+	return nil
+}
+func (vm *VmState) Execute(elf AlphaELFFile) error {
+	if err := vm.load(elf); err != nil {
+		return err
+	}
+	for ; vm.GetIp()-ADDRESSDEADZONE_SIZE < vm.codeSize; vm.incIp() {
 		var err error = nil
 		instAddr := (vm.VirtToRealIp(vm.GetIp())) * INSTRUCTION_SIZE
 		vm.byteCodePos = vm.GetIp()
-		opCodeBytes := bytecode[instAddr : instAddr+OPCODE_SIZE]
-		param := bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
+		opCodeBytes := vm.bytecode[instAddr : instAddr+OPCODE_SIZE]
+		param := vm.bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
 		opcode, err := vm.GetOpcode(opCodeBytes)
 		vm.currentOpcode = uint32(opcode)
 		if err != nil {
