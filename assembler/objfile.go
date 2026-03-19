@@ -45,6 +45,7 @@ type SymbolTable map[string]SymbolData
 type SymbolData struct {
 	Ty  byte
 	Vis byte
+	// the location is defined with the deadzone added, so any value below the deadzone is treated as invalid
 	Loc uint64
 }
 
@@ -52,7 +53,7 @@ type ObjFile struct {
 	Header     ObjFileHeader
 	Code       []byte
 	StaticData StaticDataTable
-	Symbols    SymbolData
+	Symbols    SymbolTable
 }
 
 // Obj file header
@@ -177,7 +178,12 @@ func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 	ret.Code = binary[uint64(OBJ_FILE_HEADER_SIZE)+h.CodeStart : uint64(OBJ_FILE_HEADER_SIZE)+h.CodeStart+h.CodeSize]
 
 	if h.SymbolsSize != 0 {
-		return ret, fmt.Errorf("sym todo")
+		symSec := binary[uint64(OBJ_FILE_HEADER_SIZE)+h.SymbolsStart : uint64(OBJ_FILE_HEADER_SIZE)+h.SymbolsStart+h.SymbolsSize]
+		if syms, err := loadSymbols(symSec); err != nil {
+			return ret, err
+		} else {
+			ret.Symbols = syms
+		}
 	}
 	if h.StaticDataSize != 0 {
 		return ret, fmt.Errorf("sdata todo")
