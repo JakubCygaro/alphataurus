@@ -2,6 +2,7 @@ package assembler
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -28,11 +29,23 @@ type StaticData struct {
 	Val []uint64
 }
 
+const (
+	SYM_TINVALID = iota
+	SYM_TFUNC
+	SYM_TSTATVAR
+)
+
+const (
+	SYM_VPUB = iota
+	SYM_VPRIV
+)
+
 type SymbolTable map[string]SymbolData
 
 type SymbolData struct {
-	Ty  int
-	Val []uint64
+	Ty  byte
+	Vis byte
+	Loc uint64
 }
 
 type ObjFile struct {
@@ -94,11 +107,68 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 	ret.SymbolsSize = binary.BigEndian.Uint64(buf)
 	return ret, nil
 }
+func loadSymbols(symbolSec []byte) (SymbolTable, error) {
+	// 1b(TY) 1b(VISIBILITY) 8b(LOC) 4b(NAMELEN) NAMELENb(NAME)
+	table := make(SymbolTable, 0)
+	reader := bufio.NewReader(bytes.NewReader(symbolSec))
+	buf := make([]byte, 0, 64)
+	for {
+		var vis byte
+		var loc uint64
+		var namelen uint32
+		var name string
+		first, err := reader.ReadByte()
+		if err != nil {
+			return nil, err
+		}
+		if first == SYM_TINVALID {
+			break
+		}
+		ty := first
+		if ty > SYM_TSTATVAR {
+			return nil, fmt.Errorf("Invalid symbol type")
+		}
+		if b, err := reader.ReadByte(); err != nil {
+			return nil, err
+		} else {
+			vis = b
+		}
+		if _, err := reader.Read(buf[:8]); err != nil {
+			return nil, err
+		} else {
+			loc = binary.BigEndian.Uint64(buf[:8])
+		}
+		if _, err := reader.Read(buf[:4]); err != nil {
+			return nil, err
+		} else {
+			namelen = binary.BigEndian.Uint32(buf[:4])
+		}
+		if extendBy := int(namelen)-len(buf); extendBy > 0 {
+			buf = make([]byte, len(buf)+extendBy)
+		}
+		if _, err := reader.Read(buf[:namelen]); err != nil {
+			return nil, err
+		} else {
+			name = string(buf[:namelen])
+		}
+		if vis > SYM_VPRIV {
+			return nil, fmt.Errorf("Invalid symbol `%s` visibility", name)
+		}
+		table[name] = SymbolData{
+			Ty: ty,
+			Vis: vis,
+			Loc: loc,
+		}
+	}
+
+	return table, nil
+	
+}
 
 func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 	ret := ObjFile{}
 	ret.Header = h
-	if len(binary) < int(h.CodeStart)+int(h.CodeSize) {
+	if int(h.CodeSize) == 0 {
 		return ret, fmt.Errorf("Bad header code sec data")
 	}
 	if (int(h.CodeStart)+int(h.CodeSize)-int(h.CodeStart))%vm.INSTRUCTION_SIZE != 0 {
@@ -106,11 +176,11 @@ func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 	}
 	ret.Code = binary[uint64(OBJ_FILE_HEADER_SIZE)+h.CodeStart : uint64(OBJ_FILE_HEADER_SIZE)+h.CodeStart+h.CodeSize]
 
-	if h.StaticDataSize != 0 {
-		return ret, fmt.Errorf("sdata todo")
-	}
 	if h.SymbolsSize != 0 {
 		return ret, fmt.Errorf("sym todo")
+	}
+	if h.StaticDataSize != 0 {
+		return ret, fmt.Errorf("sdata todo")
 	}
 	return ret, nil
 }

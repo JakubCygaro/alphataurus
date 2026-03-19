@@ -12,7 +12,7 @@ import (
 )
 
 const assembly = `
-section '.code''
+section '.code'
 	mov r0, 420
 	mov [bp+1], 0xdeadbeef
 `

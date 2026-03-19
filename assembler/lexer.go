@@ -36,6 +36,7 @@ const (
 	TOKEN_TCOLON
 	TOKEN_TNEWLINE
 	TOKEN_TSINGLEQ
+	TOKEN_TAT
 	TOKEN_TEOF
 )
 const (
@@ -148,6 +149,11 @@ func (l *Lexer) ReadNextToken() error {
 	case b == '\'':
 		if err := l.readSingleQuoted(); err != nil{
 			return err
+		}
+	case b == '@':
+		l.currentToken = Token{
+			Ty:  TOKEN_TAT,
+			Val: rune(b),
 		}
 	case b == ':':
 		l.currentToken = Token{
