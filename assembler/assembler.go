@@ -154,9 +154,6 @@ func (a *Assembler) EmitBytecode() (int, error) {
 		}
 		instCount++
 	}
-	if err != nil {
-		return instCount, err
-	}
 	return instCount, err
 }
 

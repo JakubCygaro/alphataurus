@@ -15,12 +15,15 @@ func (a *Assembler) Assemble() ([]byte, error) {
 		case INST_TSECCODE:
 			instCount, err := a.EmitBytecode()
 			if err != nil {
-				return nil, nil
+				return nil, err
 			}
 			a.instCount += instCount
 		default:
 			return nil, fmt.Errorf("Disallowed top level instruction")
 		}
+	}
+	if err != nil {
+		return nil, err
 	}
 	if err := a.resolveJumpInsturctions(&(a.bytecode)); err != nil {
 		return nil, err
@@ -52,6 +55,5 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	output = output[:OBJ_FILE_HEADER_SIZE]
 	//dump code
 	output = append(output, a.bytecode...)
-	fmt.Printf("%+v\n", output)
 	return output, nil
 }

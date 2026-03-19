@@ -174,7 +174,6 @@ func (vm *VmState) ClearState() {
 
 func (vm *VmState) load(elf AlphaELFFile) error {
 	bytecode := elf.Data[elf.CodeStart:elf.CodeStart+elf.CodeSize]
-	fmt.Println(bytecode)
 	if len(bytecode) % INSTRUCTION_SIZE != 0 {
 		return errors.BadCodeSectionSize()
 	}

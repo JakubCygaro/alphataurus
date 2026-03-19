@@ -92,7 +92,6 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.SymbolsSize = binary.BigEndian.Uint64(buf)
-	fmt.Printf("Header:\n%+v\n", ret)
 	return ret, nil
 }
 

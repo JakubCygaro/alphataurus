@@ -41,6 +41,9 @@ func (l *Linker) collectFiles(sources []string) error {
 }
 func (l *Linker) collectBytes(sources []Bytes) error {
 	for _, file := range sources {
+		if len(file) < vm.AELF_FILE_HEADER_SIZE {
+			return fmt.Errorf("not a valid aobj file, header was too small")
+		}
 		headerBytes := file[:vm.AELF_FILE_HEADER_SIZE]
 		header, err := asm.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(headerBytes[:])))
 		if err != nil {

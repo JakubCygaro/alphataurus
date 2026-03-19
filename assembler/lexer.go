@@ -3,7 +3,7 @@ package assembler
 import (
 	"bufio"
 	"fmt"
-	"io"
+	// "io"
 	"math"
 	"strconv"
 	"unicode"
@@ -50,15 +50,17 @@ var keywords = map[string]int{
 }
 
 type Token struct {
-	Ty  int
-	Val any
+	Ty        int
+	Val       any
+	Col, Line uint64
 }
 
 type Lexer struct {
-	head, col, line uint64
-	currentToken    Token
-	unRead          bool
-	reader          bufio.Reader
+	head, col, line   uint64
+	currentToken      Token
+	unRead            bool
+	reader            bufio.Reader
+	lastCol, lastLine uint64
 }
 
 func nilToken() Token {
@@ -102,11 +104,18 @@ func (l *Lexer) Expect(tokenType int) (Token, bool) {
 	return l.currentToken, true
 }
 func (l *Lexer) readByte() (byte, error) {
-	l.col++
-	return l.reader.ReadByte()
+	b, err := l.reader.ReadByte()
+	l.lastLine, l.lastCol = l.line, l.col
+	if b == '\n' {
+		l.line++
+		l.col = 0
+	} else {
+		l.col++
+	}
+	return b, err
 }
 func (l *Lexer) unreadByte() error {
-	l.col--
+	l.line, l.col = l.lastLine, l.lastCol
 	return l.reader.UnreadByte()
 }
 func (l *Lexer) UnreadToken() {
@@ -128,17 +137,18 @@ func (l *Lexer) ReadNextToken() error {
 			return nil
 		}
 		if b == '\n' {
-			l.col = 0
-			l.line++
 			break
 		}
 		if !unicode.IsSpace(rune(b)) {
 			break
 		}
 	}
+	l.currentToken.Col, l.currentToken.Line = l.col, l.line
 	switch {
 	case b == '\'':
-		return l.readSingleQuoted()
+		if err := l.readSingleQuoted(); err != nil{
+			return err
+		}
 	case b == ':':
 		l.currentToken = Token{
 			Ty:  TOKEN_TCOLON,
@@ -257,10 +267,8 @@ func (l *Lexer) readSingleQuoted() error {
 	buf := make([]byte, 0, 64)
 	for {
 		next, err := l.readByte()
-		if err == io.EOF {
+		if err != nil {
 			return errors.UnclosedSingleQuote(l.line, l.col)
-		} else if err != nil {
-			return err
 		}
 		if next == '\'' {
 			break
@@ -268,8 +276,8 @@ func (l *Lexer) readSingleQuoted() error {
 			buf = append(buf, next)
 		}
 	}
-	l.currentToken = Token {
-		Ty: TOKEN_TSINGLEQ,
+	l.currentToken = Token{
+		Ty:  TOKEN_TSINGLEQ,
 		Val: string(buf),
 	}
 	return nil
