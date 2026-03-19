@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	OBJ_FILE_MAG = "AOBJ"
+	OBJ_FILE_MAG         = "AOBJ"
 	OBJ_FILE_HEADER_SIZE = 128
 )
 
@@ -105,7 +105,7 @@ func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 	if (int(h.CodeStart)+int(h.CodeSize)-int(h.CodeStart))%vm.INSTRUCTION_SIZE != 0 {
 		return ret, fmt.Errorf("Bad code section size")
 	}
-	ret.Code = binary[h.CodeStart : h.CodeStart+h.CodeSize]
+	ret.Code = binary[uint64(OBJ_FILE_HEADER_SIZE)+h.CodeStart : uint64(OBJ_FILE_HEADER_SIZE)+h.CodeStart+h.CodeSize]
 
 	if h.StaticDataSize != 0 {
 		return ret, fmt.Errorf("sdata todo")
