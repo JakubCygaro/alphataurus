@@ -36,8 +36,12 @@ const (
 )
 
 const (
-	SYM_VPUB = iota
-	SYM_VPRIV
+	/// defined in file
+	SYM_VEXPORT = iota
+	/// required by the file but not defined
+	SYM_VIMPORT
+	/// defined by the file but not linkable from the outside
+	SYM_VPRIVATE
 )
 
 type SymbolTable map[string]SymbolData
@@ -144,7 +148,7 @@ func loadSymbols(symbolSec []byte) (SymbolTable, error) {
 		} else {
 			namelen = binary.BigEndian.Uint32(buf[:4])
 		}
-		if extendBy := int(namelen)-len(buf); extendBy > 0 {
+		if extendBy := int(namelen) - len(buf); extendBy > 0 {
 			buf = make([]byte, len(buf)+extendBy)
 		}
 		if _, err := reader.Read(buf[:namelen]); err != nil {
@@ -152,18 +156,38 @@ func loadSymbols(symbolSec []byte) (SymbolTable, error) {
 		} else {
 			name = string(buf[:namelen])
 		}
-		if vis > SYM_VPRIV {
+		if vis > SYM_VPRIVATE {
 			return nil, fmt.Errorf("Invalid symbol `%s` visibility", name)
 		}
 		table[name] = SymbolData{
-			Ty: ty,
+			Ty:  ty,
 			Vis: vis,
 			Loc: loc,
 		}
 	}
 
 	return table, nil
-	
+
+}
+func writeSymbolDef(sname string, sym SymbolData) []byte {
+	// 1b(TY) 1b(VISIBILITY) 8b(LOC) 4b(NAMELEN) NAMELENb(NAME)
+	head := make([]byte, 1+1+8+4+len(sname))
+	head[0] = sym.Ty
+	head[1] = sym.Vis
+	binary.BigEndian.PutUint64(head[2:], sym.Loc)
+	binary.BigEndian.PutUint32(head[10:], uint32(len(sname)))
+	head = append(head, []byte(sname)...)
+	return head
+}
+func writeSymbols(st *SymbolTable) ([]byte, error) {
+	syms := make([]byte, 0, 64)
+
+	for sname, sym := range *st {
+		syms = append(syms, writeSymbolDef(sname, sym)...)
+	}
+	syms = append(syms, SYM_TINVALID)
+
+	return syms, nil
 }
 
 func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
