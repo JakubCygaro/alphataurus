@@ -3,6 +3,8 @@ package assembler
 import (
 	"bufio"
 	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/JakubCygaro/alphataurus/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/internal/vm"
@@ -60,6 +62,8 @@ const (
 	INST_TRET
 	INST_TSECCODE
 	INST_TSECDATA
+	INST_TIMPORT
+	INST_TEXPORT
 )
 
 type InstMovData struct {
@@ -146,6 +150,9 @@ type InstCallData struct {
 	Addr  uint64
 	Ident string
 	Expr  *Expr
+}
+type InstImportExportData struct {
+	Name string
 }
 
 func NewParser(reader bufio.Reader) Parser {
@@ -277,6 +284,10 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return nil
 	case "section":
 		return p.parseSection()
+	case "export":
+		return p.parseExport()
+	case "import":
+		return p.parseImport()
 	}
 	p.currentIdent = ""
 	return errors.UnknownIdentifier(ident, p.lexer.line, p.lexer.col)
@@ -301,6 +312,46 @@ func (p *Parser) parseSection() error {
 	default:
 		return errors.FailedToParse("section",
 			"Bad argument", p.lexer.line, p.lexer.col)
+	}
+	return nil
+}
+func (p *Parser) parseImport() error {
+	if err := p.lexer.ReadNextToken(); err != nil {
+		return err
+	}
+	op := p.lexer.CurrentToken()
+	if op.Ty != TOKEN_TSINGLEQ {
+		return errors.FailedToParse("import statement", "expected single quoted string parameter", op.Line, op.Col)
+	}
+	name := op.Val.(string)
+	if strings.ContainsFunc(name, unicode.IsSpace) {
+		return errors.FailedToParse("import statement", "parameter not a valid identifier", op.Line, op.Col)
+	}
+	p.currentInst = Instruction{
+		Ty: INST_TIMPORT,
+		Data: InstImportExportData {
+			Name: name,
+		},
+	}
+	return nil
+}
+func (p *Parser) parseExport() error {
+	if err := p.lexer.ReadNextToken(); err != nil {
+		return err
+	}
+	op := p.lexer.CurrentToken()
+	if op.Ty != TOKEN_TSINGLEQ {
+		return errors.FailedToParse("export statement", "expected single quoted string parameter", op.Line, op.Col)
+	}
+	name := op.Val.(string)
+	if strings.ContainsFunc(name, unicode.IsSpace) {
+		return errors.FailedToParse("export statement", "parameter not a valid identifier", op.Line, op.Col)
+	}
+	p.currentInst = Instruction{
+		Ty: INST_TEXPORT,
+		Data: InstImportExportData {
+			Name: name,
+		},
 	}
 	return nil
 }

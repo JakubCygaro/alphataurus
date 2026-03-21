@@ -24,6 +24,7 @@ type Assembler struct {
 	lastInst        Instruction
 	bytecode        []byte
 	instCount       int
+	symbols         SymbolTable
 }
 
 func (a *Assembler) InstructionCount() int {

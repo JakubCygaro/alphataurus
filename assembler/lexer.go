@@ -92,7 +92,7 @@ func hexNumberCheck(b byte) bool {
 func binaryNumberCheck(b byte) bool {
 	return b-'0' <= 1
 }
-func identCheck(b byte) bool {
+func IdentCheck(b byte) bool {
 	return b == '_' ||
 		b-'a' <= 'z'-'a' ||
 		b-'A' <= 'Z'-'A'
@@ -232,7 +232,7 @@ func (l *Lexer) ReadNextToken() error {
 		if err != nil {
 			return err
 		}
-	case identCheck(b):
+	case IdentCheck(b):
 		buf := make([]byte, 0, 16)
 		buf = append(buf, b)
 		for {
@@ -240,7 +240,7 @@ func (l *Lexer) ReadNextToken() error {
 			if err != nil {
 				break
 			}
-			if identCheck(next) || numberCheck(next) {
+			if IdentCheck(next) || numberCheck(next) {
 				buf = append(buf, next)
 			} else {
 				l.unreadByte()
@@ -346,7 +346,7 @@ func (l *Lexer) readDigit(b byte) error {
 			} else {
 				return errors.MalformedFloatLit(l.line, l.col)
 			}
-		} else if unicode.IsSpace(rune(next)) || !identCheck(next) {
+		} else if unicode.IsSpace(rune(next)) || !IdentCheck(next) {
 			l.unreadByte()
 			break
 		} else {
