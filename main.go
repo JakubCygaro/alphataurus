@@ -19,7 +19,7 @@ section '.code'
 _start:
 	mov r0, 69
 	cmp r0, 69
-	je [ip-4]
+	je [ip-5]
 `
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))

@@ -69,7 +69,6 @@ func (state *VmState) jmpIP(lastByte byte, param []byte) error {
 	}
 	opTy := (lastByte & 0xf0) >> 4
 	dest := uint64(0)
-	println(ip, reg, regV, opTy, dest)
 	switch opTy {
 	case OP_TADD:
 		dest = uint64(ip + regV + offset)

@@ -399,7 +399,6 @@ func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
 	regs |= 0b00001111 & byte(data.Min)
 	(*out)[len(*out)-4] = regs
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
-	fmt.Println((*out)[len(*out)-12:])
 	return nil
 }
 func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
@@ -466,12 +465,12 @@ func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
 	reg = byte(data.OpTy)
 	reg <<= 4
 	if ty == INST_TJMPIP0R {
-		ty |= 0x0f
+		reg |= 0x0f
 	} else {
-		ty |= (data.Reg & 0x0f)
+		reg |= byte(data.Reg & 0x0f)
 	}
-	(*out)[len(*out)-4] = reg
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
+	(*out)[len(*out)-4] = reg
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }

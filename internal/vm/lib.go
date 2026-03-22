@@ -466,7 +466,6 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 		// subtrahend - GP_REG_MAX
 		ty = subtrahend - GP_REG_MAX
 		subV = binary.BigEndian.Uint64(param)
-		fmt.Printf("subV: %v\n", uint64(subV))
 	} else {
 		ty = param[0]
 		subV = state.regs.r[subtrahend]
@@ -479,7 +478,6 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 		state.flags.Sf = math.Float64frombits(diff) < 0.0
 		state.flags.Zf = math.Float64frombits(diff) == 0.0
 	} else {
-		fmt.Printf("diff: %v\n", int64(diff))
 		state.flags.Sf = int64(diff) < 0
 		state.flags.Zf = int64(diff) == 0
 	}
