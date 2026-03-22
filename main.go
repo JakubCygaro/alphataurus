@@ -15,11 +15,12 @@ const assembly = `
 section '.code'
 	jmp _start
 	mov r1, 420
-	jmp [ip+3]
+	jmp [ip+4]
 _start:
 	mov r0, 69
 	cmp r0, 69
-	je [ip-5]
+	mov r2, -6
+	je [ip+r2]
 `
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
