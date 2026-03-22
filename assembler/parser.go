@@ -52,6 +52,8 @@ const (
 	INST_TJMPGE
 	INST_TJMPL
 	INST_TJMPLE
+	INST_TJMPIP0R
+	INST_TJMPIP1R
 	INST_TLABEL
 	INST_TPUSHR
 	INST_TPUSHI
@@ -111,6 +113,12 @@ type InstCmpData struct {
 }
 type InstJmpData struct {
 	Address any
+}
+type InstJmpIPData struct {
+	Reg int
+	Offset int64
+	JmpTy int
+	OpTy int
 }
 type InstLabData struct {
 	Label      string

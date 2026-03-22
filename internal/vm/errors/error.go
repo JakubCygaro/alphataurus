@@ -46,6 +46,16 @@ func BadCodeSectionSize() AlphaVMError {
 	}
 	return err
 }
+func BadArthmeticOperation(pos uint64) AlphaVMError {
+	err := AlphaVMError{
+		Type: ERR_ARTH_EXCEPTION,
+		Pos: pos,
+		construct: func() string {
+			return "Arthmetic exception"
+		},
+	}
+	return err
+}
 func BadOpcode(opcode uint32, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_BAD_OPCODE,

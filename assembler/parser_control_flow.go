@@ -109,6 +109,8 @@ func (p *Parser) parseJmp(ty int) error {
 	addr := Token{Ty: INVALID}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
+	} else if expr.Ty == EXPR_TDEREF {
+		return p.parseJmpIP(ty, expr)
 	} else if eval, ok := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TIDENT {
 		addr.Ty = TOKEN_TIDENT
 		addr.Val = eval.Ident
@@ -139,6 +141,45 @@ func (p *Parser) parseJmp(ty int) error {
 			p.lexer.line, p.lexer.col)
 	}
 	p.currentInst = inst
+	return nil
+}
+func (p *Parser) parseJmpIP(ty int, expr *Expr) error {
+	derefExpr := expr.Val.(DerefExpr)
+	deref, err := p.processDeref(derefExpr.Inner)
+	if err != nil {
+		return err
+	}
+	if deref.Reg1 != vm.IP_IDX && deref.Reg2 != vm.IP_IDX {
+		return errors.FailedToParse("ip relative jump instruction", "expression without the IP register",
+			p.lexer.line, p.lexer.col)
+	}
+	switch deref.Ty {
+	case DEREF_T1RO:
+		p.currentInst = Instruction{
+			Ty: INST_TJMPIP0R,
+			Data: InstJmpIPData {
+				JmpTy: ty,
+				Offset: deref.Offset,
+				OpTy: deref.OffsetOp,
+			},
+		}
+	case DEREF_T2RO:
+		var reg int
+		if deref.Reg1 == vm.IP_IDX {
+			reg = deref.Reg2
+		} else {
+			reg = deref.Reg1
+		}
+		p.currentInst = Instruction{
+			Ty: INST_TJMPIP1R,
+			Data: InstJmpIPData {
+				JmpTy: ty,
+				Offset: deref.Offset,
+				Reg: reg,
+				OpTy: deref.OffsetOp,
+			},
+		}
+	}
 	return nil
 }
 func (p *Parser) parseCall() error {

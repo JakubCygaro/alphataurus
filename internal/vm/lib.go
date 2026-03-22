@@ -286,6 +286,12 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 			err = vm.jmpL(opCodeBytes[0], param)
 		case OP_JMPLE:
 			err = vm.jmpLE(opCodeBytes[0], param)
+		case OP_JMPIP:
+			err = vm.jmpIP(opCodeBytes[0], param)
+		case OP_JMPEIP:
+			err = vm.jmpEIP(opCodeBytes[0], param)
+		case OP_JMPNEIP:
+			err = vm.jmpNEIP(opCodeBytes[0], param)
 		case OP_PUSHI:
 			err = vm.push(int(opcode), param)
 		case OP_PUSHR:
@@ -460,6 +466,7 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 		// subtrahend - GP_REG_MAX
 		ty = subtrahend - GP_REG_MAX
 		subV = binary.BigEndian.Uint64(param)
+		fmt.Printf("subV: %v\n", uint64(subV))
 	} else {
 		ty = param[0]
 		subV = state.regs.r[subtrahend]
@@ -469,10 +476,11 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 	state.flags = Flags{}
 
 	if ty == TY_FLOAT64 {
-		state.flags.Sf = math.Float64frombits(diff) <= 0.0
+		state.flags.Sf = math.Float64frombits(diff) < 0.0
 		state.flags.Zf = math.Float64frombits(diff) == 0.0
 	} else {
-		state.flags.Sf = int64(diff) <= 0
+		fmt.Printf("diff: %v\n", int64(diff))
+		state.flags.Sf = int64(diff) < 0
 		state.flags.Zf = int64(diff) == 0
 	}
 

@@ -131,6 +131,10 @@ func (a *Assembler) EmitBytecode() (int, error) {
 			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPLE:
 			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+		case INST_TJMPIP0R:
+			err = a.emitJmpIP(int(inst.Ty), inst.Data.(InstJmpIPData), &(a.bytecode))
+		case INST_TJMPIP1R:
+			err = a.emitJmpIP(int(inst.Ty), inst.Data.(InstJmpIPData), &(a.bytecode))
 		case INST_TLABEL:
 			err = a.declareLabel(inst.Data.(InstLabData), &(a.bytecode))
 			instCount--
@@ -395,6 +399,7 @@ func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
 	regs |= 0b00001111 & byte(data.Min)
 	(*out)[len(*out)-4] = regs
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
+	fmt.Println((*out)[len(*out)-12:])
 	return nil
 }
 func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
@@ -433,6 +438,41 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 	} else {
 		return fmt.Errorf("Jump instruction bad internal assembler data")
 	}
+	return nil
+}
+func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
+	var opcode vm.OpCodeVal
+	switch data.JmpTy {
+	case INST_TJMP:
+		opcode = a.opCodes[vm.OP_JMPIP]
+	case INST_TJMPE:
+		opcode = a.opCodes[vm.OP_JMPEIP]
+	case INST_TJMPNE:
+		opcode = a.opCodes[vm.OP_JMPNEIP]
+	case INST_TJMPZ:
+		opcode = a.opCodes[vm.OP_JMPZIP]
+	case INST_TJMPNZ:
+		opcode = a.opCodes[vm.OP_JMPNZIP]
+	case INST_TJMPG:
+		opcode = a.opCodes[vm.OP_JMPGIP]
+	case INST_TJMPGE:
+		opcode = a.opCodes[vm.OP_JMPGEIP]
+	case INST_TJMPL:
+		opcode = a.opCodes[vm.OP_JMPLIP]
+	case INST_TJMPLE:
+		opcode = a.opCodes[vm.OP_JMPLEIP]
+	}
+	var reg byte
+	reg = byte(data.OpTy)
+	reg <<= 4
+	if ty == INST_TJMPIP0R {
+		ty |= 0x0f
+	} else {
+		ty |= (data.Reg & 0x0f)
+	}
+	(*out)[len(*out)-4] = reg
+	*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
 func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {

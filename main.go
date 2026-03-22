@@ -13,8 +13,13 @@ import (
 
 const assembly = `
 section '.code'
-	mov r0, 420
-	mov [bp+1], 0xdeadbeef
+	jmp _start
+	mov r1, 420
+	jmp [ip+3]
+_start:
+	mov r0, 69
+	cmp r0, 69
+	je [ip-4]
 `
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))

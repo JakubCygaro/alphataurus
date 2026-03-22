@@ -59,3 +59,41 @@ func (state *VmState) jmpLE(lastByte byte, param []byte) error {
 	}
 	return nil
 }
+func (state *VmState) jmpIP(lastByte byte, param []byte) error {
+	offset := int64(binary.BigEndian.Uint64(param))
+	ip := int64(state.regs.r[IP_IDX])
+	reg := (lastByte & 0x0f)
+	regV := int64(0)
+	if isMovRRAllowed(reg) {
+		regV = int64(state.regs.r[reg])
+	}
+	opTy := (lastByte & 0xf0) >> 4
+	dest := uint64(0)
+	println(ip, reg, regV, opTy, dest)
+	switch opTy {
+	case OP_TADD:
+		dest = uint64(ip + regV + offset)
+	case OP_TSUB:
+		dest = uint64(ip + regV - offset)
+	case OP_TDIV:
+		if offset == 0 {
+			return errors.BadArthmeticOperation(state.byteCodePos)
+		}
+		dest = uint64(ip + regV / offset)
+	case OP_TMUL:
+		dest = uint64(ip + regV * offset)
+	}
+	return state.jmpImpl(dest)
+}
+func (state *VmState) jmpEIP(lastByte byte, param []byte) error {
+	if state.flags.Zf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpNEIP(lastByte byte, param []byte) error {
+	if !state.flags.Zf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}

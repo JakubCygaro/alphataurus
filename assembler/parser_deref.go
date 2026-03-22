@@ -141,7 +141,7 @@ func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 		arthExpr := inner.Val.(ArthExpr)
 		return p.processDerefNestedArth(arthExpr, 0)
 	default:
-		return ret, errors.FailedToParse("mov instruction",
+		return ret, errors.FailedToParse("dereference instruction",
 			"Invalid dereference expression",
 			p.lexer.line, p.lexer.col)
 	}

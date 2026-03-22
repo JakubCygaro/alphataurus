@@ -78,6 +78,9 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	case OP_TMUL:
 		addr = regV * p
 	case OP_TDIV:
+		if p == 0 {
+			return errors.BadArthmeticOperation(state.byteCodePos)
+		}
 		addr = regV / p
 	default:
 		return errors.BadOpcode(state.currentOpcode, state.byteCodePos)

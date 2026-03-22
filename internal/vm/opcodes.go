@@ -58,10 +58,30 @@ var (
 		15: handle(OP_RSHRR),
 	})
 	//jumps
-	p03XX = nested(OpCodeMap{
+	//direct jumps
+	p030X = nested(OpCodeMap{
 		0: handle(OP_JMP),
 		1: handle(OP_JMPE),
-		2: handle(OP_JMPG),
+		2: handle(OP_JMPNE),
+		3: handle(OP_JMPZ),
+		4: handle(OP_JMPNZ),
+		5: handle(OP_JMPG),
+		6: handle(OP_JMPGE),
+		7: handle(OP_JMPL),
+		8: handle(OP_JMPLE),
+	})
+	p03XX = nested(OpCodeMap{
+		0: p030X,
+		//ip relative jumps
+		1: handle(OP_JMPIP),
+		2: handle(OP_JMPEIP),
+		3: handle(OP_JMPNEIP),
+		4: handle(OP_JMPZIP),
+		5: handle(OP_JMPNZIP),
+		6: handle(OP_JMPGIP),
+		7: handle(OP_JMPGEIP),
+		8: handle(OP_JMPLIP),
+		9: handle(OP_JMPLEIP),
 	})
 	p00XX = nested(OpCodeMap{
 		0:  handle(OP_MOVRR),
@@ -169,17 +189,26 @@ const (
 	OP_PUSHI
 	OP_POP
 
-	OP_JMP   // jump to instruction
-	OP_JMPE  // jump if equal
-	OP_JMPZ  // jump if zero
-	OP_JMPNE // jump if not equal
-	OP_JMPNZ // jump of not zero
-	OP_JMPG  // jump if greater
-	OP_JMPGE // jump if greater or equal
-	OP_JMPL  // jump if less
-	OP_JMPLE // jump if less or equal
-	OP_CMP   // test registers
-	OP_CLR   // clear all flags (set them to false)
+	OP_JMP     // jump to instruction
+	OP_JMPE    // jump if equal
+	OP_JMPZ    // jump if zero
+	OP_JMPNE   // jump if not equal
+	OP_JMPNZ   // jump of not zero
+	OP_JMPG    // jump if greater
+	OP_JMPGE   // jump if greater or equal
+	OP_JMPL    // jump if less
+	OP_JMPLE   // jump if less or equal
+	OP_JMPIP   // jump to instruction
+	OP_JMPEIP  // jump if equal
+	OP_JMPZIP  // jump if zero
+	OP_JMPNEIP // jump if not equal
+	OP_JMPNZIP // jump of not zero
+	OP_JMPGIP  // jump if greater
+	OP_JMPGEIP // jump if greater or equal
+	OP_JMPLIP  // jump if less
+	OP_JMPLEIP // jump if less or equal
+	OP_CMP     // test registers
+	OP_CLR     // clear all flags (set them to false)
 	OP_CALL
 	OP_RET
 	OP_NOP
