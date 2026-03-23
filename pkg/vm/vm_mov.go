@@ -2,7 +2,7 @@ package vm
 
 import (
 	"encoding/binary"
-	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
 
 func (state *VmState) movRR(lastByte byte) error {

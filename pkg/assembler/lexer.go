@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"unicode"
 
-	"github.com/JakubCygaro/alphataurus/assembler/errors"
-	"github.com/JakubCygaro/alphataurus/internal/vm"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/JakubCygaro/alphataurus/internal/vm"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 const (

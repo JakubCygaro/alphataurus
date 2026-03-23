@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"math"
-	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
 
 type VmStack []uint64

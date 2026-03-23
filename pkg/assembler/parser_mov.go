@@ -1,6 +1,6 @@
 package assembler
 
-import "github.com/JakubCygaro/alphataurus/assembler/errors"
+import "github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 
 func (p *Parser) parseMov() error {
 	var op1 Token

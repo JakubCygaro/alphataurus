@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	asm "github.com/JakubCygaro/alphataurus/assembler"
-	"github.com/JakubCygaro/alphataurus/internal/vm"
+	asm "github.com/JakubCygaro/alphataurus/pkg/assembler"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 type Linker struct {

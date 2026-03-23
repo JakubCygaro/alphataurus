@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/JakubCygaro/alphataurus/assembler"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	arg "github.com/alexflint/go-arg"
 )
 

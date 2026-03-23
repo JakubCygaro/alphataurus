@@ -2,9 +2,8 @@ package vm
 
 import (
 	"encoding/binary"
-	"fmt"
 
-	"github.com/JakubCygaro/alphataurus/internal/vm/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
 
 func (state *VmState) jmpImpl(dest uint64) error {
@@ -83,7 +82,6 @@ func (state *VmState) jmpIP(lastByte byte, param []byte) error {
 	case OP_TMUL:
 		dest = uint64((ip + regV) * offset)
 	}
-	fmt.Printf("ip: %v, reg: %v, regV: %v, opTy: %v, dest: %v\n", ip, reg, regV, opTy, dest)
 	return state.jmpImpl(dest)
 }
 func (state *VmState) jmpEIP(lastByte byte, param []byte) error {

@@ -3,8 +3,8 @@ package assembler
 import (
 	"fmt"
 
-	"github.com/JakubCygaro/alphataurus/assembler/errors"
-	"github.com/JakubCygaro/alphataurus/internal/vm"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func (p *Parser) parseLogical(logTy int) error {

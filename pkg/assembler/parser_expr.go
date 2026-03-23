@@ -3,7 +3,7 @@ package assembler
 import (
 	"fmt"
 
-	"github.com/JakubCygaro/alphataurus/assembler/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 )
 
 type pair [2]int
