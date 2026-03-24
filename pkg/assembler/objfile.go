@@ -30,8 +30,7 @@ type StaticData struct {
 }
 
 const (
-	SYM_TINVALID = iota
-	SYM_TFUNC
+	SYM_TFUNC = iota
 	SYM_TSTATVAR
 )
 
@@ -39,7 +38,9 @@ const (
 	/// defined in file
 	SYM_VEXPORT = iota
 	/// required by the file but not defined
-	SYM_VIMPORT
+	SYM_VIMPORTSTRONG
+	/// weak reference in the file
+	SYM_VIMPORTWEAK
 	/// defined by the file but not linkable from the outside
 	SYM_VPRIVATE
 )
@@ -53,11 +54,29 @@ type SymbolData struct {
 	Loc uint64
 }
 
+// reloc
+// 8b(LOC) 8b(REF) 1b(SIZE)
+
+const (
+	RELOC_TINVALID = 0
+)
+
+type RelocData struct {
+	// where that symbol is referenced in the code
+	Loc uint64
+	// what symbol is being referenced
+	Ref uint64
+	PatchSize byte
+}
+
+type RelocationTable []RelocData
+
 type ObjFile struct {
 	Header     ObjFileHeader
 	Code       []byte
 	StaticData StaticDataTable
 	Symbols    SymbolTable
+	Relocs     RelocationTable
 }
 
 // Obj file header
@@ -124,10 +143,7 @@ func loadSymbols(symbolSec []byte) (SymbolTable, error) {
 		var name string
 		first, err := reader.ReadByte()
 		if err != nil {
-			return nil, err
-		}
-		if first == SYM_TINVALID {
-			break
+			return table, nil
 		}
 		ty := first
 		if ty > SYM_TSTATVAR {
@@ -185,7 +201,6 @@ func writeSymbols(st *SymbolTable) ([]byte, error) {
 	for sname, sym := range *st {
 		syms = append(syms, writeSymbolDef(sname, sym)...)
 	}
-	syms = append(syms, SYM_TINVALID)
 
 	return syms, nil
 }
@@ -213,4 +228,19 @@ func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 		return ret, fmt.Errorf("sdata todo")
 	}
 	return ret, nil
+}
+func writeRelocDef(rel RelocData) []byte {
+	head := make([]byte, 8+8+1)
+	binary.BigEndian.PutUint64(head[0:], rel.Loc)
+	binary.BigEndian.PutUint64(head[8:], rel.Ref)
+	head[len(head)-1] = rel.PatchSize
+	return head
+}
+func writeRelocs(rel RelocationTable) ([]byte, error) {
+	relocs := make([]byte, 0, 64)
+
+	for _, reloc := range rel {
+		relocs = append(relocs, writeRelocDef(reloc)...)
+	}
+	return relocs, nil
 }

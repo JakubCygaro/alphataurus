@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/JakubCygaro/alphataurus/assembler"
-	"github.com/JakubCygaro/alphataurus/internal/vm"
-	"github.com/JakubCygaro/alphataurus/linker"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	"github.com/JakubCygaro/alphataurus/pkg/linker"
 )
 
 const (
