@@ -68,11 +68,6 @@ const (
 	INST_TEXPORT
 )
 
-type InstMovData struct {
-	Src, Dest int
-	Imm       uint64
-}
-
 const (
 	ARTH_TUNSIGNED = vm.TY_UINT64
 	ARTH_TSIGNED   = vm.TY_INT64
@@ -94,6 +89,10 @@ const (
 	LOG_TRSH
 )
 
+type InstMovData struct {
+	Src, Dest int
+	Imm       uint64
+}
 type InstIncDecData struct {
 	Reg int
 }
@@ -145,10 +144,6 @@ type InstMovDerefData struct {
 	Label     string
 	OpTy      int
 }
-type Instruction struct {
-	Ty   int
-	Data any
-}
 type Parser struct {
 	lexer        Lexer
 	currentInst  Instruction
@@ -161,8 +156,13 @@ type InstCallData struct {
 }
 type InstImportExportData struct {
 	Name string
+	Weak bool
 }
-
+type Instruction struct {
+	Ty   int
+	Data any
+	Line, Col uint64
+}
 func NewParser(reader bufio.Reader) Parser {
 	return Parser{
 		lexer: NewLexer(reader),
@@ -340,6 +340,8 @@ func (p *Parser) parseImport() error {
 		Data: InstImportExportData {
 			Name: name,
 		},
+		Line: op.Line,
+		Col: op.Col,
 	}
 	return nil
 }
@@ -360,6 +362,8 @@ func (p *Parser) parseExport() error {
 		Data: InstImportExportData {
 			Name: name,
 		},
+		Line: op.Line,
+		Col: op.Col,
 	}
 	return nil
 }

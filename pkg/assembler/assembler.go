@@ -25,6 +25,8 @@ type Assembler struct {
 	bytecode        []byte
 	instCount       int
 	symbols         SymbolTable
+	// exports         map[string]*SymbolData
+	// imports         map[string]*SymbolData
 }
 
 func (a *Assembler) InstructionCount() int {

@@ -12,6 +12,9 @@ func (a *Assembler) Assemble() ([]byte, error) {
 	for ; ok && err == nil; ok, err = a.parser.ParseNext() {
 		inst := a.parser.CurrentInst()
 		switch inst.Ty {
+		case INST_TEXPORT:
+
+		case INST_TIMPORT:
 		case INST_TSECCODE:
 			instCount, err := a.EmitBytecode()
 			if err != nil {
