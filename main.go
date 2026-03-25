@@ -12,6 +12,7 @@ import (
 )
 
 const assembly = `
+export '_start'
 section '.code'
 	jmp _start
 	mov r1, 420

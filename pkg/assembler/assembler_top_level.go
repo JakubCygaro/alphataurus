@@ -15,7 +15,7 @@ func (a *Assembler) handleExport(data InstImportExportData) error {
 	return nil
 }
 func (a *Assembler) handleImport(data InstImportExportData) error {
-	if _, ok := a.symbols.GetByName(data.Name); ok {
+	if _, _, ok := a.symbols.GetByName(data.Name); ok {
 		return errors.MultipleSymbolDefinitions(data.Name, a.parser.lexer.line, a.parser.lexer.col)
 	}
 	sym := SymbolData{

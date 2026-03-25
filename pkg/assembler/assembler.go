@@ -25,6 +25,7 @@ type Assembler struct {
 	bytecode        []byte
 	instCount       int
 	symbols         SymbolTable
+	relocations     RelocationTable
 }
 
 func (a *Assembler) InstructionCount() int {
@@ -38,6 +39,8 @@ func NewAssembler(reader bufio.Reader) Assembler {
 		labels:          make(labelMap),
 		unresolvedJumps: make(unresolvedJumpMap),
 		bytecode:        make([]byte, 0, 64),
+		symbols:         NewSymbolTable(),
+		relocations:     make(RelocationTable, 0),
 	}
 }
 
@@ -483,7 +486,7 @@ func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 		pos:        uint64(len(*out)),
 		declaredAt: data.DeclaredAt,
 	}
-	if esym, ok := a.symbols.GetByName(data.Label); ok && (esym.Vis == SYM_VEXPORT || esym.Vis == SYM_VPRIVATE) {
+	if esym, _, ok := a.symbols.GetByName(data.Label); ok && (esym.Vis == SYM_VEXPORT || esym.Vis == SYM_VPRIVATE) {
 		(*esym).Loc = a.labels[data.Label].pos
 	} else if ok && (esym.Vis == SYM_VIMPORTWEAK || esym.Vis == SYM_VIMPORTSTRONG) {
 		return errors.ImportedSymbolDeclared(data.Label, a.parser.lexer.line, a.parser.lexer.col)
@@ -496,8 +499,22 @@ func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 		if !ok {
 			return errors.UnresolvedLabel(destLabel)
 		}
+		sym, idx, ok := a.symbols.GetByName(destLabel)
+		if !ok {
+			return errors.UnresolvedSymbol(destLabel)
+		}
+		if sym.Vis != SYM_VPRIVATE && sym.Vis != SYM_VEXPORT {
+			return errors.UnresolvedSymbol(destLabel)
+		}
+
 		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:],
 			uint64(label.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
+		reloc := RelocData {
+			Loc: uint64(codePos)+vm.OPCODE_SIZE,
+			Ref: uint64(idx),
+			PatchSize: 8,
+		}
+		a.relocations = append(a.relocations, reloc)
 	}
 	return nil
 }

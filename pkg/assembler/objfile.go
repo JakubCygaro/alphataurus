@@ -75,20 +75,16 @@ func (t SymbolTable) AddSymbol(name string, def SymbolData) (*SymbolData, bool) 
 	return t.InOrder[len(t.InOrder)-1], true
 }
 
-func (t SymbolTable) GetByName(name string) (*SymbolData, bool) {
+func (t SymbolTable) GetByName(name string) (*SymbolData, int, bool) {
 	if idx, ok := t.ByName[name]; ok {
-		return t.InOrder[idx], ok
+		return t.InOrder[idx], idx, ok
 	}
-	return nil, false
+	return nil, -1, false
 }
-
-// reloc
-// 8b(LOC) 8b(REF) 1b(SIZE)
 
 const (
 	RELOC_TINVALID = 0
 )
-
 // 8b(LOC) 8b(REF) 1b(PATCHSIZE)
 type RelocData struct {
 	// where that symbol is referenced in the code
@@ -118,7 +114,6 @@ type ObjFile struct {
 // symbolsStart 8b
 // symbolsSize 8b
 // free space up to 128 bytes (for now)
-
 func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 	ret := ObjFileHeader{}
 	mag := [4]byte{}
