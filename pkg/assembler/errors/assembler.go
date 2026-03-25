@@ -24,6 +24,16 @@ func RedeclaredLabel(label, first, second string, line, col uint64) AssemblerErr
 	}
 	return err
 }
+func ImportedSymbolDeclared(name string, line, col uint64) AssemblerError {
+	err := AssemblerError {
+		Line: line,
+		Col: col,
+		construct: func() string {
+			return fmt.Sprintf("imported symbol '%s' declared at (%v:%v)", name, line, col)
+		},
+	}
+	return err
+}
 
 func UnresolvedLabel(label string) AssemblerError {
 	err := AssemblerError {
@@ -31,6 +41,16 @@ func UnresolvedLabel(label string) AssemblerError {
 		Col: 0,
 		construct: func() string {
 			return fmt.Sprintf("label '%s' unresolved", label)
+		},
+	}
+	return err
+}
+func UnresolvedSymbol(label string) AssemblerError {
+	err := AssemblerError {
+		Line: 0,
+		Col: 0,
+		construct: func() string {
+			return fmt.Sprintf("symbol '%s' is unresolved", label)
 		},
 	}
 	return err

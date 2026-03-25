@@ -20,6 +20,7 @@ type ObjFileHeader struct {
 	CodeStart, CodeSize             uint64
 	StaticDataStart, StaticDataSize uint64
 	SymbolsStart, SymbolsSize       uint64
+	RelocsStart, RelocsSize         uint64
 }
 
 type StaticDataTable map[string]StaticData
@@ -45,13 +46,40 @@ const (
 	SYM_VPRIVATE
 )
 
-type SymbolTable map[string]SymbolData
+type SymbolTable struct {
+	InOrder []*SymbolData
+	ByName  map[string]int
+}
 
 type SymbolData struct {
 	Ty  byte
 	Vis byte
 	// the location is defined with the deadzone added, so any value below the deadzone is treated as invalid
 	Loc uint64
+}
+
+func NewSymbolTable() SymbolTable {
+	table := SymbolTable{
+		InOrder: make([]*SymbolData, 0),
+		ByName:  make(map[string]int),
+	}
+	return table
+}
+
+func (t SymbolTable) AddSymbol(name string, def SymbolData) (*SymbolData, bool) {
+	if _, ok := t.ByName[name]; ok {
+		return nil, false
+	}
+	t.InOrder = append(t.InOrder, &def)
+	t.ByName[name] = len(t.InOrder) - 1
+	return t.InOrder[len(t.InOrder)-1], true
+}
+
+func (t SymbolTable) GetByName(name string) (*SymbolData, bool) {
+	if idx, ok := t.ByName[name]; ok {
+		return t.InOrder[idx], ok
+	}
+	return nil, false
 }
 
 // reloc
@@ -61,11 +89,12 @@ const (
 	RELOC_TINVALID = 0
 )
 
+// 8b(LOC) 8b(REF) 1b(PATCHSIZE)
 type RelocData struct {
 	// where that symbol is referenced in the code
 	Loc uint64
 	// what symbol is being referenced
-	Ref uint64
+	Ref       uint64
 	PatchSize byte
 }
 
@@ -129,11 +158,17 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.SymbolsSize = binary.BigEndian.Uint64(buf)
+
+	ret.RelocsStart = binary.BigEndian.Uint64(buf)
+	if _, err := io.ReadFull(reader, buf); err != nil {
+		return ret, fmt.Errorf("Object file too short")
+	}
+	ret.RelocsSize = binary.BigEndian.Uint64(buf)
 	return ret, nil
 }
-func loadSymbols(symbolSec []byte) (SymbolTable, error) {
+func readSymbols(symbolSec []byte) (SymbolTable, error) {
 	// 1b(TY) 1b(VISIBILITY) 8b(LOC) 4b(NAMELEN) NAMELENb(NAME)
-	table := make(SymbolTable, 0)
+	table := NewSymbolTable()
 	reader := bufio.NewReader(bytes.NewReader(symbolSec))
 	buf := make([]byte, 0, 64)
 	for {
@@ -143,24 +178,24 @@ func loadSymbols(symbolSec []byte) (SymbolTable, error) {
 		var name string
 		first, err := reader.ReadByte()
 		if err != nil {
-			return table, nil
+			break
 		}
 		ty := first
 		if ty > SYM_TSTATVAR {
-			return nil, fmt.Errorf("Invalid symbol type")
+			return table, fmt.Errorf("Invalid symbol type")
 		}
 		if b, err := reader.ReadByte(); err != nil {
-			return nil, err
+			return table, err
 		} else {
 			vis = b
 		}
 		if _, err := reader.Read(buf[:8]); err != nil {
-			return nil, err
+			return table, err
 		} else {
 			loc = binary.BigEndian.Uint64(buf[:8])
 		}
 		if _, err := reader.Read(buf[:4]); err != nil {
-			return nil, err
+			return table, err
 		} else {
 			namelen = binary.BigEndian.Uint32(buf[:4])
 		}
@@ -168,22 +203,55 @@ func loadSymbols(symbolSec []byte) (SymbolTable, error) {
 			buf = make([]byte, len(buf)+extendBy)
 		}
 		if _, err := reader.Read(buf[:namelen]); err != nil {
-			return nil, err
+			return table, err
 		} else {
 			name = string(buf[:namelen])
 		}
 		if vis > SYM_VPRIVATE {
-			return nil, fmt.Errorf("Invalid symbol `%s` visibility", name)
+			return table, fmt.Errorf("Invalid symbol `%s` visibility", name)
 		}
-		table[name] = SymbolData{
+		sym := SymbolData{
 			Ty:  ty,
 			Vis: vis,
 			Loc: loc,
 		}
+		table.AddSymbol(name, sym)
 	}
 
 	return table, nil
 
+}
+// 8b(LOC) 8b(REF) 1b(PATCHSIZE)
+func readRelocs(relocSec []byte) (RelocationTable, error) {
+	relocs := make(RelocationTable, 0)
+	reader := bufio.NewReader(bytes.NewReader(relocSec))
+	buf := make([]byte, 0, 64)
+	for {
+		var loc, ref uint64
+		var patchSize byte
+		_, err := reader.Read(buf[:8])
+		if err != nil {
+			break
+		}
+		loc = binary.BigEndian.Uint64(buf[:8])
+		if _, err := reader.Read(buf[:8]); err != nil {
+			return relocs, err
+		} else {
+			ref = binary.BigEndian.Uint64(buf[:8])
+		}
+		if b, err := reader.ReadByte(); err != nil {
+			return relocs, err
+		} else {
+			patchSize = b
+		}
+		reloc := RelocData {
+			Loc: loc,
+			Ref: ref,
+			PatchSize: patchSize,
+		}
+		relocs = append(relocs, reloc)
+	}
+	return relocs, nil
 }
 func writeSymbolDef(sname string, sym SymbolData) []byte {
 	// 1b(TY) 1b(VISIBILITY) 8b(LOC) 4b(NAMELEN) NAMELENb(NAME)
@@ -198,8 +266,9 @@ func writeSymbolDef(sname string, sym SymbolData) []byte {
 func writeSymbols(st *SymbolTable) ([]byte, error) {
 	syms := make([]byte, 0, 64)
 
-	for sname, sym := range *st {
-		syms = append(syms, writeSymbolDef(sname, sym)...)
+	for sname, idx := range (*st).ByName {
+		sym := (*st).InOrder[idx]
+		syms = append(syms, writeSymbolDef(sname, *sym)...)
 	}
 
 	return syms, nil
@@ -218,10 +287,18 @@ func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 
 	if h.SymbolsSize != 0 {
 		symSec := binary[uint64(OBJ_FILE_HEADER_SIZE)+h.SymbolsStart : uint64(OBJ_FILE_HEADER_SIZE)+h.SymbolsStart+h.SymbolsSize]
-		if syms, err := loadSymbols(symSec); err != nil {
+		if syms, err := readSymbols(symSec); err != nil {
 			return ret, err
 		} else {
 			ret.Symbols = syms
+		}
+	}
+	if h.RelocsSize != 0 {
+		relocSec := binary[uint64(OBJ_FILE_HEADER_SIZE)+h.RelocsStart : uint64(OBJ_FILE_HEADER_SIZE)+h.RelocsStart+h.RelocsSize]
+		if relocs, err := readRelocs(relocSec); err != nil {
+			return ret, err
+		} else {
+			ret.Relocs = relocs
 		}
 	}
 	if h.StaticDataSize != 0 {

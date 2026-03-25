@@ -25,8 +25,6 @@ type Assembler struct {
 	bytecode        []byte
 	instCount       int
 	symbols         SymbolTable
-	// exports         map[string]*SymbolData
-	// imports         map[string]*SymbolData
 }
 
 func (a *Assembler) InstructionCount() int {
@@ -485,6 +483,11 @@ func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 		pos:        uint64(len(*out)),
 		declaredAt: data.DeclaredAt,
 	}
+	if esym, ok := a.symbols.GetByName(data.Label); ok && (esym.Vis == SYM_VEXPORT || esym.Vis == SYM_VPRIVATE) {
+		(*esym).Loc = a.labels[data.Label].pos
+	} else if ok && (esym.Vis == SYM_VIMPORTWEAK || esym.Vis == SYM_VIMPORTSTRONG) {
+		return errors.ImportedSymbolDeclared(data.Label, a.parser.lexer.line, a.parser.lexer.col)
+	}
 	return nil
 }
 func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
@@ -495,6 +498,22 @@ func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 		}
 		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:],
 			uint64(label.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
+	}
+	return nil
+}
+func (a *Assembler) resolveSymbols() error {
+	for sname, idx := range a.symbols.ByName {
+		symbol := a.symbols.InOrder[idx]
+		switch symbol.Vis {
+		case SYM_VPRIVATE:
+			if symbol.Loc == 0 {
+				return errors.UnresolvedSymbol(sname)
+			}
+		case SYM_VEXPORT:
+			if symbol.Loc == 0 {
+				return errors.UnresolvedSymbol(sname)
+			}
+		}
 	}
 	return nil
 }

@@ -114,10 +114,10 @@ type InstJmpData struct {
 	Address any
 }
 type InstJmpIPData struct {
-	Reg int
+	Reg    int
 	Offset int64
-	JmpTy int
-	OpTy int
+	JmpTy  int
+	OpTy   int
 }
 type InstLabData struct {
 	Label      string
@@ -159,10 +159,11 @@ type InstImportExportData struct {
 	Weak bool
 }
 type Instruction struct {
-	Ty   int
-	Data any
+	Ty        int
+	Data      any
 	Line, Col uint64
 }
+
 func NewParser(reader bufio.Reader) Parser {
 	return Parser{
 		lexer: NewLexer(reader),
@@ -327,7 +328,15 @@ func (p *Parser) parseImport() error {
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
+	weak := false
 	op := p.lexer.CurrentToken()
+	if op.Ty == TOKEN_TWEAK {
+		weak = true
+		if err := p.lexer.ReadNextToken(); err != nil {
+			return err
+		}
+		op = p.lexer.CurrentToken()
+	}
 	if op.Ty != TOKEN_TSINGLEQ {
 		return errors.FailedToParse("import statement", "expected single quoted string parameter", op.Line, op.Col)
 	}
@@ -337,11 +346,12 @@ func (p *Parser) parseImport() error {
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TIMPORT,
-		Data: InstImportExportData {
+		Data: InstImportExportData{
 			Name: name,
+			Weak: weak,
 		},
 		Line: op.Line,
-		Col: op.Col,
+		Col:  op.Col,
 	}
 	return nil
 }
@@ -359,11 +369,11 @@ func (p *Parser) parseExport() error {
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TEXPORT,
-		Data: InstImportExportData {
+		Data: InstImportExportData{
 			Name: name,
 		},
 		Line: op.Line,
-		Col: op.Col,
+		Col:  op.Col,
 	}
 	return nil
 }
