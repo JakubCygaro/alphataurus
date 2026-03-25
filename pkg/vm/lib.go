@@ -10,7 +10,7 @@ import (
 type VmStack []uint64
 
 const (
-	ADDRESSDEADZONE_SIZE = 0x100000
+	ADDRESSDEADZONE_SIZE = 0x1000
 )
 
 type VmState struct {

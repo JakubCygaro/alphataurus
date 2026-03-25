@@ -66,7 +66,7 @@ func NewSymbolTable() SymbolTable {
 	return table
 }
 
-func (t SymbolTable) AddSymbol(name string, def SymbolData) (*SymbolData, bool) {
+func (t *SymbolTable) AddSymbol(name string, def SymbolData) (*SymbolData, bool) {
 	if _, ok := t.ByName[name]; ok {
 		return nil, false
 	}
@@ -75,7 +75,7 @@ func (t SymbolTable) AddSymbol(name string, def SymbolData) (*SymbolData, bool) 
 	return t.InOrder[len(t.InOrder)-1], true
 }
 
-func (t SymbolTable) GetByName(name string) (*SymbolData, int, bool) {
+func (t *SymbolTable) GetByName(name string) (*SymbolData, int, bool) {
 	if idx, ok := t.ByName[name]; ok {
 		return t.InOrder[idx], idx, ok
 	}
@@ -85,6 +85,7 @@ func (t SymbolTable) GetByName(name string) (*SymbolData, int, bool) {
 const (
 	RELOC_TINVALID = 0
 )
+
 // 8b(LOC) 8b(REF) 1b(PATCHSIZE)
 type RelocData struct {
 	// where that symbol is referenced in the code
@@ -216,6 +217,7 @@ func readSymbols(symbolSec []byte) (SymbolTable, error) {
 	return table, nil
 
 }
+
 // 8b(LOC) 8b(REF) 1b(PATCHSIZE)
 func readRelocs(relocSec []byte) (RelocationTable, error) {
 	relocs := make(RelocationTable, 0)
@@ -239,9 +241,9 @@ func readRelocs(relocSec []byte) (RelocationTable, error) {
 		} else {
 			patchSize = b
 		}
-		reloc := RelocData {
-			Loc: loc,
-			Ref: ref,
+		reloc := RelocData{
+			Loc:       loc,
+			Ref:       ref,
 			PatchSize: patchSize,
 		}
 		relocs = append(relocs, reloc)
@@ -250,7 +252,7 @@ func readRelocs(relocSec []byte) (RelocationTable, error) {
 }
 func writeSymbolDef(sname string, sym SymbolData) []byte {
 	// 1b(TY) 1b(VISIBILITY) 8b(LOC) 4b(NAMELEN) NAMELENb(NAME)
-	head := make([]byte, 1+1+8+4+len(sname))
+	head := make([]byte, 1+1+8+4)
 	head[0] = sym.Ty
 	head[1] = sym.Vis
 	binary.BigEndian.PutUint64(head[2:], sym.Loc)

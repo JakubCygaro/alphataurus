@@ -52,40 +52,75 @@ func (a *Assembler) Assemble() ([]byte, error) {
 // symbolsStart 8b
 // symbolsSize 8b
 // relocsStart 8b
-// relocsEnd 8b
+// relocsSize 8b
 // free space up to 128 bytes (for now)
 func (a *Assembler) writeObjFile() ([]byte, error) {
-	var syms []byte
+	var syms, rels []byte
 	if symbols, err := writeSymbols(&a.symbols); err != nil {
 		return nil, err
 	} else {
 		syms = symbols
 	}
+	if relocs, err := writeRelocs(a.relocations); err != nil {
+		return nil, err
+	} else {
+		rels = relocs
+	}
+	head := ObjFileHeader{ }
+	head.SymbolsStart = 0
+	head.SymbolsSize = uint64(len(syms))
+	head.RelocsStart = head.SymbolsStart+head.SymbolsSize
+	head.RelocsSize = uint64(len(rels))
+	// code is the last thing in the output
+	head.CodeStart = head.RelocsStart+head.RelocsSize
+	head.CodeSize = uint64(len(a.bytecode))
 
-	output := make([]byte, 0, OBJ_FILE_HEADER_SIZE)
+	output := make([]byte, 0, OBJ_FILE_HEADER_SIZE+head.CodeStart+head.CodeSize)
+
 	//mag
 	output = append(output, OBJ_FILE_MAG...)
+
 	//version
 	output = binary.BigEndian.AppendUint32(output, 0x00000001)
+
 	//code start
-	output = binary.BigEndian.AppendUint64(output, uint64(len(syms)))
+	output = binary.BigEndian.AppendUint64(output, head.CodeStart)
 	//code size
-	output = binary.BigEndian.AppendUint64(output, uint64(len(a.bytecode)))
+	output = binary.BigEndian.AppendUint64(output, head.CodeSize)
+
 	//static data
-	output = binary.BigEndian.AppendUint64(output, 0)
-	output = binary.BigEndian.AppendUint64(output, 0)
+	output = binary.BigEndian.AppendUint64(output, head.StaticDataStart)
+	output = binary.BigEndian.AppendUint64(output, head.SymbolsSize)
 
 	//syms start
-	output = binary.BigEndian.AppendUint64(output, 0)
+	output = binary.BigEndian.AppendUint64(output, head.SymbolsStart)
 	//syms size
-	output = binary.BigEndian.AppendUint64(output, uint64(len(syms)))
+	output = binary.BigEndian.AppendUint64(output, head.StaticDataSize)
+
+	//reloc start
+	output = binary.BigEndian.AppendUint64(output, head.RelocsStart)
+	//reloc size
+	output = binary.BigEndian.AppendUint64(output, head.RelocsSize)
 
 	//pad with zeros
-	output = output[:OBJ_FILE_HEADER_SIZE]
+	output = output[:cap(output)]
 
-	//dump symbols
-	output = append(output, syms...)
+	dataStartSlice := output[OBJ_FILE_HEADER_SIZE:]
+
 	//dump code
-	output = append(output, a.bytecode...)
+	codeSlice := dataStartSlice[head.CodeStart:head.CodeStart+head.CodeSize]
+	copy(codeSlice, a.bytecode)
+	//dump symbols
+	symSlice := dataStartSlice[head.SymbolsStart:head.SymbolsStart+head.SymbolsSize]
+	copy(symSlice, syms)
+	//dump relocs
+	relSlice := dataStartSlice[head.RelocsStart:head.RelocsStart+head.RelocsSize]
+	copy(relSlice, rels)
+	fmt.Println("code", codeSlice)
+	fmt.Println("syms", symSlice)
+	fmt.Println("rels", relSlice)
+	fmt.Println("header", output[:OBJ_FILE_HEADER_SIZE])
+	fmt.Println("data", output[OBJ_FILE_HEADER_SIZE:])
+	fmt.Println("output", output)
 	return output, nil
 }

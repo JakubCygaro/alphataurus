@@ -487,9 +487,17 @@ func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 		declaredAt: data.DeclaredAt,
 	}
 	if esym, _, ok := a.symbols.GetByName(data.Label); ok && (esym.Vis == SYM_VEXPORT || esym.Vis == SYM_VPRIVATE) {
-		(*esym).Loc = a.labels[data.Label].pos
+		// this needs to be the address of the function in the virtual address space
+		// since each instruction in that address space is exactly the size of 1 (even tho it takes up 12 bytes)
+		(*esym).Loc = uint64((a.labels[data.Label].pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
 	} else if ok && (esym.Vis == SYM_VIMPORTWEAK || esym.Vis == SYM_VIMPORTSTRONG) {
 		return errors.ImportedSymbolDeclared(data.Label, a.parser.lexer.line, a.parser.lexer.col)
+	} else if !ok {
+		a.symbols.AddSymbol(data.Label, SymbolData{
+			Ty: SYM_TFUNC,
+			Vis: SYM_VPRIVATE,
+			Loc: uint64((a.labels[data.Label].pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1),
+		})
 	}
 	return nil
 }
@@ -509,9 +517,9 @@ func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 
 		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:],
 			uint64(label.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
-		reloc := RelocData {
-			Loc: uint64(codePos)+vm.OPCODE_SIZE,
-			Ref: uint64(idx),
+		reloc := RelocData{
+			Loc:       uint64(codePos) + vm.OPCODE_SIZE,
+			Ref:       uint64(idx),
 			PatchSize: 8,
 		}
 		a.relocations = append(a.relocations, reloc)

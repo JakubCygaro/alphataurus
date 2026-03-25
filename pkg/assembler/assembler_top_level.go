@@ -1,6 +1,10 @@
 package assembler
 
-import "github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+import (
+	"fmt"
+
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+)
 
 func (a *Assembler) handleExport(data InstImportExportData) error {
 	if _, ok := a.symbols.ByName[data.Name]; ok {
@@ -11,7 +15,9 @@ func (a *Assembler) handleExport(data InstImportExportData) error {
 		Vis: SYM_VEXPORT,
 		Loc: 0,
 	}
-	a.symbols.AddSymbol(data.Name, sym)
+	if _, ok := a.symbols.AddSymbol(data.Name, sym); !ok {
+		return fmt.Errorf("Failed to declare export symbol")
+	}
 	return nil
 }
 func (a *Assembler) handleImport(data InstImportExportData) error {
