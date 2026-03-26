@@ -431,8 +431,8 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 	}
 	position := len(*out)
 	posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
-	*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
 	if addr, ok := data.Address.(uint64); ok {
+		*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
 	} else if lab, ok := data.Address.(string); ok {
 		if sym, idx, ok := a.symbols.GetByName(lab); ok {
@@ -440,8 +440,7 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 			diff := int64(symPos) - int64(posAsInstAddr)
 			switch {
 			case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
-				//erase the opcode and emit this as an IP relative jump
-				*out = (*out)[:len(*out)-vm.INSTRUCTION_SIZE]
+				//emit this as an IP relative jump
 				return a.emitJmpIP(INST_TJMPIP0R, InstJmpIPData{
 					Reg:    INVALID,
 					Offset: diff,
@@ -452,6 +451,7 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 				// binary.BigEndian.PutUint32((*out)[len(*out)-4:], uint32(opcode))
 				// *out = binary.BigEndian.AppendUint64(*out, diff)
 			default:
+				*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
 				*out = binary.BigEndian.AppendUint64(*out, 0)
 				a.relocations = append(a.relocations, RelocData{
 					Loc:       uint64(len(*out)) - 8,
@@ -495,7 +495,7 @@ func (a *Assembler) absoluteJmpToIPJmp(instTy int) (opcode vm.OpCodeVal) {
 }
 
 func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
-	opcode := a.absoluteJmpToIPJmp(ty)
+	opcode := a.absoluteJmpToIPJmp(data.JmpTy)
 	var reg byte
 	reg = byte(data.OpTy)
 	reg <<= 4
@@ -613,7 +613,7 @@ func (a *Assembler) emitCall(data InstCallData, out *[]byte) error {
 	if data.Addr != 0 {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(data.Addr))
 	} else {
-		if lab, ok := a.labels[data.Ident]; ok {
+		if lab, ok := a.abels[data.Ident]; ok {
 			*out = binary.BigEndian.AppendUint64(*out, uint64(lab.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
 		} else {
 			opPos := len(*out)
