@@ -437,18 +437,25 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 	} else if lab, ok := data.Address.(string); ok {
 		if sym, idx, ok := a.symbols.GetByName(lab); ok {
 			symPos := sym.Loc
-			diff := symPos - posAsInstAddr
+			diff := int64(symPos) - int64(posAsInstAddr)
 			switch {
 			case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
-				opcode = a.absoluteJmpToIPJmp(ty)
-				//change the opcode to an ip relative jump
-				binary.BigEndian.PutUint32((*out)[len(*out)-4:], uint32(opcode))
-				*out = binary.BigEndian.AppendUint64(*out, diff)
+				//erase the opcode and emit this as an IP relative jump
+				*out = (*out)[:len(*out)-vm.INSTRUCTION_SIZE]
+				return a.emitJmpIP(INST_TJMPIP0R, InstJmpIPData{
+					Reg:    INVALID,
+					Offset: diff,
+					JmpTy:  ty,
+					OpTy:   vm.OP_TADD,
+				}, out)
+				// opcode = a.absoluteJmpToIPJmp(ty)
+				// binary.BigEndian.PutUint32((*out)[len(*out)-4:], uint32(opcode))
+				// *out = binary.BigEndian.AppendUint64(*out, diff)
 			default:
 				*out = binary.BigEndian.AppendUint64(*out, 0)
 				a.relocations = append(a.relocations, RelocData{
-					Loc: uint64(len(*out))-8,
-					Ref: uint64(idx),
+					Loc:       uint64(len(*out)) - 8,
+					Ref:       uint64(idx),
 					PatchSize: 8,
 				})
 			}

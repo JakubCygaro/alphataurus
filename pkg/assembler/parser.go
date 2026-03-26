@@ -54,6 +54,8 @@ const (
 	INST_TJMPLE
 	INST_TJMPIP0R
 	INST_TJMPIP1R
+	INST_TCALLIP0R
+	INST_TCALLIP1R
 	INST_TLABEL
 	INST_TPUSHR
 	INST_TPUSHI
@@ -117,6 +119,11 @@ type InstJmpIPData struct {
 	Reg    int
 	Offset int64
 	JmpTy  int
+	OpTy   int
+}
+type InstCallIPData struct {
+	Reg    int
+	Offset int64
 	OpTy   int
 }
 type InstLabData struct {
