@@ -12,6 +12,13 @@ func (state *VmState) call(param []byte) error {
 	jumpTo := binary.BigEndian.Uint64(param)
 	return state.jmpImpl(jumpTo)
 }
+func (state *VmState) callIP(lastByte byte, param []byte) error {
+	nextInst := state.GetIp()
+	if err := state.pushImpl(nextInst); err != nil {
+		return err
+	}
+	return state.jmpIP(lastByte, param)
+}
 func (state *VmState) ret() error {
 	if returnAddr, err := state.popImpl(); err != nil {
 		return err

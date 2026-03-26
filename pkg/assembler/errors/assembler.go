@@ -14,12 +14,12 @@ func (e AssemblerError) Error() string {
 	return fmt.Sprintf("Assembling error (%v:%v): %s", e.Line, e.Col, e.construct())
 }
 
-func RedeclaredLabel(label, first, second string, line, col uint64) AssemblerError {
+func RedeclaredLabel(label, first string, line, col uint64) AssemblerError {
 	err := AssemblerError {
 		Line: line,
 		Col: col,
 		construct: func() string {
-			return fmt.Sprintf("label '%s' redeclared at (%s), first declared at (%s)", label, first, second)
+			return fmt.Sprintf("label '%s' redeclared at (%s)", label, first)
 		},
 	}
 	return err

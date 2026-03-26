@@ -82,6 +82,7 @@ var (
 		7: handle(OP_JMPGEIP),
 		8: handle(OP_JMPLIP),
 		9: handle(OP_JMPLEIP),
+		10:  handle(OP_CALLIP),
 	})
 	p00XX = nested(OpCodeMap{
 		0:  handle(OP_MOVRR),
@@ -210,6 +211,7 @@ const (
 	OP_CMP     // test registers
 	OP_CLR     // clear all flags (set them to false)
 	OP_CALL
+	OP_CALLIP
 	OP_RET
 	OP_NOP
 )

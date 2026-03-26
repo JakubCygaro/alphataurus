@@ -96,3 +96,33 @@ func (state *VmState) jmpNEIP(lastByte byte, param []byte) error {
 	}
 	return nil
 }
+func (state *VmState) jmpZIP(lastByte byte, param []byte) error {
+	return state.jmpEIP(lastByte, param)
+}
+func (state *VmState) jmpNZIP(lastByte byte, param []byte) error {
+	return state.jmpNEIP(lastByte, param)
+}
+func (state *VmState) jmpGIP(lastByte byte, param []byte) error {
+	if !state.flags.Zf && !state.flags.Sf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpGEIP(lastByte byte, param []byte) error {
+	if state.flags.Zf || !state.flags.Sf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpLIP(lastByte byte, param []byte) error {
+	if !state.flags.Zf && state.flags.Sf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpLEIP(lastByte byte, param []byte) error {
+	if state.flags.Zf || state.flags.Sf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}

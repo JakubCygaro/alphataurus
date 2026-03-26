@@ -292,6 +292,18 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 			err = vm.jmpEIP(opCodeBytes[0], param)
 		case OP_JMPNEIP:
 			err = vm.jmpNEIP(opCodeBytes[0], param)
+		case OP_JMPZIP:
+			err = vm.jmpZIP(opCodeBytes[0], param)
+		case OP_JMPNZIP:
+			err = vm.jmpNZIP(opCodeBytes[0], param)
+		case OP_JMPGIP:
+			err = vm.jmpGIP(opCodeBytes[0], param)
+		case OP_JMPGEIP:
+			err = vm.jmpGEIP(opCodeBytes[0], param)
+		case OP_JMPLIP:
+			err = vm.jmpLIP(opCodeBytes[0], param)
+		case OP_JMPLEIP:
+			err = vm.jmpLEIP(opCodeBytes[0], param)
 		case OP_PUSHI:
 			err = vm.push(int(opcode), param)
 		case OP_PUSHR:
@@ -305,6 +317,8 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 			err = vm.clr()
 		case OP_CALL:
 			err = vm.call(param)
+		case OP_CALLIP:
+			err = vm.callIP(opCodeBytes[0], param)
 		case OP_RET:
 			err = vm.ret()
 		default:

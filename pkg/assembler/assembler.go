@@ -20,12 +20,14 @@ type Assembler struct {
 	parser          Parser
 	opCodes         map[uint32]vm.OpCodeVal
 	unresolvedJumps unresolvedJumpMap
-	labels          labelMap
-	lastInst        Instruction
-	bytecode        []byte
-	instCount       int
-	symbols         SymbolTable
-	relocations     RelocationTable
+	//relating to the current instruction
+	line, col uint64
+	// labels          labelMap
+	lastInst    Instruction
+	bytecode    []byte
+	instCount   int
+	symbols     SymbolTable
+	relocations RelocationTable
 }
 
 func (a *Assembler) InstructionCount() int {
@@ -34,9 +36,9 @@ func (a *Assembler) InstructionCount() int {
 
 func NewAssembler(reader bufio.Reader) Assembler {
 	return Assembler{
-		parser:          NewParser(reader),
-		opCodes:         vm.GenerateOpcodeMap(),
-		labels:          make(labelMap),
+		parser:  NewParser(reader),
+		opCodes: vm.GenerateOpcodeMap(),
+		// labels:          make(labelMap),
 		unresolvedJumps: make(unresolvedJumpMap),
 		bytecode:        make([]byte, 0, 64),
 		symbols:         NewSymbolTable(),
@@ -51,6 +53,7 @@ func (a *Assembler) EmitBytecode() (int, error) {
 	ok, err = a.parser.ParseNext()
 	for ; ok && err == nil; ok, err = a.parser.ParseNext() {
 		inst := a.parser.CurrentInst()
+		a.col, a.line = inst.Col, inst.Line
 		switch inst.Ty {
 		case INST_TMOVIR:
 			err = a.emitMovIR(inst.Data.(InstMovData), &(a.bytecode))
@@ -426,15 +429,32 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 	case INST_TJMPLE:
 		opcode = a.opCodes[vm.OP_JMPLE]
 	}
-	opPos := len(*out)
+	position := len(*out)
+	posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
 	if addr, ok := data.Address.(uint64); ok {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
 	} else if lab, ok := data.Address.(string); ok {
-		if l, ok := a.labels[lab]; ok {
-			*out = binary.BigEndian.AppendUint64(*out, uint64(l.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
+		if sym, idx, ok := a.symbols.GetByName(lab); ok {
+			symPos := sym.Loc
+			diff := symPos - posAsInstAddr
+			switch {
+			case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
+				opcode = a.absoluteJmpToIPJmp(ty)
+				//change the opcode to an ip relative jump
+				binary.BigEndian.PutUint32((*out)[len(*out)-4:], uint32(opcode))
+				*out = binary.BigEndian.AppendUint64(*out, diff)
+			default:
+				*out = binary.BigEndian.AppendUint64(*out, 0)
+				a.relocations = append(a.relocations, RelocData{
+					Loc: uint64(len(*out))-8,
+					Ref: uint64(idx),
+					PatchSize: 8,
+				})
+			}
+
 		} else {
-			a.unresolvedJumps[opPos] = lab
+			a.unresolvedJumps[position] = lab
 			*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 		}
 	} else {
@@ -442,9 +462,9 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 	}
 	return nil
 }
-func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
-	var opcode vm.OpCodeVal
-	switch data.JmpTy {
+
+func (a *Assembler) absoluteJmpToIPJmp(instTy int) (opcode vm.OpCodeVal) {
+	switch instTy {
 	case INST_TJMP:
 		opcode = a.opCodes[vm.OP_JMPIP]
 	case INST_TJMPE:
@@ -464,6 +484,11 @@ func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
 	case INST_TJMPLE:
 		opcode = a.opCodes[vm.OP_JMPLEIP]
 	}
+	return opcode
+}
+
+func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
+	opcode := a.absoluteJmpToIPJmp(ty)
 	var reg byte
 	reg = byte(data.OpTy)
 	reg <<= 4
@@ -478,42 +503,54 @@ func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
 	return nil
 }
 func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
-	if lab, ok := a.labels[data.Label]; ok {
-		return errors.RedeclaredLabel(data.Label, data.DeclaredAt,
-			lab.declaredAt, a.parser.lexer.line, a.parser.lexer.col)
-	}
-	a.labels[data.Label] = labelData{
-		pos:        uint64(len(*out)),
-		declaredAt: data.DeclaredAt,
-	}
-	if esym, _, ok := a.symbols.GetByName(data.Label); ok && (esym.Vis == SYM_VEXPORT || esym.Vis == SYM_VPRIVATE) {
-		// this needs to be the address of the function in the virtual address space
-		// since each instruction in that address space is exactly the size of 1 (even tho it takes up 12 bytes)
-		(*esym).Loc = uint64((a.labels[data.Label].pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
-	} else if ok && (esym.Vis == SYM_VIMPORTWEAK || esym.Vis == SYM_VIMPORTSTRONG) {
-		return errors.ImportedSymbolDeclared(data.Label, a.parser.lexer.line, a.parser.lexer.col)
-	} else if !ok {
+	// this needs to be the address of the function in the virtual address space
+	// since each instruction in that address space is exactly the size of 1 (even tho it takes up 12 bytes)
+	position := uint64(len(*out))
+	posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE - 1)
+	if sym, _, ok := a.symbols.GetByName(data.Label); ok {
+		switch sym.Vis {
+		case SYM_VEXPORT:
+			if sym.Loc != 0 {
+				return errors.RedeclaredLabel(data.Label, data.DeclaredAt,
+					a.line, a.col)
+			} else {
+				(*sym).Loc = posAsInstAddr
+			}
+		case SYM_VPRIVATE:
+			return errors.RedeclaredLabel(data.Label, data.DeclaredAt,
+				a.line, a.col)
+		default:
+			return errors.ImportedSymbolDeclared(data.Label, a.line, a.col)
+		}
+	} else {
 		a.symbols.AddSymbol(data.Label, SymbolData{
-			Ty: SYM_TFUNC,
+			Ty:  SYM_TFUNC,
 			Vis: SYM_VPRIVATE,
-			Loc: uint64((a.labels[data.Label].pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1),
+			Loc: posAsInstAddr,
 		})
 	}
+	// a.labels[data.Label] = labelData{
+	// 	pos:        uint64(len(*out)),
+	// 	declaredAt: data.DeclaredAt,
+	// }
+	// if esym, _, ok := a.symbols.GetByName(data.Label); ok && (esym.Vis == SYM_VEXPORT || esym.Vis == SYM_VPRIVATE) {
+	// 	(*esym).Loc = uint64((a.labels[data.Label].pos / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE - 1)
+	// } else if ok && (esym.Vis == SYM_VIMPORTWEAK || esym.Vis == SYM_VIMPORTSTRONG) {
+	// 	return errors.ImportedSymbolDeclared(data.Label, a.parser.lexer.line, a.parser.lexer.col)
+	// } else if !ok {
+	// }
 	return nil
 }
 func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 	for codePos, destLabel := range a.unresolvedJumps {
-		label, hasLabel := a.labels[destLabel]
-		sym, symIdx, isSym := a.symbols.GetByName(destLabel)
-		if !hasLabel && !isSym {
+		sym, symIdx, ok := a.symbols.GetByName(destLabel)
+		if !ok {
 			return errors.UnresolvedLabel(destLabel)
 		}
 		if sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT {
 			binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:],
-				uint64(label.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
-			// return errors.UnresolvedSymbol(destLabel)
+				sym.Loc)
 		}
-
 		reloc := RelocData{
 			Loc:       uint64(codePos) + vm.OPCODE_SIZE,
 			Ref:       uint64(symIdx),
