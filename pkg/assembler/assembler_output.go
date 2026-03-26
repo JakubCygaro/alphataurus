@@ -56,17 +56,18 @@ func (a *Assembler) Assemble() ([]byte, error) {
 // free space up to 128 bytes (for now)
 func (a *Assembler) writeObjFile() ([]byte, error) {
 	var syms, rels []byte
-	if symbols, err := writeSymbols(&a.symbols); err != nil {
+	if symbols, err := WriteSymbols(&a.symbols); err != nil {
 		return nil, err
 	} else {
 		syms = symbols
 	}
-	if relocs, err := writeRelocs(a.relocations); err != nil {
+	if relocs, err := WriteRelocs(a.relocations); err != nil {
 		return nil, err
 	} else {
 		rels = relocs
 	}
 	head := ObjFileHeader{ }
+	head.StaticDataSize = 0
 	head.SymbolsStart = 0
 	head.SymbolsSize = uint64(len(syms))
 	head.RelocsStart = head.SymbolsStart+head.SymbolsSize
@@ -90,7 +91,7 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 
 	//static data
 	output = binary.BigEndian.AppendUint64(output, head.StaticDataStart)
-	output = binary.BigEndian.AppendUint64(output, head.SymbolsSize)
+	output = binary.BigEndian.AppendUint64(output, head.StaticDataSize)
 
 	//syms start
 	output = binary.BigEndian.AppendUint64(output, head.SymbolsStart)
@@ -101,7 +102,6 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	output = binary.BigEndian.AppendUint64(output, head.RelocsStart)
 	//reloc size
 	output = binary.BigEndian.AppendUint64(output, head.RelocsSize)
-
 	//pad with zeros
 	output = output[:cap(output)]
 
@@ -116,11 +116,11 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	//dump relocs
 	relSlice := dataStartSlice[head.RelocsStart:head.RelocsStart+head.RelocsSize]
 	copy(relSlice, rels)
-	fmt.Println("code", codeSlice)
-	fmt.Println("syms", symSlice)
-	fmt.Println("rels", relSlice)
-	fmt.Println("header", output[:OBJ_FILE_HEADER_SIZE])
-	fmt.Println("data", output[OBJ_FILE_HEADER_SIZE:])
-	fmt.Println("output", output)
+	// fmt.Println("code", codeSlice)
+	// fmt.Println("syms", symSlice)
+	// fmt.Println("rels", relSlice)
+	// fmt.Println("header", output[:OBJ_FILE_HEADER_SIZE])
+	// fmt.Println("data", output[OBJ_FILE_HEADER_SIZE:])
+	// fmt.Println("output", output)
 	return output, nil
 }

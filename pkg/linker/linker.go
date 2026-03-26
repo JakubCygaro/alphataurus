@@ -10,13 +10,18 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
+type objFileData struct {
+	Loaded asm.ObjFile
+	Raw    []byte
+}
+
 type Linker struct {
-	objectFiles []asm.ObjFile
+	objectFiles []objFileData
 }
 
 func NewLinker() Linker {
 	return Linker{
-		objectFiles: make([]asm.ObjFile, 0),
+		objectFiles: make([]objFileData, 0),
 	}
 }
 
@@ -35,7 +40,7 @@ func (l *Linker) collectFiles(sources []string) error {
 		if err != nil {
 			return err
 		}
-		l.objectFiles = append(l.objectFiles, obj)
+		l.objectFiles = append(l.objectFiles, objFileData{Loaded: obj, Raw: file})
 	}
 	return nil
 }
@@ -53,20 +58,27 @@ func (l *Linker) collectBytes(sources []Bytes) error {
 		if err != nil {
 			return err
 		}
-		l.objectFiles = append(l.objectFiles, obj)
+		l.objectFiles = append(l.objectFiles, objFileData{Loaded: obj, Raw: file})
 	}
 	return nil
 }
 func (l *Linker) link() (vm.AlphaELFFile, error) {
 	ret := vm.AlphaELFFile{}
-	ret.Version = l.objectFiles[0].Header.Version
-	ret.CodeStart = l.objectFiles[0].Header.CodeStart
-	ret.CodeSize = l.objectFiles[0].Header.CodeSize
-	ret.Data = l.objectFiles[0].Code
+	ret.Version = l.objectFiles[0].Loaded.Header.Version
+	ret.CodeStart = l.objectFiles[0].Loaded.Header.CodeStart
+	ret.CodeSize = l.objectFiles[0].Loaded.Header.CodeSize
+	ret.StaticDataStart = l.objectFiles[0].Loaded.Header.StaticDataStart
+	ret.StaticDataSize = l.objectFiles[0].Loaded.Header.StaticDataSize
+	ret.SymbolsStart = l.objectFiles[0].Loaded.Header.SymbolsStart
+	ret.SymbolsSize = l.objectFiles[0].Loaded.Header.SymbolsSize
+	ret.RelocsStart = l.objectFiles[0].Loaded.Header.RelocsStart
+	ret.RelocsSize = l.objectFiles[0].Loaded.Header.RelocsSize
+	ret.Data = l.objectFiles[0].Raw
 	return ret, nil
 }
 
 type Bytes []byte
+
 func (l *Linker) LinkBytes(sources []Bytes) (vm.AlphaELFFile, error) {
 	ret := vm.AlphaELFFile{}
 	if len(sources) > 1 {

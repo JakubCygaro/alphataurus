@@ -12,6 +12,7 @@ import (
 )
 
 const assembly = `
+import 'atoi'
 export '_start'
 section '.code'
 	jmp _start
@@ -22,6 +23,7 @@ _start:
 	cmp r0, 69
 	mov r2, -6
 	je [ip+r2]
+	call atoi
 `
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
@@ -56,7 +58,7 @@ func main() {
 	if rx, err := mach.GetGpRXAsUint64(vm.R1_IDX); err == nil {
 		fmt.Printf("r1 = %+v\n", rx)
 	}
-	if rx, err := mach.GetGpRXAsUint64(vm.R2_IDX); err == nil {
+	if rx, err := mach.GetGpRXAsInt64(vm.R2_IDX); err == nil {
 		fmt.Printf("r2 = %+v\n", rx)
 	}
 	fmt.Printf("%+v\n", mach.GetRegisters())

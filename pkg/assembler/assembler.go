@@ -503,23 +503,20 @@ func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 }
 func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
 	for codePos, destLabel := range a.unresolvedJumps {
-		label, ok := a.labels[destLabel]
-		if !ok {
+		label, hasLabel := a.labels[destLabel]
+		sym, symIdx, isSym := a.symbols.GetByName(destLabel)
+		if !hasLabel && !isSym {
 			return errors.UnresolvedLabel(destLabel)
 		}
-		sym, idx, ok := a.symbols.GetByName(destLabel)
-		if !ok {
-			return errors.UnresolvedSymbol(destLabel)
-		}
-		if sym.Vis != SYM_VPRIVATE && sym.Vis != SYM_VEXPORT {
-			return errors.UnresolvedSymbol(destLabel)
+		if sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT {
+			binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:],
+				uint64(label.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
+			// return errors.UnresolvedSymbol(destLabel)
 		}
 
-		binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:],
-			uint64(label.pos/vm.INSTRUCTION_SIZE)+vm.ADDRESSDEADZONE_SIZE-1)
 		reloc := RelocData{
 			Loc:       uint64(codePos) + vm.OPCODE_SIZE,
-			Ref:       uint64(idx),
+			Ref:       uint64(symIdx),
 			PatchSize: 8,
 		}
 		a.relocations = append(a.relocations, reloc)

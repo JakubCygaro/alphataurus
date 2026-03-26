@@ -126,40 +126,52 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 		return ret, fmt.Errorf("Not an object file")
 	}
 	buf := make([]byte, 8)
+
 	if _, err := io.ReadFull(reader, buf[:4]); err != nil {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.Version = binary.BigEndian.Uint32(buf)
+
 	if _, err := io.ReadFull(reader, buf); err != nil {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.CodeStart = binary.BigEndian.Uint64(buf)
+
 	if _, err := io.ReadFull(reader, buf); err != nil {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.CodeSize = binary.BigEndian.Uint64(buf)
+
 	if _, err := io.ReadFull(reader, buf); err != nil {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.StaticDataStart = binary.BigEndian.Uint64(buf)
+
 	if _, err := io.ReadFull(reader, buf); err != nil {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.StaticDataSize = binary.BigEndian.Uint64(buf)
+
 	if _, err := io.ReadFull(reader, buf); err != nil {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.SymbolsStart = binary.BigEndian.Uint64(buf)
+
 	if _, err := io.ReadFull(reader, buf); err != nil {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.SymbolsSize = binary.BigEndian.Uint64(buf)
 
+	if _, err := io.ReadFull(reader, buf); err != nil {
+		return ret, fmt.Errorf("Object file too short")
+	}
 	ret.RelocsStart = binary.BigEndian.Uint64(buf)
+
 	if _, err := io.ReadFull(reader, buf); err != nil {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.RelocsSize = binary.BigEndian.Uint64(buf)
+
 	return ret, nil
 }
 func readSymbols(symbolSec []byte) (SymbolTable, error) {
@@ -213,7 +225,6 @@ func readSymbols(symbolSec []byte) (SymbolTable, error) {
 		}
 		table.AddSymbol(name, sym)
 	}
-
 	return table, nil
 
 }
@@ -260,7 +271,7 @@ func writeSymbolDef(sname string, sym SymbolData) []byte {
 	head = append(head, []byte(sname)...)
 	return head
 }
-func writeSymbols(st *SymbolTable) ([]byte, error) {
+func WriteSymbols(st *SymbolTable) ([]byte, error) {
 	syms := make([]byte, 0, 64)
 
 	for sname, idx := range (*st).ByName {
@@ -310,7 +321,7 @@ func writeRelocDef(rel RelocData) []byte {
 	head[len(head)-1] = rel.PatchSize
 	return head
 }
-func writeRelocs(rel RelocationTable) ([]byte, error) {
+func WriteRelocs(rel RelocationTable) ([]byte, error) {
 	relocs := make([]byte, 0, 64)
 
 	for _, reloc := range rel {

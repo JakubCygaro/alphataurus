@@ -9,5 +9,7 @@ type AlphaELFFile struct {
 	Version                         uint32
 	CodeStart, CodeSize             uint64
 	StaticDataStart, StaticDataSize uint64
+	SymbolsStart, SymbolsSize       uint64
+	RelocsStart, RelocsSize         uint64
 	Data                            []byte
 }

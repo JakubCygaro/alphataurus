@@ -3,8 +3,8 @@ package vm
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
+	"math"
 )
 
 type VmStack []uint64
@@ -14,15 +14,15 @@ const (
 )
 
 type VmState struct {
-	regs  Registers
-	flags Flags
-	stack VmStack
+	regs     Registers
+	flags    Flags
+	stack    VmStack
 	codeSize uint64
 	bytecode []byte
 	// this is the virtual address of the stack, it is supposed to start right after the code section
-	stackSegBase     int
+	stackSegBase  int
 	byteCodePos   uint64
-	exeSegBase   uint64
+	exeSegBase    uint64
 	currentOpcode uint32
 }
 
@@ -60,10 +60,10 @@ func (state *VmState) GetBp() uint64 {
 func (state *VmState) GetSp() uint64 {
 	return state.regs.r[SP_IDX]
 }
-func (state *VmState) VirtToRealIp(virtual uint64) uint64{
+func (state *VmState) VirtToRealIp(virtual uint64) uint64 {
 	return virtual - state.exeSegBase
 }
-func (state *VmState) RealToVirtIp(r uint64) uint64{
+func (state *VmState) RealToVirtIp(r uint64) uint64 {
 	return r + state.exeSegBase
 }
 
@@ -173,15 +173,15 @@ func (vm *VmState) ClearState() {
 }
 
 func (vm *VmState) load(elf AlphaELFFile) error {
-	bytecode := elf.Data[elf.CodeStart:elf.CodeStart+elf.CodeSize]
-	if len(bytecode) % INSTRUCTION_SIZE != 0 {
+	bytecode := elf.Data[AELF_FILE_HEADER_SIZE+elf.CodeStart : AELF_FILE_HEADER_SIZE+elf.CodeStart+elf.CodeSize]
+	if len(bytecode)%INSTRUCTION_SIZE != 0 {
 		return errors.BadCodeSectionSize()
 	}
 	codeSize := len(bytecode) / INSTRUCTION_SIZE
 	// the code section starts after the deadzone (for now)
 	vm.exeSegBase = ADDRESSDEADZONE_SIZE
 	// the stack starts after the code section
-	vm.stackSegBase =  int(vm.exeSegBase) + codeSize
+	vm.stackSegBase = int(vm.exeSegBase) + codeSize
 	// the base pointer points right before the beggining of the stack section
 	vm.regs.r[BP_IDX] = uint64(vm.stackSegBase) - 1
 	// the stack pointer points to the base pointer
@@ -303,8 +303,10 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 		case OP_NOP:
 		case OP_CLR:
 			err = vm.clr()
-		case OP_CALL: err = vm.call(param)
-		case OP_RET: err = vm.ret()
+		case OP_CALL:
+			err = vm.call(param)
+		case OP_RET:
+			err = vm.ret()
 		default:
 			return fmt.Errorf("Unhandled opcode %d, TODO", opcode)
 		}
