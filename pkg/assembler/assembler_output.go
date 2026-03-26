@@ -45,6 +45,7 @@ func (a *Assembler) Assemble() ([]byte, error) {
 // Obj file header
 // AELF 4b
 // version 4b
+// header_size 2b (excluding version, magic and itself)
 // codeSecStart 8b
 // codeSecLen 8b
 // staticDataStart 8b
@@ -53,7 +54,6 @@ func (a *Assembler) Assemble() ([]byte, error) {
 // symbolsSize 8b
 // relocsStart 8b
 // relocsSize 8b
-// free space up to 128 bytes (for now)
 func (a *Assembler) writeObjFile() ([]byte, error) {
 	var syms, rels []byte
 	if symbols, err := WriteSymbols(&a.symbols); err != nil {
@@ -66,23 +66,28 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	} else {
 		rels = relocs
 	}
-	head := ObjFileHeader{ }
+	head := ObjFileHeader{}
 	head.StaticDataSize = 0
 	head.SymbolsStart = 0
 	head.SymbolsSize = uint64(len(syms))
-	head.RelocsStart = head.SymbolsStart+head.SymbolsSize
+	head.RelocsStart = head.SymbolsStart + head.SymbolsSize
 	head.RelocsSize = uint64(len(rels))
 	// code is the last thing in the output
-	head.CodeStart = head.RelocsStart+head.RelocsSize
+	head.CodeStart = head.RelocsStart + head.RelocsSize
 	head.CodeSize = uint64(len(a.bytecode))
 
-	output := make([]byte, 0, OBJ_FILE_HEADER_SIZE+head.CodeStart+head.CodeSize)
+	const headerSize = 8 * 8
+
+	output := make([]byte, 0, headerSize+head.CodeStart+head.CodeSize)
 
 	//mag
 	output = append(output, OBJ_FILE_MAG...)
 
 	//version
 	output = binary.BigEndian.AppendUint32(output, 0x00000001)
+
+	//header size
+	output = binary.BigEndian.AppendUint16(output, headerSize)
 
 	//code start
 	output = binary.BigEndian.AppendUint64(output, head.CodeStart)
@@ -105,22 +110,16 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	//pad with zeros
 	output = output[:cap(output)]
 
-	dataStartSlice := output[OBJ_FILE_HEADER_SIZE:]
+	dataStartSlice := output[headerSize:]
 
 	//dump code
-	codeSlice := dataStartSlice[head.CodeStart:head.CodeStart+head.CodeSize]
+	codeSlice := dataStartSlice[head.CodeStart : head.CodeStart+head.CodeSize]
 	copy(codeSlice, a.bytecode)
 	//dump symbols
-	symSlice := dataStartSlice[head.SymbolsStart:head.SymbolsStart+head.SymbolsSize]
+	symSlice := dataStartSlice[head.SymbolsStart : head.SymbolsStart+head.SymbolsSize]
 	copy(symSlice, syms)
 	//dump relocs
-	relSlice := dataStartSlice[head.RelocsStart:head.RelocsStart+head.RelocsSize]
+	relSlice := dataStartSlice[head.RelocsStart : head.RelocsStart+head.RelocsSize]
 	copy(relSlice, rels)
-	// fmt.Println("code", codeSlice)
-	// fmt.Println("syms", symSlice)
-	// fmt.Println("rels", relSlice)
-	// fmt.Println("header", output[:OBJ_FILE_HEADER_SIZE])
-	// fmt.Println("data", output[OBJ_FILE_HEADER_SIZE:])
-	// fmt.Println("output", output)
 	return output, nil
 }

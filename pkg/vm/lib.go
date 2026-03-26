@@ -173,7 +173,7 @@ func (vm *VmState) ClearState() {
 }
 
 func (vm *VmState) load(elf AlphaELFFile) error {
-	bytecode := elf.Data[AELF_FILE_HEADER_SIZE+elf.CodeStart : AELF_FILE_HEADER_SIZE+elf.CodeStart+elf.CodeSize]
+	bytecode := elf.Data[uint64(elf.HeaderSize)+elf.CodeStart : uint64(elf.HeaderSize)+elf.CodeStart+elf.CodeSize]
 	if len(bytecode)%INSTRUCTION_SIZE != 0 {
 		return errors.BadCodeSectionSize()
 	}

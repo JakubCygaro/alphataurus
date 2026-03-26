@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	OBJ_FILE_MAG         = "AOBJ"
-	OBJ_FILE_HEADER_SIZE = 128
+	OBJ_FILE_MAG = "AOBJ"
 )
 
 type ObjFileHeader struct {
 	Version                         uint32
+	HeaderSize                      uint16
 	CodeStart, CodeSize             uint64
 	StaticDataStart, StaticDataSize uint64
 	SymbolsStart, SymbolsSize       uint64
@@ -108,6 +108,7 @@ type ObjFile struct {
 // Obj file header
 // AOBJ 4b
 // version 4b
+// HeaderSize 2b
 // codeSecStart 8b
 // codeSecLen 8b
 // staticDataStart 8b
@@ -131,6 +132,11 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 		return ret, fmt.Errorf("Object file too short")
 	}
 	ret.Version = binary.BigEndian.Uint32(buf)
+
+	if _, err := io.ReadFull(reader, buf[:2]); err != nil {
+		return ret, fmt.Errorf("Object file too short")
+	}
+	ret.HeaderSize = binary.BigEndian.Uint16(buf)
 
 	if _, err := io.ReadFull(reader, buf); err != nil {
 		return ret, fmt.Errorf("Object file too short")
@@ -291,10 +297,10 @@ func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 	if (int(h.CodeStart)+int(h.CodeSize)-int(h.CodeStart))%vm.INSTRUCTION_SIZE != 0 {
 		return ret, fmt.Errorf("Bad code section size")
 	}
-	ret.Code = binary[uint64(OBJ_FILE_HEADER_SIZE)+h.CodeStart : uint64(OBJ_FILE_HEADER_SIZE)+h.CodeStart+h.CodeSize]
+	ret.Code = binary[uint64(h.HeaderSize)+h.CodeStart : uint64(h.HeaderSize)+h.CodeStart+h.CodeSize]
 
 	if h.SymbolsSize != 0 {
-		symSec := binary[uint64(OBJ_FILE_HEADER_SIZE)+h.SymbolsStart : uint64(OBJ_FILE_HEADER_SIZE)+h.SymbolsStart+h.SymbolsSize]
+		symSec := binary[uint64(h.HeaderSize)+h.SymbolsStart : uint64(h.HeaderSize)+h.SymbolsStart+h.SymbolsSize]
 		if syms, err := readSymbols(symSec); err != nil {
 			return ret, err
 		} else {
@@ -302,7 +308,7 @@ func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 		}
 	}
 	if h.RelocsSize != 0 {
-		relocSec := binary[uint64(OBJ_FILE_HEADER_SIZE)+h.RelocsStart : uint64(OBJ_FILE_HEADER_SIZE)+h.RelocsStart+h.RelocsSize]
+		relocSec := binary[uint64(h.HeaderSize)+h.RelocsStart : uint64(h.HeaderSize)+h.RelocsStart+h.RelocsSize]
 		if relocs, err := readRelocs(relocSec); err != nil {
 			return ret, err
 		} else {
