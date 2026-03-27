@@ -444,6 +444,9 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 			diff := int64(symPos) - int64(posAsInstAddr)
 			switch {
 			case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
+				if symPos == 0 {
+					a.unresolvedJumps[position] = lab
+				}
 				//emit this as an IP relative jump
 				return a.emitJmpIP(INST_TJMPIP0R, InstJmpIPData{
 					Reg:    INVALID,
