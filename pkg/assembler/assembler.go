@@ -636,7 +636,7 @@ func (a *Assembler) emitCall(data InstCallData, out *[]byte) error {
 		//label call case
 		position := len(*out)
 		posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
-		if sym, idx, ok := a.symbols.GetByName(lab); ok {
+		if sym, idx, ok := a.symbols.GetByName(data.Ident); ok {
 			symPos := sym.Loc
 			diff := int64(symPos) - int64(posAsInstAddr)
 			switch {
@@ -651,7 +651,7 @@ func (a *Assembler) emitCall(data InstCallData, out *[]byte) error {
 				// binary.BigEndian.PutUint32((*out)[len(*out)-4:], uint32(opcode))
 				// *out = binary.BigEndian.AppendUint64(*out, diff)
 			default:
-				*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
+				*out = binary.BigEndian.AppendUint32(*out, uint32(call))
 				*out = binary.BigEndian.AppendUint64(*out, 0)
 				a.relocations = append(a.relocations, RelocData{
 					Loc:       uint64(len(*out)) - 8,
@@ -659,9 +659,11 @@ func (a *Assembler) emitCall(data InstCallData, out *[]byte) error {
 					PatchSize: 8,
 				})
 			}
+		}
 	}
 	return nil
 }
+
 func (a *Assembler) emitRet(out *[]byte) error {
 	ret := a.opCodes[vm.OP_RET]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(ret))
