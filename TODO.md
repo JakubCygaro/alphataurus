@@ -1,5 +1,6 @@
 - TryEvalConstExprWithLabels -> takes a map of label-value pairs that it uses while trying to evaluate expressions
 - fix the bullshit that is col and line
+- tagged headers: syms  8b(START) 8b(SIZE), reloc 8(START) 8(SIZE)
 - move labes into symbols, so there is only one place where the assembler stores symbols and looks for them
 - @entry and AELF file support
 - lea
