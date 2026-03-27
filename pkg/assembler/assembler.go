@@ -154,6 +154,10 @@ func (a *Assembler) EmitBytecode() (int, error) {
 			err = a.emitNop(&(a.bytecode))
 		case INST_TCALL:
 			err = a.emitCall(inst.Data.(InstCallData), &(a.bytecode))
+		case INST_TCALLIP0R:
+			err = a.emitCallIP(int(inst.Ty), inst.Data.(InstCallIPData), &(a.bytecode))
+		case INST_TCALLIP1R:
+			err = a.emitCallIP(int(inst.Ty), inst.Data.(InstCallIPData), &(a.bytecode))
 		case INST_TRET:
 			err = a.emitRet(&(a.bytecode))
 		default:
@@ -605,6 +609,21 @@ func (a *Assembler) emitNop(out *[]byte) error {
 	nop := a.opCodes[vm.OP_NOP]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(nop))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
+	return nil
+}
+func (a *Assembler) emitCallIP(ty int, data InstCallIPData, out *[]byte) error {
+	call := a.opCodes[vm.OP_CALLIP]
+	var reg byte
+	reg = byte(data.OpTy)
+	reg <<= 4
+	if ty == INST_TCALLIP0R {
+		reg |= 0x0f
+	} else {
+		reg |= byte(data.Reg & 0x0f)
+	}
+	*out = binary.BigEndian.AppendUint32(*out, uint32(call))
+	(*out)[len(*out)-4] = reg
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
 func (a *Assembler) emitCall(data InstCallData, out *[]byte) error {
