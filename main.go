@@ -23,7 +23,6 @@ _start:
 	cmp r0, 69
 	mov r2, -6
 	je [ip+r2]
-	call atoi
 `
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))

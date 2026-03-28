@@ -33,7 +33,7 @@ func (a *Assembler) Assemble() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := a.resolveJumpInsturctions(&(a.bytecode)); err != nil {
+	if err := a.resolveJumpInsturctions(); err != nil {
 		return nil, err
 	}
 	if err := a.resolveSymbols(); err != nil {

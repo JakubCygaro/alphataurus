@@ -3,7 +3,7 @@ package assembler
 import (
 	"bufio"
 	"encoding/binary"
-	"fmt"
+	// "fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
@@ -13,8 +13,12 @@ type labelData struct {
 	pos        uint64
 	declaredAt string
 }
-type labelMap map[string]labelData
-type unresolvedJumpMap map[int]string
+type unresolvedJump struct {
+	Ident string
+	// what instruction is gonna get patched
+	InstTy int
+}
+type unresolvedJumpMap map[int]unresolvedJump
 
 type Assembler struct {
 	parser          Parser
@@ -411,7 +415,7 @@ func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
+func (a *Assembler) jmpInstToOpCode(ty int) vm.OpCodeVal {
 	var opcode vm.OpCodeVal
 	switch ty {
 	case INST_TJMP:
@@ -433,46 +437,18 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 	case INST_TJMPLE:
 		opcode = a.opCodes[vm.OP_JMPLE]
 	}
+	return opcode
+}
+func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
+	opcode := a.jmpInstToOpCode(ty)
 	position := len(*out)
-	posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
 	if addr, ok := data.Address.(uint64); ok {
 		*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
-	} else if lab, ok := data.Address.(string); ok {
-		if sym, idx, ok := a.symbols.GetByName(lab); ok {
-			symPos := sym.Loc
-			diff := int64(symPos) - int64(posAsInstAddr)
-			switch {
-			case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
-				if symPos == 0 {
-					a.unresolvedJumps[position] = lab
-				}
-				//emit this as an IP relative jump
-				return a.emitJmpIP(INST_TJMPIP0R, InstJmpIPData{
-					Reg:    INVALID,
-					Offset: diff,
-					JmpTy:  ty,
-					OpTy:   vm.OP_TADD,
-				}, out)
-				// opcode = a.absoluteJmpToIPJmp(ty)
-				// binary.BigEndian.PutUint32((*out)[len(*out)-4:], uint32(opcode))
-				// *out = binary.BigEndian.AppendUint64(*out, diff)
-			default:
-				*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
-				*out = binary.BigEndian.AppendUint64(*out, 0)
-				a.relocations = append(a.relocations, RelocData{
-					Loc:       uint64(len(*out)) - 8,
-					Ref:       uint64(idx),
-					PatchSize: 8,
-				})
-			}
-
-		} else {
-			a.unresolvedJumps[position] = lab
-			*out = binary.BigEndian.AppendUint64(*out, uint64(0))
-		}
 	} else {
-		return fmt.Errorf("Jump instruction bad internal assembler data")
+		a.unresolvedJumps[position] = unresolvedJump{Ident: data.Address.(string), InstTy: ty}
+		*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes[vm.OP_NOP]))
+		*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	}
 	return nil
 }
@@ -543,34 +519,82 @@ func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 			Loc: posAsInstAddr,
 		})
 	}
-	// a.labels[data.Label] = labelData{
-	// 	pos:        uint64(len(*out)),
-	// 	declaredAt: data.DeclaredAt,
-	// }
-	// if esym, _, ok := a.symbols.GetByName(data.Label); ok && (esym.Vis == SYM_VEXPORT || esym.Vis == SYM_VPRIVATE) {
-	// 	(*esym).Loc = uint64((a.labels[data.Label].pos / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE - 1)
-	// } else if ok && (esym.Vis == SYM_VIMPORTWEAK || esym.Vis == SYM_VIMPORTSTRONG) {
-	// 	return errors.ImportedSymbolDeclared(data.Label, a.parser.lexer.line, a.parser.lexer.col)
-	// } else if !ok {
-	// }
 	return nil
 }
-func (a *Assembler) resolveJumpInsturctions(out *[]byte) error {
-	for codePos, destLabel := range a.unresolvedJumps {
-		sym, symIdx, ok := a.symbols.GetByName(destLabel)
+func (a *Assembler) patchCall(pos int, address uint64) error {
+	opcode := a.opCodes[vm.OP_CALL]
+	binary.BigEndian.PutUint32(a.bytecode[pos:], uint32(opcode))
+	binary.BigEndian.PutUint64(a.bytecode[pos+vm.OPCODE_SIZE:], uint64(address))
+	return nil
+}
+func (a *Assembler) patchJmp(data unresolvedJump, pos int, address uint64) error {
+	opcode := a.jmpInstToOpCode(data.InstTy)
+	binary.BigEndian.PutUint32(a.bytecode[pos:], uint32(opcode))
+	binary.BigEndian.PutUint64(a.bytecode[pos+vm.OPCODE_SIZE:], address)
+	return nil
+}
+func (a *Assembler) patchCallIP(data unresolvedJump, sym *SymbolData, pos int) error {
+	opcode := a.opCodes[vm.OP_CALLIP]
+	var reg byte
+	reg = vm.OP_TADD
+	reg <<= 4
+	reg |= 0x0f
+	posAsInstAddr := uint64((pos / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
+	diff := int64(sym.Loc) - int64(posAsInstAddr)
+
+	binary.BigEndian.PutUint32(a.bytecode[pos:], uint32(opcode))
+	a.bytecode[pos] = reg
+	binary.BigEndian.PutUint64(a.bytecode[pos+vm.OPCODE_SIZE:], uint64(diff))
+	return nil
+}
+func (a *Assembler) patchJmpIP(data unresolvedJump, sym *SymbolData, pos int) error {
+	opcode := a.absoluteJmpToIPJmp(data.InstTy)
+	var reg byte
+	reg = vm.OP_TADD
+	reg <<= 4
+	reg |= 0x0f
+	posAsInstAddr := uint64((pos / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
+	diff := int64(sym.Loc) - int64(posAsInstAddr)
+
+	binary.BigEndian.PutUint32(a.bytecode[pos:], uint32(opcode))
+	a.bytecode[pos] = reg
+	binary.BigEndian.PutUint64(a.bytecode[pos+vm.OPCODE_SIZE:], uint64(diff))
+	return nil
+}
+func (a *Assembler) resolveJumpInsturctions() error {
+	for codePos, unresolved := range a.unresolvedJumps {
+		sym, symIdx, ok := a.symbols.GetByName(unresolved.Ident)
 		if !ok {
-			return errors.UnresolvedLabel(destLabel)
+			return errors.UnresolvedSymbol(unresolved.Ident)
 		}
-		if sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT {
-			binary.BigEndian.PutUint64((*out)[codePos+vm.OPCODE_SIZE:],
-				sym.Loc)
+		switch {
+		case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
+			var err error
+			if unresolved.InstTy == INST_TCALL {
+				err = a.patchCallIP(unresolved, sym, codePos)
+			} else {
+				err = a.patchJmpIP(unresolved, sym, codePos)
+			}
+			if err != nil {
+				return err
+			}
+		default:
+			var err error
+			if unresolved.InstTy == INST_TCALL {
+				err = a.patchCall(codePos, 0)
+			} else {
+				err = a.patchJmp(unresolved, codePos, 0)
+			}
+			if err != nil {
+				return err
+			}
+			reloc := RelocData{
+				Loc:       uint64(codePos) + vm.OPCODE_SIZE,
+				Ref:       uint64(symIdx),
+				PatchSize: 8,
+			}
+			a.relocations = append(a.relocations, reloc)
 		}
-		reloc := RelocData{
-			Loc:       uint64(codePos) + vm.OPCODE_SIZE,
-			Ref:       uint64(symIdx),
-			PatchSize: 8,
-		}
-		a.relocations = append(a.relocations, reloc)
 	}
 	return nil
 }
@@ -637,32 +661,38 @@ func (a *Assembler) emitCall(data InstCallData, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(data.Addr))
 	} else {
 		//label call case
+		// posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
+		// 	diff := int64(symPos) - int64(posAsInstAddr)
 		position := len(*out)
-		posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
-		if sym, idx, ok := a.symbols.GetByName(data.Ident); ok {
-			symPos := sym.Loc
-			diff := int64(symPos) - int64(posAsInstAddr)
-			switch {
-			case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
-				//emit this as an IP relative call
-				return a.emitCallIP(INST_TCALLIP0R, InstCallIPData{
-					Reg:    INVALID,
-					Offset: diff,
-					OpTy:   vm.OP_TADD,
-				}, out)
-				// opcode = a.absoluteJmpToIPJmp(ty)
-				// binary.BigEndian.PutUint32((*out)[len(*out)-4:], uint32(opcode))
-				// *out = binary.BigEndian.AppendUint64(*out, diff)
-			default:
-				*out = binary.BigEndian.AppendUint32(*out, uint32(call))
-				*out = binary.BigEndian.AppendUint64(*out, 0)
-				a.relocations = append(a.relocations, RelocData{
-					Loc:       uint64(len(*out)) - 8,
-					Ref:       uint64(idx),
-					PatchSize: 8,
-				})
-			}
-		}
+		a.unresolvedJumps[position] = unresolvedJump{Ident: data.Ident, InstTy: INST_TCALL}
+		*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes[vm.OP_NOP]))
+		*out = binary.BigEndian.AppendUint64(*out, 0)
+		// *out = binary.BigEndian.AppendUint64(*out, 0)
+		// if sym, idx, ok := a.symbols.GetByName(data.Ident); ok {
+		// 	symPos := sym.Loc
+		// 	// in case the symbol is undefined
+		// 	diff := int64(symPos) - int64(posAsInstAddr)
+		// 	switch {
+		// 	case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
+		// 		if symPos == 0 {
+		// 			a.unresolvedJumps[position] = data.Ident
+		// 		}
+		// 		//emit this as an IP relative call
+		// 		return a.emitCallIP(INST_TCALLIP0R, InstCallIPData{
+		// 			Reg:    INVALID,
+		// 			Offset: diff,
+		// 			OpTy:   vm.OP_TADD,
+		// 		}, out)
+		// 	default:
+		// 		*out = binary.BigEndian.AppendUint32(*out, uint32(call))
+		// 		*out = binary.BigEndian.AppendUint64(*out, 0)
+		// 		a.relocations = append(a.relocations, RelocData{
+		// 			Loc:       uint64(len(*out)) - 8,
+		// 			Ref:       uint64(idx),
+		// 			PatchSize: 8,
+		// 		})
+		// 	}
+		// }
 	}
 	return nil
 }
