@@ -73,7 +73,7 @@ func (l *Linker) link() (vm.AlphaELFFile, error) {
 	ret.SymbolsSize = l.objectFiles[0].Loaded.Header.SymbolsSize
 	ret.RelocsStart = l.objectFiles[0].Loaded.Header.RelocsStart
 	ret.RelocsSize = l.objectFiles[0].Loaded.Header.RelocsSize
-	ret.HeaderSize = 8 * 8
+	ret.HeaderSize = l.objectFiles[0].Loaded.Header.HeaderSize
 	ret.Data = l.objectFiles[0].Raw
 	return ret, nil
 }

@@ -76,7 +76,7 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	head.CodeStart = head.RelocsStart + head.RelocsSize
 	head.CodeSize = uint64(len(a.bytecode))
 
-	const headerSize = 8 * 8
+	const headerSize = 8 * 8 + 4
 
 	output := make([]byte, 0, headerSize+head.CodeStart+head.CodeSize)
 
@@ -89,25 +89,30 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	//header size
 	output = binary.BigEndian.AppendUint16(output, headerSize)
 
+	output = append(output, OBJ_FILE_SECCODE)
 	//code start
 	output = binary.BigEndian.AppendUint64(output, head.CodeStart)
 	//code size
 	output = binary.BigEndian.AppendUint64(output, head.CodeSize)
 
 	//static data
+	output = append(output, OBJ_FILE_SECSDATA)
 	output = binary.BigEndian.AppendUint64(output, head.StaticDataStart)
 	output = binary.BigEndian.AppendUint64(output, head.StaticDataSize)
 
+	output = append(output, OBJ_FILE_SECSYMS)
 	//syms start
 	output = binary.BigEndian.AppendUint64(output, head.SymbolsStart)
 	//syms size
-	output = binary.BigEndian.AppendUint64(output, head.StaticDataSize)
+	output = binary.BigEndian.AppendUint64(output, head.SymbolsSize)
 
+	output = append(output, OBJ_FILE_SECRELS)
 	//reloc start
 	output = binary.BigEndian.AppendUint64(output, head.RelocsStart)
 	//reloc size
 	output = binary.BigEndian.AppendUint64(output, head.RelocsSize)
-	//pad with zeros
+
+	//reslice to full capacity
 	output = output[:cap(output)]
 
 	dataStartSlice := output[headerSize:]

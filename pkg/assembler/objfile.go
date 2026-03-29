@@ -14,6 +14,16 @@ const (
 	OBJ_FILE_MAG = "AOBJ"
 )
 
+const (
+	OBJ_FILE_SECCODE = 1
+	OBJ_FILE_SECSDATA = 1 + iota
+	OBJ_FILE_SECSYMS
+	OBJ_FILE_SECRELS
+)
+// The header starts with a magic number OBJ_FILE_MAG
+// then comes the version 4b(MAJOR, MINOR, TWEAK, PATCH)
+// followed by the size of the header 2b (the sum size of all following header data)
+// then all other data comes in the format 1b(TAG) xb(DATA)
 type ObjFileHeader struct {
 	Version                         uint32
 	HeaderSize                      uint16
@@ -105,17 +115,14 @@ type ObjFile struct {
 	Relocs     RelocationTable
 }
 
-// Obj file header
-// AOBJ 4b
-// version 4b
-// HeaderSize 2b
-// codeSecStart 8b
-// codeSecLen 8b
-// staticDataStart 8b
-// staticDataSize 8b
-// symbolsStart 8b
-// symbolsSize 8b
-// free space up to 128 bytes (for now)
+func readSecStartSize(r *bufio.Reader) (start, size uint64, err error) {
+	buf := [16]byte{}
+	if _, err := io.ReadFull(r, buf[:]); err != nil {
+		return 0, 0, fmt.Errorf("Object file too short")
+	}
+	return binary.BigEndian.Uint64(buf[:8]), binary.BigEndian.Uint64(buf[8:]), nil
+}
+
 func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 	ret := ObjFileHeader{}
 	mag := [4]byte{}
@@ -138,45 +145,84 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 	}
 	ret.HeaderSize = binary.BigEndian.Uint16(buf)
 
-	if _, err := io.ReadFull(reader, buf); err != nil {
-		return ret, fmt.Errorf("Object file too short")
-	}
-	ret.CodeStart = binary.BigEndian.Uint64(buf)
+	i := 0
+	for ; i < int(ret.HeaderSize); i++ {
+		tag, err := reader.ReadByte()
+		if err != nil {
+			return ret, err
+		}
+		switch tag {
+		case OBJ_FILE_SECCODE:
+			if s, sz, err := readSecStartSize(reader); err != nil{
+				return ret, err
+			} else {
+				ret.CodeStart, ret.CodeSize = s, sz
+				i += 16
+			}
+		case OBJ_FILE_SECSDATA:
+			if s, sz, err := readSecStartSize(reader); err != nil{
+				return ret, err
+			} else {
+				ret.StaticDataStart, ret.StaticDataSize = s, sz
+				i += 16
+			}
+		case OBJ_FILE_SECSYMS:
+			if s, sz, err := readSecStartSize(reader); err != nil{
+				return ret, err
+			} else {
+				ret.SymbolsStart, ret.SymbolsSize = s, sz
+				i += 16
+			}
+		case OBJ_FILE_SECRELS:
+			if s, sz, err := readSecStartSize(reader); err != nil{
+				return ret, err
+			} else {
+				ret.RelocsStart, ret.RelocsSize = s, sz
+				i += 16
+			}
+		}
 
-	if _, err := io.ReadFull(reader, buf); err != nil {
-		return ret, fmt.Errorf("Object file too short")
 	}
-	ret.CodeSize = binary.BigEndian.Uint64(buf)
-
-	if _, err := io.ReadFull(reader, buf); err != nil {
-		return ret, fmt.Errorf("Object file too short")
-	}
-	ret.StaticDataStart = binary.BigEndian.Uint64(buf)
-
-	if _, err := io.ReadFull(reader, buf); err != nil {
-		return ret, fmt.Errorf("Object file too short")
-	}
-	ret.StaticDataSize = binary.BigEndian.Uint64(buf)
-
-	if _, err := io.ReadFull(reader, buf); err != nil {
-		return ret, fmt.Errorf("Object file too short")
-	}
-	ret.SymbolsStart = binary.BigEndian.Uint64(buf)
-
-	if _, err := io.ReadFull(reader, buf); err != nil {
-		return ret, fmt.Errorf("Object file too short")
-	}
-	ret.SymbolsSize = binary.BigEndian.Uint64(buf)
-
-	if _, err := io.ReadFull(reader, buf); err != nil {
-		return ret, fmt.Errorf("Object file too short")
-	}
-	ret.RelocsStart = binary.BigEndian.Uint64(buf)
-
-	if _, err := io.ReadFull(reader, buf); err != nil {
-		return ret, fmt.Errorf("Object file too short")
-	}
-	ret.RelocsSize = binary.BigEndian.Uint64(buf)
+	//
+	// if _, err := io.ReadFull(reader, buf); err != nil {
+	// 	return ret, fmt.Errorf("Object file too short")
+	// }
+	// ret.CodeStart = binary.BigEndian.Uint64(buf)
+	//
+	// if _, err := io.ReadFull(reader, buf); err != nil {
+	// 	return ret, fmt.Errorf("Object file too short")
+	// }
+	// ret.CodeSize = binary.BigEndian.Uint64(buf)
+	//
+	// if _, err := io.ReadFull(reader, buf); err != nil {
+	// 	return ret, fmt.Errorf("Object file too short")
+	// }
+	// ret.StaticDataStart = binary.BigEndian.Uint64(buf)
+	//
+	// if _, err := io.ReadFull(reader, buf); err != nil {
+	// 	return ret, fmt.Errorf("Object file too short")
+	// }
+	// ret.StaticDataSize = binary.BigEndian.Uint64(buf)
+	//
+	// if _, err := io.ReadFull(reader, buf); err != nil {
+	// 	return ret, fmt.Errorf("Object file too short")
+	// }
+	// ret.SymbolsStart = binary.BigEndian.Uint64(buf)
+	//
+	// if _, err := io.ReadFull(reader, buf); err != nil {
+	// 	return ret, fmt.Errorf("Object file too short")
+	// }
+	// ret.SymbolsSize = binary.BigEndian.Uint64(buf)
+	//
+	// if _, err := io.ReadFull(reader, buf); err != nil {
+	// 	return ret, fmt.Errorf("Object file too short")
+	// }
+	// ret.RelocsStart = binary.BigEndian.Uint64(buf)
+	//
+	// if _, err := io.ReadFull(reader, buf); err != nil {
+	// 	return ret, fmt.Errorf("Object file too short")
+	// }
+	// ret.RelocsSize = binary.BigEndian.Uint64(buf)
 
 	return ret, nil
 }
@@ -184,7 +230,7 @@ func readSymbols(symbolSec []byte) (SymbolTable, error) {
 	// 1b(TY) 1b(VISIBILITY) 8b(LOC) 4b(NAMELEN) NAMELENb(NAME)
 	table := NewSymbolTable()
 	reader := bufio.NewReader(bytes.NewReader(symbolSec))
-	buf := make([]byte, 0, 64)
+	buf := make([]byte, 64)
 	for {
 		var vis byte
 		var loc uint64
