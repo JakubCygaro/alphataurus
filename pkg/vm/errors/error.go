@@ -56,6 +56,16 @@ func BadArthmeticOperation(pos uint64) AlphaVMError {
 	}
 	return err
 }
+func NoEntry() AlphaVMError {
+	err := AlphaVMError{
+		Type: ERR_NO_ENTRY,
+		Pos: 0,
+		construct: func() string {
+			return "No execution entry point"
+		},
+	}
+	return err
+}
 func BadOpcode(opcode uint32, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_BAD_OPCODE,

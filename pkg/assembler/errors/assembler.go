@@ -24,6 +24,16 @@ func RedeclaredLabel(label, first string, line, col uint64) AssemblerError {
 	}
 	return err
 }
+func MultipleEntry(line, col uint64) AssemblerError {
+	err := AssemblerError {
+		Line: line,
+		Col: col,
+		construct: func() string {
+			return "multiple entry points defined"
+		},
+	}
+	return err
+}
 func ImportedSymbolDeclared(name string, line, col uint64) AssemblerError {
 	err := AssemblerError {
 		Line: line,

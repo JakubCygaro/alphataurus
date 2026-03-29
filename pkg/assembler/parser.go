@@ -68,6 +68,7 @@ const (
 	INST_TSECDATA
 	INST_TIMPORT
 	INST_TEXPORT
+	INST_TATTRENTRY
 )
 
 const (
@@ -199,6 +200,11 @@ func (p *Parser) ParseNext() (bool, error) {
 	switch start.Ty {
 	case TOKEN_TIDENT:
 		err = p.parseStartIdent(start)
+		if err != nil {
+			return false, err
+		}
+	case TOKEN_TAT:
+		err = p.parseAttribute()
 		if err != nil {
 			return false, err
 		}
@@ -381,6 +387,25 @@ func (p *Parser) parseExport() error {
 		},
 		Line: op.Line,
 		Col:  op.Col,
+	}
+	return nil
+}
+func (p *Parser) parseAttribute() error {
+	if err := p.lexer.ReadNextToken(); err != nil {
+		return err
+	}
+	op := p.lexer.CurrentToken()
+	if op.Ty != TOKEN_TIDENT {
+		return errors.FailedToParse("attribute", "invalid parameter", op.Line, op.Col)
+	}
+	switch op.Val.(string) {
+	case "entry":
+		p.currentInst = Instruction{
+			Ty: INST_TATTRENTRY,
+			Data: nil,
+		}
+	default:
+		return errors.FailedToParse("attribute", "unrecognized attribute type", op.Line, op.Col)
 	}
 	return nil
 }

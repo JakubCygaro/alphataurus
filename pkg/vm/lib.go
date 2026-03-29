@@ -173,6 +173,9 @@ func (vm *VmState) ClearState() {
 }
 
 func (vm *VmState) load(elf AlphaELFFile) error {
+	if !elf.HasEntry {
+		return errors.NoEntry()
+	}
 	bytecode := elf.Data[uint64(elf.HeaderSize)+elf.CodeStart : uint64(elf.HeaderSize)+elf.CodeStart+elf.CodeSize]
 	if len(bytecode)%INSTRUCTION_SIZE != 0 {
 		return errors.BadCodeSectionSize()
@@ -186,7 +189,7 @@ func (vm *VmState) load(elf AlphaELFFile) error {
 	vm.regs.r[BP_IDX] = uint64(vm.stackSegBase) - 1
 	// the stack pointer points to the base pointer
 	vm.regs.r[SP_IDX] = vm.regs.r[BP_IDX]
-	vm.setIp(vm.exeSegBase)
+	vm.setIp(elf.Entry)
 
 	vm.bytecode = bytecode
 	vm.codeSize = uint64(codeSize)

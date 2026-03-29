@@ -8,6 +8,8 @@ const (
 type AlphaELFFile struct {
 	Version                         uint32
 	HeaderSize                      uint16
+	HasEntry                        bool
+	Entry                           uint64
 	CodeStart, CodeSize             uint64
 	StaticDataStart, StaticDataSize uint64
 	SymbolsStart, SymbolsSize       uint64

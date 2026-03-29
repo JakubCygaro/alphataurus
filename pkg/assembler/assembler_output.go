@@ -46,14 +46,6 @@ func (a *Assembler) Assemble() ([]byte, error) {
 // AELF 4b
 // version 4b
 // header_size 2b (excluding version, magic and itself)
-// codeSecStart 8b
-// codeSecLen 8b
-// staticDataStart 8b
-// staticDataSize 8b
-// symbolsStart 8b
-// symbolsSize 8b
-// relocsStart 8b
-// relocsSize 8b
 func (a *Assembler) writeObjFile() ([]byte, error) {
 	var syms, rels []byte
 	if symbols, err := WriteSymbols(&a.symbols); err != nil {
@@ -76,7 +68,10 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	head.CodeStart = head.RelocsStart + head.RelocsSize
 	head.CodeSize = uint64(len(a.bytecode))
 
-	const headerSize = 8 * 8 + 4
+	var headerSize uint64 = 8 * 8 + 4
+	if a.hasEntry {
+		headerSize += 8
+	}
 
 	output := make([]byte, 0, headerSize+head.CodeStart+head.CodeSize)
 
@@ -87,7 +82,13 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	output = binary.BigEndian.AppendUint32(output, 0x00000001)
 
 	//header size
-	output = binary.BigEndian.AppendUint16(output, headerSize)
+	output = binary.BigEndian.AppendUint16(output, uint16(headerSize))
+
+	if a.hasEntry {
+		//entry point
+		output = append(output, OBJ_FILE_ENTRY)
+		output = binary.BigEndian.AppendUint64(output, a.entry)
+	}
 
 	output = append(output, OBJ_FILE_SECCODE)
 	//code start

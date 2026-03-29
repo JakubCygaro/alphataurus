@@ -3,16 +3,13 @@ package assembler
 import (
 	"bufio"
 	"encoding/binary"
+
 	// "fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
-type labelData struct {
-	pos        uint64
-	declaredAt string
-}
 type unresolvedJump struct {
 	Ident string
 	// what instruction is gonna get patched
@@ -32,6 +29,8 @@ type Assembler struct {
 	instCount   int
 	symbols     SymbolTable
 	relocations RelocationTable
+	hasEntry bool
+	entry uint64
 }
 
 func (a *Assembler) InstructionCount() int {
@@ -47,7 +46,14 @@ func NewAssembler(reader bufio.Reader) Assembler {
 		bytecode:        make([]byte, 0, 64),
 		symbols:         NewSymbolTable(),
 		relocations:     make(RelocationTable, 0),
+		hasEntry: false,
 	}
+}
+
+func (a *Assembler) currentCodePos() (byte uint64, address uint64) {
+	position := uint64(len(a.bytecode))
+	posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE - 1)
+	return position, posAsInstAddr
 }
 
 func (a *Assembler) EmitBytecode() (int, error) {
@@ -164,6 +170,15 @@ func (a *Assembler) EmitBytecode() (int, error) {
 			err = a.emitCallIP(int(inst.Ty), inst.Data.(InstCallIPData), &(a.bytecode))
 		case INST_TRET:
 			err = a.emitRet(&(a.bytecode))
+		case INST_TATTRENTRY:
+			if a.hasEntry {
+				err = errors.MultipleEntry(inst.Line, inst.Col)
+			} else {
+				a.hasEntry = true
+				_, ent := a.currentCodePos()
+				a.entry = ent+1
+			}
+
 		default:
 			a.lastInst = inst
 			return instCount, err
@@ -495,8 +510,7 @@ func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
 func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 	// this needs to be the address of the function in the virtual address space
 	// since each instruction in that address space is exactly the size of 1 (even tho it takes up 12 bytes)
-	position := uint64(len(*out))
-	posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE - 1)
+	_, posAsInstAddr := a.currentCodePos()
 	if sym, _, ok := a.symbols.GetByName(data.Label); ok {
 		switch sym.Vis {
 		case SYM_VEXPORT:
@@ -660,39 +674,10 @@ func (a *Assembler) emitCall(data InstCallData, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint32(*out, uint32(call))
 		*out = binary.BigEndian.AppendUint64(*out, uint64(data.Addr))
 	} else {
-		//label call case
-		// posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
-		// 	diff := int64(symPos) - int64(posAsInstAddr)
 		position := len(*out)
 		a.unresolvedJumps[position] = unresolvedJump{Ident: data.Ident, InstTy: INST_TCALL}
 		*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes[vm.OP_NOP]))
 		*out = binary.BigEndian.AppendUint64(*out, 0)
-		// *out = binary.BigEndian.AppendUint64(*out, 0)
-		// if sym, idx, ok := a.symbols.GetByName(data.Ident); ok {
-		// 	symPos := sym.Loc
-		// 	// in case the symbol is undefined
-		// 	diff := int64(symPos) - int64(posAsInstAddr)
-		// 	switch {
-		// 	case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
-		// 		if symPos == 0 {
-		// 			a.unresolvedJumps[position] = data.Ident
-		// 		}
-		// 		//emit this as an IP relative call
-		// 		return a.emitCallIP(INST_TCALLIP0R, InstCallIPData{
-		// 			Reg:    INVALID,
-		// 			Offset: diff,
-		// 			OpTy:   vm.OP_TADD,
-		// 		}, out)
-		// 	default:
-		// 		*out = binary.BigEndian.AppendUint32(*out, uint32(call))
-		// 		*out = binary.BigEndian.AppendUint64(*out, 0)
-		// 		a.relocations = append(a.relocations, RelocData{
-		// 			Loc:       uint64(len(*out)) - 8,
-		// 			Ref:       uint64(idx),
-		// 			PatchSize: 8,
-		// 		})
-		// 	}
-		// }
 	}
 	return nil
 }

@@ -18,6 +18,7 @@ section '.code'
 	jmp _start
 	mov r1, 420
 	jmp [ip+4]
+@entry
 _start:
 	mov r0, 69
 	cmp r0, 69

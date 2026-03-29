@@ -15,11 +15,13 @@ const (
 )
 
 const (
-	OBJ_FILE_SECCODE = 1
+	OBJ_FILE_SECCODE  = 1
 	OBJ_FILE_SECSDATA = 1 + iota
 	OBJ_FILE_SECSYMS
 	OBJ_FILE_SECRELS
+	OBJ_FILE_ENTRY
 )
+
 // The header starts with a magic number OBJ_FILE_MAG
 // then comes the version 4b(MAJOR, MINOR, TWEAK, PATCH)
 // followed by the size of the header 2b (the sum size of all following header data)
@@ -27,6 +29,8 @@ const (
 type ObjFileHeader struct {
 	Version                         uint32
 	HeaderSize                      uint16
+	HasEntry                        bool
+	Entry                           uint64
 	CodeStart, CodeSize             uint64
 	StaticDataStart, StaticDataSize uint64
 	SymbolsStart, SymbolsSize       uint64
@@ -83,6 +87,14 @@ func (t *SymbolTable) AddSymbol(name string, def SymbolData) (*SymbolData, bool)
 	t.InOrder = append(t.InOrder, &def)
 	t.ByName[name] = len(t.InOrder) - 1
 	return t.InOrder[len(t.InOrder)-1], true
+}
+func (t *SymbolTable) AddForeignSymbol(name string, sym *SymbolData) bool {
+	if _, ok := t.ByName[name]; ok {
+		return false
+	}
+	t.InOrder = append(t.InOrder, sym)
+	t.ByName[name] = len(t.InOrder) - 1
+	return true
 }
 
 func (t *SymbolTable) GetByName(name string) (*SymbolData, int, bool) {
@@ -153,77 +165,45 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 		}
 		switch tag {
 		case OBJ_FILE_SECCODE:
-			if s, sz, err := readSecStartSize(reader); err != nil{
+			if s, sz, err := readSecStartSize(reader); err != nil {
 				return ret, err
 			} else {
 				ret.CodeStart, ret.CodeSize = s, sz
 				i += 16
 			}
 		case OBJ_FILE_SECSDATA:
-			if s, sz, err := readSecStartSize(reader); err != nil{
+			if s, sz, err := readSecStartSize(reader); err != nil {
 				return ret, err
 			} else {
 				ret.StaticDataStart, ret.StaticDataSize = s, sz
 				i += 16
 			}
 		case OBJ_FILE_SECSYMS:
-			if s, sz, err := readSecStartSize(reader); err != nil{
+			if s, sz, err := readSecStartSize(reader); err != nil {
 				return ret, err
 			} else {
 				ret.SymbolsStart, ret.SymbolsSize = s, sz
 				i += 16
 			}
 		case OBJ_FILE_SECRELS:
-			if s, sz, err := readSecStartSize(reader); err != nil{
+			if s, sz, err := readSecStartSize(reader); err != nil {
 				return ret, err
 			} else {
 				ret.RelocsStart, ret.RelocsSize = s, sz
 				i += 16
 			}
+		case OBJ_FILE_ENTRY:
+			buf := [8]byte{}
+			if _, err := io.ReadFull(reader, buf[:]); err != nil {
+				return ret, err
+			} else {
+				ret.HasEntry = true
+				ret.Entry = binary.BigEndian.Uint64(buf[:])
+				i += 8
+			}
 		}
 
 	}
-	//
-	// if _, err := io.ReadFull(reader, buf); err != nil {
-	// 	return ret, fmt.Errorf("Object file too short")
-	// }
-	// ret.CodeStart = binary.BigEndian.Uint64(buf)
-	//
-	// if _, err := io.ReadFull(reader, buf); err != nil {
-	// 	return ret, fmt.Errorf("Object file too short")
-	// }
-	// ret.CodeSize = binary.BigEndian.Uint64(buf)
-	//
-	// if _, err := io.ReadFull(reader, buf); err != nil {
-	// 	return ret, fmt.Errorf("Object file too short")
-	// }
-	// ret.StaticDataStart = binary.BigEndian.Uint64(buf)
-	//
-	// if _, err := io.ReadFull(reader, buf); err != nil {
-	// 	return ret, fmt.Errorf("Object file too short")
-	// }
-	// ret.StaticDataSize = binary.BigEndian.Uint64(buf)
-	//
-	// if _, err := io.ReadFull(reader, buf); err != nil {
-	// 	return ret, fmt.Errorf("Object file too short")
-	// }
-	// ret.SymbolsStart = binary.BigEndian.Uint64(buf)
-	//
-	// if _, err := io.ReadFull(reader, buf); err != nil {
-	// 	return ret, fmt.Errorf("Object file too short")
-	// }
-	// ret.SymbolsSize = binary.BigEndian.Uint64(buf)
-	//
-	// if _, err := io.ReadFull(reader, buf); err != nil {
-	// 	return ret, fmt.Errorf("Object file too short")
-	// }
-	// ret.RelocsStart = binary.BigEndian.Uint64(buf)
-	//
-	// if _, err := io.ReadFull(reader, buf); err != nil {
-	// 	return ret, fmt.Errorf("Object file too short")
-	// }
-	// ret.RelocsSize = binary.BigEndian.Uint64(buf)
-
 	return ret, nil
 }
 func readSymbols(symbolSec []byte) (SymbolTable, error) {
