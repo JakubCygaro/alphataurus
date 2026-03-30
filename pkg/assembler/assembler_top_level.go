@@ -14,8 +14,9 @@ func (a *Assembler) handleExport(data InstImportExportData) error {
 		Ty:  SYM_TFUNC,
 		Vis: SYM_VEXPORT,
 		Loc: 0,
+		Name: data.Name,
 	}
-	if _, ok := a.symbols.AddSymbol(data.Name, sym); !ok {
+	if _, ok := a.symbols.AddSymbol(sym); !ok {
 		return fmt.Errorf("Failed to declare export symbol")
 	}
 	return nil
@@ -28,10 +29,11 @@ func (a *Assembler) handleImport(data InstImportExportData) error {
 		Ty:  SYM_TFUNC,
 		Vis: SYM_VIMPORTSTRONG,
 		Loc: 0,
+		Name: data.Name,
 	}
 	if data.Weak {
 		sym.Vis = SYM_VIMPORTWEAK
 	}
-	a.symbols.AddSymbol(data.Name, sym)
+	a.symbols.AddSymbol(sym)
 	return nil
 }

@@ -70,6 +70,7 @@ type SymbolData struct {
 	Vis byte
 	// the location is defined with the deadzone added, so any value below the deadzone is treated as invalid
 	Loc uint64
+	Name string
 }
 
 func NewSymbolTable() SymbolTable {
@@ -80,12 +81,12 @@ func NewSymbolTable() SymbolTable {
 	return table
 }
 
-func (t *SymbolTable) AddSymbol(name string, def SymbolData) (*SymbolData, bool) {
-	if _, ok := t.ByName[name]; ok {
+func (t *SymbolTable) AddSymbol(def SymbolData) (*SymbolData, bool) {
+	if _, ok := t.ByName[def.Name]; ok {
 		return nil, false
 	}
 	t.InOrder = append(t.InOrder, &def)
-	t.ByName[name] = len(t.InOrder) - 1
+	t.ByName[def.Name] = len(t.InOrder) - 1
 	return t.InOrder[len(t.InOrder)-1], true
 }
 func (t *SymbolTable) AddForeignSymbol(name string, sym *SymbolData) bool {
@@ -254,8 +255,9 @@ func readSymbols(symbolSec []byte) (SymbolTable, error) {
 			Ty:  ty,
 			Vis: vis,
 			Loc: loc,
+			Name: name,
 		}
-		table.AddSymbol(name, sym)
+		table.AddSymbol(sym)
 	}
 	return table, nil
 

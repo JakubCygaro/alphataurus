@@ -527,10 +527,11 @@ func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 			return errors.ImportedSymbolDeclared(data.Label, a.line, a.col)
 		}
 	} else {
-		a.symbols.AddSymbol(data.Label, SymbolData{
+		a.symbols.AddSymbol(SymbolData{
 			Ty:  SYM_TFUNC,
 			Vis: SYM_VPRIVATE,
 			Loc: posAsInstAddr,
+			Name: data.Label,
 		})
 	}
 	return nil

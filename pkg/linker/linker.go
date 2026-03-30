@@ -3,6 +3,7 @@ package linker
 import (
 	"bufio"
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"os"
 
@@ -27,10 +28,14 @@ type inputMetadata struct {
 	IsFile   bool
 	FilePath string
 }
+type fileReloc struct {
+	CodeSecOff, StaticDataSecOff uint64
+}
 type LinkerInput interface {
 	ToBytes() (Bytes, error)
 	GetMetadata() inputMetadata
 }
+
 func (s SourcePath) ToBytes() (Bytes, error) {
 	file, err := os.ReadFile(string(s))
 	if err != nil {
@@ -40,7 +45,7 @@ func (s SourcePath) ToBytes() (Bytes, error) {
 }
 func (s SourcePath) GetMetadata() inputMetadata {
 	return inputMetadata{
-		IsFile: true,
+		IsFile:   true,
 		FilePath: string(s),
 	}
 }
@@ -78,12 +83,14 @@ func (t *globalSymbolTable) GetSymbol(name string) (file objFileIdx, inTable int
 type Linker struct {
 	objectFiles []objFileData
 	globals     globalSymbolTable
+	relocations map[objFileIdx]fileReloc
 }
 
 func NewLinker() Linker {
 	return Linker{
 		objectFiles: make([]objFileData, 0),
 		globals:     newGlobalSymbolTable(),
+		relocations: make(map[objFileIdx]fileReloc),
 	}
 }
 func (l *Linker) readGlobalSymbols(objidx objFileIdx, obj *asm.ObjFile) error {
@@ -95,7 +102,6 @@ func (l *Linker) readGlobalSymbols(objidx objFileIdx, obj *asm.ObjFile) error {
 	}
 	return nil
 }
-
 
 func (l *Linker) collectSources(sources []LinkerInput) error {
 	for _, src := range sources {
@@ -110,8 +116,7 @@ func (l *Linker) collectSources(sources []LinkerInput) error {
 }
 
 func (l *Linker) collect(b Bytes, meta inputMetadata) error {
-	headerBytes := b[:vm.AELF_FILE_HEADER_SIZE]
-	header, err := asm.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(headerBytes[:])))
+	header, err := asm.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(b)))
 	if err != nil {
 		return err
 	}
@@ -120,40 +125,88 @@ func (l *Linker) collect(b Bytes, meta inputMetadata) error {
 		return err
 	}
 	l.objectFiles = append(l.objectFiles, objFileData{
-		Loaded: obj,
-		Raw: b,
+		Loaded:     obj,
+		Raw:        b,
 		IsInMemory: !meta.IsFile,
-		Path: meta.FilePath,
+		Path:       meta.FilePath,
 	})
 	return nil
 }
-func (l *Linker) link() (vm.AlphaELFFile, error) {
-	ret := vm.AlphaELFFile{}
-	for idx := range l.objectFiles {
+func (l *Linker) link() (vm.AlphaEXEFile, error) {
+	ret := vm.AlphaEXEFile{}
+	data := make([]byte, 0)
+	baseOff := uint64(0)
+	for idx, obj := range l.objectFiles {
 		if err := l.readGlobalSymbols(objFileIdx(idx), &(l.objectFiles[idx].Loaded)); err != nil {
 			return ret, err
 		}
+		baseOff += uint64(len(data))
+		data = append(data, obj.Loaded.Code...)
+		ret.CodeSize += uint64(len(obj.Loaded.Code))
+		l.relocations[objFileIdx(idx)] = fileReloc{
+			CodeSecOff: baseOff,
+		}
 	}
-	// for idx, obj := range l.objectFiles {
-	// }
-	ret.Version = l.objectFiles[0].Loaded.Header.Version
-	ret.CodeStart = l.objectFiles[0].Loaded.Header.CodeStart
-	ret.CodeSize = l.objectFiles[0].Loaded.Header.CodeSize
-	ret.StaticDataStart = l.objectFiles[0].Loaded.Header.StaticDataStart
-	ret.StaticDataSize = l.objectFiles[0].Loaded.Header.StaticDataSize
-	ret.SymbolsStart = l.objectFiles[0].Loaded.Header.SymbolsStart
-	ret.SymbolsSize = l.objectFiles[0].Loaded.Header.SymbolsSize
-	ret.RelocsStart = l.objectFiles[0].Loaded.Header.RelocsStart
-	ret.RelocsSize = l.objectFiles[0].Loaded.Header.RelocsSize
-	ret.HeaderSize = l.objectFiles[0].Loaded.Header.HeaderSize
-	ret.Data = l.objectFiles[0].Raw
-	ret.Entry = l.objectFiles[0].Loaded.Header.Entry
-	ret.HasEntry = l.objectFiles[0].Loaded.Header.HasEntry
+
+	ret.Version = 0x00000001
+
+	header := make([]byte, 0)
+	header = append(header, vm.AEXE_FILE_MAG...)
+	header = binary.BigEndian.AppendUint32(header, ret.Version)
+
+
+	for idx, obj := range l.objectFiles {
+		rels := l.relocations[objFileIdx(idx)]
+		syms := obj.Loaded.Symbols
+		for _, rel := range obj.Loaded.Relocs {
+			loc := rel.Loc + rels.CodeSecOff
+			symInFile := syms.InOrder[rel.Ref]
+			ref := uint64(0)
+			// if this is an import symbol
+			if symInFile.Loc == 0 {
+				// find the symbol
+				f, _, s, ok := l.globals.GetSymbol(symInFile.Name)
+				if !ok {
+					return ret, fmt.Errorf("Unresolved symbol '%s'", symInFile.Name)
+				}
+				relocated := l.relocations[objFileIdx(f)]
+				ref = + s.Loc + (relocated.CodeSecOff / vm.INSTRUCTION_SIZE)
+			} else {
+				ref = + symInFile.Loc + (rels.CodeSecOff / vm.INSTRUCTION_SIZE)
+			}
+			// now apply the patch
+			switch rel.PatchSize {
+			case 8:
+				binary.BigEndian.PutUint64(data[loc:], ref)
+			case 4:
+				binary.BigEndian.PutUint32(data[loc:], uint32(ref))
+			case 2:
+				binary.BigEndian.PutUint16(data[loc:], uint16(ref))
+			case 1:
+				data[loc] = byte(ref)
+			default:
+				return ret, fmt.Errorf("Bad patch size of %d", rel.PatchSize)
+			}
+		}
+	}
+
+	ret.CodeStart = l.relocations[0].CodeSecOff
+	// ret.CodeSize = l.objectFiles[0].Loaded.Header.CodeSize
+	// ret.StaticDataStart = l.objectFiles[0].Loaded.Header.StaticDataStart
+	// ret.StaticDataSize = l.objectFiles[0].Loaded.Header.StaticDataSize
+	// ret.SymbolsStart = l.objectFiles[0].Loaded.Header.SymbolsStart
+	// ret.SymbolsSize = l.objectFiles[0].Loaded.Header.SymbolsSize
+	// ret.RelocsStart = l.objectFiles[0].Loaded.Header.RelocsStart
+	// ret.RelocsSize = l.objectFiles[0].Loaded.Header.RelocsSize
+	// ret.HeaderSize = l.objectFiles[0].Loaded.Header.HeaderSize
+	// ret.Data = l.objectFiles[0].Raw
+	// ret.Entry = l.objectFiles[0].Loaded.Header.Entry
+	// ret.HasEntry = l.objectFiles[0].Loaded.Header.HasEntry
 	return ret, nil
 }
 
-func (l *Linker) Link(sources []LinkerInput) (vm.AlphaELFFile, error) {
-	ret := vm.AlphaELFFile{}
+func (l *Linker) Link(sources []LinkerInput) (vm.AlphaEXEFile, error) {
+	ret := vm.AlphaEXEFile{}
 	if len(sources) > 1 {
 		return ret, fmt.Errorf("Multiple object file linking TODO")
 	}

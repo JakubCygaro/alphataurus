@@ -1,11 +1,10 @@
 package vm
 
 const (
-	AELF_FILE_MAG         = "AELF"
-	AELF_FILE_HEADER_SIZE = 128
+	AEXE_FILE_MAG         = "AELF"
 )
 
-type AlphaELFFile struct {
+type AlphaEXEFile struct {
 	Version                         uint32
 	HeaderSize                      uint16
 	HasEntry                        bool

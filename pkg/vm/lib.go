@@ -172,7 +172,7 @@ func (vm *VmState) ClearState() {
 	vm.stack = make(VmStack, cap(vm.stack))
 }
 
-func (vm *VmState) load(elf AlphaELFFile) error {
+func (vm *VmState) load(elf AlphaEXEFile) error {
 	if !elf.HasEntry {
 		return errors.NoEntry()
 	}
@@ -195,7 +195,7 @@ func (vm *VmState) load(elf AlphaELFFile) error {
 	vm.codeSize = uint64(codeSize)
 	return nil
 }
-func (vm *VmState) Execute(elf AlphaELFFile) error {
+func (vm *VmState) Execute(elf AlphaEXEFile) error {
 	if err := vm.load(elf); err != nil {
 		return err
 	}
