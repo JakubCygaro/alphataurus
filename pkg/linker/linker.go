@@ -12,7 +12,7 @@ import (
 
 type objFileData struct {
 	IsInMemory bool
-	Name       string
+	Path       string
 	Loaded     asm.ObjFile
 	Raw        []byte
 }
@@ -21,10 +21,42 @@ type globalSymbolTable struct {
 	symbols asm.SymbolTable
 	files   map[*asm.SymbolData]objFileIdx
 }
-func  newGlobalSymbolTable() globalSymbolTable {
+type SourcePath string
+type Bytes []byte
+type inputMetadata struct {
+	IsFile   bool
+	FilePath string
+}
+type LinkerInput interface {
+	ToBytes() (Bytes, error)
+	GetMetadata() inputMetadata
+}
+func (s SourcePath) ToBytes() (Bytes, error) {
+	file, err := os.ReadFile(string(s))
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
+}
+func (s SourcePath) GetMetadata() inputMetadata {
+	return inputMetadata{
+		IsFile: true,
+		FilePath: string(s),
+	}
+}
+func (b Bytes) ToBytes() (Bytes, error) {
+	return b, nil
+}
+func (b Bytes) GetMetadata() inputMetadata {
+	return inputMetadata{
+		IsFile: false,
+	}
+}
+
+func newGlobalSymbolTable() globalSymbolTable {
 	return globalSymbolTable{
 		symbols: asm.NewSymbolTable(),
-		files: make(map[*asm.SymbolData]objFileIdx),
+		files:   make(map[*asm.SymbolData]objFileIdx),
 	}
 }
 
@@ -45,13 +77,13 @@ func (t *globalSymbolTable) GetSymbol(name string) (file objFileIdx, inTable int
 
 type Linker struct {
 	objectFiles []objFileData
-	globals globalSymbolTable
+	globals     globalSymbolTable
 }
 
 func NewLinker() Linker {
 	return Linker{
 		objectFiles: make([]objFileData, 0),
-		globals: newGlobalSymbolTable(),
+		globals:     newGlobalSymbolTable(),
 	}
 }
 func (l *Linker) readGlobalSymbols(objidx objFileIdx, obj *asm.ObjFile) error {
@@ -64,41 +96,35 @@ func (l *Linker) readGlobalSymbols(objidx objFileIdx, obj *asm.ObjFile) error {
 	return nil
 }
 
-func (l *Linker) collectFiles(sources []string) error {
+
+func (l *Linker) collectSources(sources []LinkerInput) error {
 	for _, src := range sources {
-		file, err := os.ReadFile(src)
+		meta := src.GetMetadata()
+		source, err := src.ToBytes()
 		if err != nil {
 			return err
 		}
-		headerBytes := file[:vm.AELF_FILE_HEADER_SIZE]
-		header, err := asm.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(headerBytes[:])))
-		if err != nil {
-			return err
-		}
-		obj, err := asm.LoadObjFile(header, file)
-		if err != nil {
-			return err
-		}
-		l.objectFiles = append(l.objectFiles, objFileData{Loaded: obj, Raw: file})
+		l.collect(source, meta)
 	}
 	return nil
 }
-func (l *Linker) collectBytes(sources []Bytes) error {
-	for _, file := range sources {
-		if len(file) < vm.AELF_FILE_HEADER_SIZE {
-			return fmt.Errorf("not a valid aobj file, header was too small")
-		}
-		headerBytes := file[:vm.AELF_FILE_HEADER_SIZE]
-		header, err := asm.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(headerBytes[:])))
-		if err != nil {
-			return err
-		}
-		obj, err := asm.LoadObjFile(header, file)
-		if err != nil {
-			return err
-		}
-		l.objectFiles = append(l.objectFiles, objFileData{Loaded: obj, Raw: file})
+
+func (l *Linker) collect(b Bytes, meta inputMetadata) error {
+	headerBytes := b[:vm.AELF_FILE_HEADER_SIZE]
+	header, err := asm.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(headerBytes[:])))
+	if err != nil {
+		return err
 	}
+	obj, err := asm.LoadObjFile(header, b)
+	if err != nil {
+		return err
+	}
+	l.objectFiles = append(l.objectFiles, objFileData{
+		Loaded: obj,
+		Raw: b,
+		IsInMemory: !meta.IsFile,
+		Path: meta.FilePath,
+	})
 	return nil
 }
 func (l *Linker) link() (vm.AlphaELFFile, error) {
@@ -126,25 +152,12 @@ func (l *Linker) link() (vm.AlphaELFFile, error) {
 	return ret, nil
 }
 
-type Bytes []byte
-
-func (l *Linker) LinkBytes(sources []Bytes) (vm.AlphaELFFile, error) {
+func (l *Linker) Link(sources []LinkerInput) (vm.AlphaELFFile, error) {
 	ret := vm.AlphaELFFile{}
 	if len(sources) > 1 {
 		return ret, fmt.Errorf("Multiple object file linking TODO")
 	}
-	if err := l.collectBytes(sources); err != nil {
-		return ret, err
-	}
-	return l.link()
-}
-
-func (l *Linker) LinkFiles(files []string) (vm.AlphaELFFile, error) {
-	ret := vm.AlphaELFFile{}
-	if len(files) > 1 {
-		return ret, fmt.Errorf("Multiple object file linking TODO")
-	}
-	if err := l.collectFiles(files); err != nil {
+	if err := l.collectSources(sources); err != nil {
 		return ret, err
 	}
 	return l.link()

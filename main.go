@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 const assembly = `
@@ -25,6 +25,7 @@ _start:
 	mov r2, -6
 	je [ip+r2]
 `
+
 func main() {
 	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
 	bytecode, err := asm.Assemble()
@@ -38,7 +39,7 @@ func main() {
 	fmt.Printf("emitted bytecode size: %d\n", len(bytecode))
 	fmt.Printf("emitted %d instructions\n", iCount)
 	ld := linker.NewLinker()
-	elf, err := ld.LinkBytes([]linker.Bytes{bytecode})
+	elf, err := ld.Link([]linker.LinkerInput{linker.Bytes(bytecode)})
 	if err != nil {
 		os.Stderr.WriteString("linking error\n")
 		os.Stderr.WriteString(err.Error())
@@ -69,5 +70,5 @@ func main() {
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
-	
+
 }
