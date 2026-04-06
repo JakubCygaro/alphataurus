@@ -249,7 +249,7 @@ func readSymbols(symbolSec []byte) (SymbolTable, error) {
 			name = string(buf[:namelen])
 		}
 		if vis > SYM_VPRIVATE {
-			return table, fmt.Errorf("Invalid symbol `%s` visibility", name)
+			return table, fmt.Errorf("Invalid symbol `%s` visibility [%d]", name, vis)
 		}
 		sym := SymbolData{
 			Ty:  ty,
@@ -318,6 +318,7 @@ func WriteSymbols(st *SymbolTable) ([]byte, error) {
 
 func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 	ret := ObjFile{}
+	h.HeaderSize += 10
 	ret.Header = h
 	if int(h.CodeSize) == 0 {
 		return ret, fmt.Errorf("Bad header code sec data")

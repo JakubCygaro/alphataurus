@@ -68,12 +68,7 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	head.CodeStart = head.RelocsStart + head.RelocsSize
 	head.CodeSize = uint64(len(a.bytecode))
 
-	var headerSize uint64 = 8 * 8 + 4
-	if a.hasEntry {
-		headerSize += 8
-	}
-
-	output := make([]byte, 0, headerSize+head.CodeStart+head.CodeSize)
+	output := make([]byte, 0)
 
 	//mag
 	output = append(output, OBJ_FILE_MAG...)
@@ -82,7 +77,9 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	output = binary.BigEndian.AppendUint32(output, 0x00000001)
 
 	//header size
-	output = binary.BigEndian.AppendUint16(output, uint16(headerSize))
+	output = binary.BigEndian.AppendUint16(output, uint16(0))
+
+	preambleEnd := len(output)
 
 	if a.hasEntry {
 		//entry point
@@ -113,10 +110,12 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	//reloc size
 	output = binary.BigEndian.AppendUint64(output, head.RelocsSize)
 
-	//reslice to full capacity
-	output = output[:cap(output)]
+	headerSize := len(output) - preambleEnd
+	binary.BigEndian.PutUint16(output[4+4:], uint16(headerSize))
 
-	dataStartSlice := output[headerSize:]
+	dataSize := head.CodeStart + head.CodeSize
+
+	dataStartSlice := make([]byte, dataSize)
 
 	//dump code
 	codeSlice := dataStartSlice[head.CodeStart : head.CodeStart+head.CodeSize]
@@ -127,5 +126,6 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	//dump relocs
 	relSlice := dataStartSlice[head.RelocsStart : head.RelocsStart+head.RelocsSize]
 	copy(relSlice, rels)
+	output = append(output, dataStartSlice...)
 	return output, nil
 }

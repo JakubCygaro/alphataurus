@@ -10,36 +10,47 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
+const assembly2 = `
+export 'atoi'
+section '.code'
+atoi:
+	push bp
+	mov bp, sp
+	sub r1, 30
+	mov r0, r1
+	pop bp
+	ret
+`
 
 const assembly = `
 import 'atoi'
 export '_start'
 section '.code'
-	jmp _start
-	mov r1, 420
-	jmp [ip+4]
 @entry
 _start:
-	mov r0, 69
-	cmp r0, 69
-	mov r2, -6
-	je [ip+r2]
+	mov r1, 32
+	call atoi
 `
 
 func main() {
-	asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(assembly)))
-	bytecode, err := asm.Assemble()
-	if err != nil {
-		os.Stderr.WriteString("assembling error\n")
-		os.Stderr.WriteString(err.Error())
-		os.Stderr.WriteString("\n")
-		os.Exit(-1)
+	sources := []string { assembly, assembly2 }
+	objects := make([]linker.LinkerInput, 0)
+	for _, s := range sources {
+		asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(s)))
+		bytecode, err := asm.Assemble()
+		if err != nil {
+			os.Stderr.WriteString("assembling error\n")
+			os.Stderr.WriteString(err.Error())
+			os.Stderr.WriteString("\n")
+			os.Exit(-1)
+		}
+		iCount := asm.InstructionCount()
+		fmt.Printf("emitted bytecode size: %d\n", len(bytecode))
+		fmt.Printf("emitted %d instructions\n", iCount)
+		objects = append(objects, linker.Bytes(bytecode))
 	}
-	iCount := asm.InstructionCount()
-	fmt.Printf("emitted bytecode size: %d\n", len(bytecode))
-	fmt.Printf("emitted %d instructions\n", iCount)
 	ld := linker.NewLinker()
-	elf, err := ld.Link([]linker.LinkerInput{linker.Bytes(bytecode)})
+	elf, err := ld.Link(objects)
 	if err != nil {
 		os.Stderr.WriteString("linking error\n")
 		os.Stderr.WriteString(err.Error())

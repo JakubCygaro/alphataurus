@@ -96,6 +96,9 @@ func NewLinker() Linker {
 func (l *Linker) readGlobalSymbols(objidx objFileIdx, obj *asm.ObjFile) error {
 	for name, idx := range obj.Symbols.ByName {
 		sym := obj.Symbols.InOrder[idx]
+		if sym.Vis != asm.SYM_VEXPORT {
+			continue
+		}
 		if ok := l.globals.AddSymbol(objidx, name, sym); !ok {
 			return fmt.Errorf("multiple definitions of symbol '%s'", name)
 		}
@@ -110,7 +113,9 @@ func (l *Linker) collectSources(sources []LinkerInput) error {
 		if err != nil {
 			return err
 		}
-		l.collect(source, meta)
+		if err := l.collect(source, meta); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -146,22 +151,23 @@ func (l *Linker) link() (vm.AlphaEXEFile, error) {
 		l.relocations[objFileIdx(idx)] = fileReloc{
 			CodeSecOff: baseOff,
 		}
+		if obj.Loaded.Header.HasEntry && !ret.HasEntry {
+			ret.HasEntry = true
+			ret.Entry = obj.Loaded.Header.Entry + baseOff
+		} else if obj.Loaded.Header.HasEntry {
+			return ret, fmt.Errorf("Multiple entry points defined")
+		}
 	}
 
 	ret.Version = 0x00000001
 
-	header := make([]byte, 0)
-	header = append(header, vm.AEXE_FILE_MAG...)
-	header = binary.BigEndian.AppendUint32(header, ret.Version)
-
-
 	for idx, obj := range l.objectFiles {
-		rels := l.relocations[objFileIdx(idx)]
+		thisObjRels := l.relocations[objFileIdx(idx)]
 		syms := obj.Loaded.Symbols
 		for _, rel := range obj.Loaded.Relocs {
-			loc := rel.Loc + rels.CodeSecOff
+			realLoc := rel.Loc + thisObjRels.CodeSecOff
 			symInFile := syms.InOrder[rel.Ref]
-			ref := uint64(0)
+			realRef := uint64(0)
 			// if this is an import symbol
 			if symInFile.Loc == 0 {
 				// find the symbol
@@ -170,27 +176,29 @@ func (l *Linker) link() (vm.AlphaEXEFile, error) {
 					return ret, fmt.Errorf("Unresolved symbol '%s'", symInFile.Name)
 				}
 				relocated := l.relocations[objFileIdx(f)]
-				ref = + s.Loc + (relocated.CodeSecOff / vm.INSTRUCTION_SIZE)
+				realRef = + s.Loc + (relocated.CodeSecOff / vm.INSTRUCTION_SIZE)
 			} else {
-				ref = + symInFile.Loc + (rels.CodeSecOff / vm.INSTRUCTION_SIZE)
+				realRef = + symInFile.Loc + (thisObjRels.CodeSecOff / vm.INSTRUCTION_SIZE)
 			}
 			// now apply the patch
 			switch rel.PatchSize {
 			case 8:
-				binary.BigEndian.PutUint64(data[loc:], ref)
+				binary.BigEndian.PutUint64(data[realLoc:], realRef)
 			case 4:
-				binary.BigEndian.PutUint32(data[loc:], uint32(ref))
+				binary.BigEndian.PutUint32(data[realLoc:], uint32(realRef))
 			case 2:
-				binary.BigEndian.PutUint16(data[loc:], uint16(ref))
+				binary.BigEndian.PutUint16(data[realLoc:], uint16(realRef))
 			case 1:
-				data[loc] = byte(ref)
+				data[realLoc] = byte(realRef)
 			default:
 				return ret, fmt.Errorf("Bad patch size of %d", rel.PatchSize)
 			}
 		}
 	}
 
-	ret.CodeStart = l.relocations[0].CodeSecOff
+	ret.CodeStart = 0
+	ret.CodeSize = uint64(len(data))
+	ret.Data = data
 	// ret.CodeSize = l.objectFiles[0].Loaded.Header.CodeSize
 	// ret.StaticDataStart = l.objectFiles[0].Loaded.Header.StaticDataStart
 	// ret.StaticDataSize = l.objectFiles[0].Loaded.Header.StaticDataSize
@@ -207,9 +215,6 @@ func (l *Linker) link() (vm.AlphaEXEFile, error) {
 
 func (l *Linker) Link(sources []LinkerInput) (vm.AlphaEXEFile, error) {
 	ret := vm.AlphaEXEFile{}
-	if len(sources) > 1 {
-		return ret, fmt.Errorf("Multiple object file linking TODO")
-	}
 	if err := l.collectSources(sources); err != nil {
 		return ret, err
 	}

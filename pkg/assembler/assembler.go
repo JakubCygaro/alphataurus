@@ -4,8 +4,6 @@ import (
 	"bufio"
 	"encoding/binary"
 
-	// "fmt"
-
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
