@@ -56,6 +56,7 @@ var (
 		13: handle(OP_XORRR),
 		14: handle(OP_LSHRR),
 		15: handle(OP_RSHRR),
+		16: handle(OP_EXIT),
 	})
 	//jumps
 	//direct jumps
@@ -213,6 +214,7 @@ const (
 	OP_CALL
 	OP_CALLIP
 	OP_RET
+	OP_EXIT
 	OP_NOP
 )
 

@@ -69,6 +69,7 @@ const (
 	INST_TIMPORT
 	INST_TEXPORT
 	INST_TATTRENTRY
+	INST_TEXIT
 )
 
 const (
@@ -165,6 +166,9 @@ type InstCallData struct {
 type InstImportExportData struct {
 	Name string
 	Weak bool
+}
+type InstExitData struct {
+	Val uint64
 }
 type Instruction struct {
 	Ty        int
@@ -310,6 +314,8 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseExport()
 	case "import":
 		return p.parseImport()
+	case "exit":
+		return p.parseExit()
 	}
 	p.currentIdent = ""
 	return errors.UnknownIdentifier(ident, p.lexer.line, p.lexer.col)
@@ -406,6 +412,27 @@ func (p *Parser) parseAttribute() error {
 		}
 	default:
 		return errors.FailedToParse("attribute", "unrecognized attribute type", op.Line, op.Col)
+	}
+	return nil
+}
+func (p *Parser) parseExit() error {
+	expr, err := p.parseExpression(0)
+	if err != nil {
+		return err
+	}
+	if cexpr, ok := TryConstEvaluatePruneExpression(expr); !ok {
+		return errors.FailedToParse("exit instruction", "non comp-time expression parameter",
+			p.lexer.line, p.lexer.col)
+	} else if cexpr.Ty != CONSTEXPR_TILIT {
+		return errors.FailedToParse("exit instruction", "invalid expression value type",
+			p.lexer.line, p.lexer.col)
+	} else {
+		p.currentInst = Instruction{
+			Ty: INST_TEXIT,
+			Data: InstExitData {
+				Val: cexpr.Val,
+			},
+		}
 	}
 	return nil
 }

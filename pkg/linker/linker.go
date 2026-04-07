@@ -140,20 +140,20 @@ func (l *Linker) collect(b Bytes, meta inputMetadata) error {
 func (l *Linker) link() (vm.AlphaEXEFile, error) {
 	ret := vm.AlphaEXEFile{}
 	data := make([]byte, 0)
-	baseOff := uint64(0)
+	codeBaseOff := uint64(0)
 	for idx, obj := range l.objectFiles {
 		if err := l.readGlobalSymbols(objFileIdx(idx), &(l.objectFiles[idx].Loaded)); err != nil {
 			return ret, err
 		}
-		baseOff += uint64(len(data))
+		codeBaseOff += uint64(len(data))
 		data = append(data, obj.Loaded.Code...)
 		ret.CodeSize += uint64(len(obj.Loaded.Code))
 		l.relocations[objFileIdx(idx)] = fileReloc{
-			CodeSecOff: baseOff,
+			CodeSecOff: codeBaseOff,
 		}
 		if obj.Loaded.Header.HasEntry && !ret.HasEntry {
 			ret.HasEntry = true
-			ret.Entry = obj.Loaded.Header.Entry + baseOff
+			ret.Entry = obj.Loaded.Header.Entry + codeBaseOff
 		} else if obj.Loaded.Header.HasEntry {
 			return ret, fmt.Errorf("Multiple entry points defined")
 		}

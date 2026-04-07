@@ -24,6 +24,8 @@ type VmState struct {
 	byteCodePos   uint64
 	exeSegBase    uint64
 	currentOpcode uint32
+	exitCode      uint64
+	exit          bool
 }
 
 const (
@@ -51,6 +53,10 @@ const (
 
 type Registers struct {
 	r [IP_IDX + 1]uint64
+}
+
+func (state *VmState) GetExitCode() uint64 {
+	return state.exitCode
 }
 
 func (state *VmState) GetBp() uint64 {
@@ -199,7 +205,7 @@ func (vm *VmState) Execute(elf AlphaEXEFile) error {
 	if err := vm.load(elf); err != nil {
 		return err
 	}
-	for ; vm.GetIp()-ADDRESSDEADZONE_SIZE < vm.codeSize; vm.incIp() {
+	for ; vm.GetIp()-ADDRESSDEADZONE_SIZE < vm.codeSize && !vm.exit; vm.incIp() {
 		var err error = nil
 		instAddr := (vm.VirtToRealIp(vm.GetIp())) * INSTRUCTION_SIZE
 		vm.byteCodePos = vm.GetIp()
@@ -324,6 +330,9 @@ func (vm *VmState) Execute(elf AlphaEXEFile) error {
 			err = vm.callIP(opCodeBytes[0], param)
 		case OP_RET:
 			err = vm.ret()
+		case OP_EXIT:
+			vm.exitCode = binary.BigEndian.Uint64(param)
+			vm.exit = true
 		default:
 			return fmt.Errorf("Unhandled opcode %d, TODO", opcode)
 		}

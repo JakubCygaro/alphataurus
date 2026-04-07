@@ -168,6 +168,8 @@ func (a *Assembler) EmitBytecode() (int, error) {
 			err = a.emitCallIP(int(inst.Ty), inst.Data.(InstCallIPData), &(a.bytecode))
 		case INST_TRET:
 			err = a.emitRet(&(a.bytecode))
+		case INST_TEXIT:
+			err = a.emitExit(inst.Data.(InstExitData), &(a.bytecode))
 		case INST_TATTRENTRY:
 			if a.hasEntry {
 				err = errors.MultipleEntry(inst.Line, inst.Col)
@@ -685,5 +687,11 @@ func (a *Assembler) emitRet(out *[]byte) error {
 	ret := a.opCodes[vm.OP_RET]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(ret))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
+	return nil
+}
+func (a *Assembler) emitExit(data InstExitData, out *[]byte) error {
+	ret := a.opCodes[vm.OP_EXIT]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(ret))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Val))
 	return nil
 }

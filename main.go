@@ -30,6 +30,7 @@ section '.code'
 _start:
 	mov r1, 32
 	call atoi
+	exit 0
 `
 
 func main() {
@@ -51,6 +52,7 @@ func main() {
 	}
 	ld := linker.NewLinker()
 	elf, err := ld.Link(objects)
+	os.WriteFile("dump", elf.Data, os.FileMode(os.O_TRUNC))
 	if err != nil {
 		os.Stderr.WriteString("linking error\n")
 		os.Stderr.WriteString(err.Error())
@@ -81,5 +83,5 @@ func main() {
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
-
+	os.Exit(int(mach.GetExitCode()))
 }
