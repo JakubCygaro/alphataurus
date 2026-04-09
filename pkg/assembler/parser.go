@@ -201,6 +201,7 @@ func (p *Parser) ParseNext() (bool, error) {
 			break
 		}
 	}
+	p.currentInst.Col, p.currentInst.Line = start.Col, start.Line
 	switch start.Ty {
 	case TOKEN_TIDENT:
 		err = p.parseStartIdent(start)
@@ -217,7 +218,8 @@ func (p *Parser) ParseNext() (bool, error) {
 	}
 	err = p.lexer.ReadNextToken()
 	if p.lexer.CurrentToken().Ty != TOKEN_TNEWLINE && p.lexer.CurrentToken().Ty != TOKEN_TEOF {
-		return false, errors.ExtraTokensOnLine(p.lexer.line, p.lexer.col)
+		t := p.lexer.CurrentToken()
+		return false, errors.ExtraTokensOnLine(t.Line, t.Col)
 	}
 	return true, err
 }
@@ -233,8 +235,7 @@ func (p *Parser) parseStartIdent(t Token) error {
 		p.currentInst = Instruction{
 			Ty: INST_TLABEL,
 			Data: InstLabData{
-				Label:      ident,
-				DeclaredAt: p.lexer.CurrentPosition(),
+				Label: ident,
 			},
 		}
 		return nil
@@ -318,7 +319,7 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseExit()
 	}
 	p.currentIdent = ""
-	return errors.UnknownIdentifier(ident, p.lexer.line, p.lexer.col)
+	return errors.UnknownIdentifier(ident, t.Line, t.Col)
 }
 func (p *Parser) parseSection() error {
 	if err := p.lexer.ReadNextToken(); err != nil {
@@ -335,11 +336,11 @@ func (p *Parser) parseSection() error {
 			}
 		default:
 			return errors.FailedToParse("section",
-				fmt.Sprintf("Unknown section type '%s'", ty), p.lexer.line, p.lexer.col)
+				fmt.Sprintf("Unknown section type '%s'", ty), op.Line, op.Col)
 		}
 	default:
 		return errors.FailedToParse("section",
-			"Bad argument", p.lexer.line, p.lexer.col)
+			"Bad argument", op.Line, op.Col)
 	}
 	return nil
 }
@@ -357,11 +358,13 @@ func (p *Parser) parseImport() error {
 		op = p.lexer.CurrentToken()
 	}
 	if op.Ty != TOKEN_TSINGLEQ {
-		return errors.FailedToParse("import statement", "expected single quoted string parameter", op.Line, op.Col)
+		return errors.FailedToParse("import statement", "expected single quoted string parameter",
+			op.Line, op.Col)
 	}
 	name := op.Val.(string)
 	if strings.ContainsFunc(name, unicode.IsSpace) {
-		return errors.FailedToParse("import statement", "parameter not a valid identifier", op.Line, op.Col)
+		return errors.FailedToParse("import statement", "parameter not a valid identifier",
+			op.Line, op.Col)
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TIMPORT,
@@ -380,11 +383,13 @@ func (p *Parser) parseExport() error {
 	}
 	op := p.lexer.CurrentToken()
 	if op.Ty != TOKEN_TSINGLEQ {
-		return errors.FailedToParse("export statement", "expected single quoted string parameter", op.Line, op.Col)
+		return errors.FailedToParse("export statement", "expected single quoted string parameter",
+			op.Line, op.Col)
 	}
 	name := op.Val.(string)
 	if strings.ContainsFunc(name, unicode.IsSpace) {
-		return errors.FailedToParse("export statement", "parameter not a valid identifier", op.Line, op.Col)
+		return errors.FailedToParse("export statement", "parameter not a valid identifier",
+			op.Line, op.Col)
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TEXPORT,
@@ -402,34 +407,41 @@ func (p *Parser) parseAttribute() error {
 	}
 	op := p.lexer.CurrentToken()
 	if op.Ty != TOKEN_TIDENT {
-		return errors.FailedToParse("attribute", "invalid parameter", op.Line, op.Col)
+		return errors.FailedToParse("attribute", "invalid parameter",
+			op.Line, op.Col)
 	}
 	switch op.Val.(string) {
 	case "entry":
 		p.currentInst = Instruction{
-			Ty: INST_TATTRENTRY,
+			Ty:   INST_TATTRENTRY,
 			Data: nil,
 		}
 	default:
-		return errors.FailedToParse("attribute", "unrecognized attribute type", op.Line, op.Col)
+		return errors.FailedToParse("attribute", "unrecognized attribute type",
+			op.Line, op.Col)
 	}
 	return nil
 }
 func (p *Parser) parseExit() error {
+	if err := p.lexer.ReadNextToken() ;err != nil {
+		return err
+	}
+	start := p.lexer.CurrentToken()
+	p.lexer.UnreadToken()
 	expr, err := p.parseExpression(0)
 	if err != nil {
 		return err
 	}
 	if cexpr, ok := TryConstEvaluatePruneExpression(expr); !ok {
 		return errors.FailedToParse("exit instruction", "non comp-time expression parameter",
-			p.lexer.line, p.lexer.col)
+			start.Line, start.Col)
 	} else if cexpr.Ty != CONSTEXPR_TILIT {
 		return errors.FailedToParse("exit instruction", "invalid expression value type",
-			p.lexer.line, p.lexer.col)
+			start.Line, start.Col)
 	} else {
 		p.currentInst = Instruction{
 			Ty: INST_TEXIT,
-			Data: InstExitData {
+			Data: InstExitData{
 				Val: cexpr.Val,
 			},
 		}

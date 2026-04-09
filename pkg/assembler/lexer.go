@@ -129,6 +129,7 @@ func (l *Lexer) ReadNextToken() error {
 	for {
 		var err error
 		b, err = l.readByte()
+		l.currentToken.Col, l.currentToken.Line = l.col, l.line
 		if err != nil {
 			l.currentToken = Token{
 				Ty: TOKEN_TEOF,
@@ -142,7 +143,6 @@ func (l *Lexer) ReadNextToken() error {
 			break
 		}
 	}
-	l.currentToken.Col, l.currentToken.Line = l.col, l.line
 	switch {
 	case b == '\'':
 		if err := l.readSingleQuoted(); err != nil{

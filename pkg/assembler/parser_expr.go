@@ -50,11 +50,6 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		if err != nil {
 			return inner, err
 		}
-		// if inner.Ty != EXPR_TARTH {
-		// 	return inner, errors.FailedToParse("dereference expression",
-		// 		"Invalid inner expression of deref expression",
-		// 		p.lexer.line, p.lexer.col)
-		// }
 		if err := p.lexer.ReadNextToken(); err != nil {
 			return inner, err
 		}
