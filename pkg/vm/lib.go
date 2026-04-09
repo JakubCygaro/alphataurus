@@ -491,8 +491,8 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 	if !IsGpReg(subtrahend) {
 		// in this case the subtrahend is an immediate value
 		// and the type of the operation is determined by
-		// subtrahend - GP_REG_MAX
-		ty = subtrahend - GP_REG_MAX
+		// subtrahend - GP_REG_MAX - 1
+		ty = subtrahend - GP_REG_MAX - 1
 		subV = binary.BigEndian.Uint64(param)
 	} else {
 		ty = param[0]

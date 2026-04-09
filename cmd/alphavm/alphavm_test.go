@@ -155,10 +155,6 @@ func TestAddIR1(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 }
-func randSign() int {
-	return int(math.Ceil(rand.Float64() - 0.5))
-}
-
 func TestAddIR2(t *testing.T) {
 	r := byte(rand.Int() % vm.GP_REG_MAX)
 	reg_v := rand.Uint64()
@@ -610,7 +606,7 @@ func TestCmp1(t *testing.T) {
 }
 func TestCmp2(t *testing.T) {
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
-	rAV := uint64(rand.Float64() * 1000)
+	rAV := rand.Float64() * 1000
 	rBV := rAV + 1
 	asm := fmt.Sprintf(`
 	section '.code'
