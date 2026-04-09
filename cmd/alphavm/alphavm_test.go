@@ -617,8 +617,6 @@ func TestCmp2(t *testing.T) {
 	@entry
 		mov r%v, %v
 		cmp FLOAT r%v, %v
-		mov r0, 1
-		cmp FLOAT r0, 3
 	`, rA, rAV, rA, rBV)
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
@@ -627,6 +625,7 @@ func TestCmp2(t *testing.T) {
 	}
 	flags := mach.GetFlags()
 	if !flags.Sf {
+		t.Errorf("Compilation of:\n%s\n", asm)
 		t.Errorf("Sign flag was not set")
 		t.Errorf("%+v", flags)
 	}
