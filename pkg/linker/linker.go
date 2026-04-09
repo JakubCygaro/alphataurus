@@ -7,20 +7,19 @@ import (
 	"fmt"
 	"os"
 
-	asm "github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 type objFileData struct {
 	IsInMemory bool
 	Path       string
-	Loaded     asm.ObjFile
+	Loaded     vm.ObjFile
 	Raw        []byte
 }
 type objFileIdx int
 type globalSymbolTable struct {
-	symbols asm.SymbolTable
-	files   map[*asm.SymbolData]objFileIdx
+	symbols vm.SymbolTable
+	files   map[*vm.SymbolData]objFileIdx
 }
 type SourcePath string
 type Bytes []byte
@@ -60,19 +59,19 @@ func (b Bytes) GetMetadata() inputMetadata {
 
 func newGlobalSymbolTable() globalSymbolTable {
 	return globalSymbolTable{
-		symbols: asm.NewSymbolTable(),
-		files:   make(map[*asm.SymbolData]objFileIdx),
+		symbols: vm.NewSymbolTable(),
+		files:   make(map[*vm.SymbolData]objFileIdx),
 	}
 }
 
-func (t *globalSymbolTable) AddSymbol(file objFileIdx, name string, sym *asm.SymbolData) bool {
+func (t *globalSymbolTable) AddSymbol(file objFileIdx, name string, sym *vm.SymbolData) bool {
 	if ok := t.symbols.AddForeignSymbol(name, sym); !ok {
 		return false
 	}
 	t.files[sym] = file
 	return true
 }
-func (t *globalSymbolTable) GetSymbol(name string) (file objFileIdx, inTable int, sym *asm.SymbolData, ok bool) {
+func (t *globalSymbolTable) GetSymbol(name string) (file objFileIdx, inTable int, sym *vm.SymbolData, ok bool) {
 	if sym, idx, ok := t.symbols.GetByName(name); !ok {
 		return 0, 0, nil, false
 	} else {
@@ -93,10 +92,10 @@ func NewLinker() Linker {
 		relocations: make(map[objFileIdx]fileReloc),
 	}
 }
-func (l *Linker) readGlobalSymbols(objidx objFileIdx, obj *asm.ObjFile) error {
+func (l *Linker) readGlobalSymbols(objidx objFileIdx, obj *vm.ObjFile) error {
 	for name, idx := range obj.Symbols.ByName {
 		sym := obj.Symbols.InOrder[idx]
-		if sym.Vis != asm.SYM_VEXPORT {
+		if sym.Vis != vm.SYM_VEXPORT {
 			continue
 		}
 		if ok := l.globals.AddSymbol(objidx, name, sym); !ok {
@@ -121,11 +120,11 @@ func (l *Linker) collectSources(sources []LinkerInput) error {
 }
 
 func (l *Linker) collect(b Bytes, meta inputMetadata) error {
-	header, err := asm.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(b)))
+	header, err := vm.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(b)))
 	if err != nil {
 		return err
 	}
-	obj, err := asm.LoadObjFile(header, b)
+	obj, err := vm.LoadObjFile(header, b)
 	if err != nil {
 		return err
 	}
@@ -137,8 +136,8 @@ func (l *Linker) collect(b Bytes, meta inputMetadata) error {
 	})
 	return nil
 }
-func (l *Linker) link() (vm.AlphaEXEFile, error) {
-	ret := vm.AlphaEXEFile{}
+func (l *Linker) link() (vm.AlphaELFFile, error) {
+	ret := vm.AlphaELFFile{}
 	data := make([]byte, 0)
 	codeBaseOff := uint64(0)
 	for idx, obj := range l.objectFiles {
@@ -213,8 +212,8 @@ func (l *Linker) link() (vm.AlphaEXEFile, error) {
 	return ret, nil
 }
 
-func (l *Linker) Link(sources []LinkerInput) (vm.AlphaEXEFile, error) {
-	ret := vm.AlphaEXEFile{}
+func (l *Linker) Link(sources []LinkerInput) (vm.AlphaELFFile, error) {
+	ret := vm.AlphaELFFile{}
 	if err := l.collectSources(sources); err != nil {
 		return ret, err
 	}

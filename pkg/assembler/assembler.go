@@ -25,8 +25,8 @@ type Assembler struct {
 	lastInst    Instruction
 	bytecode    []byte
 	instCount   int
-	symbols     SymbolTable
-	relocations RelocationTable
+	symbols     vm.SymbolTable
+	relocations vm.RelocationTable
 	hasEntry bool
 	entry uint64
 }
@@ -42,8 +42,8 @@ func NewAssembler(reader bufio.Reader) Assembler {
 		// labels:          make(labelMap),
 		unresolvedJumps: make(unresolvedJumpMap),
 		bytecode:        make([]byte, 0, 64),
-		symbols:         NewSymbolTable(),
-		relocations:     make(RelocationTable, 0),
+		symbols:         vm.NewSymbolTable(),
+		relocations:     make(vm.RelocationTable, 0),
 		hasEntry: false,
 	}
 }
@@ -513,23 +513,23 @@ func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
 	_, posAsInstAddr := a.currentCodePos()
 	if sym, _, ok := a.symbols.GetByName(data.Label); ok {
 		switch sym.Vis {
-		case SYM_VEXPORT:
+		case vm.SYM_VEXPORT:
 			if sym.Loc != 0 {
 				return errors.RedeclaredLabel(data.Label, data.DeclaredAt,
 					a.line, a.col)
 			} else {
 				(*sym).Loc = posAsInstAddr
 			}
-		case SYM_VPRIVATE:
+		case vm.SYM_VPRIVATE:
 			return errors.RedeclaredLabel(data.Label, data.DeclaredAt,
 				a.line, a.col)
 		default:
 			return errors.ImportedSymbolDeclared(data.Label, a.line, a.col)
 		}
 	} else {
-		a.symbols.AddSymbol(SymbolData{
-			Ty:  SYM_TFUNC,
-			Vis: SYM_VPRIVATE,
+		a.symbols.AddSymbol(vm.SymbolData{
+			Ty:  vm.SYM_TFUNC,
+			Vis: vm.SYM_VPRIVATE,
 			Loc: posAsInstAddr,
 			Name: data.Label,
 		})
@@ -548,7 +548,7 @@ func (a *Assembler) patchJmp(data unresolvedJump, pos int, address uint64) error
 	binary.BigEndian.PutUint64(a.bytecode[pos+vm.OPCODE_SIZE:], address)
 	return nil
 }
-func (a *Assembler) patchCallIP(data unresolvedJump, sym *SymbolData, pos int) error {
+func (a *Assembler) patchCallIP(data unresolvedJump, sym *vm.SymbolData, pos int) error {
 	opcode := a.opCodes[vm.OP_CALLIP]
 	var reg byte
 	reg = vm.OP_TADD
@@ -562,7 +562,7 @@ func (a *Assembler) patchCallIP(data unresolvedJump, sym *SymbolData, pos int) e
 	binary.BigEndian.PutUint64(a.bytecode[pos+vm.OPCODE_SIZE:], uint64(diff))
 	return nil
 }
-func (a *Assembler) patchJmpIP(data unresolvedJump, sym *SymbolData, pos int) error {
+func (a *Assembler) patchJmpIP(data unresolvedJump, sym *vm.SymbolData, pos int) error {
 	opcode := a.absoluteJmpToIPJmp(data.InstTy)
 	var reg byte
 	reg = vm.OP_TADD
@@ -583,7 +583,7 @@ func (a *Assembler) resolveJumpInsturctions() error {
 			return errors.UnresolvedSymbol(unresolved.Ident)
 		}
 		switch {
-		case sym.Vis == SYM_VPRIVATE || sym.Vis == SYM_VEXPORT:
+		case sym.Vis == vm.SYM_VPRIVATE || sym.Vis == vm.SYM_VEXPORT:
 			var err error
 			if unresolved.InstTy == INST_TCALL {
 				err = a.patchCallIP(unresolved, sym, codePos)
@@ -603,7 +603,7 @@ func (a *Assembler) resolveJumpInsturctions() error {
 			if err != nil {
 				return err
 			}
-			reloc := RelocData{
+			reloc := vm.RelocData{
 				Loc:       uint64(codePos) + vm.OPCODE_SIZE,
 				Ref:       uint64(symIdx),
 				PatchSize: 8,
@@ -617,11 +617,11 @@ func (a *Assembler) resolveSymbols() error {
 	for sname, idx := range a.symbols.ByName {
 		symbol := a.symbols.InOrder[idx]
 		switch symbol.Vis {
-		case SYM_VPRIVATE:
+		case vm.SYM_VPRIVATE:
 			if symbol.Loc == 0 {
 				return errors.UnresolvedSymbol(sname)
 			}
-		case SYM_VEXPORT:
+		case vm.SYM_VEXPORT:
 			if symbol.Loc == 0 {
 				return errors.UnresolvedSymbol(sname)
 			}

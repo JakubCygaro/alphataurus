@@ -1,4 +1,4 @@
-package assembler
+package vm
 
 import (
 	"bufio"
@@ -6,8 +6,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
-
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 const (
@@ -323,7 +321,7 @@ func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 	if int(h.CodeSize) == 0 {
 		return ret, fmt.Errorf("Bad header code sec data")
 	}
-	if (int(h.CodeStart)+int(h.CodeSize)-int(h.CodeStart))%vm.INSTRUCTION_SIZE != 0 {
+	if (int(h.CodeStart)+int(h.CodeSize)-int(h.CodeStart))%INSTRUCTION_SIZE != 0 {
 		return ret, fmt.Errorf("Bad code section size")
 	}
 	ret.Code = binary[uint64(h.HeaderSize)+h.CodeStart : uint64(h.HeaderSize)+h.CodeStart+h.CodeSize]

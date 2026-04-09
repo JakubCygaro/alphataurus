@@ -18,10 +18,10 @@ const (
 	DEFAULT_STACK_SIZE = 16
 )
 
-func execute(elf vm.AlphaEXEFile) (vm.VmState, error) {
+func execute(elf vm.AlphaELFFile) (vm.VmState, error) {
 	return executeStackSize(elf, DEFAULT_STACK_SIZE)
 }
-func executeStackSize(elf vm.AlphaEXEFile, stacksz uint64) (vm.VmState, error) {
+func executeStackSize(elf vm.AlphaELFFile, stacksz uint64) (vm.VmState, error) {
 	mach := vm.CreateVmState(stacksz)
 	if err := mach.Execute(elf); err != nil {
 		return mach, err
@@ -33,10 +33,10 @@ func assemble(source string) ([]byte, error) {
 	code, err := asmblr.Assemble()
 	return code, err
 }
-func assembleAndLink(source string) (vm.AlphaEXEFile, error) {
+func assembleAndLink(source string) (vm.AlphaELFFile, error) {
 	code, err := assemble(source)
 	if err != nil {
-		return vm.AlphaEXEFile{}, err
+		return vm.AlphaELFFile{}, err
 	}
 	ld := linker.NewLinker()
 	return ld.LinkBytes([]linker.Bytes{code})
