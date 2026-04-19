@@ -93,9 +93,12 @@ func expectStack(mach *vm.VmState, stack vm.VmStack) error {
 		if vmStack[i] != v {
 			lines = append(lines, fmt.Sprintf("Stack value at [%v] was different from expected", i))
 			lines = append(lines,
-				fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)", v, vmStack[i]),
-				fmt.Sprintf("\t[int64]   expected (%v) \t got (%v)", int64(v), int64(vmStack[i])),
-				fmt.Sprintf("\t[float64] expected (%v) \t got (%v)", math.Float64frombits(v), math.Float64frombits(vmStack[i])),
+				fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)",
+					v, vmStack[i]),
+				fmt.Sprintf("\t[int64]   expected (%v) \t got (%v)",
+					int64(v), int64(vmStack[i])),
+				fmt.Sprintf("\t[float64] expected (%v) \t got (%v)",
+					math.Float64frombits(v), math.Float64frombits(vmStack[i])),
 			)
 		}
 	}

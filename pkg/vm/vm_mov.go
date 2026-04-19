@@ -27,10 +27,10 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
 	switch ty {
-	case TY_INT64:
+	case TY_SINT:
 		i64 := binary.BigEndian.Uint64(param)
 		state.regs.r[dest] = i64
-	case TY_FLOAT64:
+	case TY_FLOAT:
 		bits := binary.BigEndian.Uint64(param)
 		state.regs.r[dest] = bits
 	default:

@@ -13,10 +13,10 @@ func (p *Parser) parseCmp() error {
 		return err
 	}
 	op1 := p.lexer.CurrentToken()
-	ty := vm.TY_INT64
+	ty := vm.TY_SINT
 	switch op1.Ty {
 	case TOKEN_TFLOAT:
-		ty = vm.TY_FLOAT64
+		ty = vm.TY_FLOAT
 	default:
 		p.lexer.UnreadToken()
 	}

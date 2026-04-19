@@ -73,9 +73,9 @@ const (
 )
 
 const (
-	ARTH_TUNSIGNED = vm.TY_UINT64
-	ARTH_TSIGNED   = vm.TY_INT64
-	ARTH_TFLOAT    = vm.TY_FLOAT64
+	ARTH_TUNSIGNED = vm.TY_UINT
+	ARTH_TSIGNED   = vm.TY_SINT
+	ARTH_TFLOAT    = vm.TY_FLOAT
 )
 
 const (

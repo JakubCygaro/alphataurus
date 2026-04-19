@@ -7,7 +7,7 @@ import (
 	"math"
 )
 
-type VmStack []uint64
+type VmStack []byte
 
 const (
 	ADDRESSDEADZONE_SIZE = 0x1000
@@ -46,13 +46,21 @@ const (
 )
 
 const (
-	TY_INT64   = iota
-	TY_UINT64  = iota
-	TY_FLOAT64 = iota
+	TY_SINT   = iota
+	TY_UINT  = iota
+	TY_FLOAT = iota
+)
+const (
+	SZ_8  = iota
+	SZ_16 = iota
+	SZ_32
+	SZ_64
 )
 
+type Register [8]byte
+
 type Registers struct {
-	r [IP_IDX + 1]uint64
+	r [IP_IDX + 1]Register
 }
 
 func (state *VmState) GetExitCode() uint64 {
@@ -60,11 +68,11 @@ func (state *VmState) GetExitCode() uint64 {
 }
 
 func (state *VmState) GetBp() uint64 {
-	return state.regs.r[BP_IDX]
+	return binary.BigEndian.Uint64(state.regs.r[BP_IDX][:])
 }
 
 func (state *VmState) GetSp() uint64 {
-	return state.regs.r[SP_IDX]
+	return binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
 }
 func (state *VmState) VirtToRealIp(virtual uint64) uint64 {
 	return virtual - state.exeSegBase
@@ -74,7 +82,7 @@ func (state *VmState) RealToVirtIp(r uint64) uint64 {
 }
 
 func (state *VmState) GetRealSp() int {
-	return state.VirtToRealSp(int(state.regs.r[SP_IDX]))
+	return state.VirtToRealSp(int(binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])))
 }
 
 func (state *VmState) VirtToRealSp(virtual int) int {
@@ -86,11 +94,11 @@ func (state *VmState) RealToVirtSp(r int) int {
 }
 
 func (state *VmState) GetIp() uint64 {
-	return state.regs.r[IP_IDX]
+	return binary.BigEndian.Uint64(state.regs.r[IP_IDX][:])
 }
 
 func (state *VmState) setIp(v uint64) {
-	state.regs.r[IP_IDX] = v
+	binary.BigEndian.PutUint64(state.regs.r[IP_IDX][:], v)
 }
 func (state *VmState) incIp() {
 	state.setIp(state.GetIp() + 1)
@@ -103,7 +111,7 @@ type Flags struct {
 func CreateVmState(stackSize uint64) VmState {
 	state := VmState{
 		regs: Registers{
-			r: [11]uint64{},
+			r: [11]Register{},
 		},
 		flags: Flags{},
 		stack: make(VmStack, stackSize),
@@ -116,7 +124,7 @@ func (vm *VmState) GetGpRX(register byte) (uint64, error) {
 	if !IsGpReg(register) {
 		return 0, fmt.Errorf("Disallowed register index %d", register)
 	}
-	return vm.regs.r[register], nil
+	return binary.BigEndian.Uint64(vm.regs.r[register][:]), nil
 }
 
 // get X general purpose register value and cast it into a supported type value
@@ -127,11 +135,11 @@ func (vm *VmState) GetGpRXAs(register byte, ty byte, out *any) error {
 		return err
 	}
 	switch ty {
-	case TY_UINT64:
+	case TY_UINT:
 		*out = val
-	case TY_INT64:
+	case TY_SINT:
 		*out = int64(val)
-	case TY_FLOAT64:
+	case TY_FLOAT:
 		*out = float64(math.Float64frombits(val))
 	default:
 		return fmt.Errorf("Unsupported type for register value conversion")
@@ -146,8 +154,8 @@ func (vm *VmState) GetStack() VmStack {
 	copy(ret[:], vm.stack[:])
 	return ret
 }
-func (vm *VmState) GetRegisters() []uint64 {
-	regs := make([]uint64, len(vm.regs.r))
+func (vm *VmState) GetRegisters() []Register {
+	regs := make([]Register, len(vm.regs.r))
 	copy(regs[:], vm.regs.r[:])
 	return regs
 }
@@ -173,7 +181,7 @@ func (vm *VmState) GetGpRXAsFloat64(register byte) (float64, error) {
 	return math.Float64frombits(val), nil
 }
 func (vm *VmState) ClearState() {
-	vm.regs.r = [11]uint64{}
+	vm.regs.r = [11]Register{}
 	vm.flags = Flags{}
 	vm.stack = make(VmStack, cap(vm.stack))
 }
@@ -192,7 +200,10 @@ func (vm *VmState) load(elf AlphaELFFile) error {
 	// the stack starts after the code section
 	vm.stackSegBase = int(vm.exeSegBase) + codeSize
 	// the base pointer points right before the beggining of the stack section
-	vm.regs.r[BP_IDX] = uint64(vm.stackSegBase) - 1
+	binary.BigEndian.PutUint64(
+		vm.regs.r[BP_IDX][:],
+		uint64(vm.stackSegBase)-1,
+	)
 	// the stack pointer points to the base pointer
 	vm.regs.r[SP_IDX] = vm.regs.r[BP_IDX]
 	vm.setIp(elf.Entry)
@@ -314,11 +325,11 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 		case OP_JMPLEIP:
 			err = vm.jmpLEIP(opCodeBytes[0], param)
 		case OP_PUSHI:
-			err = vm.push(int(opcode), param)
+			err = vm.push(int(opcode), opCodeBytes[0], param)
 		case OP_PUSHR:
-			err = vm.push(int(opcode), param)
+			err = vm.push(int(opcode), opCodeBytes[0], param)
 		case OP_POP:
-			err = vm.popR(param)
+			err = vm.popR(opCodeBytes[0], param)
 		case OP_CMP:
 			err = vm.cmp(opCodeBytes[0], param)
 		case OP_NOP:
@@ -351,12 +362,24 @@ func isMovRRAllowed(b byte) bool {
 func isPushRAllowed(b byte) bool {
 	return IsGpReg(b) || b == SP_IDX || b == BP_IDX
 }
+
+func (state *VmState) incrementRegUS(reg int, amount uint64) {
+	v := binary.BigEndian.Uint64(state.regs.r[reg][:])
+	v += amount
+	binary.BigEndian.PutUint64(state.regs.r[reg][:], v)
+}
+func (state *VmState) decrementRegUS(reg int, amount uint64) {
+	v := binary.BigEndian.Uint64(state.regs.r[reg][:])
+	v -= amount
+	binary.BigEndian.PutUint64(state.regs.r[reg][:], v)
+}
+
 func (state *VmState) incR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
 	if !IsGpReg(byte(reg)) {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
-	state.regs.r[reg]++
+	state.incrementRegUS(int(reg), 1)
 	return nil
 }
 func (state *VmState) decR(param []byte) error {
@@ -364,7 +387,7 @@ func (state *VmState) decR(param []byte) error {
 	if !IsGpReg(byte(reg)) {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
-	state.regs.r[reg]--
+	state.decrementRegUS(int(reg), 1)
 	return nil
 }
 func (state *VmState) arthIRGetParameters(lastByte byte) (reg, ty byte, err error) {
@@ -375,21 +398,28 @@ func (state *VmState) arthIRGetParameters(lastByte byte) (reg, ty byte, err erro
 	}
 	return reg, ty, nil
 }
-func (state *VmState) arthRRGetParameters(param []byte) (src, dest, ty byte, err error) {
-	src = param[0]
-	dest = param[1]
-	ty = param[3]
-	if !IsGpReg(src) {
-		return 0, 0, 0, errors.DisallowedSrcRegister(int(src), state.byteCodePos)
+type arthRRParamData struct {
+	src, dest, ty byte
+	r1sz, r2sz byte
+}
+func (state *VmState) arthRRGetParameters(param []byte) (data arthRRParamData, err error) {
+	data.src = param[0]
+	data.dest = param[1]
+	data.ty = (param[3] & 0b00000011)
+	data.r1sz = (param[3] & 0b00001100) >> 2
+	data.r2sz = (param[3] & 0b00110000) >> 4
+	if !IsGpReg(data.src) {
+		return data, errors.DisallowedSrcRegister(int(data.src), state.byteCodePos)
 	}
-	if !IsGpReg(dest) {
-		return 0, 0, 0, errors.DisallowedDestRegister(int(dest), state.byteCodePos)
+	if !IsGpReg(data.dest) {
+		return data, errors.DisallowedDestRegister(int(data.dest), state.byteCodePos)
 	}
-	return src, dest, ty, nil
+	return data, nil
 }
 func (state *VmState) logIR(opType int, lastByte byte, param []byte) error {
 	first := lastByte
-	fVal, sVal := state.regs.r[first], binary.BigEndian.Uint64(param)
+	fVal, sVal := binary.BigEndian.Uint64(state.regs.r[first][:]),
+				  binary.BigEndian.Uint64(param)
 	switch opType {
 	case OP_ORIR:
 		fVal = fVal | sVal
@@ -402,7 +432,7 @@ func (state *VmState) logIR(opType int, lastByte byte, param []byte) error {
 	case OP_RSHIR:
 		fVal = fVal >> sVal
 	}
-	state.regs.r[first] = fVal
+	binary.BigEndian.PutUint64(state.regs.r[first][:], fVal)
 	return nil
 }
 func (state *VmState) logRR(opType int, param []byte) error {
@@ -410,7 +440,8 @@ func (state *VmState) logRR(opType int, param []byte) error {
 	if err != nil {
 		return err
 	}
-	fVal, sVal := state.regs.r[first], state.regs.r[second]
+	fVal, sVal := binary.BigEndian.Uint64(state.regs.r[first][:]),
+				  binary.BigEndian.Uint64(state.regs.r[second][:])
 	switch opType {
 	case OP_ORRR:
 		fVal = fVal | sVal
@@ -423,7 +454,7 @@ func (state *VmState) logRR(opType int, param []byte) error {
 	case OP_RSHRR:
 		fVal = fVal >> sVal
 	}
-	state.regs.r[first] = fVal
+	binary.BigEndian.PutUint64(state.regs.r[first][:], fVal)
 	return nil
 }
 func (state *VmState) not(param []byte) error {
@@ -431,22 +462,23 @@ func (state *VmState) not(param []byte) error {
 	if !IsGpReg(byte(reg)) {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
-	regV := state.regs.r[reg]
-	state.regs.r[reg] = ^regV
+	regV := binary.BigEndian.Uint64(state.regs.r[reg][:])
+
+	binary.BigEndian.PutUint64(state.regs.r[reg][:], ^regV)
 	return nil
 }
 func (state *VmState) arthRR(opType int, param []byte) error {
-	src, dest, ty, err := state.arthRRGetParameters(param)
+	data, err := state.arthRRGetParameters(param)
 	if err != nil {
 		return err
 	}
-	srcV := state.regs.r[src]
-	destV := state.regs.r[dest]
+	srcV := binary.BigEndian.Uint64(state.regs.r[data.src][:])
+	destV := binary.BigEndian.Uint64(state.regs.r[data.dest][:])
 	switch opType {
 	case OP_ADDRR:
-		addValues(srcV, destV, ty, &state.regs.r[dest])
+		addValues(srcV, destV, data.ty, &state.regs.r[dest])
 	case OP_SUBRR:
-		subValues(destV, srcV, ty, &state.regs.r[dest])
+		subValues(destV, srcV, data.ty, &state.regs.r[dest])
 	case OP_MULRR:
 		srcV := state.regs.r[R0_IDX]
 		destV := state.regs.r[R1_IDX]
@@ -502,7 +534,7 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 	subValues(minV, subV, ty, &diff)
 	state.flags = Flags{}
 
-	if ty == TY_FLOAT64 {
+	if ty == TY_FLOAT {
 		state.flags.Sf = math.Float64frombits(diff) < 0.0
 		state.flags.Zf = math.Float64frombits(diff) == 0.0
 	} else {
@@ -512,45 +544,71 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 
 	return nil
 }
-func (state *VmState) pushImpl(val uint64) error {
+func (state *VmState) pushImpl(data []byte) error {
 	if state.GetRealSp()+1 >= len(state.stack) {
 		return errors.StackOverflow(state.byteCodePos)
 	}
 	state.regs.r[SP_IDX]++
-	state.stack[state.GetRealSp()] = val
+	copy(
+		state.stack[state.GetRealSp():len(data)],
+		data[:],
+	)
 	return nil
 }
-func (state *VmState) push(ty int, param []byte) error {
-	var val uint64
-	switch ty {
+func dataSizeToByteCount(dataSz byte) int {
+	switch dataSz {
+	case SZ_8:
+		return 1
+	case SZ_16:
+		return 2
+	case SZ_32:
+		return 4
+	case SZ_64:
+		return 8
+	}
+	return -1
+}
+func (state *VmState) push(opTy int, lastByte byte, param []byte) error {
+	var val []byte
+	// 2 bits for the data size
+	dataSz := (0b00000011 & lastByte)
+	byteSpan := dataSizeToByteCount(dataSz)
+	switch opTy {
 	case OP_PUSHI:
-		val = binary.BigEndian.Uint64(param)
+		val = param[8-byteSpan:]
 	case OP_PUSHR:
 		reg := binary.BigEndian.Uint64(param)
 		if isPushRAllowed(byte(reg)) {
-			val = state.regs.r[reg]
+			val = state.regs.r[reg][8-byteSpan:]
 		} else {
 			return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 		}
 	}
 	return state.pushImpl(val)
 }
-func (state *VmState) popImpl() (uint64, error) {
+func (state *VmState) popImpl(bytes int) ([]byte, error) {
 	if state.GetRealSp() < 0 {
-		return 0, errors.StackUnderflow(state.byteCodePos)
+		return nil, errors.StackUnderflow(state.byteCodePos)
 	}
-	val := state.stack[state.GetRealSp()]
-	state.regs.r[SP_IDX]--
+	val := state.stack[state.GetRealSp():bytes]
+	var sp = binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
+	sp--
+	binary.BigEndian.PutUint64(state.regs.r[SP_IDX][0:], sp)
 	return val, nil
 }
-func (state *VmState) popR(param []byte) error {
-	val, err := state.popImpl()
+func (state *VmState) popR(lastByte byte, param []byte) error {
+	val, err := state.popImpl(
+		dataSizeToByteCount(lastByte & 0b00000011),
+	)
 	if err != nil {
 		return err
 	}
 	reg := binary.BigEndian.Uint64(param)
 	if isPushRAllowed(byte(reg)) {
-		state.regs.r[reg] = val
+		copy(
+			state.regs.r[reg][8-len(val):],
+			val[:],
+		)
 	}
 	return nil
 }

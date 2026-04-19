@@ -74,16 +74,16 @@ var (
 	p03XX = nested(OpCodeMap{
 		0: p030X,
 		//ip relative jumps
-		1: handle(OP_JMPIP),
-		2: handle(OP_JMPEIP),
-		3: handle(OP_JMPNEIP),
-		4: handle(OP_JMPZIP),
-		5: handle(OP_JMPNZIP),
-		6: handle(OP_JMPGIP),
-		7: handle(OP_JMPGEIP),
-		8: handle(OP_JMPLIP),
-		9: handle(OP_JMPLEIP),
-		10:  handle(OP_CALLIP),
+		1:  handle(OP_JMPIP),
+		2:  handle(OP_JMPEIP),
+		3:  handle(OP_JMPNEIP),
+		4:  handle(OP_JMPZIP),
+		5:  handle(OP_JMPNZIP),
+		6:  handle(OP_JMPGIP),
+		7:  handle(OP_JMPGEIP),
+		8:  handle(OP_JMPLIP),
+		9:  handle(OP_JMPLEIP),
+		10: handle(OP_CALLIP),
 	})
 	p00XX = nested(OpCodeMap{
 		0:  handle(OP_MOVRR),
@@ -99,16 +99,14 @@ var (
 		11: handle(OP_LSHIR),
 		12: handle(OP_RSHIR),
 	})
-	//stack
-	p011X = nested(OpCodeMap{
+	p01XX = nested(OpCodeMap{
+		// stack manipulation, leave a byte for data size
 		0: handle(OP_PUSHR),
 		1: handle(OP_PUSHI),
 		2: handle(OP_POP),
-	})
-	p01XX = nested(OpCodeMap{
-		1: p011X,
-		2: handle(OP_MOVID),
-		3: handle(OP_MOVRD),
+		//
+		3: handle(OP_MOVID),
+		4: handle(OP_MOVRD),
 	})
 	p1XXX = nested(OpCodeMap{
 		0: handle(OP_MOVDRO1),
