@@ -16,21 +16,23 @@ section '.code'
 atoi:
 	push bp
 	mov bp, sp
-	sub r1, 30
+	sub r1, 0x30
 	mov r0, r1
 	pop bp
 	ret
 `
 
 const assembly = `
+import 'atoi'
 section '.code'
 @entry
-	mov r5, 177.73512666133715
-	cmp FLOAT r5, 178.73512666133715
+	mov r1, 0x35
+	call atoi
+	exit 0
 `
 
 func main() {
-	sources := []string { assembly }
+	sources := []string { assembly, assembly2}
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(s)))
