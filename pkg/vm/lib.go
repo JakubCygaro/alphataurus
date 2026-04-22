@@ -74,6 +74,10 @@ func (state *VmState) GetBp() uint64 {
 func (state *VmState) GetSp() uint64 {
 	return binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
 }
+// takes the virtual instruction pointer and transforms it into the real position of the
+// instruction in the bytecode []byte array
+//
+// basically subtracts state.exeSegBase from the input value
 func (state *VmState) VirtToRealIp(virtual uint64) uint64 {
 	return virtual - state.exeSegBase
 }
@@ -101,7 +105,7 @@ func (state *VmState) setIp(v uint64) {
 	binary.BigEndian.PutUint64(state.regs.r[IP_IDX][:], v)
 }
 func (state *VmState) incIp() {
-	state.setIp(state.GetIp() + 1)
+	state.setIp(state.GetIp() + INSTRUCTION_SIZE)
 }
 
 type Flags struct {
@@ -194,12 +198,12 @@ func (vm *VmState) load(elf AlphaELFFile) error {
 	if len(bytecode)%INSTRUCTION_SIZE != 0 {
 		return errors.BadCodeSectionSize()
 	}
-	codeSize := len(bytecode) / INSTRUCTION_SIZE
+	codeSize := len(bytecode)
 	// the code section starts after the deadzone (for now)
 	vm.exeSegBase = ADDRESSDEADZONE_SIZE
 	// the stack starts after the code section
 	vm.stackSegBase = int(vm.exeSegBase) + codeSize
-	// the base pointer points right before the beggining of the stack section
+	// the base pointer points right before the beginning of the stack section
 	binary.BigEndian.PutUint64(
 		vm.regs.r[BP_IDX][:],
 		uint64(vm.stackSegBase)-1,
@@ -218,7 +222,7 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 	}
 	for ; vm.GetIp()-ADDRESSDEADZONE_SIZE < vm.codeSize && !vm.exit; vm.incIp() {
 		var err error = nil
-		instAddr := (vm.VirtToRealIp(vm.GetIp())) * INSTRUCTION_SIZE
+		instAddr := vm.VirtToRealIp(vm.GetIp())
 		vm.byteCodePos = vm.GetIp()
 		opCodeBytes := vm.bytecode[instAddr : instAddr+OPCODE_SIZE]
 		param := vm.bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
@@ -654,3 +658,36 @@ func (state *VmState) popR(lastByte byte, param []byte) error {
 	}
 	return nil
 }
+
+func (state *VmState) getRegVAsUint64(reg int, dataSz byte) (uint64) {
+	bytes := dataSizeToByteCount(dataSz)
+	ret := uint64(0)
+	r := state.regs.r[reg][:]
+	switch dataSz {
+	case SZ_8:
+		ret = uint64(r[7])
+	case SZ_16:
+		ret = uint64(binary.BigEndian.Uint16(r[8-bytes:]))
+	case SZ_32:
+		ret = uint64(binary.BigEndian.Uint32(r[8-bytes:]))
+	case SZ_64:
+		ret = uint64(binary.BigEndian.Uint64(r[8-bytes:]))
+	}
+
+	return ret
+}
+func (state *VmState) putValInRegWithSize(reg int, dataSz byte, val uint64) {
+	bytes := dataSizeToByteCount(dataSz)
+	r := state.regs.r[reg][:]
+	switch dataSz {
+	case SZ_8:
+		r[7] = byte(val)
+	case SZ_16:
+		binary.BigEndian.PutUint16(r[8-bytes:], uint16(val))
+	case SZ_32:
+		binary.BigEndian.PutUint32(r[8-bytes:], uint32(val))
+	case SZ_64:
+		binary.BigEndian.PutUint64(r[8-bytes:], uint64(val))
+	}
+}
+

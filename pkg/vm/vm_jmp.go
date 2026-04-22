@@ -61,13 +61,14 @@ func (state *VmState) jmpLE(lastByte byte, param []byte) error {
 }
 func (state *VmState) jmpIP(lastByte byte, param []byte) error {
 	offset := int64(binary.BigEndian.Uint64(param))
-	ip := int64(state.regs.r[IP_IDX])
-	reg := (lastByte & 0x0f)
+	ip := int64(binary.BigEndian.Uint64(state.regs.r[IP_IDX][:]))
+	reg := (lastByte & 0b0000_1111)
+	dataSz := (lastByte & 0b1100_0000) >> 6
 	regV := int64(0)
 	if isMovRRAllowed(reg) {
-		regV = int64(state.regs.r[reg])
+		regV = int64(state.getRegVAsUint64(int(reg), dataSz))
 	}
-	opTy := (lastByte & 0xf0) >> 4
+	opTy := (lastByte & 0b0011_0000) >> 4
 	dest := uint64(0)
 	switch opTy {
 	case OP_TADD:

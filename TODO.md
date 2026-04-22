@@ -5,4 +5,5 @@
 - variables in the assembler, basically how its done in FASM
 - label deref [start]
 - add more tests
+- add movzz
 
