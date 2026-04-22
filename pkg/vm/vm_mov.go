@@ -161,21 +161,24 @@ func (state *VmState) movDRO2(byte3, byte4 byte, param []byte) error {
 	)
 	return nil
 }
-func (state *VmState) movID(param []byte) error {
+func (state *VmState) movID(lastByte byte, param []byte) error {
 	p := binary.BigEndian.Uint64(param)
 	dest := (p & 0xffff_ffff_0000_0000) >> 32
 	imm := uint64(int32((p & 0x0000_0000_ffff_ffff)))
+	dataSz := lastByte & 0b0000_0011
 	inStack := state.VirtToRealSp(int(dest))
 	if inStack < 0 || inStack >= len(state.stack) {
 		return errors.SegmentationFault(dest, state.byteCodePos)
 	}
-	state.stack[inStack] = imm
+
+	state.putValInStackWithSize(dataSz, imm, inStack)
 	return nil
 }
-func (state *VmState) movRD(param []byte) error {
+func (state *VmState) movRD(lastByte byte, param []byte) error {
 	p := binary.BigEndian.Uint64(param)
-	source := (p & 0x0000_0000_0000_00ff)
-	dest := (p & 0xffff_ffff_ffff_ff00) >> 8
+	source := lastByte & 0b0000_1111
+	dataSz := lastByte & 0b0011_0000
+	dest := p
 	inStack := state.VirtToRealSp(int(dest))
 	if !isMovRRAllowed(byte(source)) {
 		return errors.DisallowedSrcRegister(int(source), state.byteCodePos)
@@ -183,11 +186,16 @@ func (state *VmState) movRD(param []byte) error {
 	if inStack < 0 || inStack >= len(state.stack) {
 		return errors.SegmentationFault(dest, state.byteCodePos)
 	}
-	state.stack[inStack] = state.regs.r[source]
+	bytes := dataSizeToByteCount(dataSz)
+	copy(
+		state.regs.r[source][8-bytes:],
+		state.stack[inStack:bytes],
+	)
 	return nil
 }
 func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
-	_, reg1, _, opTy := state.getDerefParams(byte3, byte4)
+	// _, reg1, _, opTy := state.getDerefParamsO1(byte3, byte4)
+	dParams := state.getDerefParamsO1(byte3, byte4)
 	if !isMovRRAllowed(reg1) {
 		return errors.DisallowedOp1Register(int(reg1), state.byteCodePos)
 	}
