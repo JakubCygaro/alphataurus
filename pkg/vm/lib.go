@@ -676,7 +676,10 @@ func (state *VmState) getRegVAsUint64(reg int, dataSz byte) (uint64) {
 
 	return ret
 }
-func (state *VmState) putValInStackWithSize(dataSz byte, val uint64, address int) {
+func (state *VmState) putValInStackWithSize(dataSz byte, val uint64, address int) error {
+	if address + int(dataSz) > len(state.stack) {
+		return errors.StackOverflow(state.byteCodePos)
+	}
 	bytes := dataSizeToByteCount(dataSz)
 	s := state.stack[address:bytes]
 	switch dataSz {
@@ -689,6 +692,7 @@ func (state *VmState) putValInStackWithSize(dataSz byte, val uint64, address int
 	case SZ_64:
 		binary.BigEndian.PutUint64(s[8-bytes:], uint64(val))
 	}
+	return nil
 }
 func (state *VmState) putValInRegWithSize(reg int, dataSz byte, val uint64) {
 	bytes := dataSizeToByteCount(dataSz)
