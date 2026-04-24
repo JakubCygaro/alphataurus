@@ -7,3 +7,10 @@
 - add more tests
 - add movzz
 
+
+r0  -> 64-bits
+r0h -> 32-bits (h for half word)
+r0q -> 16-bits (q for quarter word)
+r0o -> 8-bits (o for octave)
+
+mov BYTE [bp + 8], r0o
