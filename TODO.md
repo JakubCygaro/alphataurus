@@ -1,4 +1,15 @@
 - TryEvalConstExprWithLabels -> takes a map of label-value pairs that it uses while trying to evaluate expressions
+- better commutative expressions comp-time evalutaion wit fat trees,
+ basically the Add and Mul Expression nodes keep a list of children expressions
+ instead of being binary.
+
+    +
+   /|\
+  / | \
+  1 2 -
+      |\
+      | \
+      2 3
 - fix the bullshit that is col and line
 - lea
 - syscall
