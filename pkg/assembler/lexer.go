@@ -38,6 +38,9 @@ const (
 	TOKEN_TSINGLEQ
 	TOKEN_TAT
 	TOKEN_TWEAK
+	TOKEN_TBYTE
+	TOKEN_THALF
+	TOKEN_TQUARTER
 	TOKEN_TEOF
 )
 
@@ -46,6 +49,9 @@ var keywords = map[string]int{
 	"UNSIGNED": TOKEN_TUNSIGNED,
 	"FLOAT":    TOKEN_TFLOAT,
 	"WEAK": TOKEN_TWEAK,
+	"BYTE": TOKEN_TBYTE,
+	"HALF": TOKEN_THALF,
+	"QUARTER": TOKEN_TQUARTER,
 }
 
 type Token struct {
@@ -65,6 +71,16 @@ type Lexer struct {
 func nilToken() Token {
 	return Token{
 		Ty: TOKEN_TNIL,
+	}
+}
+
+func TokenAsIdent(t *Token) (string, bool){
+	if s, ok := t.Val.(string); ok {
+		return s, ok
+	} else if r, ok := t.Val.(rune); ok {
+		return string(r), ok
+	} else {
+		return "", false
 	}
 }
 

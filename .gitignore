@@ -1,1 +1,4 @@
 *.ao
+*.asm
+*.aelf
+dump
