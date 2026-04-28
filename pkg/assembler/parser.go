@@ -96,6 +96,7 @@ const (
 type InstMovData struct {
 	Src, Dest int
 	Imm       uint64
+	DataSize  byte
 }
 type InstIncDecData struct {
 	Reg int
@@ -133,8 +134,8 @@ type InstLabData struct {
 	DeclaredAt string
 }
 type InstPushPopData struct {
-	Reg uint64
-	Imm uint64
+	Reg    uint64
+	Imm    uint64
 	DataSz byte
 }
 type InstDerefMovData struct {
@@ -424,7 +425,7 @@ func (p *Parser) parseAttribute() error {
 	return nil
 }
 func (p *Parser) parseExit() error {
-	if err := p.lexer.ReadNextToken() ;err != nil {
+	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
 	start := p.lexer.CurrentToken()

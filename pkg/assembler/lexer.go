@@ -83,6 +83,12 @@ func GetSizeKeyword(size byte) (string, bool) {
 		return "", false
 	}
 }
+func GetInvalidRegister() RegisterData {
+	return RegisterData {
+		Reg: math.MaxInt64,
+		Size: math.MaxInt8,
+	}
+}
 type RegisterData struct {
 	Reg int
 	Size byte

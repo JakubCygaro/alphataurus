@@ -13,7 +13,7 @@ const (
 
 type DerefData struct {
 	Ty         int
-	Reg1, Reg2 int
+	Reg1, Reg2 RegisterData
 	// plus or minus
 	OffsetOp int
 	Offset   int64
@@ -23,8 +23,8 @@ type DerefData struct {
 
 func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefData, error) {
 	ret := DerefData{
-		Reg1:       INVALID,
-		Reg2:       INVALID,
+		Reg1:       GetInvalidRegister(),
+		Reg2:       GetInvalidRegister(),
 		OffsetOp:   INVALID,
 		Offset:     INVALID,
 		OffsetExpr: nil,
@@ -32,20 +32,20 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 	switch {
 	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(arthExpr.B, CONSTEXPR_TILIT):
 		ret.Ty = DEREF_T1RO
-		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
+		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
 		ret.OffsetOp = arthExpr.GetVMOpType()
 	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
 		ret.Ty = DEREF_T1RO
-		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
-		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
+		ret.Reg1 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
+		ret.Offset = int64(arthExpr.A.Val.(ConstExpr).Val)
 		ret.OffsetOp = vm.OP_TADD
 	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
 		ret.Ty = DEREF_T2RO
-		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
-		ret.Reg2 = int(arthExpr.B.Val.(ConstExpr).Val)
+		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
+		ret.Reg2 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Offset = int64(0)
 		ret.OffsetOp = vm.OP_TADD
 	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsArthexpr(arthExpr.B, ARTHEXPR_TADD) && nestLvl == 0:
@@ -58,7 +58,7 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 				"Disallowed operation", p.lexer.line, p.lexer.col)
 		}
 		ret.Ty = DEREF_T2RO
-		ret.Reg1 = int(arthExpr.A.Val.(ConstExpr).Val)
+		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Reg2 = nestedD.Reg1
 		ret.Offset = nestedD.Offset
 		ret.OffsetOp = nestedD.OffsetOp
@@ -69,7 +69,7 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 			return ret, err
 		}
 		ret.Ty = DEREF_T2RO
-		ret.Reg1 = int(arthExpr.B.Val.(ConstExpr).Val)
+		ret.Reg1 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Reg2 = nestedD.Reg1
 		ret.Offset = nestedD.Offset
 		ret.OffsetOp = nestedD.OffsetOp
@@ -113,8 +113,8 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 
 func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 	ret := DerefData{
-		Reg1:       INVALID,
-		Reg2:       INVALID,
+		Reg1:       GetInvalidRegister(),
+		Reg2:       GetInvalidRegister(),
 		OffsetOp:   INVALID,
 		Offset:     INVALID,
 		OffsetExpr: nil,
@@ -128,7 +128,8 @@ func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 			ret.Offset = int64(innerConst.Val)
 		case CONSTEXPR_TREG:
 			ret.Ty = DEREF_T1RO
-			ret.Reg1 = int(innerConst.Val)
+			regD := innerConst.UnpackAsRegisterData()
+			ret.Reg1 = regD
 			ret.Offset = int64(0)
 			ret.OffsetOp = vm.OP_TADD
 		// TODO: label dereference support

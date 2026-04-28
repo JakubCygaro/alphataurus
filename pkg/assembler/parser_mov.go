@@ -14,7 +14,7 @@ func (p *Parser) parseMov() error {
 			"First operand to instruction must be a valid register or dereference expression",
 			p.lexer.line, p.lexer.col)
 	} else {
-		op1.Val = int(eval.Val)
+		op1.Val = eval.UnpackAsRegisterData()
 	}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
@@ -35,20 +35,27 @@ func (p *Parser) parseMov() error {
 		case EXPR_TCONST:
 			op2 = eval.Val.(ConstExpr)
 		case EXPR_TDEREF:
-			return p.parseDerefMov(op1.Val.(int), eval.Val.(DerefExpr).Inner)
+			return p.parseDerefMov(op1.Val.(RegisterData), eval.Val.(DerefExpr).Inner)
 		default:
 			return errors.FailedToParse("mov instruction",
 				"Second operand to instruction has to be a valid register, dereference, or a compile time expression",
 				p.lexer.line, p.lexer.col)
 		}
 	}
+
+	destData := op1.Val.(RegisterData)
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
+		srcData := op2.UnpackAsRegisterData()
+		if destData.Size < srcData.Size {
+			return errors.MismatchedRegisterSizes(op1.Line, op1.Col)
+		}
 		p.currentInst = Instruction{
 			Ty: INST_TMOVRR,
 			Data: InstMovData{
-				Src:  int(op2.Val),
-				Dest: op1.Val.(int),
+				Src:  srcData.Reg,
+				Dest: destData.Reg,
+				DataSize: destData.Size,
 			},
 		}
 	case CONSTEXPR_TILIT:
@@ -56,7 +63,8 @@ func (p *Parser) parseMov() error {
 			Ty: INST_TMOVIR,
 			Data: InstMovData{
 				Imm:  op2.Val,
-				Dest: op1.Val.(int),
+				Dest: destData.Reg,
+				DataSize: destData.Size,
 			},
 		}
 	case CONSTEXPR_TFLIT:
@@ -64,7 +72,8 @@ func (p *Parser) parseMov() error {
 			Ty: INST_TMOVIR,
 			Data: InstMovData{
 				Imm:  op2.Val,
-				Dest: op1.Val.(int),
+				Dest: destData.Reg,
+				DataSize: destData.Size,
 			},
 		}
 	default:
@@ -77,7 +86,7 @@ func (p *Parser) parseMov() error {
 
 // move deref to somewhere
 // e.g: mov r0, [bp]
-func (p *Parser) parseDerefMov(reg int, inner *Expr) error {
+func (p *Parser) parseDerefMov(reg RegisterData, inner *Expr) error {
 	dData, err := p.processDeref(inner)
 	if err != nil {
 		return err

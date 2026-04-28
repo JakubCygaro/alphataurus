@@ -182,11 +182,13 @@ func (e *ConstExpr) AsFloat() float64 {
 // CONSTEXPR_TREG stores its register data in the bits of the uint64 Val field
 //
 // As such it needs to be extracted to be usable
-func (c* ConstExpr) UnpackAsRegisterData() RegisterData {
-	// packed := (uint64(regData.Size) << 8) | uint64(regData.Reg)
+func (c ConstExpr) UnpackAsRegisterData() RegisterData {
+	return UnpackRegisterData(c.Val)
+}
+func UnpackRegisterData(packed uint64) RegisterData {
 	return RegisterData{
-		Reg: int(byte(c.Val)),
-		Size: byte(c.Val >> 8),
+		Reg: int(byte(packed)),
+		Size: byte(packed >> 8),
 	}
 }
 func opTy(a, b *ConstExpr) int {
