@@ -632,18 +632,21 @@ func (a *Assembler) resolveSymbols() error {
 func (a *Assembler) emitPushR(data InstPushPopData, out *[]byte) error {
 	push := a.opCodes[vm.OP_PUSHR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(push))
+	(*out)[len(*out)-4] = 0b0000_0011 & data.DataSz
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
 	return nil
 }
 func (a *Assembler) emitPushI(data InstPushPopData, out *[]byte) error {
 	push := a.opCodes[vm.OP_PUSHI]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(push))
+	(*out)[len(*out)-4] = 0b0000_0011 & data.DataSz
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
 func (a *Assembler) emitPop(data InstPushPopData, out *[]byte) error {
 	pop := a.opCodes[vm.OP_POP]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(pop))
+	(*out)[len(*out)-4] = 0b0000_0011 & data.DataSz
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
 	return nil
 }

@@ -28,6 +28,8 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 	}
 	lhsToken := p.lexer.CurrentToken()
 	var lhs *Expr
+	lhs.Line = lhsToken.Line
+	lhs.Col = lhsToken.Col
 	switch lhsToken.Ty {
 	case TOKEN_TEOF:
 		return nil, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
@@ -61,29 +63,35 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		deref := MakeDeref(inner)
 		return deref, nil
 	case TOKEN_TREG:
-		lhs = &Expr{
-			Ty: EXPR_TCONST,
-			Val: ConstExpr{
-				Ty:  CONSTEXPR_TREG,
-				Val: uint64(lhsToken.Val.(int)),
-			},
-		}
+		regData := lhsToken.Val.(RegisterData)
+		lhs = MakeConstexprR(byte(regData.Reg), regData.Size)
+		// pack this data into the expression value
+		// packed := (uint64(regData.Size) << 8) | uint64(regData.Reg)
+		// lhs = &Expr{
+		// 	Ty: EXPR_TCONST,
+		// 	Val: ConstExpr{
+		// 		Ty:  CONSTEXPR_TREG,
+		// 		Val: packed,
+		// 	},
+		// }
 	case TOKEN_TINTEGER_LIT:
-		lhs = &Expr{
-			Ty: EXPR_TCONST,
-			Val: ConstExpr{
-				Ty:  CONSTEXPR_TILIT,
-				Val: lhsToken.Val.(uint64),
-			},
-		}
+		lhs = MakeConstexprU64(lhsToken.Val.(uint64))
+		// lhs = &Expr{
+		// 	Ty: EXPR_TCONST,
+		// 	Val: ConstExpr{
+		// 		Ty:  CONSTEXPR_TILIT,
+		// 		Val: lhsToken.Val.(uint64),
+		// 	},
+		// }
 	case TOKEN_TFLOAT_LIT:
-		lhs = &Expr{
-			Ty: EXPR_TCONST,
-			Val: ConstExpr{
-				Ty:  CONSTEXPR_TFLIT,
-				Val: lhsToken.Val.(uint64),
-			},
-		}
+		lhs = MakeConstexprF64Bits(lhsToken.Val.(uint64))
+		// lhs = &Expr{
+		// 	Ty: EXPR_TCONST,
+		// 	Val: ConstExpr{
+		// 		Ty:  CONSTEXPR_TFLIT,
+		// 		Val: lhsToken.Val.(uint64),
+		// 	},
+		// }
 	case TOKEN_TIDENT:
 		lhs = MakeConstexprIdent(lhsToken.Val.(string))
 	default:

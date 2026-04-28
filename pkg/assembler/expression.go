@@ -22,6 +22,9 @@ const (
 	INVALID = -1
 	// r0
 	// sp
+	// CONSTEXPR_TREG stores its register data in the bits of the uint64 Val field
+	//
+	// As such it needs to be extracted to be usable
 	CONSTEXPR_TREG = 0
 	// 1313
 	CONSTEXPR_TILIT = iota
@@ -41,6 +44,7 @@ var associativeOperators = map[int]void{
 type Expr struct {
 	Ty  int
 	Val any
+	Line, Col uint64 
 }
 
 type ConstExpr struct {
@@ -109,8 +113,17 @@ func MakeConstexprI64(v int64) *Expr {
 		},
 	}
 }
-func MakeConstexprF64(v float64) Expr {
-	return Expr{
+func MakeConstexprF64Bits(bits uint64) *Expr {
+	return &Expr{
+		Ty: EXPR_TCONST,
+		Val: ConstExpr{
+			Ty:  CONSTEXPR_TFLIT,
+			Val: bits,
+		},
+	}
+}
+func MakeConstexprF64(v float64) *Expr {
+	return &Expr{
 		Ty: EXPR_TCONST,
 		Val: ConstExpr{
 			Ty:  CONSTEXPR_TFLIT,
@@ -127,12 +140,13 @@ func MakeConstexprIdent(v string) *Expr {
 		},
 	}
 }
-func MakeConstexprR(r int) *Expr {
+func MakeConstexprR(r, size byte) *Expr {
+	packed := (uint64(size) << 8) | uint64(r)
 	return &Expr{
 		Ty: EXPR_TCONST,
 		Val: ConstExpr{
 			Ty:  CONSTEXPR_TREG,
-			Val: uint64(r),
+			Val: packed,
 		},
 	}
 }
@@ -163,6 +177,16 @@ func (e *ConstExpr) AsFloat() float64 {
 		return float64(e.Val)
 	default:
 		return math.NaN()
+	}
+}
+// CONSTEXPR_TREG stores its register data in the bits of the uint64 Val field
+//
+// As such it needs to be extracted to be usable
+func (c* ConstExpr) UnpackAsRegisterData() RegisterData {
+	// packed := (uint64(regData.Size) << 8) | uint64(regData.Reg)
+	return RegisterData{
+		Reg: int(byte(c.Val)),
+		Size: byte(c.Val >> 8),
 	}
 }
 func opTy(a, b *ConstExpr) int {

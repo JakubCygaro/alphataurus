@@ -40,6 +40,7 @@ const (
 	TOKEN_TWEAK
 	TOKEN_TBYTE
 	TOKEN_THALF
+	TOKEN_TWORD
 	TOKEN_TQUARTER
 	TOKEN_TEOF
 )
@@ -48,10 +49,43 @@ var keywords = map[string]int{
 	"SIGNED":   TOKEN_TSIGNED,
 	"UNSIGNED": TOKEN_TUNSIGNED,
 	"FLOAT":    TOKEN_TFLOAT,
-	"WEAK": TOKEN_TWEAK,
-	"BYTE": TOKEN_TBYTE,
-	"HALF": TOKEN_THALF,
-	"QUARTER": TOKEN_TQUARTER,
+	"WEAK":     TOKEN_TWEAK,
+	"BYTE":     TOKEN_TBYTE,
+	"HALF":     TOKEN_THALF,
+	"QUARTER":  TOKEN_TQUARTER,
+	"WORD":     TOKEN_TWORD,
+}
+var keywordNames map[int]string = makeKeywordNames()
+
+func makeKeywordNames() map[int]string {
+	names := make(map[int]string)
+	for k, v := range keywords {
+		names[v] = k
+	}
+	return names
+}
+
+func GetKeywordName(kwdToken int) (string, bool) {
+	n, ok := keywordNames[kwdToken]
+	return n, ok
+}
+func GetSizeKeyword(size byte) (string, bool) {
+	switch size {
+	case vm.SZ_8:
+		return GetKeywordName(TOKEN_TBYTE)
+	case vm.SZ_16:
+		return GetKeywordName(TOKEN_TQUARTER)
+	case vm.SZ_32:
+		return GetKeywordName(TOKEN_THALF)
+	case vm.SZ_64:
+		return GetKeywordName(TOKEN_TWORD)
+	default:
+		return "", false
+	}
+}
+type RegisterData struct {
+	Reg int
+	Size byte
 }
 
 type Token struct {
@@ -74,13 +108,27 @@ func nilToken() Token {
 	}
 }
 
-func TokenAsIdent(t *Token) (string, bool){
+func TokenAsIdent(t *Token) (string, bool) {
 	if s, ok := t.Val.(string); ok {
 		return s, ok
 	} else if r, ok := t.Val.(rune); ok {
 		return string(r), ok
 	} else {
 		return "", false
+	}
+}
+func TokenAsSize(t *Token) (byte, bool) {
+	switch t.Ty {
+	case TOKEN_TBYTE:
+		return vm.SZ_8, true
+	case TOKEN_TQUARTER:
+		return vm.SZ_16, true
+	case TOKEN_THALF:
+		return vm.SZ_32, true
+	case TOKEN_TWORD:
+		return vm.SZ_64, true
+	default:
+		return 0xff, false
 	}
 }
 
@@ -136,6 +184,13 @@ func (l *Lexer) unreadByte() error {
 func (l *Lexer) UnreadToken() {
 	l.unRead = true
 }
+func (l *Lexer) ReadNextTokenReturn() (Token, error) {
+	if err := l.ReadNextToken(); err != nil {
+		return Token{}, err
+	} else {
+		return l.currentToken, nil
+	}
+}
 func (l *Lexer) ReadNextToken() error {
 	if l.unRead {
 		l.unRead = false
@@ -161,7 +216,7 @@ func (l *Lexer) ReadNextToken() error {
 	}
 	switch {
 	case b == '\'':
-		if err := l.readSingleQuoted(); err != nil{
+		if err := l.readSingleQuoted(); err != nil {
 			return err
 		}
 	case b == '@':
@@ -262,10 +317,13 @@ func (l *Lexer) ReadNextToken() error {
 			}
 		}
 		val := string(buf)
-		if reg, ok := recognizeRegister(val); ok {
+		if reg, sz,  ok := recognizeRegister(val); ok {
 			l.currentToken = Token{
 				Ty:  TOKEN_TREG,
-				Val: reg,
+				Val: RegisterData {
+					Reg: reg,
+					Size: sz,
+				},
 			}
 		} else if kwd, ok := keywords[val]; ok {
 			l.currentToken = Token{
@@ -407,20 +465,33 @@ func (l *Lexer) readDigit(b byte) error {
 	return nil
 }
 
-func recognizeRegister(s string) (int, bool) {
-	if len(s) < 2 {
-		return -1, false
+func recognizeRegister(s string) (int, byte, bool) {
+	var sz byte = vm.SZ_64
+	if len(s) < 2  || len(s) > 3 {
+		return -1, sz, false
 	}
-	if s[0] == 'r' && numberCheck(s[1]) && s[1]-'0' <= vm.GP_REG_MAX {
-		return int(s[1] - '0'), true
+	rx := s[1]-'0'
+	// GP case
+	if s[0] == 'r' && numberCheck(s[1]) && rx <= vm.GP_REG_MAX {
+		if len(s) == 3 {
+			switch s[2] {
+			case 'b':
+				sz = vm.SZ_8
+			case 'q':
+				sz = vm.SZ_16
+			case 'h':
+				sz = vm.SZ_32
+			}
+		}
+		return int(rx), sz, true
 	}
 	switch s {
 	case "sp":
-		return vm.SP_IDX, true
+		return vm.SP_IDX, sz, true
 	case "bp":
-		return vm.BP_IDX, true
+		return vm.BP_IDX, sz, true
 	case "ip":
-		return vm.IP_IDX, true
+		return vm.IP_IDX, sz, true
 	}
-	return -1, false
+	return -1, sz, false
 }

@@ -1,11 +1,13 @@
 package errors
+
 import (
 	"fmt"
 )
+
 type ParserError struct {
 	ParsingWhat string
-	Line, Col uint64
-	construct constructMessage
+	Line, Col   uint64
+	construct   constructMessage
 }
 
 func (e ParserError) Error() string {
@@ -17,9 +19,9 @@ func (e ParserError) Error() string {
 }
 
 func ExtraTokensOnLine(line, col uint64) ParserError {
-	err := ParserError {
+	err := ParserError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return "Extra tokens on line"
 		},
@@ -28,9 +30,9 @@ func ExtraTokensOnLine(line, col uint64) ParserError {
 }
 
 func UnknownIdentifier(ident string, line, col uint64) ParserError {
-	err := ParserError {
+	err := ParserError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return fmt.Sprintf("Unknown identifier '%s'", ident)
 		},
@@ -39,10 +41,10 @@ func UnknownIdentifier(ident string, line, col uint64) ParserError {
 }
 
 func FailedToParse(instruction, reason string, line, col uint64) ParserError {
-	err := ParserError {
+	err := ParserError{
 		ParsingWhat: instruction,
-		Line: line,
-		Col: col,
+		Line:        line,
+		Col:         col,
 		construct: func() string {
 			return fmt.Sprintf("%s", reason)
 		},
@@ -51,9 +53,9 @@ func FailedToParse(instruction, reason string, line, col uint64) ParserError {
 }
 
 func PrematureEndOfInput(line, col uint64) ParserError {
-	err := ParserError {
+	err := ParserError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return "Premature end of input"
 		},
@@ -61,9 +63,9 @@ func PrematureEndOfInput(line, col uint64) ParserError {
 	return err
 }
 func UnclosedSingleQuote(line, col uint64) ParserError {
-	err := ParserError {
+	err := ParserError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return "Unclosed single quote"
 		},
@@ -71,11 +73,33 @@ func UnclosedSingleQuote(line, col uint64) ParserError {
 	return err
 }
 func UnclosedParen(line, col uint64) ParserError {
-	err := ParserError {
+	err := ParserError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return "Unclosed parentheses"
+		},
+	}
+	return err
+}
+func BadSizeArgument(given, needed string, line, col uint64) ParserError {
+	err := ParserError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return fmt.Sprintf("Bad data size argument %s - data size of %s is needed",
+				given, needed)
+		},
+	}
+	return err
+}
+func UnnecessarySizeParameter(param string, line, col uint64) ParserError {
+	err := ParserError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return fmt.Sprintf("Unnecessary size parameter %s",
+				param)
 		},
 	}
 	return err

@@ -135,6 +135,7 @@ type InstLabData struct {
 type InstPushPopData struct {
 	Reg uint64
 	Imm uint64
+	DataSz byte
 }
 type InstDerefMovData struct {
 	Dest   int
