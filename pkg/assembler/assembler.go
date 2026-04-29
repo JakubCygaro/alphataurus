@@ -194,8 +194,11 @@ func (a *Assembler) EmitBytecode() (int, error) {
 func (a *Assembler) emitMovIR(data InstMovData, out *[]byte) error {
 	mov := a.opCodes[vm.OP_MOVIR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	dest := 0b00001111 & byte(data.Dest)
-	(*out)[len(*out)-4] = dest
+	lastByte := 
+		(0b0000_1111 & byte(data.Dest)) |
+		(0b0011_0000 & (byte(0) << 4))  |
+		(0b1100_0000 & (byte(data.DataSize) << 6))  
+	(*out)[len(*out)-4] = lastByte
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
@@ -205,8 +208,10 @@ func (a *Assembler) emitMovRR(data InstMovData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	destsrc := 0b00001111 & byte(data.Dest)
 	destsrc |= (0b00001111 & byte(data.Src)) << 4
-	(*out)[len(*out)-4] = destsrc
+	dataSz := (0b0000_0011 & data.DataSize)
+	(*out)[len(*out)-4] = dataSz
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
+	(*out)[len(*out)] = destsrc
 	return nil
 }
 

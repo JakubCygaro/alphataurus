@@ -56,6 +56,16 @@ func BadArthmeticOperation(pos uint64) AlphaVMError {
 	}
 	return err
 }
+func BadOperandSizes(s1, s2 byte, pos uint64) AlphaVMError {
+	err := AlphaVMError{
+		Type: ERR_BAD_OPERAND_SIZES,
+		Pos: pos,
+		construct: func() string {
+			return fmt.Sprintf("Bad operand sizes (%d) and (%d)", s1, s2)
+		},
+	}
+	return err
+}
 func NoEntry() AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_NO_ENTRY,

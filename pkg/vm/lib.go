@@ -243,9 +243,9 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 		case OP_MOVDRO2:
 			err = vm.movDRO2(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_MOVID:
-			err = vm.movID(param)
+			err = vm.movID(opCodeBytes[1], param)
 		case OP_MOVRD:
-			err = vm.movRD(param)
+			err = vm.movRD(opCodeBytes[1], param)
 		case OP_MOVIDO1:
 			err = vm.movIDO1(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_MOVRDO1:

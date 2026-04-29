@@ -5,24 +5,29 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
 
-func (state *VmState) movRR(lastByte byte) error {
+func (state *VmState) movRR(lastByte byte, param []byte) error {
 	var src, dest byte
-	src |= (lastByte & 0xf0) >> 4
-	dest |= (lastByte & 0x0f)
+	src |= (param[7] & 0xf0) >> 4
+	dest |= (param[8] & 0x0f)
+	dataSz := (lastByte & 0b0000_0011)
 	if !isMovRRAllowed(src) {
 		return errors.DisallowedSrcRegister(int(src), state.byteCodePos)
 	} else if !isMovRRAllowed(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	} else {
-		state.regs.r[dest] = state.regs.r[src]
+		bytes := dataSizeToByteCount(dataSz)
+		copy(
+			state.regs.r[dest][8-bytes:],
+			state.regs.r[src][8-bytes:],
+		)
 	}
 	return nil
 }
 func (state *VmState) movIR(lastByte byte, param []byte) error {
 	var ty, dest, dataSz byte
 	// type of value
-	ty |= (lastByte & 0b0011_0000) >> 4
 	dataSz |= (lastByte & 0b1100_0000) >> 6
+	ty |= (lastByte & 0b0011_0000) >> 4
 	dest |= (lastByte & 0b0000_1111)
 	if !IsGpReg(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
