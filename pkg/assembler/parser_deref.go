@@ -30,25 +30,34 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		OffsetExpr: nil,
 	}
 	switch {
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(arthExpr.B, CONSTEXPR_TILIT):
+	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) &&
+		IsConstexpr(arthExpr.B, CONSTEXPR_TILIT):
+
 		ret.Ty = DEREF_T1RO
 		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
 		ret.OffsetOp = arthExpr.GetVMOpType()
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) && IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
+	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) &&
+		IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
+
 		ret.Ty = DEREF_T1RO
 		ret.Reg1 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Offset = int64(arthExpr.A.Val.(ConstExpr).Val)
 		ret.OffsetOp = vm.OP_TADD
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
+	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) &&
+		IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
+
 		ret.Ty = DEREF_T2RO
 		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Reg2 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Offset = int64(0)
 		ret.OffsetOp = vm.OP_TADD
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) && IsArthexpr(arthExpr.B, ARTHEXPR_TADD) && nestLvl == 0:
+	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) &&
+		IsArthexpr(arthExpr.B, ARTHEXPR_TADD) &&
+		nestLvl == 0:
+
 		nestedD, err := p.processDerefNestedArth(arthExpr.B.Val.(ArthExpr), nestLvl+1)
 		if err != nil {
 			return ret, err
@@ -62,8 +71,11 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		ret.Reg2 = nestedD.Reg1
 		ret.Offset = nestedD.Offset
 		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexpr(arthExpr.B, CONSTEXPR_TREG) && IsArthexpr(arthExpr.A, ARTHEXPR_TADD) && nestLvl == 0 &&
+	case IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
+		IsArthexpr(arthExpr.A, ARTHEXPR_TADD) &&
+		nestLvl == 0 &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
+
 		nestedD, err := p.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)
 		if err != nil {
 			return ret, err
@@ -73,8 +85,11 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		ret.Reg2 = nestedD.Reg1
 		ret.Offset = nestedD.Offset
 		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) && IsArthexpr(arthExpr.B, ARTHEXPR_TADD) &&
-		nestLvl == 0 && (arthExpr.Ty == ARTHEXPR_TADD):
+	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) &&
+		IsArthexpr(arthExpr.B, ARTHEXPR_TADD) &&
+		nestLvl == 0 &&
+		(arthExpr.Ty == ARTHEXPR_TADD):
+
 		nestedD, err := p.processDerefNestedArth(arthExpr.B.Val.(ArthExpr), nestLvl+1)
 		if err != nil {
 			return ret, err
@@ -88,7 +103,10 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		ret.Reg2 = nestedD.Reg2
 		ret.Offset = int64(arthExpr.A.Val.(ConstExpr).Val)
 		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexpr(arthExpr.B, CONSTEXPR_TILIT) && IsArthexpr(arthExpr.A, ARTHEXPR_TADD) && nestLvl == 0:
+	case IsConstexpr(arthExpr.B, CONSTEXPR_TILIT) &&
+		IsArthexpr(arthExpr.A, ARTHEXPR_TADD) &&
+		nestLvl == 0:
+
 		nestedD, err := p.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)
 		if err != nil {
 			return ret, err
@@ -124,9 +142,11 @@ func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 		innerConst := inner.Val.(ConstExpr)
 		switch innerConst.Ty {
 		case CONSTEXPR_TILIT:
+
 			ret.Ty = DEREF_T0RO
 			ret.Offset = int64(innerConst.Val)
 		case CONSTEXPR_TREG:
+
 			ret.Ty = DEREF_T1RO
 			regD := innerConst.UnpackAsRegisterData()
 			ret.Reg1 = regD
@@ -134,14 +154,17 @@ func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 			ret.OffsetOp = vm.OP_TADD
 		// TODO: label dereference support
 		default:
+
 			return ret, errors.FailedToParse("dereference expression",
 				"Invalid single parameter dereference expression",
 				p.lexer.line, p.lexer.col)
 		}
 	case EXPR_TARTH:
+
 		arthExpr := inner.Val.(ArthExpr)
 		return p.processDerefNestedArth(arthExpr, 0)
 	default:
+
 		return ret, errors.FailedToParse("dereference instruction",
 			"Invalid dereference expression",
 			p.lexer.line, p.lexer.col)

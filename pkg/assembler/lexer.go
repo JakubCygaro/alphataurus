@@ -94,6 +94,10 @@ type RegisterData struct {
 	Size byte
 }
 
+func (r RegisterData) IsInvalidRegister() bool {
+	return r.Reg == math.MaxInt64 || r.Size == math.MaxInt8
+}
+
 type Token struct {
 	Ty        int
 	Val       any

@@ -4,17 +4,37 @@ import "github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 
 func (p *Parser) parseMov() error {
 	var op1 Token
+	var sized byte = 0xff
+	var sizedL, sizedC uint64
+	if err := p.lexer.ReadNextToken(); err != nil {
+		return err
+	}
+	if sz, ok := TokenAsSize(&op1); !ok {
+		p.lexer.UnreadToken()
+	} else {
+		sized = sz
+		sizedL = p.lexer.CurrentToken().Line
+		sizedC = p.lexer.CurrentToken().Col
+		op1 = Token{}
+	}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
+
 	} else if expr.Ty == EXPR_TDEREF {
 		inner, _ := TryEvaluateExpression(expr.Val.(DerefExpr).Inner)
-		return p.parseMovDeref(inner)
+		return p.parseMovDeref(inner, sized)
+
 	} else if eval, _ := TryConstEvaluatePruneExpression(expr); eval.Ty != CONSTEXPR_TREG {
 		return errors.FailedToParse("mov instruction",
 			"First operand to instruction must be a valid register or dereference expression",
-			p.lexer.line, p.lexer.col)
+			expr.Line, expr.Col)
+
 	} else {
 		op1.Val = eval.UnpackAsRegisterData()
+	}
+	if sized != 0xff {
+		s, _ := GetSizeKeyword(sized)
+		return errors.UnnecessarySizeParameter(s, sizedL, sizedC)
 	}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
@@ -25,7 +45,6 @@ func (p *Parser) parseMov() error {
 			"Instruction missing a comma",
 			p.lexer.line, p.lexer.col)
 	}
-
 	var op2 ConstExpr
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
@@ -53,8 +72,8 @@ func (p *Parser) parseMov() error {
 		p.currentInst = Instruction{
 			Ty: INST_TMOVRR,
 			Data: InstMovData{
-				Src:  srcData.Reg,
-				Dest: destData.Reg,
+				Src:      srcData.Reg,
+				Dest:     destData.Reg,
 				DataSize: destData.Size,
 			},
 		}
@@ -62,8 +81,8 @@ func (p *Parser) parseMov() error {
 		p.currentInst = Instruction{
 			Ty: INST_TMOVIR,
 			Data: InstMovData{
-				Imm:  op2.Val,
-				Dest: destData.Reg,
+				Imm:      op2.Val,
+				Dest:     destData.Reg,
 				DataSize: destData.Size,
 			},
 		}
@@ -71,8 +90,8 @@ func (p *Parser) parseMov() error {
 		p.currentInst = Instruction{
 			Ty: INST_TMOVIR,
 			Data: InstMovData{
-				Imm:  op2.Val,
-				Dest: destData.Reg,
+				Imm:      op2.Val,
+				Dest:     destData.Reg,
 				DataSize: destData.Size,
 			},
 		}
@@ -131,7 +150,7 @@ func (p *Parser) parseDerefMov(reg RegisterData, inner *Expr) error {
 
 // move something into deref
 // e.g: mov [bp], r0
-func (p *Parser) parseMovDeref(inner *Expr) error {
+func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 	dData, err := p.processDeref(inner)
 	if err != nil {
 		return err
@@ -162,10 +181,10 @@ func (p *Parser) parseMovDeref(inner *Expr) error {
 	mddata := InstMovDerefData{}
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
-		mddata.SourceReg = int(op2.Val)
+		mddata.SourceReg = op2.UnpackAsRegisterData()
 	case CONSTEXPR_TILIT:
 		mddata.Imm = uint64(op2.Val)
-		mddata.SourceReg = INVALID
+		mddata.SourceReg = GetInvalidRegister()
 	//TODO: label support
 	default:
 		return errors.FailedToParse("mov instruction",
@@ -176,9 +195,18 @@ func (p *Parser) parseMovDeref(inner *Expr) error {
 	case DEREF_T0RO:
 		mddata.Offset = dData.Offset
 		ty := INST_TMOVRD
-		if mddata.SourceReg == INVALID {
+		if mddata.SourceReg.IsInvalidRegister() {
 			ty = INST_TMOVID
 		}
+		// if this is an immediate move into a deref we need a size parameter
+		// like mov WORD [bp], 100
+		if ty == INST_TMOVID && sized == 0xff {
+			return errors.MissingDataSize(inner.Line, inner.Col)
+		} else if ty != INST_TMOVID && sized != 0xff {
+			s, _ := GetSizeKeyword(sized)
+			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+		}
+		mddata.DataSize = sized
 		p.currentInst = Instruction{
 			Ty:   ty,
 			Data: mddata,
@@ -188,9 +216,17 @@ func (p *Parser) parseMovDeref(inner *Expr) error {
 		mddata.Offset = dData.Offset
 		mddata.OpTy = dData.OffsetOp
 		ty := INST_TMOVRDO1
-		if mddata.SourceReg == INVALID {
+		if mddata.SourceReg.IsInvalidRegister() {
 			ty = INST_TMOVIDO1
 		}
+		// like mov WORD [bp+1], 100
+		if ty == INST_TMOVIDO1 && sized == 0xff {
+			return errors.MissingDataSize(inner.Line, inner.Col)
+		} else if ty != INST_TMOVIDO1  && sized != 0xff {
+			s, _ := GetSizeKeyword(sized)
+			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+		}
+		mddata.DataSize = sized
 		p.currentInst = Instruction{
 			Ty:   ty,
 			Data: mddata,
@@ -201,9 +237,17 @@ func (p *Parser) parseMovDeref(inner *Expr) error {
 		mddata.Offset = dData.Offset
 		mddata.OpTy = dData.OffsetOp
 		ty := INST_TMOVRDO2
-		if mddata.SourceReg == INVALID {
+		if mddata.SourceReg.IsInvalidRegister() {
 			ty = INST_TMOVIDO2
 		}
+		// like mov WORD [bp+r0+1], 100
+		if ty == INST_TMOVIDO2 && sized == 0xff {
+			return errors.MissingDataSize(inner.Line, inner.Col)
+		} else if ty != INST_TMOVIDO2  && sized != 0xff {
+			s, _ := GetSizeKeyword(sized)
+			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+		}
+		mddata.DataSize = sized
 		p.currentInst = Instruction{
 			Ty:   ty,
 			Data: mddata,

@@ -139,19 +139,20 @@ type InstPushPopData struct {
 	DataSz byte
 }
 type InstDerefMovData struct {
-	Dest   int
+	Dest   RegisterData
 	Offset int64
-	OReg1  int
-	OReg2  int
+	OReg1  RegisterData
+	OReg2  RegisterData
 	Label  string
 	OpTy   int
 }
 type InstMovDerefData struct {
-	SourceReg int
+	DataSize  byte
+	SourceReg RegisterData
 	Imm       uint64
 	Offset    int64
-	OReg1     int
-	OReg2     int
+	OReg1     RegisterData
+	OReg2     RegisterData
 	Label     string
 	OpTy      int
 }

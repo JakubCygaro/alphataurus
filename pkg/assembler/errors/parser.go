@@ -103,6 +103,16 @@ func MismatchedRegisterSizes(line, col uint64) ParserError {
 	}
 	return err
 }
+func MissingDataSize(line, col uint64) ParserError {
+	err := ParserError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return "Missing data size"
+		},
+	}
+	return err
+}
 func UnnecessarySizeParameter(param string, line, col uint64) ParserError {
 	err := ParserError{
 		Line: line,
