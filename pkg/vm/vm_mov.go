@@ -226,7 +226,6 @@ func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
 	return state.putValInStackWithSize(dParams.destSz, imm, int(addr))
 }
 func (state *VmState) movRDO1(byte3, byte4 byte, param []byte) error {
-	// source, reg1, _, opTy := state.getDerefParams(byte3, byte4)
 	dParams := state.getDerefParamsO1(byte3, byte4)
 	source := dParams.dest
 	if !isMovRRAllowed(source) {

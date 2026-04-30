@@ -233,7 +233,7 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 		}
 		switch opcode {
 		case OP_MOVRR:
-			err = vm.movRR(opCodeBytes[0])
+			err = vm.movRR(opCodeBytes[0], param)
 		case OP_MOVIR:
 			err = vm.movIR(opCodeBytes[0], param)
 		case OP_MOVDRI:
