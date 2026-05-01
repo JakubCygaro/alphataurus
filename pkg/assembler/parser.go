@@ -102,12 +102,12 @@ type InstIncDecData struct {
 	Reg int
 }
 type InstArthData struct {
-	Source, Dest int
+	Source, Dest RegisterData
 	Imm          uint64
 	Ty           int
 }
 type InstLogicalData struct {
-	First, Second int
+	First, Second RegisterData
 	Imm           uint64
 }
 type InstCmpData struct {

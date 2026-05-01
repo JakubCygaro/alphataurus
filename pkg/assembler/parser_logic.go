@@ -28,7 +28,7 @@ func (p *Parser) parseLogical(logTy int) error {
 		p.currentInst = Instruction{
 			Ty: INST_TNOT,
 			Data: InstLogicalData{
-				First:  int(op1.Val.(int)),
+				First:  op1.Val.(RegisterData),
 			},
 		}
 		return nil
@@ -79,8 +79,8 @@ func (p *Parser) parseLogical(logTy int) error {
 		p.currentInst = Instruction{
 			Ty: ty,
 			Data: InstLogicalData{
-				First: op1.Val.(int),
-				Second:  int(op2.Val),
+				First: op1.Val.(RegisterData),
+				Second:  op2.UnpackAsRegisterData(),
 			},
 		}
 	case CONSTEXPR_TILIT:
@@ -100,7 +100,7 @@ func (p *Parser) parseLogical(logTy int) error {
 		p.currentInst = Instruction{
 			Ty: ty,
 			Data: InstLogicalData{
-				First: op1.Val.(int),
+				First: op1.Val.(RegisterData),
 				Imm:  op2.Val,
 			},
 		}

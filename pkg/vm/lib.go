@@ -74,6 +74,7 @@ func (state *VmState) GetBp() uint64 {
 func (state *VmState) GetSp() uint64 {
 	return binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
 }
+
 // takes the virtual instruction pointer and transforms it into the real position of the
 // instruction in the bytecode []byte array
 //
@@ -402,9 +403,9 @@ type arthIRParamData struct {
 
 func (state *VmState) arthIRGetParameters(lastByte byte) (data arthIRParamData, err error) {
 	ret := arthIRParamData{}
-	ret.ty |= (lastByte & 0b00110000) >> 4
-	ret.reg |= (lastByte & 0b00000011)
-	ret.r1sz |= (lastByte & 0b00001100) >> 2
+	ret.reg |= (lastByte & 0b0000_1111)
+	ret.r1sz |= (lastByte & 0b0011_0000) >> 4
+	ret.ty |= (lastByte & 0b1100_0000) >> 6
 	if !IsGpReg(ret.reg) && ret.reg != BP_IDX && ret.reg != SP_IDX {
 		return ret, errors.DisallowedDestRegister(int(ret.reg), state.byteCodePos)
 	}
@@ -431,8 +432,10 @@ func (state *VmState) arthRRGetParameters(param []byte) (data arthRRParamData, e
 	return data, nil
 }
 func (state *VmState) logIR(opType int, lastByte byte, param []byte) error {
-	first := lastByte
-	fVal, sVal := binary.BigEndian.Uint64(state.regs.r[first][:]),
+	first := 0b0000_1111 & lastByte
+	dataSize := (0b0011_0000 & lastByte) >> 4
+	fVal, sVal :=
+		state.getRegVAsUint64(int(first), dataSize),
 		binary.BigEndian.Uint64(param)
 	switch opType {
 	case OP_ORIR:
@@ -446,7 +449,7 @@ func (state *VmState) logIR(opType int, lastByte byte, param []byte) error {
 	case OP_RSHIR:
 		fVal = fVal >> sVal
 	}
-	binary.BigEndian.PutUint64(state.regs.r[first][:], fVal)
+	state.putValInRegWithSize(int(first), dataSize, fVal)
 	return nil
 }
 func (state *VmState) logRR(opType int, param []byte) error {
@@ -454,8 +457,12 @@ func (state *VmState) logRR(opType int, param []byte) error {
 	if err != nil {
 		return err
 	}
-	fVal, sVal := binary.BigEndian.Uint64(state.regs.r[data.src][:]),
-		binary.BigEndian.Uint64(state.regs.r[data.dest][:])
+	if data.r1sz < data.r2sz {
+		return errors.BadOperandSizes(data.r1sz, data.r2sz, state.byteCodePos)
+	}
+	fVal, sVal :=
+		state.getRegVAsUint64(int(data.src), data.r1sz),
+		state.getRegVAsUint64(int(data.dest), data.r2sz)
 	switch opType {
 	case OP_ORRR:
 		fVal = fVal | sVal
@@ -468,7 +475,7 @@ func (state *VmState) logRR(opType int, param []byte) error {
 	case OP_RSHRR:
 		fVal = fVal >> sVal
 	}
-	binary.BigEndian.PutUint64(state.regs.r[data.src][:], fVal)
+	state.putValInRegWithSize(int(data.src), data.r1sz, fVal)
 	return nil
 }
 func (state *VmState) not(param []byte) error {
@@ -538,7 +545,7 @@ func (state *VmState) clr() error {
 func (state *VmState) cmp(lastByte byte, param []byte) error {
 	var subtrahend, minuend, dataSz byte
 	subtrahend |= (lastByte & 0b11110000) >> 4
-	minuend    |= (lastByte & 0b00000011)
+	minuend |= (lastByte & 0b00000011)
 	dataSz |= (lastByte & 0b00001100) >> 2
 	if !IsGpReg(minuend) {
 		return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
@@ -557,7 +564,7 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 		ty = param[0]
 		subV = binary.BigEndian.Uint64(state.regs.r[subtrahend][:])
 	}
-	if(dataSz != SZ_64 && ty == TY_FLOAT){
+	if dataSz != SZ_64 && ty == TY_FLOAT {
 		return errors.BadArthmeticOperation(state.byteCodePos)
 	}
 	diff := [8]byte{}
@@ -659,7 +666,7 @@ func (state *VmState) popR(lastByte byte, param []byte) error {
 	return nil
 }
 
-func (state *VmState) getRegVAsUint64(reg int, dataSz byte) (uint64) {
+func (state *VmState) getRegVAsUint64(reg int, dataSz byte) uint64 {
 	bytes := dataSizeToByteCount(dataSz)
 	ret := uint64(0)
 	r := state.regs.r[reg][:]
@@ -677,7 +684,7 @@ func (state *VmState) getRegVAsUint64(reg int, dataSz byte) (uint64) {
 	return ret
 }
 func (state *VmState) putValInStackWithSize(dataSz byte, val uint64, address int) error {
-	if address + int(dataSz) > len(state.stack) {
+	if address+int(dataSz) > len(state.stack) {
 		return errors.StackOverflow(state.byteCodePos)
 	}
 	bytes := dataSizeToByteCount(dataSz)
@@ -708,4 +715,3 @@ func (state *VmState) putValInRegWithSize(reg int, dataSz byte, val uint64) {
 		binary.BigEndian.PutUint64(r[8-bytes:], uint64(val))
 	}
 }
-

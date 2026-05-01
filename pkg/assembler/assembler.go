@@ -356,14 +356,34 @@ func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 	// src = param[0]
 	// dest = param[1]
 	// ty = param[3]
-	*out = append(*out, byte(data.Source))
-	*out = append(*out, byte(data.Dest))
-	*out = append(*out, byte(0))
-	*out = append(*out, byte(data.Ty))
-	*out = append(*out, 0, 0, 0, 0)
+	tySizesByte := (0b0000_0011 & byte(data.Ty)) |
+		((0b000_0011 & byte(data.Source.Size)) << 2) |
+		((0b000_0011 & byte(data.Dest.Size)) << 4)
+	param := [8]byte{
+		byte(data.Source.Reg),
+		byte(data.Dest.Reg),
+		byte(tySizesByte),
+		0,
+		0,
+		0,
+		0,
+		0,
+	}
+	*out = append(*out, param[:]...)
+	// *out = append(*out, byte(data.Source))
+	// *out = append(*out, byte(data.Dest))
+	// *out = append(*out, byte(0))
+	// *out = append(*out, byte(data.Ty))
+	// *out = append(*out, 0, 0, 0, 0)
 	return nil
 }
 func (a *Assembler) emitLogRR(op int, data InstLogicalData, out *[]byte) error {
+	if data.First.Size < data.Second.Size {
+		return errors.MismatchedRegisterSizes(
+			a.parser.currentInst.Line,
+			a.parser.currentInst.Col,
+		)
+	}
 	var opCode vm.OpCodeVal
 	switch op {
 	case INST_TANDRR:
@@ -378,13 +398,19 @@ func (a *Assembler) emitLogRR(op int, data InstLogicalData, out *[]byte) error {
 		opCode = a.opCodes[vm.OP_RSHRR]
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
-	// first = param[0]
-	// second = param[1]
-	*out = append(*out, byte(data.First))
-	*out = append(*out, byte(data.Second))
-	*out = append(*out, byte(0))
-	*out = append(*out, byte(0))
-	*out = append(*out, 0, 0, 0, 0)
+	sizesByte := (0b0000_0011&byte(data.First.Size))<<2 |
+		((0b000_0011 & byte(data.Second.Size)) << 4)
+	param := [8]byte{
+		byte(data.First.Reg),
+		byte(data.Second.Reg),
+		byte(sizesByte),
+		0,
+		0,
+		0,
+		0,
+		0,
+	}
+	*out = append(*out, param[:]...)
 	return nil
 }
 func (a *Assembler) emitLogIR(ty int, data InstLogicalData, out *[]byte) error {
@@ -402,7 +428,10 @@ func (a *Assembler) emitLogIR(ty int, data InstLogicalData, out *[]byte) error {
 		opCode = a.opCodes[vm.OP_RSHIR]
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
-	(*out)[len(*out)-4] = byte(data.First)
+	lastByte := byte(0)
+	lastByte |= 0b0000_1111 & byte(data.First.Reg)
+	lastByte |= (0b0000_0011 & byte(data.First.Size)) << 4
+	(*out)[len(*out)-4] = lastByte
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
@@ -415,9 +444,11 @@ func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
 		opCode = a.opCodes[vm.OP_SUBIR]
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
-	destTy := 0b00001111 & byte(data.Dest)
-	destTy |= (0b00001111 & byte(data.Ty)) << 4
-	(*out)[len(*out)-4] = destTy
+	lastByte := byte(0)
+	lastByte |= 0b0000_1111 & byte(data.Dest.Reg)
+	lastByte |= (0b0000_0011 & byte(data.Dest.Size)) << 4
+	lastByte |= (0b0000_0011 & byte(data.Ty)) << 6
+	(*out)[len(*out)-4] = lastByte
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }

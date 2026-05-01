@@ -82,8 +82,8 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Ty: ty,
 			Data: InstArthData{
-				Source:  int(op2.Val),
-				Dest: op1.Val.(int),
+				Source:  op2.UnpackAsRegisterData(),
+				Dest: op1.Val.(RegisterData),
 				Ty:   valTy,
 			},
 		}
@@ -99,7 +99,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			Ty: ty,
 			Data: InstArthData{
 				Imm:  op2.Val,
-				Dest: op1.Val.(int),
+				Dest: op1.Val.(RegisterData),
 				Ty:   valTy,
 			},
 		}
@@ -115,7 +115,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			Ty: ty,
 			Data: InstArthData{
 				Imm:  op2.Val,
-				Dest: op1.Val.(int),
+				Dest: op1.Val.(RegisterData),
 				Ty:   valTy,
 			},
 		}
