@@ -455,7 +455,7 @@ func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
 func (a *Assembler) emitNot(ty int, data InstLogicalData, out *[]byte) error {
 	opCode := a.opCodes[vm.OP_NOT]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
-	*out = binary.BigEndian.AppendUint64(*out, uint64(data.First))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.First.Reg))
 	return nil
 }
 func (a *Assembler) emitInc(data InstIncDecData, out *[]byte) error {
@@ -559,10 +559,13 @@ func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
 	var reg byte
 	reg = byte(data.OpTy)
 	reg <<= 4
+	// no second offset register
 	if ty == INST_TJMPIP0R {
 		reg |= 0x0f
 	} else {
-		reg |= byte(data.Reg & 0x0f)
+		//with second offset register
+		reg |= byte(data.Reg.Reg & 0x0f)
+		reg |= (0b0000_0011 & data.Reg.Size) << 6
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
 	(*out)[len(*out)-4] = reg
@@ -726,7 +729,10 @@ func (a *Assembler) emitCallIP(ty int, data InstCallIPData, out *[]byte) error {
 	if ty == INST_TCALLIP0R {
 		reg |= 0x0f
 	} else {
-		reg |= byte(data.Reg & 0x0f)
+		if data.Reg.Size != vm.SZ_64 {
+			return errors.BadRegisterSize(a.line, a.col)
+		}
+		reg |= byte(data.Reg.Reg & 0x0f)
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(call))
 	(*out)[len(*out)-4] = reg

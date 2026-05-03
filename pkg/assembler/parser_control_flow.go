@@ -149,7 +149,7 @@ func (p *Parser) parseJmpIP(ty int, expr *Expr) error {
 	if err != nil {
 		return err
 	}
-	if deref.Reg1 != vm.IP_IDX && deref.Reg2 != vm.IP_IDX {
+	if deref.Reg1.Reg != vm.IP_IDX && deref.Reg2.Reg != vm.IP_IDX {
 		return errors.FailedToParse("ip relative jump instruction", "expression without the IP register",
 			p.lexer.line, p.lexer.col)
 	}
@@ -164,8 +164,8 @@ func (p *Parser) parseJmpIP(ty int, expr *Expr) error {
 			},
 		}
 	case DEREF_T2RO:
-		var reg int
-		if deref.Reg1 == vm.IP_IDX {
+		var reg RegisterData
+		if deref.Reg1.Reg == vm.IP_IDX {
 			reg = deref.Reg2
 		} else {
 			reg = deref.Reg1
@@ -217,14 +217,15 @@ func (p *Parser) parseCall() error {
 	}
 	return nil
 }
-func (p *Parser) parseCallIP(expr* Expr) error {
+func (p *Parser) parseCallIP(expr *Expr) error {
 	derefExpr := expr.Val.(DerefExpr)
 	deref, err := p.processDeref(derefExpr.Inner)
 	if err != nil {
 		return err
 	}
-	if deref.Reg1 != vm.IP_IDX && deref.Reg2 != vm.IP_IDX {
-		return errors.FailedToParse("ip relative call instruction", "expression without the IP register",
+	if deref.Reg1.Reg != vm.IP_IDX && deref.Reg2.Reg != vm.IP_IDX {
+		return errors.FailedToParse("ip relative call instruction",
+			"expression without the IP register",
 			p.lexer.line, p.lexer.col)
 	}
 	switch deref.Ty {
@@ -237,8 +238,8 @@ func (p *Parser) parseCallIP(expr* Expr) error {
 			},
 		}
 	case DEREF_T2RO:
-		var reg int
-		if deref.Reg1 == vm.IP_IDX {
+		var reg RegisterData
+		if deref.Reg1.Reg == vm.IP_IDX {
 			reg = deref.Reg2
 		} else {
 			reg = deref.Reg1

@@ -103,6 +103,16 @@ func MismatchedRegisterSizes(line, col uint64) ParserError {
 	}
 	return err
 }
+func BadRegisterSize(line, col uint64) ParserError {
+	err := ParserError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return "Mismatched register sizes"
+		},
+	}
+	return err
+}
 func MissingDataSize(line, col uint64) ParserError {
 	err := ParserError{
 		Line: line,

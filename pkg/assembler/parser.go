@@ -119,13 +119,13 @@ type InstJmpData struct {
 	Address any
 }
 type InstJmpIPData struct {
-	Reg    int
+	Reg    RegisterData
 	Offset int64
 	JmpTy  int
 	OpTy   int
 }
 type InstCallIPData struct {
-	Reg    int
+	Reg    RegisterData
 	Offset int64
 	OpTy   int
 }
