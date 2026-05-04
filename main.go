@@ -23,16 +23,13 @@ atoi:
 `
 
 const assembly = `
-import 'atoi'
 section '.code'
 @entry
-	mov r1, 0x35
-	call atoi
 	exit 0
 `
 
 func main() {
-	sources := []string { assembly, assembly2}
+	sources := []string { assembly }
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(s)))

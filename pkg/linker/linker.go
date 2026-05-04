@@ -141,7 +141,9 @@ func (l *Linker) link() (vm.AlphaELFFile, error) {
 	data := make([]byte, 0)
 	codeBaseOff := uint64(0)
 	for idx, obj := range l.objectFiles {
-		if err := l.readGlobalSymbols(objFileIdx(idx), &(l.objectFiles[idx].Loaded)); err != nil {
+		if err := l.readGlobalSymbols(objFileIdx(idx),
+			&(l.objectFiles[idx].Loaded)); err != nil {
+
 			return ret, err
 		}
 		codeBaseOff += uint64(len(data))
@@ -175,9 +177,9 @@ func (l *Linker) link() (vm.AlphaELFFile, error) {
 					return ret, fmt.Errorf("Unresolved symbol '%s'", symInFile.Name)
 				}
 				relocated := l.relocations[objFileIdx(f)]
-				realRef = + s.Loc + (relocated.CodeSecOff / vm.INSTRUCTION_SIZE)
+				realRef = +s.Loc + relocated.CodeSecOff
 			} else {
-				realRef = + symInFile.Loc + (thisObjRels.CodeSecOff / vm.INSTRUCTION_SIZE)
+				realRef = +symInFile.Loc + thisObjRels.CodeSecOff
 			}
 			// now apply the patch
 			switch rel.PatchSize {

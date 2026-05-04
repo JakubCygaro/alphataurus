@@ -37,9 +37,8 @@ func (a *Assembler) InstructionCount() int {
 
 func NewAssembler(reader bufio.Reader) Assembler {
 	return Assembler{
-		parser:  NewParser(reader),
-		opCodes: vm.GenerateOpcodeMap(),
-		// labels:          make(labelMap),
+		parser:          NewParser(reader),
+		opCodes:         vm.GenerateOpcodeMap(),
 		unresolvedJumps: make(unresolvedJumpMap),
 		bytecode:        make([]byte, 0, 64),
 		symbols:         vm.NewSymbolTable(),
@@ -50,7 +49,7 @@ func NewAssembler(reader bufio.Reader) Assembler {
 
 func (a *Assembler) currentCodePos() (byte uint64, address uint64) {
 	position := uint64(len(a.bytecode))
-	posAsInstAddr := uint64((position / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE - 1)
+	posAsInstAddr := uint64(position + vm.ADDRESSDEADZONE_SIZE - vm.INSTRUCTION_SIZE)
 	return position, posAsInstAddr
 }
 
@@ -523,7 +522,10 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
 	} else {
-		a.unresolvedJumps[position] = unresolvedJump{Ident: data.Address.(string), InstTy: ty}
+		a.unresolvedJumps[position] = unresolvedJump{
+			Ident:  data.Address.(string),
+			InstTy: ty,
+		}
 		*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes[vm.OP_NOP]))
 		*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	}
@@ -619,7 +621,7 @@ func (a *Assembler) patchCallIP(data unresolvedJump, sym *vm.SymbolData, pos int
 	reg = vm.OP_TADD
 	reg <<= 4
 	reg |= 0x0f
-	posAsInstAddr := uint64((pos / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
+	posAsInstAddr := uint64(pos + vm.ADDRESSDEADZONE_SIZE)
 	diff := int64(sym.Loc) - int64(posAsInstAddr)
 
 	binary.BigEndian.PutUint32(a.bytecode[pos:], uint32(opcode))
@@ -633,7 +635,7 @@ func (a *Assembler) patchJmpIP(data unresolvedJump, sym *vm.SymbolData, pos int)
 	reg = vm.OP_TADD
 	reg <<= 4
 	reg |= 0x0f
-	posAsInstAddr := uint64((pos / vm.INSTRUCTION_SIZE) + vm.ADDRESSDEADZONE_SIZE)
+	posAsInstAddr := uint64(pos + vm.ADDRESSDEADZONE_SIZE)
 	diff := int64(sym.Loc) - int64(posAsInstAddr)
 
 	binary.BigEndian.PutUint32(a.bytecode[pos:], uint32(opcode))

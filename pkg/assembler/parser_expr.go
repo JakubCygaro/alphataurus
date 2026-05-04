@@ -28,8 +28,6 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 	}
 	lhsToken := p.lexer.CurrentToken()
 	var lhs *Expr
-	lhs.Line = lhsToken.Line
-	lhs.Col = lhsToken.Col
 	switch lhsToken.Ty {
 	case TOKEN_TEOF:
 		return nil, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
@@ -114,6 +112,8 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			return nil, errors.FailedToParse("expression", "Bad expression", p.lexer.line, p.lexer.col)
 		}
 	}
+	lhs.Line = lhsToken.Line
+	lhs.Col = lhsToken.Col
 	for {
 		if err := p.lexer.ReadNextToken(); err != nil {
 			return nil, err
