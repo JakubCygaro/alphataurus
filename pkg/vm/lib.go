@@ -59,6 +59,15 @@ const (
 
 type Register [8]byte
 
+func (r Register) ToDisplayString() string {
+	return fmt.Sprintf(` [%vu8 | %vu16 | %vu32 | %vu64]`,
+		r[7],
+		binary.BigEndian.Uint16(r[6:]),
+		binary.BigEndian.Uint32(r[4:]),
+		binary.BigEndian.Uint64(r[:]),
+	)
+}
+
 type Registers struct {
 	r [IP_IDX + 1]Register
 }
@@ -164,6 +173,13 @@ func (vm *VmState) GetRegisters() []Register {
 	copy(regs[:], vm.regs.r[:])
 	return regs
 }
+func (vm *VmState) GetRegistersAsUInt64() []uint64 {
+	ret := make([]uint64, len(vm.regs.r))
+	for i := range vm.regs.r {
+		ret[i] = vm.getRegVAsUint64(i, SZ_64)
+	}
+	return ret
+}
 func (vm *VmState) GetGpRXAsUint64(register byte) (uint64, error) {
 	val, err := vm.GetGpRX(register)
 	if err != nil {
@@ -204,10 +220,10 @@ func (vm *VmState) load(elf AlphaELFFile) error {
 	vm.exeSegBase = ADDRESSDEADZONE_SIZE
 	// the stack starts after the code section
 	vm.stackSegBase = int(vm.exeSegBase) + codeSize
-	// the base pointer points right before the beginning of the stack section
+	// the base pointer points to right before the stack
 	binary.BigEndian.PutUint64(
 		vm.regs.r[BP_IDX][:],
-		uint64(vm.stackSegBase)-1,
+		uint64(vm.stackSegBase) - 1,
 	)
 	// the stack pointer points to the base pointer
 	vm.regs.r[SP_IDX] = vm.regs.r[BP_IDX]
@@ -221,7 +237,7 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 	if err := vm.load(elf); err != nil {
 		return err
 	}
-	for ; vm.GetIp()-ADDRESSDEADZONE_SIZE < vm.codeSize && !vm.exit; vm.incIp() {
+	for ; vm.GetIp() < vm.exeSegBase+vm.codeSize && !vm.exit; vm.incIp() {
 		var err error = nil
 		instAddr := vm.VirtToRealIp(vm.GetIp())
 		vm.byteCodePos = vm.GetIp()
@@ -368,7 +384,7 @@ func isPushRAllowed(b byte) bool {
 	return IsGpReg(b) || b == SP_IDX || b == BP_IDX
 }
 
-func (state *VmState) incrementRegUS(reg int, amount uint64) {
+func (state *VmState) incrementRegU64(reg int, amount uint64) {
 	v := binary.BigEndian.Uint64(state.regs.r[reg][:])
 	v += amount
 	binary.BigEndian.PutUint64(state.regs.r[reg][:], v)
@@ -384,7 +400,7 @@ func (state *VmState) incR(param []byte) error {
 	if !IsGpReg(byte(reg)) {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
-	state.incrementRegUS(int(reg), 1)
+	state.incrementRegU64(int(reg), 1)
 	return nil
 }
 func (state *VmState) decR(param []byte) error {
@@ -525,7 +541,7 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 		return err
 	}
 	immV := binary.BigEndian.Uint64(param)
-	regV := binary.BigEndian.Uint64(state.regs.r[data.reg][:])
+	regV := state.getRegVAsUint64(int(data.reg), data.r1sz)
 	switch opType {
 	case OP_ADDIR:
 		err = state.addValues(regV, immV,
@@ -598,12 +614,13 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 	return err
 }
 func (state *VmState) pushImpl(data []byte) error {
-	if state.GetRealSp()+1 >= len(state.stack) {
+	inc := len(data)
+	if state.GetRealSp()+inc >= len(state.stack) {
 		return errors.StackOverflow(state.byteCodePos)
 	}
-	state.incrementRegUS(SP_IDX, 1)
+	state.incrementRegU64(SP_IDX, uint64(inc))
 	copy(
-		state.stack[state.GetRealSp():len(data)],
+		state.stack[state.GetRealSp()-inc:state.GetRealSp()+inc],
 		data[:],
 	)
 	return nil
@@ -643,10 +660,10 @@ func (state *VmState) popImpl(bytes int) ([]byte, error) {
 	if state.GetRealSp() < 0 {
 		return nil, errors.StackUnderflow(state.byteCodePos)
 	}
-	val := state.stack[state.GetRealSp():bytes]
+	val := state.stack[state.GetRealSp()-bytes:state.GetRealSp()]
 	var sp = binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
-	sp--
-	binary.BigEndian.PutUint64(state.regs.r[SP_IDX][0:], sp)
+	sp -= uint64(bytes)
+	binary.BigEndian.PutUint64(state.regs.r[SP_IDX][:], sp)
 	return val, nil
 }
 func (state *VmState) popR(lastByte byte, param []byte) error {

@@ -7,8 +7,8 @@ import (
 
 func (state *VmState) movRR(lastByte byte, param []byte) error {
 	var src, dest byte
-	src |= (param[7] & 0xf0) >> 4
-	dest |= (param[8] & 0x0f)
+	src |= (param[6] & 0xf0) >> 4
+	dest |= (param[7] & 0x0f)
 	dataSz := (lastByte & 0b0000_0011)
 	if !isMovRRAllowed(src) {
 		return errors.DisallowedSrcRegister(int(src), state.byteCodePos)

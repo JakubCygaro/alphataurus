@@ -17,9 +17,6 @@ func (p *Parser) parsePush() error {
 	dataSz := byte(0xff)
 	if sz, ok := TokenAsSize(&nextT); ok {
 		dataSz = sz
-		if err := p.lexer.ReadNextToken(); err != nil {
-			return err
-		}
 	} else {
 		p.lexer.UnreadToken()
 	}

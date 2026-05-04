@@ -16,20 +16,24 @@ section '.code'
 atoi:
 	push bp
 	mov bp, sp
-	sub r1, 0x30
-	mov r0, r1
+	sub r1b, 0x30
+	mov r0b, r1b
 	pop bp
 	ret
 `
 
 const assembly = `
+import 'atoi'
 section '.code'
 @entry
+	push BYTE 69
+	mov r1b, [sp]
+	call atoi
 	exit 0
 `
 
 func main() {
-	sources := []string { assembly }
+	sources := []string { assembly, assembly2 }
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(s)))
@@ -54,7 +58,7 @@ func main() {
 		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
-	mach := vm.CreateVmState(16)
+	mach := vm.CreateVmState(32)
 	err = mach.Execute(elf)
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
@@ -70,7 +74,10 @@ func main() {
 	if rx, err := mach.GetGpRXAsInt64(vm.R2_IDX); err == nil {
 		fmt.Printf("r2 = %+v\n", rx)
 	}
-	fmt.Printf("%+v\n", mach.GetRegisters())
+	fmt.Printf("REGISTERS:\n")
+	for i, v := range mach.GetRegisters() {
+		fmt.Printf("%v\t%+v\n", i, v.ToDisplayString())
+	}
 	fmt.Printf("%+v\n", mach.GetFlags())
 	fmt.Printf("stack:\n%+v\n", mach.GetStack())
 	const in = "(-3 + 8)"

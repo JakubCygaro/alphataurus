@@ -33,9 +33,9 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			p.lexer.line, p.lexer.col)
 	} else {
 		op1.Ty = TOKEN_TREG
-		op1.Val = int(expr.Val.(ConstExpr).Val)
+		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
 	}
-	switch op1.Val.(int) {
+	switch op1.Val.(RegisterData).Reg {
 	case vm.IP_IDX:
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Disallowed source register",

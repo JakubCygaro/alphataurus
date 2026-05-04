@@ -49,7 +49,7 @@ func NewAssembler(reader bufio.Reader) Assembler {
 
 func (a *Assembler) currentCodePos() (byte uint64, address uint64) {
 	position := uint64(len(a.bytecode))
-	posAsInstAddr := uint64(position + vm.ADDRESSDEADZONE_SIZE - vm.INSTRUCTION_SIZE)
+	posAsInstAddr := uint64(position + vm.ADDRESSDEADZONE_SIZE)
 	return position, posAsInstAddr
 }
 
@@ -149,7 +149,7 @@ func (a *Assembler) EmitBytecode() (int, error) {
 		case INST_TJMPIP1R:
 			err = a.emitJmpIP(int(inst.Ty), inst.Data.(InstJmpIPData), &(a.bytecode))
 		case INST_TLABEL:
-			err = a.declareLabel(inst.Data.(InstLabData), &(a.bytecode))
+			err = a.declareLabel(inst.Data.(InstLabData))
 			instCount--
 		case INST_TPUSHR:
 			err = a.emitPushR(inst.Data.(InstPushPopData), &(a.bytecode))
@@ -175,7 +175,7 @@ func (a *Assembler) EmitBytecode() (int, error) {
 			} else {
 				a.hasEntry = true
 				_, ent := a.currentCodePos()
-				a.entry = ent + 1
+				a.entry = ent
 			}
 
 		default:
@@ -574,10 +574,10 @@ func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) declareLabel(data InstLabData, out *[]byte) error {
+func (a *Assembler) declareLabel(data InstLabData) error {
 	// this needs to be the address of the function in the virtual address space
-	// since each instruction in that address space is exactly the size of 1 (even tho it takes up 12 bytes)
 	_, posAsInstAddr := a.currentCodePos()
+	posAsInstAddr -= vm.INSTRUCTION_SIZE
 	if sym, _, ok := a.symbols.GetByName(data.Label); ok {
 		switch sym.Vis {
 		case vm.SYM_VEXPORT:
