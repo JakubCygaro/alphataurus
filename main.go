@@ -28,6 +28,7 @@ section '.code'
 	push BYTE 69
 	mov r1b, [sp]
 	call atoi
+	push r1b
 	exit 0
 `
 
