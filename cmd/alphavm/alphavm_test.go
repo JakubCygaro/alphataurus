@@ -2,6 +2,7 @@ package alphavm
 
 import (
 	"bufio"
+	"encoding/binary"
 	"fmt"
 	"math"
 	"math/rand"
@@ -10,8 +11,8 @@ import (
 	"testing"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 const (
@@ -80,6 +81,25 @@ func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 	}
 	return nil
 }
+
+type fakeStack vm.VmStack
+
+func makeFakeStack(size int) fakeStack {
+	return make(fakeStack, size)
+}
+
+func (s *fakeStack) push(value any) {
+	if u8, ok := value.(uint8); ok {
+		*s = append(*s, u8)
+	} else if u16, ok := value.(uint16); ok {
+		binary.BigEndian.AppendUint16(*s, u16)
+	} else if u32, ok := value.(uint32); ok {
+		binary.BigEndian.AppendUint32(*s, u32)
+	} else if u64, ok := value.(uint64); ok {
+		binary.BigEndian.AppendUint64(*s, u64)
+	}
+}
+
 func expectStack(mach *vm.VmState, stack vm.VmStack) error {
 	lines := make([]string, 0)
 	vmStack := mach.GetStack()
@@ -92,13 +112,19 @@ func expectStack(mach *vm.VmState, stack vm.VmStack) error {
 	for i, v := range stack {
 		if vmStack[i] != v {
 			lines = append(lines, fmt.Sprintf("Stack value at [%v] was different from expected", i))
+			// lines = append(lines,
+			// 	fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)",
+			// 		v, vmStack[i]),
+			// 	fmt.Sprintf("\t[int64]   expected (%v) \t got (%v)",
+			// 		int64(v), int64(vmStack[i])),
+			// 	fmt.Sprintf("\t[float64] expected (%v) \t got (%v)",
+			// 		math.Float64frombits(v), math.Float64frombits(vmStack[i])),
+			// )
 			lines = append(lines,
-				fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)",
-					v, vmStack[i]),
-				fmt.Sprintf("\t[int64]   expected (%v) \t got (%v)",
-					int64(v), int64(vmStack[i])),
-				fmt.Sprintf("\t[float64] expected (%v) \t got (%v)",
-					math.Float64frombits(v), math.Float64frombits(vmStack[i])),
+				fmt.Sprintf("got (%v) expected (%v)", vmStack[i], v),
+			)
+			lines = append(lines,
+				fmt.Sprintf("got (0x%x) expected (0x%x)", vmStack[i], v),
 			)
 		}
 	}
@@ -841,9 +867,9 @@ func TestExpressions2F(t *testing.T) {
 }
 func TestDeref1(t *testing.T) {
 	stackSize := rand.Intn(32-5) + 5
-	stack := make(vm.VmStack, 0, stackSize)
+	stack := makeFakeStack(stackSize)
 	for range stackSize {
-		stack = append(stack, uint64(rand.Intn(101)-50))
+		stack.push(uint64(rand.Intn(101)-50))
 	}
 	lines := make([]string, 0)
 	lines = append(lines, `
