@@ -620,7 +620,7 @@ func (state *VmState) pushImpl(data []byte) error {
 	}
 	state.incrementRegU64(SP_IDX, uint64(inc))
 	copy(
-		state.stack[state.GetRealSp()-inc:state.GetRealSp()+inc],
+		state.stack[state.GetRealSp()-inc+1:state.GetRealSp()+1],
 		data[:],
 	)
 	return nil
@@ -660,15 +660,16 @@ func (state *VmState) popImpl(bytes int) ([]byte, error) {
 	if state.GetRealSp() < 0 {
 		return nil, errors.StackUnderflow(state.byteCodePos)
 	}
-	val := state.stack[state.GetRealSp()-bytes:state.GetRealSp()]
+	val := state.stack[state.GetRealSp()-bytes+1:state.GetRealSp()+1]
 	var sp = binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
 	sp -= uint64(bytes)
 	binary.BigEndian.PutUint64(state.regs.r[SP_IDX][:], sp)
 	return val, nil
 }
 func (state *VmState) popR(lastByte byte, param []byte) error {
+	dataSz := lastByte & 0b00000011
 	val, err := state.popImpl(
-		dataSizeToByteCount(lastByte & 0b00000011),
+		dataSizeToByteCount(dataSz),
 	)
 	if err != nil {
 		return err

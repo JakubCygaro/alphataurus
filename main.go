@@ -21,7 +21,6 @@ atoi:
 	pop bp
 	ret
 `
-
 const assembly = `
 import 'atoi'
 section '.code'
