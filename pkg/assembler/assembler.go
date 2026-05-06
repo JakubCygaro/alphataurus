@@ -341,6 +341,7 @@ func (a *Assembler) emitMovRDO2(data InstMovDerefData, out *[]byte) error {
 }
 func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 	var opCode vm.OpCodeVal
+	sized := false
 	switch op {
 	case INST_TADDRR:
 		opCode = a.opCodes[vm.OP_ADDRR]
@@ -348,16 +349,21 @@ func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 		opCode = a.opCodes[vm.OP_SUBRR]
 	case INST_TDIVRR:
 		opCode = a.opCodes[vm.OP_DIVRR]
+		sized = true
 	case INST_TMULRR:
 		opCode = a.opCodes[vm.OP_MULRR]
+		sized = true
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
-	// src = param[0]
-	// dest = param[1]
-	// ty = param[3]
-	tySizesByte := (0b0000_0011 & byte(data.Ty)) 
-	tySizesByte |= (0b000_0011 & byte(data.Source.Size)) << 2
-	tySizesByte |= (0b000_0011 & byte(data.Dest.Size)) << 4
+	tySizesByte := (0b0000_0011 & byte(data.Ty))
+
+	if sized {
+		tySizesByte |= (0b000_0011 & byte(data.DataSize)) << 2
+		tySizesByte |= (0b000_0011 & byte(data.DataSize)) << 4
+	} else {
+		tySizesByte |= (0b000_0011 & byte(data.Source.Size)) << 2
+		tySizesByte |= (0b000_0011 & byte(data.Dest.Size)) << 4
+	}
 	param := [8]byte{
 		byte(data.Source.Reg),
 		byte(data.Dest.Reg),

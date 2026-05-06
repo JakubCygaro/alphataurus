@@ -149,6 +149,18 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 			"Invalid instruction",
 			p.lexer.line, p.lexer.col)
 	}
+	err = p.lexer.ReadNextToken()
+	if err != nil {
+		return err
+	}
+	sizeT := p.lexer.CurrentToken()
+	var size byte
+	if sz, ok := TokenAsSize(&sizeT); !ok {
+		return errors.FailedToParse("div instruction", "missing data size parameter",
+			op1.Line, op1.Col)
+	} else {
+		size = sz
+	}
 	var ty int
 	switch arthTy {
 	case ARTH_TDIV:
@@ -160,6 +172,7 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 		Ty: ty,
 		Data: InstArthData{
 			Ty: valTy,
+			DataSize: size,
 		},
 	}
 	return nil

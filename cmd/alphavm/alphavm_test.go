@@ -458,7 +458,7 @@ func TestDivRR1(t *testing.T) {
 	@entry
 		mov r0, %v
 		mov r1, %v
-		div UNSIGNED
+		div UNSIGNED WORD
 	`, rAV, rBV)
 
 	mach, err := assembleAndExecute(asm)
@@ -481,7 +481,7 @@ func TestDivRR2(t *testing.T) {
 	@entry
 		mov r0, %v
 		mov r1, %v
-		div SIGNED
+		div SIGNED WORD
 	`, rAV, rBV)
 
 	mach, err := assembleAndExecute(asm)
@@ -504,7 +504,7 @@ func TestDivRR3(t *testing.T) {
 	@entry
 		mov r0, %v
 		mov r1, %v
-		div FLOAT
+		div FLOAT WORD
 	`, rAV, rBV)
 
 	mach, err := assembleAndExecute(asm)
@@ -527,7 +527,7 @@ func TestMulRR1(t *testing.T) {
 	@entry
 		mov r0, %v
 		mov r1, %v
-		mul UNSIGNED
+		mul UNSIGNED WORD
 	`, rAV, rBV)
 
 	mach, err := assembleAndExecute(asm)
@@ -549,7 +549,7 @@ func TestMulRR2(t *testing.T) {
 	@entry
 		mov r0, %v
 		mov r1, %v
-		mul SIGNED
+		mul SIGNED WORD
 	`, rAV, rBV)
 
 	mach, err := assembleAndExecute(asm)
@@ -571,7 +571,7 @@ func TestMulRR3(t *testing.T) {
 	@entry
 		mov r0, %v
 		mov r1, %v
-		mul FLOAT
+		mul FLOAT WORD
 	`, rAV, rBV)
 
 	mach, err := assembleAndExecute(asm)

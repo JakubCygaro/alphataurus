@@ -24,9 +24,9 @@ atoi:
 const assembly = `
 section '.code'
 @entry
-	mov r3, 16774767119100443
-	mov r4, 3285885710112837
-	add UNSIGNED r3, r4
+	mov r0, 11008014173790394
+	mov r1, 4907736850447066
+	div UNSIGNED WORD
 `
 
 func main() {

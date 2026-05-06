@@ -349,6 +349,7 @@ func (l *Lexer) ReadNextToken() error {
 	default:
 		return errors.UnrecognizedChar(rune(b), l.line, l.col)
 	}
+	l.currentToken.Col, l.currentToken.Line = l.col, l.line
 	return nil
 }
 func (l *Lexer) readSingleQuoted() error {

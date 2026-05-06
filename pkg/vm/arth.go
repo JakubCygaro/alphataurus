@@ -193,10 +193,10 @@ func (state *VmState) divValues(a, b uint64, ty, dataSz byte, quoitent, rem []by
 	switch ty {
 	case TY_UINT:
 		divUint(a, b, dataSz, quoitent)
-		modUint(a, b, dataSz, quoitent)
+		modUint(a, b, dataSz, rem)
 	case TY_SINT:
 		divSint(a, b, dataSz, quoitent)
-		modSint(a, b, dataSz, quoitent)
+		modSint(a, b, dataSz, rem)
 	case TY_FLOAT:
 		if dataSz != SZ_64 {
 			return errors.BadArthmeticOperation(state.byteCodePos)

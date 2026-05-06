@@ -597,7 +597,8 @@ func (state *VmState) arthRR(opType int, param []byte) error {
 		destV := binary.BigEndian.Uint64(state.regs.r[R1_IDX][:])
 		err = state.divValues(srcV, destV,
 			data.ty, data.r2sz,
-			state.regs.r[R2_IDX][:], state.regs.r[R3_IDX][:])
+			state.regs.r[R2_IDX][:],
+			state.regs.r[R3_IDX][:])
 	}
 	return err
 }

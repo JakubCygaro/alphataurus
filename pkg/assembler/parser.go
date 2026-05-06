@@ -105,6 +105,7 @@ type InstArthData struct {
 	Source, Dest RegisterData
 	Imm          uint64
 	Ty           int
+	DataSize     byte
 }
 type InstLogicalData struct {
 	First, Second RegisterData
