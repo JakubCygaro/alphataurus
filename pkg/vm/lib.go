@@ -417,7 +417,9 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 			err = vm.push(int(opcode), opCodeBytes[0], param)
 		case OP_POP:
 			err = vm.popR(opCodeBytes[0], param)
-		case OP_CMP:
+		case OP_CMPRR:
+			err = vm.cmp(opCodeBytes[0], param)
+		case OP_CMPRI:
 			err = vm.cmp(opCodeBytes[0], param)
 		case OP_NOP:
 		case OP_CLR:
@@ -625,31 +627,45 @@ func (state *VmState) clr() error {
 	state.flags = Flags{}
 	return nil
 }
-func (state *VmState) cmp(lastByte byte, param []byte) error {
-	var subtrahend, minuend, dataSz byte
+func (state *VmState) cmpRR(lastByte byte, param []byte) error {
+	var subtrahend, minuend, dataSz, ty byte
 	subtrahend |= (lastByte & 0b11110000) >> 4
-	minuend |= (lastByte & 0b00000011)
-	dataSz |= (lastByte & 0b00001100) >> 2
+	minuend |= (lastByte & 0b00001111)
+	ty = param[0]
+	dataSz = param[1]
 	if !IsGpReg(minuend) {
 		return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
 	}
 	var subV, minV uint64
 	minV = binary.BigEndian.Uint64(state.regs.r[minuend][:])
+	subV = binary.BigEndian.Uint64(state.regs.r[subtrahend][:])
 
-	var ty byte
-	if !IsGpReg(subtrahend) {
-		// in this case the subtrahend is an immediate value
-		// and the type of the operation is determined by
-		// subtrahend - GP_REG_MAX - 1
-		ty = subtrahend - GP_REG_MAX - 1
-		subV = binary.BigEndian.Uint64(param)
-	} else {
-		ty = param[0]
-		subV = binary.BigEndian.Uint64(state.regs.r[subtrahend][:])
-	}
 	if dataSz != SZ_64 && ty == TY_FLOAT {
 		return errors.BadArthmeticOperation(state.byteCodePos)
 	}
+	return state.cmpImpl(minV, subV, ty, dataSz)
+}
+func (state *VmState) cmpIR(lastByte byte, param []byte) error {
+	var subtrahend, minuend, dataSz, ty byte
+	subtrahend |= (lastByte & 0b11110000) >> 4
+	dataSz |= (lastByte & 0b00001100) >> 2
+	ty = (lastByte & 0b00000001)
+	if ty == 1 {
+		ty = TY_FLOAT
+	}
+	if !IsGpReg(minuend) {
+		return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
+	}
+	var subV, minV uint64
+	minV = binary.BigEndian.Uint64(state.regs.r[minuend][:])
+	subV = binary.BigEndian.Uint64(param)
+
+	if dataSz != SZ_64 && ty == TY_FLOAT {
+		return errors.BadArthmeticOperation(state.byteCodePos)
+	}
+	return state.cmpImpl(minV, subV, ty, dataSz)
+}
+func (state *VmState) cmpImpl(minV, subV uint64, ty, dataSz byte) error {
 	diff := [8]byte{}
 	err := state.subValues(minV, subV,
 		ty, dataSz,
@@ -677,7 +693,6 @@ func (state *VmState) cmp(lastByte byte, param []byte) error {
 			state.flags.Zf = int64(i) == 0
 		}
 	}
-
 	return err
 }
 func (state *VmState) pushImpl(data []byte) error {

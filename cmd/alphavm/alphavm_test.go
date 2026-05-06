@@ -628,11 +628,13 @@ func TestCmp1(t *testing.T) {
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
 		t.Error(err)
+		t.Errorf("Compilation of:\n%s\n", asm)
 		t.FailNow()
 	}
 	flags := mach.GetFlags()
 	if !flags.Sf {
 		t.Errorf("Sign flag was not set")
+		t.Errorf("Compilation of:\n%s\n", asm)
 		t.Errorf("%+v", flags)
 	}
 }
@@ -649,6 +651,7 @@ func TestCmp2(t *testing.T) {
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
 		t.Error(err)
+		t.Errorf("Compilation of:\n%s\n", asm)
 		t.FailNow()
 	}
 	flags := mach.GetFlags()

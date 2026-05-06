@@ -24,13 +24,13 @@ func (p *Parser) parseCmp() error {
 		return err
 	} else if eval, _ := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TREG {
 		op1.Ty = TOKEN_TREG
-		op1.Val = int(eval.Val)
+		op1.Val = eval.UnpackAsRegisterData()
 	} else {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"First operand to instruction must be a valid register",
 			p.lexer.line, p.lexer.col)
 	}
-	if op1.Val.(int) > vm.GP_REG_MAX {
+	if op1.Val.(RegisterData).Reg > vm.GP_REG_MAX {
 		return fmt.Errorf("Disallowed minuend register %s", p.lexer.CurrentPosition())
 	}
 	if err := p.lexer.ReadNextToken(); err != nil {
@@ -41,16 +41,13 @@ func (p *Parser) parseCmp() error {
 			"Instruction missing a comma",
 			p.lexer.line, p.lexer.col)
 	}
-	// if err := p.lexer.ReadNextToken(); err != nil {
-	// 	return err
-	// }
-	// op2 := p.lexer.CurrentToken()
+
 	op2 := Token{Ty: INVALID}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else if eval, ok := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TREG {
 		op2.Ty = TOKEN_TREG
-		op2.Val = int(eval.Val)
+		op2.Val = eval.UnpackAsRegisterData()
 	} else if !ok {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Second operand to instruction must be a valid register or a constant expression",
@@ -68,17 +65,20 @@ func (p *Parser) parseCmp() error {
 	}
 	switch op2.Ty {
 	case TOKEN_TREG:
-		if op2.Val.(int) > vm.GP_REG_MAX {
+		if op2.Val.(RegisterData).Reg > vm.GP_REG_MAX {
 			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 				"Disallowed subtrahend register",
 				p.lexer.line, p.lexer.col)
+		}
+		if op1.Val.(RegisterData).Size != op2.Val.(RegisterData).Size {
+			return errors.MismatchedRegisterSizes(p.lexer.line, p.lexer.col)
 		}
 		p.currentInst = Instruction{
 			Ty: INST_TCMPRR,
 			Data: InstCmpData{
 				Ty:  ty,
-				Min: op1.Val.(int),
-				Sub: op2.Val.(int),
+				Min: op1.Val.(RegisterData),
+				Sub: op2.Val.(RegisterData),
 			},
 		}
 	case TOKEN_TINTEGER_LIT:
@@ -86,7 +86,7 @@ func (p *Parser) parseCmp() error {
 			Ty: INST_TCMPIR,
 			Data: InstCmpData{
 				Ty:  ty,
-				Min: op1.Val.(int),
+				Min: op1.Val.(RegisterData),
 				Imm: op2.Val.(uint64),
 			},
 		}
@@ -95,8 +95,9 @@ func (p *Parser) parseCmp() error {
 			Ty: INST_TCMPIR,
 			Data: InstCmpData{
 				Ty:  ty,
-				Min: op1.Val.(int),
+				Min: op1.Val.(RegisterData),
 				Imm: op2.Val.(uint64),
+				ImmIsFloat: true,
 			},
 		}
 	}

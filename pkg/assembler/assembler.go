@@ -466,24 +466,23 @@ func (a *Assembler) emitNot(ty int, data InstLogicalData, out *[]byte) error {
 func (a *Assembler) emitInc(data InstIncDecData, out *[]byte) error {
 	inc := a.opCodes[vm.OP_INCR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(inc))
-	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg.Reg))
 	return nil
 }
 func (a *Assembler) emitDec(data InstIncDecData, out *[]byte) error {
 	dec := a.opCodes[vm.OP_DECR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(dec))
-	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg.Reg))
 	return nil
 }
 func (a *Assembler) emitCmpRR(data InstCmpData, out *[]byte) error {
 	cmp := a.opCodes[vm.OP_CMP]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
-	// subtrahend |= (lastByte & 0xf0) >> 4
-	// minuend |= (lastByte & 0x0f)
-	regs := (0b00001111 & byte(data.Sub)) << 4
-	regs |= 0b00001111 & byte(data.Min)
+	regs := (0b0000_1111 & byte(data.Sub.Reg)) << 4
+	regs |= 0b0000_1111 & byte(data.Min.Reg)
+	// regs |= 0b0000_0011 & byte(data.Min.Size) << 2
 	(*out)[len(*out)-4] = regs
-	*out = append(*out, byte(data.Ty), 0, 0, 0, 0, 0, 0, 0)
+	*out = append(*out, byte(data.Ty), byte(data.Min.Size), 0, 0, 0, 0, 0, 0)
 	return nil
 }
 func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
@@ -492,7 +491,7 @@ func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
 	// subtrahend |= (lastByte & 0xf0) >> 4
 	// minuend |= (lastByte & 0x0f)
 	regs := (0b00001111 & (byte(data.Ty) + 0b00001000)) << 4
-	regs |= 0b00001111 & byte(data.Min)
+	regs |= 0b00001111 & byte(data.Min.Reg)
 	(*out)[len(*out)-4] = regs
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil

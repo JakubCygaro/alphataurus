@@ -89,7 +89,7 @@ var (
 		0:  handle(OP_MOVRR),
 		1:  handle(OP_MOVIR),
 		2:  p002X,
-		4:  handle(OP_CMP),
+		4:  handle(OP_CMPRR),
 		5:  handle(OP_ADDIR),
 		6:  handle(OP_SUBIR),
 		7:  handle(OP_MOVDRI),
@@ -98,6 +98,7 @@ var (
 		10: handle(OP_XORIR),
 		11: handle(OP_LSHIR),
 		12: handle(OP_RSHIR),
+		13:  handle(OP_CMPRI),
 	})
 	p01XX = nested(OpCodeMap{
 		// stack manipulation, leave a byte for data size
@@ -207,7 +208,8 @@ const (
 	OP_JMPGEIP // jump if greater or equal
 	OP_JMPLIP  // jump if less
 	OP_JMPLEIP // jump if less or equal
-	OP_CMP     // test registers
+	OP_CMPRR 
+	OP_CMPRI
 	OP_CLR     // clear all flags (set them to false)
 	OP_CALL
 	OP_CALLIP

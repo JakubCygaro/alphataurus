@@ -191,7 +191,7 @@ func (p *Parser) parseInc() error {
 			"The instruction operand must be a valid register",
 			p.lexer.line, p.lexer.col)
 	}
-	switch op1.Val.(int) {
+	switch op1.Val.(RegisterData).Reg {
 	case vm.IP_IDX:
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Disallowed operand register",
@@ -200,7 +200,7 @@ func (p *Parser) parseInc() error {
 	p.currentInst = Instruction{
 		Ty: INST_TINCR,
 		Data: InstIncDecData{
-			Reg: op1.Val.(int),
+			Reg: op1.Val.(RegisterData),
 		},
 	}
 	return nil
@@ -219,7 +219,7 @@ func (p *Parser) parseDec() error {
 			"The instruction operand must be a valid register",
 			p.lexer.line, p.lexer.col)
 	}
-	switch op1.Val.(int) {
+	switch op1.Val.(RegisterData).Reg {
 	case vm.IP_IDX:
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Disallowed operand register",
@@ -228,7 +228,7 @@ func (p *Parser) parseDec() error {
 	p.currentInst = Instruction{
 		Ty: INST_TDECR,
 		Data: InstIncDecData{
-			Reg: op1.Val.(int),
+			Reg: op1.Val.(RegisterData),
 		},
 	}
 	return nil

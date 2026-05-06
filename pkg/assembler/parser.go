@@ -99,7 +99,7 @@ type InstMovData struct {
 	DataSize  byte
 }
 type InstIncDecData struct {
-	Reg int
+	Reg RegisterData
 }
 type InstArthData struct {
 	Source, Dest RegisterData
@@ -113,8 +113,9 @@ type InstLogicalData struct {
 }
 type InstCmpData struct {
 	Ty       int
-	Sub, Min int
+	Sub, Min RegisterData
 	Imm      uint64
+	ImmIsFloat bool
 }
 type InstJmpData struct {
 	Address any
