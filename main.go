@@ -22,18 +22,15 @@ atoi:
 	ret
 `
 const assembly = `
-import 'atoi'
 section '.code'
 @entry
-	push BYTE 69
-	mov r1b, [sp]
-	call atoi
-	push r1b
-	exit 0
+	mov r3, 16774767119100443
+	mov r4, 3285885710112837
+	add UNSIGNED r3, r4
 `
 
 func main() {
-	sources := []string { assembly, assembly2 }
+	sources := []string { assembly }
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(s)))

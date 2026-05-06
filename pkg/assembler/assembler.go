@@ -355,9 +355,9 @@ func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 	// src = param[0]
 	// dest = param[1]
 	// ty = param[3]
-	tySizesByte := (0b0000_0011 & byte(data.Ty)) |
-		((0b000_0011 & byte(data.Source.Size)) << 2) |
-		((0b000_0011 & byte(data.Dest.Size)) << 4)
+	tySizesByte := (0b0000_0011 & byte(data.Ty)) 
+	tySizesByte |= (0b000_0011 & byte(data.Source.Size)) << 2
+	tySizesByte |= (0b000_0011 & byte(data.Dest.Size)) << 4
 	param := [8]byte{
 		byte(data.Source.Reg),
 		byte(data.Dest.Reg),

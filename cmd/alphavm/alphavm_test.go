@@ -56,18 +56,21 @@ func assembleAndExecute(source string) (vm.VmState, error) {
 	return mach, nil
 }
 
-type ExpMap map[byte]uint64
+type ExpMap map[byte]vm.Register
 
 func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 	var msg string
 	err := false
-	for k, v := range regStates {
-		if r, _ := mach.GetGpRXAsUint64(k); r != v {
+	for k, tr := range regStates {
+		var tro any
+		tr.GetValAs(vm.TY_UINT, vm.SZ_64, &tro)
+		trv := tro.(uint64)
+		if r, _ := mach.GetGpRXAsUint64(k); r != trv {
 			msg = strings.Join([]string{
 				fmt.Sprintf("State of general purpose register r%v was different from expected", k),
-				fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)", v, r),
-				fmt.Sprintf("\t[int64]   expected (%v) \t got (%v)", int64(v), int64(r)),
-				fmt.Sprintf("\t[float64] expected (%v) \t got (%v)", math.Float64frombits(v), math.Float64frombits(r)),
+				fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)", trv, r),
+				fmt.Sprintf("\t[int64]   expected (%v) \t got (%v)", int64(trv), int64(r)),
+				fmt.Sprintf("\t[float64] expected (%v) \t got (%v)", math.Float64frombits(trv), math.Float64frombits(r)),
 			}, "\n")
 			err = true
 		}
@@ -82,13 +85,13 @@ func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 	return nil
 }
 
-type fakeStack vm.VmStack
+type testingStack vm.VmStack
 
-func makeFakeStack(size int) fakeStack {
-	return make(fakeStack, size)
+func makeTestingStack(size int) testingStack {
+	return make(testingStack, size)
 }
 
-func (s *fakeStack) push(value any) {
+func (s *testingStack) push(value any) {
 	if u8, ok := value.(uint8); ok {
 		*s = append(*s, u8)
 	} else if u16, ok := value.(uint16); ok {
@@ -149,10 +152,10 @@ func TestMov1(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R0_IDX: uint64(r0_v),
-		vm.R1_IDX: uint64(r1_v),
-		vm.R2_IDX: math.Float64bits(r2_v),
-		vm.R3_IDX: math.Float64bits(r3_v),
+		vm.R0_IDX: vm.RegisterWithValue(uint64(r0_v)),
+		vm.R1_IDX: vm.RegisterWithValue(uint64(r1_v)),
+		vm.R2_IDX: vm.RegisterWithValue(math.Float64bits(r2_v)),
+		vm.R3_IDX: vm.RegisterWithValue(math.Float64bits(r3_v)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -178,8 +181,8 @@ func TestAddIR1(t *testing.T) {
 		t.Error(err)
 	}
 	if err = expectGpRegisters(asm, &mach, ExpMap{
-		vm.R2_IDX: uint64(r2_v),
-		vm.R5_IDX: math.Float64bits(r5_v),
+		vm.R2_IDX: vm.RegisterWithValue(uint64(r2_v)),
+		vm.R5_IDX: vm.RegisterWithValue(math.Float64bits(r5_v)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -200,7 +203,7 @@ func TestAddIR2(t *testing.T) {
 		t.Error(err)
 	}
 	if err = expectGpRegisters(asm, &mach, ExpMap{
-		r: uint64(reg_v + reg_add),
+		r: vm.RegisterWithValue(uint64(reg_v + reg_add)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -221,7 +224,7 @@ func TestAddIR3(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		r: uint64(reg_v + reg_add),
+		r: vm.RegisterWithValue(uint64(reg_v + reg_add)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -242,7 +245,7 @@ func TestAddIR4(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		r: math.Float64bits(reg_v + reg_add),
+		r: vm.RegisterWithValue(math.Float64bits(reg_v + reg_add)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -263,7 +266,7 @@ func TestSubIR1(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		r: uint64(reg_v - reg_sub),
+		r: vm.RegisterWithValue(uint64(reg_v - reg_sub)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -284,7 +287,7 @@ func TestSubIR2(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		r: uint64(reg_v - reg_sub),
+		r: vm.RegisterWithValue(uint64(reg_v - reg_sub)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -305,7 +308,7 @@ func TestSubIR3(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		r: math.Float64bits(reg_v - reg_sub),
+		r: vm.RegisterWithValue(math.Float64bits(reg_v - reg_sub)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -327,8 +330,8 @@ func TestAddRR1(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		rA: rAV + rBV,
-		rB: rBV,
+		rA: vm.RegisterWithValue(rAV + rBV),
+		rB: vm.RegisterWithValue(rBV),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -350,8 +353,8 @@ func TestAddRR2(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		rA: uint64(rAV + rBV),
-		rB: uint64(rBV),
+		rA: vm.RegisterWithValue(uint64(rAV + rBV)),
+		rB: vm.RegisterWithValue(uint64(rBV)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -373,8 +376,8 @@ func TestAddRR3(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		rA: math.Float64bits(rAV + rBV),
-		rB: math.Float64bits(rBV),
+		rA: vm.RegisterWithValue(math.Float64bits(rAV + rBV)),
+		rB: vm.RegisterWithValue(math.Float64bits(rBV)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -396,8 +399,8 @@ func TestSubRR1(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		rA: uint64(rAV - rBV),
-		rB: uint64(rBV),
+		rA: vm.RegisterWithValue(uint64(rAV - rBV)),
+		rB: vm.RegisterWithValue(uint64(rBV)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -419,8 +422,8 @@ func TestSubRR2(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		rA: uint64(rAV - rBV),
-		rB: uint64(rBV),
+		rA: vm.RegisterWithValue(uint64(rAV - rBV)),
+		rB: vm.RegisterWithValue(uint64(rBV)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -442,8 +445,8 @@ func TestSubRR3(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		rA: math.Float64bits(rAV - rBV),
-		rB: math.Float64bits(rBV),
+		rA: vm.RegisterWithValue(math.Float64bits(rAV - rBV)),
+		rB: vm.RegisterWithValue(math.Float64bits(rBV)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -463,10 +466,10 @@ func TestDivRR1(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R0_IDX: rAV,
-		vm.R1_IDX: rBV,
-		vm.R2_IDX: rAV / rBV,
-		vm.R3_IDX: rAV % rBV,
+		vm.R0_IDX: vm.RegisterWithValue(rAV),
+		vm.R1_IDX: vm.RegisterWithValue(rBV),
+		vm.R2_IDX: vm.RegisterWithValue(rAV / rBV),
+		vm.R3_IDX: vm.RegisterWithValue(rAV % rBV),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -486,10 +489,10 @@ func TestDivRR2(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R0_IDX: uint64(rAV),
-		vm.R1_IDX: uint64(rBV),
-		vm.R2_IDX: uint64(rAV / rBV),
-		vm.R3_IDX: uint64(rAV % rBV),
+		vm.R0_IDX: vm.RegisterWithValue(uint64(rAV)),
+		vm.R1_IDX: vm.RegisterWithValue(uint64(rBV)),
+		vm.R2_IDX: vm.RegisterWithValue(uint64(rAV / rBV)),
+		vm.R3_IDX: vm.RegisterWithValue(uint64(rAV % rBV)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -509,10 +512,10 @@ func TestDivRR3(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R0_IDX: math.Float64bits(rAV),
-		vm.R1_IDX: math.Float64bits(rBV),
-		vm.R2_IDX: math.Float64bits(rAV / rBV),
-		vm.R3_IDX: 0,
+		vm.R0_IDX: vm.RegisterWithValue(math.Float64bits(rAV)),
+		vm.R1_IDX: vm.RegisterWithValue(math.Float64bits(rBV)),
+		vm.R2_IDX: vm.RegisterWithValue(math.Float64bits(rAV / rBV)),
+		vm.R3_IDX: vm.RegisterWithValue(0),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -532,9 +535,9 @@ func TestMulRR1(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R0_IDX: rAV,
-		vm.R1_IDX: rBV,
-		vm.R2_IDX: rAV * rBV,
+		vm.R0_IDX: vm.RegisterWithValue(rAV),
+		vm.R1_IDX: vm.RegisterWithValue(rBV),
+		vm.R2_IDX: vm.RegisterWithValue(rAV * rBV),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -554,9 +557,9 @@ func TestMulRR2(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R0_IDX: uint64(rAV),
-		vm.R1_IDX: uint64(rBV),
-		vm.R2_IDX: uint64(rAV * rBV),
+		vm.R0_IDX: vm.RegisterWithValue(uint64(rAV)),
+		vm.R1_IDX: vm.RegisterWithValue(uint64(rBV)),
+		vm.R2_IDX: vm.RegisterWithValue(uint64(rAV * rBV)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -576,9 +579,9 @@ func TestMulRR3(t *testing.T) {
 		t.Error(err)
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R0_IDX: math.Float64bits(rAV),
-		vm.R1_IDX: math.Float64bits(rBV),
-		vm.R2_IDX: math.Float64bits(rAV * rBV),
+		vm.R0_IDX: vm.RegisterWithValue(math.Float64bits(rAV)),
+		vm.R1_IDX: vm.RegisterWithValue(math.Float64bits(rBV)),
+		vm.R2_IDX: vm.RegisterWithValue(math.Float64bits(rAV * rBV)),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -604,7 +607,7 @@ func TestIncAndDec1(t *testing.T) {
 		t.FailNow()
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		rA: rAV + incrT - decrT,
+		rA: vm.RegisterWithValue(rAV + incrT - decrT),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -681,10 +684,10 @@ func TestJmpE1(t *testing.T) {
 		t.FailNow()
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R0_IDX: 0,
-		vm.R1_IDX: 10,
-		vm.R4_IDX: 420,
-		vm.R5_IDX: 1337,
+		vm.R0_IDX: vm.RegisterWithValue(0),
+		vm.R1_IDX: vm.RegisterWithValue(10),
+		vm.R4_IDX: vm.RegisterWithValue(420),
+		vm.R5_IDX: vm.RegisterWithValue(1337),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -707,8 +710,8 @@ func TestJmpG2(t *testing.T) {
 		t.FailNow()
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R1_IDX: 10,
-		vm.R0_IDX: 0,
+		vm.R1_IDX: vm.RegisterWithValue(10),
+		vm.R0_IDX: vm.RegisterWithValue(0),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -730,8 +733,8 @@ func TestJmpG1(t *testing.T) {
 		t.FailNow()
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
-		vm.R1_IDX: 10,
-		vm.R0_IDX: 0,
+		vm.R1_IDX: vm.RegisterWithValue(10),
+		vm.R0_IDX: vm.RegisterWithValue(0),
 	}); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -779,7 +782,7 @@ func TestExpressions1(t *testing.T) {
 			t.FailNow()
 		}
 		if err := expectGpRegisters(asm, &mach, ExpMap{
-			rA: uint64(endVal),
+			rA: vm.RegisterWithValue(uint64(endVal)),
 		}); err != nil {
 			t.Errorf(err.Error())
 			break
@@ -830,7 +833,7 @@ func TestExpressions2(t *testing.T) {
 			t.FailNow()
 		}
 		if err := expectGpRegisters(asm, &mach, ExpMap{
-			rA: uint64(math.Float64bits(endVal)),
+			rA: vm.RegisterWithValue(uint64(math.Float64bits(endVal))),
 		}); err != nil {
 			t.Errorf(err.Error())
 			break
@@ -867,9 +870,9 @@ func TestExpressions2F(t *testing.T) {
 }
 func TestDeref1(t *testing.T) {
 	stackSize := rand.Intn(32-5) + 5
-	stack := makeFakeStack(stackSize)
+	stack := makeTestingStack(stackSize)
 	for range stackSize {
-		stack.push(uint64(rand.Intn(101)-50))
+		stack.push(uint64(rand.Intn(101) - 50))
 	}
 	lines := make([]string, 0)
 	lines = append(lines, `
@@ -888,16 +891,16 @@ func TestDeref1(t *testing.T) {
 	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
 		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
-	} else if err := expectStack(&mach, stack); err != nil {
+	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
 		t.Error(err.Error())
 		t.Errorf("Compilation of:\n%s", asm)
 	}
 }
 func TestDeref2(t *testing.T) {
 	stackSize := rand.Intn(32-5) + 5
-	stack := make(vm.VmStack, 0, stackSize)
+	stack := makeTestingStack(stackSize)
 	for range stackSize {
-		stack = append(stack, uint64(rand.Intn(101)-50))
+		stack.push(uint64(rand.Intn(101) - 50))
 	}
 	lines := make([]string, 0)
 	lines = append(lines, `
@@ -918,16 +921,16 @@ func TestDeref2(t *testing.T) {
 	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
 		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
-	} else if err := expectStack(&mach, stack); err != nil {
+	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
 		t.Error(err.Error())
 		t.Errorf("Compilation of:\n%s", asm)
 	}
 }
 func TestDeref3(t *testing.T) {
 	stackSize := rand.Intn(32-5) + 5
-	stack := make(vm.VmStack, 0, stackSize)
+	stack := makeTestingStack(stackSize)
 	for range stackSize {
-		stack = append(stack, uint64(rand.Intn(101)-50))
+		stack.push(uint64(rand.Intn(101) - 50))
 	}
 	lines := make([]string, 0)
 	lines = append(lines, `
@@ -949,7 +952,7 @@ func TestDeref3(t *testing.T) {
 	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
 		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
-	} else if err := expectStack(&mach, stack); err != nil {
+	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
 		t.Error(err.Error())
 		t.Errorf("Compilation of:\n%s", asm)
 	}
@@ -1023,11 +1026,13 @@ func TestStack1(t *testing.T) {
 }
 func TestStack2(t *testing.T) {
 	const stackSize = DEFAULT_STACK_SIZE
-	stack := make(vm.VmStack, stackSize)
-	for i := range 2 {
-		stack[i] = uint64(rand.Intn(101) - 50)
-	}
-	stack[2] = uint64(int64(stack[0]) + int64(stack[1]))
+	stack := makeTestingStack(stackSize)
+	a := uint64(rand.Intn(101) - 50)
+	b := uint64(rand.Intn(101) - 50)
+	c := a + b
+	stack.push(a)
+	stack.push(b)
+	stack.push(c)
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
 	rB := (rA + 1) % vm.GP_REG_MAX
 	asm := fmt.Sprintf(`
@@ -1044,12 +1049,12 @@ func TestStack2(t *testing.T) {
 	if mach, err := assembleAndExecute(asm); err != nil {
 		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
-	} else if err := expectStack(&mach, stack); err != nil {
+	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
 		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
 	} else if err := expectGpRegisters(asm, &mach, ExpMap{
-		rA: stack[2],
-		rB: stack[1],
+		rA: vm.Register(stack[2*8 : 2*8+9]),
+		rB: vm.Register(stack[1*8 : 1*8+9]),
 	}); err != nil {
 		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)

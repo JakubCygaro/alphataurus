@@ -59,13 +59,72 @@ const (
 
 type Register [8]byte
 
+func RegisterWithValue(val uint64) (Register) {
+	r := Register{}
+	r.PutValWithSize(SZ_64, val)
+	return r
+}
+
 func (r Register) ToDisplayString() string {
-	return fmt.Sprintf(` [%vu8 | %vu16 | %vu32 | %vu64]`,
+	return fmt.Sprintf(`[%v_u8 | %v_u16 | %v_u32 | %v_u64 | %v_f64]`,
 		r[7],
 		binary.BigEndian.Uint16(r[6:]),
 		binary.BigEndian.Uint32(r[4:]),
 		binary.BigEndian.Uint64(r[:]),
+		math.Float64frombits(binary.BigEndian.Uint64(r[:])),
 	)
+}
+func (r *Register) PutValWithSize(dataSz byte, val uint64) {
+	bytes := dataSizeToByteCount(dataSz)
+	switch dataSz {
+	case SZ_8:
+		(*r)[7] = byte(val)
+	case SZ_16:
+		binary.BigEndian.PutUint16((*r)[8-bytes:], uint16(val))
+	case SZ_32:
+		binary.BigEndian.PutUint32((*r)[8-bytes:], uint32(val))
+	case SZ_64:
+		binary.BigEndian.PutUint64((*r)[8-bytes:], uint64(val))
+	}
+}
+func (r* Register) GetValAs(ty, dataSz byte, out *any) error {
+	if err := IsValidDataSize(dataSz); err != nil {
+		return err
+	}
+	if err := IsValidDataType(ty); err != nil {
+		return err
+	}
+	if ty == TY_FLOAT && dataSz != SZ_64 {
+		return fmt.Errorf("Data type FLOAT64 only supports 64-bit size")
+	}
+	val := binary.BigEndian.Uint64((*r)[:])
+	switch ty {
+	case TY_UINT:
+		switch dataSz {
+		case SZ_8:
+			*out = uint8(val)
+		case SZ_16:
+			*out = uint16(val)
+		case SZ_32:
+			*out = uint32(val)
+		case SZ_64:
+			*out = uint64(val)
+		}
+	case TY_SINT:
+		switch dataSz {
+		case SZ_8:
+			*out = int8(val)
+		case SZ_16:
+			*out = int16(val)
+		case SZ_32:
+			*out = int32(val)
+		case SZ_64:
+			*out = int64(val)
+		}
+	case TY_FLOAT:
+		*out = float64(math.Float64frombits(val))
+	}
+	return nil
 }
 
 type Registers struct {
@@ -134,31 +193,38 @@ func CreateVmState(stackSize uint64) VmState {
 }
 
 // get X general purpose register value as uint64
-func (vm *VmState) GetGpRX(register byte) (uint64, error) {
+func (vm *VmState) GetGpRX(register byte) (Register, error) {
 	if !IsGpReg(register) {
-		return 0, fmt.Errorf("Disallowed register index %d", register)
+		return Register{}, fmt.Errorf("Disallowed register index %d", register)
 	}
-	return binary.BigEndian.Uint64(vm.regs.r[register][:]), nil
+	return vm.regs.r[register], nil
+}
+
+func IsValidDataSize(sz byte) error {
+	if sz < SZ_8 || sz > SZ_64{
+		return fmt.Errorf("Invalid data size")
+	}
+	return nil
+}
+func IsValidDataType(sz byte) error {
+	if sz < TY_SINT || sz > TY_FLOAT{
+		return fmt.Errorf("Invalid data type")
+	}
+	return nil
+}
+
+func (vm *VmState) getRXAs(register byte, ty, dataSz byte, out *any) error {
+	r := &(vm.regs.r[int(register)])
+	return r.GetValAs(ty, dataSz, out)
 }
 
 // get X general purpose register value and cast it into a supported type value
 // returned via out
-func (vm *VmState) GetGpRXAs(register byte, ty byte, out *any) error {
-	val, err := vm.GetGpRX(register)
-	if err != nil {
-		return err
+func (vm *VmState) GetGpRXAs(register byte, ty, dataSz byte, out *any) error {
+	if !IsGpReg(register) {
+		return fmt.Errorf("Disallowed register index %d", register)
 	}
-	switch ty {
-	case TY_UINT:
-		*out = val
-	case TY_SINT:
-		*out = int64(val)
-	case TY_FLOAT:
-		*out = float64(math.Float64frombits(val))
-	default:
-		return fmt.Errorf("Unsupported type for register value conversion")
-	}
-	return nil
+	return vm.getRXAs(register, ty, dataSz, out)
 }
 func (vm *VmState) GetFlags() Flags {
 	return vm.flags
@@ -181,25 +247,25 @@ func (vm *VmState) GetRegistersAsUInt64() []uint64 {
 	return ret
 }
 func (vm *VmState) GetGpRXAsUint64(register byte) (uint64, error) {
-	val, err := vm.GetGpRX(register)
-	if err != nil {
+	var out any
+	if err := vm.GetGpRXAs(register, TY_UINT, SZ_64, &out); err != nil {
 		return 0, err
 	}
-	return val, nil
+	return out.(uint64), nil
 }
 func (vm *VmState) GetGpRXAsInt64(register byte) (int64, error) {
-	val, err := vm.GetGpRX(register)
-	if err != nil {
+	var out any
+	if err := vm.GetGpRXAs(register, TY_SINT, SZ_64, &out); err != nil {
 		return 0, err
 	}
-	return int64(val), nil
+	return out.(int64), nil
 }
 func (vm *VmState) GetGpRXAsFloat64(register byte) (float64, error) {
-	val, err := vm.GetGpRX(register)
-	if err != nil {
-		return 0, err
+	var out any
+	if err := vm.GetGpRXAs(register, TY_FLOAT, SZ_64, &out); err != nil {
+		return 0.0, err
 	}
-	return math.Float64frombits(val), nil
+	return out.(float64), nil
 }
 func (vm *VmState) ClearState() {
 	vm.regs.r = [11]Register{}
@@ -436,9 +502,9 @@ type arthRRParamData struct {
 func (state *VmState) arthRRGetParameters(param []byte) (data arthRRParamData, err error) {
 	data.src = param[0]
 	data.dest = param[1]
-	data.ty = (param[3] & 0b00000011)
-	data.r1sz = (param[3] & 0b00001100) >> 2
-	data.r2sz = (param[3] & 0b00110000) >> 4
+	data.ty = (param[2] & 0b00000011)
+	data.r1sz = (param[2] & 0b00001100) >> 2
+	data.r2sz = (param[2] & 0b00110000) >> 4
 	if !IsGpReg(data.src) {
 		return data, errors.DisallowedSrcRegister(int(data.src), state.byteCodePos)
 	}
@@ -720,16 +786,6 @@ func (state *VmState) putValInStackWithSize(dataSz byte, val uint64, address int
 	return nil
 }
 func (state *VmState) putValInRegWithSize(reg int, dataSz byte, val uint64) {
-	bytes := dataSizeToByteCount(dataSz)
-	r := state.regs.r[reg][:]
-	switch dataSz {
-	case SZ_8:
-		r[7] = byte(val)
-	case SZ_16:
-		binary.BigEndian.PutUint16(r[8-bytes:], uint16(val))
-	case SZ_32:
-		binary.BigEndian.PutUint32(r[8-bytes:], uint32(val))
-	case SZ_64:
-		binary.BigEndian.PutUint64(r[8-bytes:], uint64(val))
-	}
+	r := &(state.regs.r[reg])
+	r.PutValWithSize(dataSz, val)
 }
