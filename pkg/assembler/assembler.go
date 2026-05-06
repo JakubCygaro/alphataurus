@@ -476,7 +476,7 @@ func (a *Assembler) emitDec(data InstIncDecData, out *[]byte) error {
 	return nil
 }
 func (a *Assembler) emitCmpRR(data InstCmpData, out *[]byte) error {
-	cmp := a.opCodes[vm.OP_CMP]
+	cmp := a.opCodes[vm.OP_CMPRR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
 	regs := (0b0000_1111 & byte(data.Sub.Reg)) << 4
 	regs |= 0b0000_1111 & byte(data.Min.Reg)
@@ -486,12 +486,15 @@ func (a *Assembler) emitCmpRR(data InstCmpData, out *[]byte) error {
 	return nil
 }
 func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
-	cmp := a.opCodes[vm.OP_CMP]
+	cmp := a.opCodes[vm.OP_CMPIR]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
 	// subtrahend |= (lastByte & 0xf0) >> 4
 	// minuend |= (lastByte & 0x0f)
-	regs := (0b00001111 & (byte(data.Ty) + 0b00001000)) << 4
-	regs |= 0b00001111 & byte(data.Min.Reg)
+	regs := (0b00001111 & byte(data.Min.Reg)) << 4
+	regs |= (0b00001111 & byte(data.Min.Size)) << 2
+	if data.ImmIsFloat {
+		regs |= 0b0000_0001
+	}
 	(*out)[len(*out)-4] = regs
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil

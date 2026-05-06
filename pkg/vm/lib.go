@@ -418,9 +418,9 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 		case OP_POP:
 			err = vm.popR(opCodeBytes[0], param)
 		case OP_CMPRR:
-			err = vm.cmp(opCodeBytes[0], param)
-		case OP_CMPRI:
-			err = vm.cmp(opCodeBytes[0], param)
+			err = vm.cmpRR(opCodeBytes[0], param)
+		case OP_CMPIR:
+			err = vm.cmpIR(opCodeBytes[0], param)
 		case OP_NOP:
 		case OP_CLR:
 			err = vm.clr()
@@ -629,8 +629,8 @@ func (state *VmState) clr() error {
 }
 func (state *VmState) cmpRR(lastByte byte, param []byte) error {
 	var subtrahend, minuend, dataSz, ty byte
-	subtrahend |= (lastByte & 0b11110000) >> 4
-	minuend |= (lastByte & 0b00001111)
+	subtrahend |= (lastByte & 0b1111_0000) >> 4
+	minuend |= (lastByte & 0b0000_1111)
 	ty = param[0]
 	dataSz = param[1]
 	if !IsGpReg(minuend) {

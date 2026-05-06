@@ -728,7 +728,7 @@ func TestJmpG1(t *testing.T) {
 		inc r1
 		dec r0
 		cmp r0, 0
-		jg 0x1001
+		jg 0x1000 + 12
 	`
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
@@ -872,7 +872,7 @@ func TestExpressions2F(t *testing.T) {
 	}
 }
 func TestDeref1(t *testing.T) {
-	stackSize := rand.Intn(32-5) + 5
+	stackSize := (rand.Intn(32-5) + 5) * 8
 	stack := makeTestingStack(stackSize)
 	for range stackSize {
 		stack.push(uint64(rand.Intn(101) - 50))
@@ -882,8 +882,9 @@ func TestDeref1(t *testing.T) {
 	section '.code'
 	@entry
 	`)
-	for i, v := range stack {
-		lines = append(lines, fmt.Sprintf("mov [bp+%v], %v", i+1, int64(v)))
+	for i := 0; i < stackSize; i += 8 {
+		v := binary.BigEndian.Uint64(stack[i : i+8])
+		lines = append(lines, fmt.Sprintf("mov WORD [bp+%v], %v", (i+1)*8, int64(v)))
 	}
 	asm := strings.Join(lines, "\n")
 	b, err := assembleAndLink(asm)
@@ -900,7 +901,7 @@ func TestDeref1(t *testing.T) {
 	}
 }
 func TestDeref2(t *testing.T) {
-	stackSize := rand.Intn(32-5) + 5
+	stackSize := (rand.Intn(32-5) + 5) * 8
 	stack := makeTestingStack(stackSize)
 	for range stackSize {
 		stack.push(uint64(rand.Intn(101) - 50))
@@ -910,10 +911,11 @@ func TestDeref2(t *testing.T) {
 	section '.code'
 	@entry
 	`)
-	for i, v := range stack {
+	for i := 0; i < stackSize; i += 8{
+		v := binary.BigEndian.Uint64(stack[i : i+8])
 		rA := byte(rand.Int() % vm.GP_REG_MAX)
 		lines = append(lines, fmt.Sprintf("mov r%v, %v", rA, int64(v)))
-		lines = append(lines, fmt.Sprintf("mov [bp+%v], %v", i+1, int64(v)))
+		lines = append(lines, fmt.Sprintf("mov WORD [bp+%v], %v", (i+1)*8, int64(v)))
 	}
 	asm := strings.Join(lines, "\n")
 	b, err := assembleAndLink(asm)
@@ -930,7 +932,7 @@ func TestDeref2(t *testing.T) {
 	}
 }
 func TestDeref3(t *testing.T) {
-	stackSize := rand.Intn(32-5) + 5
+	stackSize := (rand.Intn(32-5) + 5) * 8
 	stack := makeTestingStack(stackSize)
 	for range stackSize {
 		stack.push(uint64(rand.Intn(101) - 50))
@@ -942,7 +944,8 @@ func TestDeref3(t *testing.T) {
 	`)
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
 	lines = append(lines, fmt.Sprintf("mov r%v, 1", rA))
-	for _, v := range stack {
+	for i := 0; i < stackSize; i += 8{
+		v := binary.BigEndian.Uint64(stack[i : i+9])
 		lines = append(lines, fmt.Sprintf("mov [bp+r%v], %v", rA, int64(v)))
 		lines = append(lines, fmt.Sprintf("inc r%v", rA))
 	}
@@ -1002,7 +1005,7 @@ func TestDeref2F(t *testing.T) {
 }
 func TestStack1(t *testing.T) {
 	var asm string
-	lines := make([]string, 0, DEFAULT_STACK_SIZE)
+	lines := make([]string, 0, DEFAULT_STACK_SIZE*8)
 	lines = append(lines, `
 		section '.code'
 		@entry
@@ -1010,7 +1013,7 @@ func TestStack1(t *testing.T) {
 	for range DEFAULT_STACK_SIZE {
 		val := rand.Intn(10000) - 5000
 		if rand.Intn(100) < 50 {
-			lines = append(lines, fmt.Sprintf("push %v", val))
+			lines = append(lines, fmt.Sprintf("push WORD %v", val))
 		} else {
 			rA := byte(rand.Int() % vm.GP_REG_MAX)
 			lines = append(lines, fmt.Sprintf("mov r%v, %v", rA, val))

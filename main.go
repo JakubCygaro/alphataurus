@@ -24,8 +24,8 @@ atoi:
 const assembly = `
 section '.code'
 @entry
-	mov r2, 979.1970599809265
-	cmp FLOAT r2, 980.1970599809265
+	mov WORD [bp+8], 12
+	mov WORD [bp+16], 36
 `
 
 func main() {

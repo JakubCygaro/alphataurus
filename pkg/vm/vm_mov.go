@@ -223,7 +223,7 @@ func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
 	if inStack < 0 || inStack >= len(state.stack) {
 		return errors.SegmentationFault(uint64(addr), state.byteCodePos)
 	}
-	return state.putValInStackWithSize(dParams.destSz, imm, int(addr))
+	return state.putValInStackWithSize(dParams.destSz, imm, int(inStack))
 }
 func (state *VmState) movRDO1(byte3, byte4 byte, param []byte) error {
 	dParams := state.getDerefParamsO1(byte3, byte4)

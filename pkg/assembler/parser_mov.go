@@ -9,6 +9,7 @@ func (p *Parser) parseMov() error {
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
+	op1 = p.lexer.CurrentToken()
 	if sz, ok := TokenAsSize(&op1); !ok {
 		p.lexer.UnreadToken()
 	} else {
