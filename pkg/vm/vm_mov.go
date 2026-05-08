@@ -59,7 +59,7 @@ func (state *VmState) movDRI(lastByte byte, param []byte) error {
 	}
 	copy(
 		state.regs.r[dest][8-bytes:],
-		state.stack[inStack:bytes],
+		state.stack[inStack:inStack+bytes],
 	)
 	return nil
 }
@@ -128,7 +128,7 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	bytes := dataSizeToByteCount(dParams.destSz)
 	copy(
 		state.regs.r[dParams.dest][8-bytes:],
-		state.stack[inStack:bytes],
+		state.stack[inStack:inStack+bytes],
 	)
 	return nil
 }
@@ -162,7 +162,7 @@ func (state *VmState) movDRO2(byte3, byte4 byte, param []byte) error {
 	bytes := dataSizeToByteCount(dParams.destSz)
 	copy(
 		state.regs.r[dParams.dest][8-bytes:],
-		state.stack[inStack:bytes],
+		state.stack[inStack:inStack+bytes],
 	)
 	return nil
 }
@@ -193,7 +193,7 @@ func (state *VmState) movRD(lastByte byte, param []byte) error {
 	bytes := dataSizeToByteCount(dataSz)
 	copy(
 		state.regs.r[source][8-bytes:],
-		state.stack[inStack:bytes],
+		state.stack[inStack:inStack+bytes],
 	)
 	return nil
 }

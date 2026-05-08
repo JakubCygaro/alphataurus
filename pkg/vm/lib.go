@@ -788,7 +788,7 @@ func (state *VmState) putValInStackWithSize(dataSz byte, val uint64, address int
 		return errors.StackOverflow(state.byteCodePos)
 	}
 	bytes := dataSizeToByteCount(dataSz)
-	s := state.stack[address:bytes]
+	s := state.stack[address:address+bytes]
 	switch dataSz {
 	case SZ_8:
 		s[0] = byte(val)

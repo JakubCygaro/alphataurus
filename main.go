@@ -26,6 +26,8 @@ section '.code'
 @entry
 	mov WORD [bp+8], 12
 	mov WORD [bp+16], 36
+	mov r0, [bp+8]
+	mov r1, [bp+16]
 `
 
 func main() {
@@ -62,7 +64,7 @@ func main() {
 		os.Exit(-1)
 	}
 	if rx, err := mach.GetGpRXAsUint64(vm.R0_IDX); err == nil {
-		fmt.Printf("r0 = %064b\n", rx)
+		fmt.Printf("r0 = %+v\n", rx)
 	}
 	if rx, err := mach.GetGpRXAsUint64(vm.R1_IDX); err == nil {
 		fmt.Printf("r1 = %+v\n", rx)
