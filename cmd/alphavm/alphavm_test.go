@@ -48,7 +48,7 @@ func assembleAndLink(source string) (vm.AlphaELFFile, error) {
 }
 func assembleAndExecute(source string) (vm.VmState, error) {
 	elf, err := assembleAndLink(source)
-	mach := vm.CreateVmState(16)
+	mach := vm.CreateVmState(1024)
 	if err != nil {
 		return mach, err
 	}
@@ -90,19 +90,19 @@ func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 
 type testingStack vm.VmStack
 
-func makeTestingStack(size int) testingStack {
-	return make(testingStack, size)
+func makeTestingStack(capacity int) testingStack {
+	return make(testingStack, 0, capacity)
 }
 
 func (s *testingStack) push(value any) {
 	if u8, ok := value.(uint8); ok {
 		*s = append(*s, u8)
 	} else if u16, ok := value.(uint16); ok {
-		binary.BigEndian.AppendUint16(*s, u16)
+		*s = binary.BigEndian.AppendUint16(*s, u16)
 	} else if u32, ok := value.(uint32); ok {
-		binary.BigEndian.AppendUint32(*s, u32)
+		*s = binary.BigEndian.AppendUint32(*s, u32)
 	} else if u64, ok := value.(uint64); ok {
-		binary.BigEndian.AppendUint64(*s, u64)
+		*s = binary.BigEndian.AppendUint64(*s, u64)
 	}
 }
 
@@ -127,14 +127,21 @@ func expectStack(mach *vm.VmState, stack vm.VmStack) error {
 			// 		math.Float64frombits(v), math.Float64frombits(vmStack[i])),
 			// )
 			lines = append(lines,
-				fmt.Sprintf("got (%v) expected (%v)", vmStack[i], v),
+				fmt.Sprintf("\tgot (%v) expected (%v)", vmStack[i], v),
 			)
 			lines = append(lines,
-				fmt.Sprintf("got (0x%x) expected (0x%x)", vmStack[i], v),
+				fmt.Sprintf("\tgot (0x%x) expected (0x%x)", vmStack[i], v),
 			)
+			break
 		}
 	}
 	if len(lines) > 0 {
+		lines = append(lines,
+			fmt.Sprintf("vm stack: %v", vmStack),
+		)
+		lines = append(lines,
+			fmt.Sprintf("input stack: %v", stack),
+		)
 		return fmt.Errorf("%s", strings.Join(lines, "\n"))
 	}
 	return nil
@@ -884,10 +891,12 @@ func TestDeref1(t *testing.T) {
 	lines = append(lines,
 	"section '.code'",
 	"@entry",
+	"push BYTE 0",
+	"mov bp, sp",
 	)
 	for i := 0; i < stackSize; i += 8 {
 		v := binary.BigEndian.Uint64(stack[i : i+8])
-		lines = append(lines, fmt.Sprintf("mov WORD [bp+%v], %v", ((i/8)+1)*8, int64(v)))
+		lines = append(lines, fmt.Sprintf("mov WORD [bp+%v], %v", ((i/8))*8, int64(v)))
 	}
 	asm := strings.Join(lines, "\n")
 	b, err := assembleAndLink(asm)
@@ -896,7 +905,7 @@ func TestDeref1(t *testing.T) {
 		t.Errorf("Compilation of:\n%s", asm)
 		return
 	}
-	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
+	if mach, err := executeStackSize(b, uint64(stackSize)); err != nil {
 		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
 	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
@@ -907,19 +916,21 @@ func TestDeref1(t *testing.T) {
 func TestDeref2(t *testing.T) {
 	stackSize := (rand.Intn(32-5) + 5) * 8
 	stack := makeTestingStack(stackSize)
-	for range stackSize {
+	for range stackSize/8 {
 		stack.push(uint64(rand.Intn(101) - 50))
 	}
 	lines := make([]string, 0)
-	lines = append(lines, `
-	section '.code'
-	@entry
-	`)
+	lines = append(lines, 
+	"section '.code'",
+	"@entry",
+	"push BYTE 0",
+	"mov bp, sp",
+	)
 	for i := 0; i < stackSize; i += 8{
 		v := binary.BigEndian.Uint64(stack[i : i+8])
 		rA := byte(rand.Int() % vm.GP_REG_MAX)
 		lines = append(lines, fmt.Sprintf("mov r%v, %v", rA, int64(v)))
-		lines = append(lines, fmt.Sprintf("mov WORD [bp+%v], %v", (i+1)*8, int64(v)))
+		lines = append(lines, fmt.Sprintf("mov WORD [bp+%v], %v", ((i/8))*8, int64(v)))
 	}
 	asm := strings.Join(lines, "\n")
 	b, err := assembleAndLink(asm)
@@ -937,34 +948,37 @@ func TestDeref2(t *testing.T) {
 }
 func TestDeref3(t *testing.T) {
 	stackSize := (rand.Intn(32-5) + 5) * 8
-	stack := makeTestingStack(stackSize)
-	for range stackSize {
+	stack := makeTestingStack(0)
+	for range stackSize/8 {
 		stack.push(uint64(rand.Intn(101) - 50))
 	}
 	lines := make([]string, 0)
-	lines = append(lines, `
-	section '.code'
-	@entry
-	`)
+	lines = append(lines, 
+	"section '.code'",
+	"@entry",
+	"push BYTE 0",
+	"mov bp, sp",
+	)
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
-	lines = append(lines, fmt.Sprintf("mov r%v, 1", rA))
+	lines = append(lines, fmt.Sprintf("mov r%v, 0", rA))
 	for i := 0; i < stackSize; i += 8{
-		v := binary.BigEndian.Uint64(stack[i : i+9])
-		lines = append(lines, fmt.Sprintf("mov [bp+r%v], %v", rA, int64(v)))
-		lines = append(lines, fmt.Sprintf("inc r%v", rA))
+		v := binary.BigEndian.Uint64(stack[i : i+8])
+		lines = append(lines, fmt.Sprintf("mov WORD [bp+r%v], %v", rA, int64(v)))
+		lines = append(lines, fmt.Sprintf("add UNSIGNED r%v, 8", rA))
 	}
 	asm := strings.Join(lines, "\n")
 	b, err := assembleAndLink(asm)
 	if err != nil {
-		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(err)
+		return
 	}
 	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
+		t.Errorf("Compilation of:\n%s", asm)
 		t.Error(err)
-		t.Errorf("Compilation of:\n%s", asm)
 	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
-		t.Error(err.Error())
 		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(err.Error())
 	}
 }
 func TestDeref1F(t *testing.T) {
@@ -1035,8 +1049,7 @@ func TestStack1(t *testing.T) {
 	}
 }
 func TestStack2(t *testing.T) {
-	const stackSize = DEFAULT_STACK_SIZE
-	stack := makeTestingStack(stackSize)
+	stack := makeTestingStack(3 * 8)
 	a := uint64(rand.Intn(101) - 50)
 	b := uint64(rand.Intn(101) - 50)
 	c := a + b
@@ -1048,23 +1061,30 @@ func TestStack2(t *testing.T) {
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
+		push BYTE 0
 		mov bp, sp
-		mov [bp+1], %v
-		mov [bp+2], %v
-		mov r%v, [bp+1]
-		mov r%v, [bp+2]
+		mov WORD [bp+0], %v
+		mov WORD [bp+8], %v
+		mov r%v, [bp+0]
+		mov r%v, [bp+8]
 		add SIGNED r%v, r%v
-		mov [bp+3], r%v
-	`, stack[0], stack[1], rA, rB, rA, rB, rA)
-	if mach, err := assembleAndExecute(asm); err != nil {
-		t.Error(err)
+		mov [bp+16], r%v
+	`, a, b, rA, rB, rA, rB, rA)
+	elf, err := assembleAndLink(asm)
+	if err != nil {
 		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(err)
+		return
+	}
+	if mach, err := executeStackSize(elf, uint64(len(stack))); err != nil {
+		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(err)
 	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
-		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(err)
 	} else if err := expectGpRegisters(asm, &mach, ExpMap{
-		rA: vm.Register(stack[2*8 : 2*8+9]),
-		rB: vm.Register(stack[1*8 : 1*8+9]),
+		rA: vm.Register(stack[16 : 24]),
+		rB: vm.Register(stack[8 : 16]),
 	}); err != nil {
 		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
@@ -1098,7 +1118,7 @@ func TestStack2F(t *testing.T) {
 	asm := `
 	section '.code'
 	@entry
-		pop
+		pop WORD
 	`
 	b, err := assembleAndLink(asm)
 	if err != nil {

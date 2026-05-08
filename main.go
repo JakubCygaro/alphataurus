@@ -22,18 +22,23 @@ atoi:
 	ret
 `
 const assembly = `
-                section '.code'
-                @entry
-        mov WORD [bp+8], 0
-        mov WORD [bp+16], 0
-        mov WORD [bp+24], 0
-        mov WORD [bp+32], 0
-        mov WORD [bp+40], 0
-        mov WORD [bp+48], 0
-        mov WORD [bp+56], 0
-        mov WORD [bp+64], 0
-        mov WORD [bp+72], 0
-        mov WORD [bp+80], 0
+section '.code'
+@entry
+	push BYTE 0
+	mov bp, sp
+	mov r6, 0
+	mov WORD [bp+r6], 33
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], -1
+	add UNSIGNED r6, 16
+	mov WORD [bp+r6], -8
+	add UNSIGNED r6, 24
+	mov WORD [bp+r6], -21
+	add UNSIGNED r6, 32
+	mov WORD [bp+r6], -39
+	add UNSIGNED r6, 40
+	mov WORD [bp+r6], -29
+	add UNSIGNED r6, 48
 `
 
 func main() {
@@ -62,7 +67,7 @@ func main() {
 		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
-	mach := vm.CreateVmState(64)
+	mach := vm.CreateVmState(6*8)
 	err = mach.Execute(elf)
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
