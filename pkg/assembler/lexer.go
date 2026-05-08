@@ -176,7 +176,7 @@ func (l *Lexer) Expect(tokenType int) (Token, bool) {
 	}
 	return l.currentToken, true
 }
-func (l *Lexer) readByte() (byte, error) {
+func (l *Lexer) readByte() (byte, bool) {
 	b, err := l.reader.ReadByte()
 	l.lastLine, l.lastCol = l.line, l.col
 	if b == '\n' {
@@ -185,7 +185,7 @@ func (l *Lexer) readByte() (byte, error) {
 	} else {
 		l.col++
 	}
-	return b, err
+	return b, err == nil
 }
 func (l *Lexer) unreadByte() error {
 	l.line, l.col = l.lastLine, l.lastCol
@@ -208,10 +208,10 @@ func (l *Lexer) ReadNextToken() error {
 	}
 	var b byte
 	for {
-		var err error
-		b, err = l.readByte()
+		var ok bool
+		b, ok = l.readByte()
 		l.currentToken.Col, l.currentToken.Line = l.col, l.line
-		if err != nil {
+		if !ok {
 			l.currentToken = Token{
 				Ty: TOKEN_TEOF,
 			}
@@ -290,9 +290,9 @@ func (l *Lexer) ReadNextToken() error {
 			Val: rune(b),
 		}
 	case b == '.':
-		next, err := l.readByte()
-		if err != nil {
-			return err
+		next, ok := l.readByte()
+		if !ok {
+			return errors.PrematureEndOfInput(l.line, l.col)
 		}
 		if numberCheck(next) {
 			l.unreadByte()
@@ -315,8 +315,8 @@ func (l *Lexer) ReadNextToken() error {
 		buf := make([]byte, 0, 16)
 		buf = append(buf, b)
 		for {
-			next, err := l.readByte()
-			if err != nil {
+			next, ok := l.readByte()
+			if !ok {
 				break
 			}
 			if IdentCheck(next) || numberCheck(next) {
@@ -355,8 +355,8 @@ func (l *Lexer) ReadNextToken() error {
 func (l *Lexer) readSingleQuoted() error {
 	buf := make([]byte, 0, 64)
 	for {
-		next, err := l.readByte()
-		if err != nil {
+		next, ok := l.readByte()
+		if !ok {
 			return errors.UnclosedSingleQuote(l.line, l.col)
 		}
 		if next == '\'' {
@@ -381,15 +381,15 @@ func (l *Lexer) readDigit(b byte) error {
 	hex := false
 	binary := false
 	if startedWithZero {
-		next, err := l.readByte()
-		if err != nil {
-			return err
-		}
-		switch next {
-		case 'x':
+		next, ok := l.readByte()
+		// if !ok {
+		// 	return errors.PrematureEndOfInput(l.line, l.col)
+		// }
+		switch {
+		case next == 'x' && ok:
 			hex = true
 			dot = true
-		case 'b':
+		case next == 'b' && ok:
 			binary = true
 			dot = true
 		default:
@@ -397,8 +397,8 @@ func (l *Lexer) readDigit(b byte) error {
 		}
 	}
 	for {
-		next, err := l.readByte()
-		if err != nil {
+		next, ok := l.readByte()
+		if !ok {
 			break
 		}
 		if !hex && !binary && numberCheck(next) {
@@ -413,15 +413,15 @@ func (l *Lexer) readDigit(b byte) error {
 		} else if (next == 'e' || next == 'E') && !e && !hex && !binary {
 			buf = append(buf, next)
 			e = true
-			next, err := l.readByte()
-			if err != nil {
-				return err
+			next, ok := l.readByte()
+			if !ok {
+				return errors.PrematureEndOfInput(l.line, l.col)
 			}
 			if next == '-' || next == '+' {
 				buf = append(buf, next)
-				next, err = l.readByte()
-				if err != nil {
-					return err
+				next, ok = l.readByte()
+				if !ok {
+					return errors.PrematureEndOfInput(l.line, l.col)
 				}
 			}
 			if numberCheck(next) {

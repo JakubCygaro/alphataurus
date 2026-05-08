@@ -222,7 +222,9 @@ func (p *Parser) ParseNext() (bool, error) {
 		return false, fmt.Errorf("Unimplemented instruction %s", p.lexer.CurrentPosition())
 	}
 	err = p.lexer.ReadNextToken()
-	if p.lexer.CurrentToken().Ty != TOKEN_TNEWLINE && p.lexer.CurrentToken().Ty != TOKEN_TEOF {
+	if p.lexer.CurrentToken().Ty != TOKEN_TNEWLINE &&
+		p.lexer.CurrentToken().Ty != TOKEN_TEOF {
+
 		t := p.lexer.CurrentToken()
 		return false, errors.ExtraTokensOnLine(t.Line, t.Col)
 	}

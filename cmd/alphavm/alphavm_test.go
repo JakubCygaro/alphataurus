@@ -37,10 +37,13 @@ func assemble(source string) ([]byte, error) {
 func assembleAndLink(source string) (vm.AlphaELFFile, error) {
 	code, err := assemble(source)
 	if err != nil {
-		return vm.AlphaELFFile{}, err
+		return vm.AlphaELFFile{}, fmt.Errorf("Assembling error: %v", err)
 	}
 	ld := linker.NewLinker()
 	linked, err := ld.Link([]linker.LinkerInput{linker.Bytes(code)})
+	if err != nil {
+		err = fmt.Errorf("Linking error: %v", err)
+	}
 	return linked, err
 }
 func assembleAndExecute(source string) (vm.VmState, error) {
@@ -874,23 +877,24 @@ func TestExpressions2F(t *testing.T) {
 func TestDeref1(t *testing.T) {
 	stackSize := (rand.Intn(32-5) + 5) * 8
 	stack := makeTestingStack(stackSize)
-	for range stackSize {
+	for range stackSize/8 {
 		stack.push(uint64(rand.Intn(101) - 50))
 	}
 	lines := make([]string, 0)
-	lines = append(lines, `
-	section '.code'
-	@entry
-	`)
+	lines = append(lines,
+	"section '.code'",
+	"@entry",
+	)
 	for i := 0; i < stackSize; i += 8 {
 		v := binary.BigEndian.Uint64(stack[i : i+8])
-		lines = append(lines, fmt.Sprintf("mov WORD [bp+%v], %v", (i+1)*8, int64(v)))
+		lines = append(lines, fmt.Sprintf("mov WORD [bp+%v], %v", ((i/8)+1)*8, int64(v)))
 	}
 	asm := strings.Join(lines, "\n")
 	b, err := assembleAndLink(asm)
 	if err != nil {
 		t.Error(err)
 		t.Errorf("Compilation of:\n%s", asm)
+		return
 	}
 	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
 		t.Error(err)
