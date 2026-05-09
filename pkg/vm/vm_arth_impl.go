@@ -7,8 +7,79 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
 
+func (state *VmState) incR(param []byte) error {
+	reg := binary.BigEndian.Uint64(param)
+	if !IsGpReg(byte(reg)) {
+		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
+	}
+	r := &state.regs.r[reg]
+	r.IncrementRegU64(1);
+	return nil
+}
+func (state *VmState) decR(param []byte) error {
+	reg := binary.BigEndian.Uint64(param)
+	if !IsGpReg(byte(reg)) {
+		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
+	}
+	r := &state.regs.r[reg]
+	r.DecrementRegU64(1);
+	return nil
+}
+
+func (state *VmState) arthRR(opType int, param []byte) error {
+	data, err := state.arthRRGetParameters(param)
+	if err != nil {
+		return err
+	}
+	srcV := binary.BigEndian.Uint64(state.regs.r[data.src][:])
+	destV := binary.BigEndian.Uint64(state.regs.r[data.dest][:])
+	switch opType {
+	case OP_ADDRR:
+		err = state.addValues(srcV, destV,
+			data.ty, data.r2sz,
+			state.regs.r[data.dest][:])
+	case OP_SUBRR:
+		err = state.subValues(destV, srcV,
+			data.ty, data.r2sz,
+			state.regs.r[data.dest][:])
+	case OP_MULRR:
+		srcV := binary.BigEndian.Uint64(state.regs.r[R0_IDX][:])
+		destV := binary.BigEndian.Uint64(state.regs.r[R1_IDX][:])
+		err = state.mulValues(srcV, destV,
+			data.ty, data.r2sz,
+			state.regs.r[R2_IDX][:])
+	case OP_DIVRR:
+		srcV := binary.BigEndian.Uint64(state.regs.r[R0_IDX][:])
+		destV := binary.BigEndian.Uint64(state.regs.r[R1_IDX][:])
+		err = state.divValues(srcV, destV,
+			data.ty, data.r2sz,
+			state.regs.r[R2_IDX][:],
+			state.regs.r[R3_IDX][:])
+	}
+	return err
+}
+func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
+	data, err := state.arthIRGetParameters(lastByte)
+	if err != nil {
+		return err
+	}
+	immV := binary.BigEndian.Uint64(param)
+	regV := state.GetRegVAsUint64(int(data.reg), data.r1sz)
+	switch opType {
+	case OP_ADDIR:
+		err = state.addValues(regV, immV,
+			data.ty, data.r1sz,
+			state.regs.r[data.reg][:])
+	case OP_SUBIR:
+		err = state.subValues(regV, immV,
+			data.ty, data.r1sz,
+			state.regs.r[data.reg][:])
+	}
+	return nil
+}
+
 func addUint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(a) + byte(b)
@@ -21,7 +92,7 @@ func addUint(a, b uint64, dataSz byte, out []byte) {
 	}
 }
 func addSint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(a) + byte(b)
@@ -52,7 +123,7 @@ func (state *VmState) addValues(a, b uint64, ty, dataSz byte, out []byte) error 
 	return nil
 }
 func subUint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(a) - byte(b)
@@ -65,7 +136,7 @@ func subUint(a, b uint64, dataSz byte, out []byte) {
 	}
 }
 func subSint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(int8(a) - int8(b))
@@ -95,7 +166,7 @@ func (state *VmState) subValues(a, b uint64, ty, dataSz byte, out []byte) error 
 	return nil
 }
 func mulUint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(a) * byte(b)
@@ -108,7 +179,7 @@ func mulUint(a, b uint64, dataSz byte, out []byte) {
 	}
 }
 func mulSint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(int8(a) * int8(b))
@@ -138,7 +209,7 @@ func (state *VmState) mulValues(a, b uint64, ty, dataSz byte, out []byte) error 
 	return nil
 }
 func divUint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(a) / byte(b)
@@ -151,7 +222,7 @@ func divUint(a, b uint64, dataSz byte, out []byte) {
 	}
 }
 func divSint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(int8(a) / int8(b))
@@ -164,7 +235,7 @@ func divSint(a, b uint64, dataSz byte, out []byte) {
 	}
 }
 func modUint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(a) % byte(b)
@@ -177,7 +248,7 @@ func modUint(a, b uint64, dataSz byte, out []byte) {
 	}
 }
 func modSint(a, b uint64, dataSz byte, out []byte) {
-	offset := dataSizeToByteCount(dataSz)
+	offset := DataSizeToByteCount(dataSz)
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(int8(a) % int8(b))

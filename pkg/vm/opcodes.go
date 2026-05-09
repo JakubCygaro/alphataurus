@@ -98,7 +98,7 @@ var (
 		10: handle(OP_XORIR),
 		11: handle(OP_LSHIR),
 		12: handle(OP_RSHIR),
-		13:  handle(OP_CMPIR),
+		13: handle(OP_CMPIR),
 	})
 	p01XX = nested(OpCodeMap{
 		// stack manipulation, leave a byte for data size
@@ -162,11 +162,11 @@ const (
 	OP_MOVDRO2        // move dereference to register, like [(rx + rx) +/- <signed offset>]
 	OP_MOVID          // move immediate value to deref
 	OP_MOVRD          // move register value into deref
-	OP_MOVRDO1
-	OP_MOVIDO1
-	OP_MOVRDO2
-	OP_MOVIDO2
-	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
+	OP_MOVRDO1        // move register value into deref with one offset register
+	OP_MOVIDO1        // move immediate value to deref with one offset register
+	OP_MOVRDO2        // move register value into deref with two offset registers
+	OP_MOVIDO2        // move immediate value to deref with two offset registers
+	OP_ADDRR          // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR
 	OP_SUBIR
@@ -208,14 +208,14 @@ const (
 	OP_JMPGEIP // jump if greater or equal
 	OP_JMPLIP  // jump if less
 	OP_JMPLEIP // jump if less or equal
-	OP_CMPRR 
-	OP_CMPIR
+	OP_CMPRR   // compare values in two registers
+	OP_CMPIR   // compare value in register and immediate value
 	OP_CLR     // clear all flags (set them to false)
-	OP_CALL
-	OP_CALLIP
-	OP_RET
-	OP_EXIT
-	OP_NOP
+	OP_CALL    // call a procedure
+	OP_CALLIP  // IP relative call
+	OP_RET     // return from a procedure
+	OP_EXIT    // exit with code
+	OP_NOP     // NOP
 )
 
 const (

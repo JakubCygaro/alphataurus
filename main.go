@@ -22,27 +22,19 @@ atoi:
 	ret
 `
 const assembly = `
+import 'atoi'
 section '.code'
 @entry
-	push BYTE 0
+	push bp
 	mov bp, sp
-	mov r6, 0
-	mov WORD [bp+r6], 33
-	add UNSIGNED r6, 8
-	mov WORD [bp+r6], -1
-	add UNSIGNED r6, 16
-	mov WORD [bp+r6], -8
-	add UNSIGNED r6, 24
-	mov WORD [bp+r6], -21
-	add UNSIGNED r6, 32
-	mov WORD [bp+r6], -39
-	add UNSIGNED r6, 40
-	mov WORD [bp+r6], -29
-	add UNSIGNED r6, 48
+	mov r1b, 0x31
+	call atoi
+	mov [bp+1], r1b
+	exit 0
 `
 
 func main() {
-	sources := []string { assembly }
+	sources := []string { assembly, assembly2 }
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(s)))
@@ -60,7 +52,7 @@ func main() {
 	}
 	ld := linker.NewLinker()
 	elf, err := ld.Link(objects)
-	os.WriteFile("dump", elf.Data, os.FileMode(os.O_TRUNC))
+	os.WriteFile("dump", elf.Write(), os.FileMode(os.O_TRUNC))
 	if err != nil {
 		os.Stderr.WriteString("linking error\n")
 		os.Stderr.WriteString(err.Error())
@@ -80,7 +72,7 @@ func main() {
 	if rx, err := mach.GetGpRXAsUint64(vm.R1_IDX); err == nil {
 		fmt.Printf("r1 = %+v\n", rx)
 	}
-	if rx, err := mach.GetGpRXAsInt64(vm.R2_IDX); err == nil {
+	if rx, err := mach.GetGpRXAsI64(vm.R2_IDX); err == nil {
 		fmt.Printf("r2 = %+v\n", rx)
 	}
 	fmt.Printf("REGISTERS:\n")
