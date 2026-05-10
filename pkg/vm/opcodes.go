@@ -56,7 +56,8 @@ var (
 		13: handle(OP_XORRR),
 		14: handle(OP_LSHRR),
 		15: handle(OP_RSHRR),
-		16: handle(OP_EXIT),
+		16: handle(OP_EXITI),
+		17: handle(OP_EXITR),
 	})
 	//jumps
 	//direct jumps
@@ -214,8 +215,9 @@ const (
 	OP_CALL    // call a procedure
 	OP_CALLIP  // IP relative call
 	OP_RET     // return from a procedure
-	OP_EXIT    // exit with code
-	OP_NOP     // NOP
+	OP_EXITI   // exit with code
+	OP_EXITR
+	OP_NOP // NOP
 )
 
 const (

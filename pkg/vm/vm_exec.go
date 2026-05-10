@@ -22,7 +22,7 @@ func (vm *VmState) load(elf AlphaELFFile) error {
 	// the base pointer points to right before the stack
 	binary.BigEndian.PutUint64(
 		vm.regs.r[BP_IDX][:],
-		uint64(vm.stackSegBase) - 1,
+		uint64(vm.stackSegBase)-1,
 	)
 	// the stack pointer points to the base pointer
 	vm.regs.r[SP_IDX] = vm.regs.r[BP_IDX]
@@ -163,9 +163,10 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 			err = vm.callIP(opCodeBytes[0], param)
 		case OP_RET:
 			err = vm.ret()
-		case OP_EXIT:
-			vm.exitCode = binary.BigEndian.Uint64(param)
-			vm.exit = true
+		case OP_EXITI:
+			vm.exitI(param)
+		case OP_EXITR:
+			vm.exitR(param)
 		default:
 			return fmt.Errorf("Unhandled opcode %d, TODO", opcode)
 		}
@@ -174,4 +175,18 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 		}
 	}
 	return nil
+}
+
+func (state *VmState) exitI(param []byte) {
+	state.exitImpl(binary.BigEndian.Uint64(param))
+}
+func (state *VmState) exitR(param []byte) {
+	reg := param[0]
+	dataSz := param[1]
+	code := state.GetRegVAsUint64(int(reg), dataSz)
+	state.exitImpl(code)
+}
+func (state *VmState) exitImpl(code uint64) {
+	state.exitCode = code
+	state.exit = true
 }

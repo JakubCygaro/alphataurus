@@ -167,8 +167,10 @@ func (a *Assembler) EmitBytecode() (int, error) {
 			err = a.emitCallIP(int(inst.Ty), inst.Data.(InstCallIPData), &(a.bytecode))
 		case INST_TRET:
 			err = a.emitRet(&(a.bytecode))
-		case INST_TEXIT:
-			err = a.emitExit(inst.Data.(InstExitData), &(a.bytecode))
+		case INST_TEXITI:
+			err = a.emitExitI(inst.Data.(InstExitData), &(a.bytecode))
+		case INST_TEXITR:
+			err = a.emitExitR(inst.Data.(InstExitData), &(a.bytecode))
 		case INST_TATTRENTRY:
 			if a.hasEntry {
 				err = errors.MultipleEntry(inst.Line, inst.Col)
@@ -770,9 +772,20 @@ func (a *Assembler) emitRet(out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	return nil
 }
-func (a *Assembler) emitExit(data InstExitData, out *[]byte) error {
-	ret := a.opCodes[vm.OP_EXIT]
-	*out = binary.BigEndian.AppendUint32(*out, uint32(ret))
+func (a *Assembler) emitExitI(data InstExitData, out *[]byte) error {
+	exit := a.opCodes[vm.OP_EXITI]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(exit))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Val))
+	return nil
+}
+func (a *Assembler) emitExitR(data InstExitData, out *[]byte) error {
+	exit := a.opCodes[vm.OP_EXITR]
+	*out = binary.BigEndian.AppendUint32(*out, uint32(exit))
+	param := [8]byte{
+		byte(data.Reg.Reg),
+		data.Reg.Size,
+		0, 0, 0, 0, 0, 0,
+	}
+	*out = append(*out, param[:]...)
 	return nil
 }

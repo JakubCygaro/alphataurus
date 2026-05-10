@@ -69,7 +69,8 @@ const (
 	INST_TIMPORT
 	INST_TEXPORT
 	INST_TATTRENTRY
-	INST_TEXIT
+	INST_TEXITI
+	INST_TEXITR
 )
 
 const (
@@ -112,9 +113,9 @@ type InstLogicalData struct {
 	Imm           uint64
 }
 type InstCmpData struct {
-	Ty       int
-	Sub, Min RegisterData
-	Imm      uint64
+	Ty         int
+	Sub, Min   RegisterData
+	Imm        uint64
 	ImmIsFloat bool
 }
 type InstJmpData struct {
@@ -174,6 +175,7 @@ type InstImportExportData struct {
 }
 type InstExitData struct {
 	Val uint64
+	Reg RegisterData
 }
 type Instruction struct {
 	Ty        int
@@ -442,16 +444,23 @@ func (p *Parser) parseExit() error {
 	if cexpr, ok := TryConstEvaluatePruneExpression(expr); !ok {
 		return errors.FailedToParse("exit instruction", "non comp-time expression parameter",
 			start.Line, start.Col)
-	} else if cexpr.Ty != CONSTEXPR_TILIT {
-		return errors.FailedToParse("exit instruction", "invalid expression value type",
-			start.Line, start.Col)
-	} else {
+	} else if cexpr.Ty == CONSTEXPR_TILIT {
 		p.currentInst = Instruction{
-			Ty: INST_TEXIT,
+			Ty: INST_TEXITI,
 			Data: InstExitData{
 				Val: cexpr.Val,
 			},
 		}
+	} else if cexpr.Ty == CONSTEXPR_TREG {
+		p.currentInst = Instruction{
+			Ty: INST_TEXITR,
+			Data: InstExitData{
+				Reg: cexpr.UnpackAsRegisterData(),
+			},
+		}
+	} else {
+		return errors.FailedToParse("exit instruction", "invalid expression parameter",
+			start.Line, start.Col)
 	}
 	return nil
 }
