@@ -95,6 +95,27 @@ func (state *VmState) getDerefParamsO2(byte3, byte4, byten1 byte) derefParamsO2 
 	ret.destSz = (byten1 & 0b1100_0000) >> 6
 	return ret
 }
+func (state *VmState) movDRO0(byte3, byte4 byte, param []byte) error {
+	dParams := state.getDerefParamsO1(byte3, byte4)
+	if !IsMovRRAllowed(dParams.dest) {
+		return errors.DisallowedDestRegister(int(dParams.dest), state.byteCodePos)
+	}
+	if !IsMovRRAllowed(dParams.reg1) {
+		return errors.DisallowedOp2Register(int(dParams.reg1), state.byteCodePos)
+	}
+	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
+	offset := int64(0)
+	if inStack, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
+		return e
+	} else {
+		bytes := DataSizeToByteCount(dParams.destSz)
+		copy(
+			state.regs.r[dParams.dest][8-bytes:],
+			state.stack[inStack:inStack+bytes],
+		)
+	}
+	return nil
+}
 func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	dParams := state.getDerefParamsO1(byte3, byte4)
 	if !IsMovRRAllowed(dParams.dest) {
@@ -103,33 +124,17 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	if !IsMovRRAllowed(dParams.reg1) {
 		return errors.DisallowedOp2Register(int(dParams.reg1), state.byteCodePos)
 	}
-	regV := state.GetRegVAsU64(int(dParams.reg1), dParams.r1sz)
-	var addr uint64
-	p := binary.BigEndian.Uint64(param)
-	switch dParams.opTy {
-	case OP_TADD:
-		addr = regV + p
-	case OP_TSUB:
-		addr = regV - p
-	case OP_TMUL:
-		addr = regV * p
-	case OP_TDIV:
-		if p == 0 {
-			return errors.BadArthmeticOperation(state.byteCodePos)
-		}
-		addr = regV / p
-	default:
-		return errors.BadOpcode(state.currentOpcode, state.byteCodePos)
+	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
+	offset := int64(binary.BigEndian.Uint64(param))
+	if inStack, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
+		return e
+	} else {
+		bytes := DataSizeToByteCount(dParams.destSz)
+		copy(
+			state.regs.r[dParams.dest][8-bytes:],
+			state.stack[inStack:inStack+bytes],
+		)
 	}
-	inStack := state.VirtToRealSp(int(addr))
-	if inStack < 0 || inStack >= len(state.stack) {
-		return errors.SegmentationFault(uint64(addr), state.byteCodePos)
-	}
-	bytes := DataSizeToByteCount(dParams.destSz)
-	copy(
-		state.regs.r[dParams.dest][8-bytes:],
-		state.stack[inStack:inStack+bytes],
-	)
 	return nil
 }
 func (state *VmState) movDRO2(byte3, byte4 byte, param []byte) error {
@@ -184,6 +189,20 @@ func (state *VmState) movRD(lastByte byte, param []byte) error {
 	}
 	return nil
 }
+func (state *VmState) movIDO0(byte3, byte4 byte, param []byte) error {
+	dParams := state.getDerefParamsO1(byte3, byte4)
+	if !IsMovRRAllowed(dParams.reg1) {
+		return errors.DisallowedOp1Register(int(dParams.reg1), state.byteCodePos)
+	}
+	p := binary.BigEndian.Uint64(param)
+	imm := p
+	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
+	if inStack, e := state.movXDO1GetAddr(regV, 0, dParams.opTy); e != nil {
+		return e
+	} else {
+		return state.putValInStackWithSize(dParams.destSz, imm, inStack)
+	}
+}
 func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
 	dParams := state.getDerefParamsO1(byte3, byte4)
 	if !IsMovRRAllowed(dParams.reg1) {
@@ -191,12 +210,29 @@ func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
 	}
 	p := binary.BigEndian.Uint64(param)
 	imm := uint64(int32((p & 0x0000_0000_ffff_ffff)))
-	offset := (p & 0xffff_ffff_0000_0000) >> 32
-	regV := state.GetRegVAsU64(int(dParams.reg1), dParams.r1sz)
+	offset := int64((p & 0xffff_ffff_0000_0000) >> 32)
+	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
 	if inStack, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
 		return e
 	} else {
 		return state.putValInStackWithSize(dParams.destSz, imm, inStack)
+	}
+}
+func (state *VmState) movRDO0(byte3, byte4 byte, param []byte) error {
+	dParams := state.getDerefParamsO1(byte3, byte4)
+	source := dParams.dest
+	if !IsMovRRAllowed(source) {
+		return errors.DisallowedSrcRegister(int(source), state.byteCodePos)
+	}
+	if !IsMovRRAllowed(dParams.reg1) {
+		return errors.DisallowedOp1Register(int(dParams.reg1), state.byteCodePos)
+	}
+	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
+	if inStack, e := state.movXDO1GetAddr(regV, 0, dParams.opTy); e != nil {
+		return e
+	} else {
+		val := state.GetRegVAsU64(int(source), dParams.destSz)
+		return state.putValInStackWithSize(dParams.destSz, val, inStack)
 	}
 }
 func (state *VmState) movRDO1(byte3, byte4 byte, param []byte) error {
@@ -208,26 +244,26 @@ func (state *VmState) movRDO1(byte3, byte4 byte, param []byte) error {
 	if !IsMovRRAllowed(dParams.reg1) {
 		return errors.DisallowedOp1Register(int(dParams.reg1), state.byteCodePos)
 	}
-	p := binary.BigEndian.Uint64(param)
-	regV := state.GetRegVAsU64(int(dParams.reg1), dParams.r1sz)
-	if inStack, e := state.movXDO1GetAddr(regV, p, dParams.opTy); e != nil {
+	offset := int64(binary.BigEndian.Uint64(param))
+	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
+	if inStack, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
 		return e
 	} else {
 		val := state.GetRegVAsU64(int(source), dParams.destSz)
 		return state.putValInStackWithSize(dParams.destSz, val, inStack)
 	}
 }
-func (state *VmState) movXDO1GetAddr(r1V, off uint64, opTy byte) (int, error) {
+func (state *VmState) movXDO1GetAddr(r1V, off int64, opTy byte) (int, error) {
 	var addr uint64
 	switch opTy {
 	case OP_TADD:
-		addr = r1V + off
+		addr = uint64(r1V + off)
 	case OP_TSUB:
-		addr = r1V - off
+		addr = uint64(r1V - off)
 	case OP_TMUL:
-		addr = r1V * off
+		addr = uint64(r1V * off)
 	case OP_TDIV:
-		addr = r1V / off
+		addr = uint64(r1V / off)
 	default:
 		return -1, errors.BadOpcode(state.currentOpcode, state.byteCodePos)
 	}
