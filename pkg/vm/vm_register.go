@@ -23,12 +23,13 @@ func RegisterWithValueSized(val uint64, size byte) Register {
 	return r
 }
 func (r Register) ToDisplayString() string {
-	return fmt.Sprintf(`[%v_u8 | %v_u16 | %v_u32 | %v_u64 | %v_f64]`,
+	return fmt.Sprintf(`[%v_u8 | %v_u16 | %v_u32 | %v_u64 | %v_f64 | 0x%x]`,
 		r[7],
 		binary.BigEndian.Uint16(r[6:]),
 		binary.BigEndian.Uint32(r[4:]),
 		binary.BigEndian.Uint64(r[:]),
 		math.Float64frombits(binary.BigEndian.Uint64(r[:])),
+		binary.BigEndian.Uint64(r[:]),
 	)
 }
 func (r *Register) PutValWithSize(dataSz byte, val uint64) {

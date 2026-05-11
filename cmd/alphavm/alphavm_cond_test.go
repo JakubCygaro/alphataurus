@@ -19,14 +19,14 @@ func TestCmp1(t *testing.T) {
 	`, rA, rAV, rA, rBV)
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.Errorf("Compilation of:\n%s\n", asm)
 		t.FailNow()
 	}
 	flags := mach.GetFlags()
 	if !flags.Sf {
+		t.Error(compilationOfErr(asm))
 		t.Errorf("Sign flag was not set")
-		t.Errorf("Compilation of:\n%s\n", asm)
 		t.Errorf("%+v", flags)
 	}
 }
@@ -42,13 +42,13 @@ func TestCmp2(t *testing.T) {
 	`, rA, rAV, rA, rBV)
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.Errorf("Compilation of:\n%s\n", asm)
 		t.FailNow()
 	}
 	flags := mach.GetFlags()
 	if !flags.Sf {
-		t.Errorf("Compilation of:\n%s\n", asm)
+		t.Error(compilationOfErr(asm))
 		t.Errorf("Sign flag was not set")
 		t.Errorf("%+v", flags)
 	}
@@ -75,8 +75,9 @@ func TestJmpE1(t *testing.T) {
 	`
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.FailNow()
+		return
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
 		vm.R0_IDX: vm.RegisterWithValue(0),
@@ -84,6 +85,7 @@ func TestJmpE1(t *testing.T) {
 		vm.R4_IDX: vm.RegisterWithValue(420),
 		vm.R5_IDX: vm.RegisterWithValue(1337),
 	}); err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Errorf(err.Error())
 	}
 }
@@ -101,14 +103,16 @@ func TestJmpG2(t *testing.T) {
 	`
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.FailNow()
+		return
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
 		vm.R1_IDX: vm.RegisterWithValue(10),
 		vm.R0_IDX: vm.RegisterWithValue(0),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
 	}
 }
 func TestJmpG1(t *testing.T) {
@@ -124,13 +128,15 @@ func TestJmpG1(t *testing.T) {
 	`
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.FailNow()
+		return
 	}
 	if err := expectGpRegisters(asm, &mach, ExpMap{
 		vm.R1_IDX: vm.RegisterWithValue(10),
 		vm.R0_IDX: vm.RegisterWithValue(0),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
 	}
 }

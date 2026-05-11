@@ -25,11 +25,12 @@ const assembly = `
 import 'atoi'
 section '.code'
 @entry
-	mov r5, bp
-	mov BYTE [bp+1], 69
-	mov r6b, 1
-	mov r0b, [r5h + r6b]
-	exit r0b
+	push WORD 0
+	mov bp, sp
+	mov WORD [bp], 0x1111111100000000
+	mov HALF [bp], 0x4d3c0000
+	mov QUARTER [bp], 0x2b00
+	mov BYTE [bp], 0x1a
 `
 
 func main() {

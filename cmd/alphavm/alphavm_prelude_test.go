@@ -1,18 +1,57 @@
 package alphavm
+
 import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
-	"math"
-	"strings"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	"math"
+	"math/rand"
+	"strings"
 )
+
 const (
 	DEFAULT_STACK_SIZE = 16
 )
 
+func compilationOfErr(asm string) error {
+	return fmt.Errorf("Compilation of:\n%s", asm)
+}
+func assemblingErrorExpected() error {
+	return fmt.Errorf("An assembling error was expected")
+}
+func randomGpRegisterWord() byte {
+	return byte(rand.Int() % vm.GP_REG_MAX+1)
+}
+func randomGpRegisterWithSize() (byte, byte) {
+	return randomGpRegisterWord(), byte(rand.Int()%vm.SZ_64 + 1)
+}
+func regStr(reg, sz byte) string {
+	switch reg {
+	case vm.BP_IDX:
+		return "bp"
+	case vm.IP_IDX:
+		return "ip"
+	case vm.SP_IDX:
+		return "sp"
+	default:
+		var suf string = ""
+		switch sz {
+		case vm.SZ_8:
+			suf = "b"
+		case vm.SZ_16:
+			suf = "q"
+		case vm.SZ_32:
+			suf = "h"
+		}
+		return fmt.Sprintf("r%v%s", reg, suf)
+	}
+}
+func nextRandomGpRegister(reg byte) byte {
+	return byte((reg + 1) % vm.GP_REG_MAX)
+}
 func execute(elf vm.AlphaELFFile) (vm.VmState, error) {
 	return executeStackSize(elf, DEFAULT_STACK_SIZE)
 }
@@ -140,4 +179,3 @@ func expectStack(mach *vm.VmState, stack vm.VmStack) error {
 	}
 	return nil
 }
-

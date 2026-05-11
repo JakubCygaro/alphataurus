@@ -77,11 +77,11 @@ func (state *VmState) putValInStackWithSize(dataSz byte, val uint64, address int
 	case SZ_8:
 		s[0] = byte(val)
 	case SZ_16:
-		binary.BigEndian.PutUint16(s[8-bytes:], uint16(val))
+		binary.BigEndian.PutUint16(s[:], uint16(val))
 	case SZ_32:
-		binary.BigEndian.PutUint32(s[8-bytes:], uint32(val))
+		binary.BigEndian.PutUint32(s[:], uint32(val))
 	case SZ_64:
-		binary.BigEndian.PutUint64(s[8-bytes:], uint64(val))
+		binary.BigEndian.PutUint64(s[:], uint64(val))
 	}
 	return nil
 }

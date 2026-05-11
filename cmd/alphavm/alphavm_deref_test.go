@@ -31,16 +31,16 @@ func TestDeref1(t *testing.T) {
 	asm := strings.Join(lines, "\n")
 	b, err := assembleAndLink(asm)
 	if err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.Errorf("Compilation of:\n%s", asm)
 		return
 	}
 	if mach, err := executeStackSize(b, uint64(stackSize)); err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.Errorf("Compilation of:\n%s", asm)
 	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err.Error())
-		t.Errorf("Compilation of:\n%s", asm)
 	}
 }
 func TestDeref2(t *testing.T) {
@@ -65,15 +65,15 @@ func TestDeref2(t *testing.T) {
 	asm := strings.Join(lines, "\n")
 	b, err := assembleAndLink(asm)
 	if err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.Errorf("Compilation of:\n%s", asm)
 	}
 	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.Errorf("Compilation of:\n%s", asm)
 	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err.Error())
-		t.Errorf("Compilation of:\n%s", asm)
 	}
 }
 func TestDeref3(t *testing.T) {
@@ -99,16 +99,68 @@ func TestDeref3(t *testing.T) {
 	asm := strings.Join(lines, "\n")
 	b, err := assembleAndLink(asm)
 	if err != nil {
-		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
 		return
 	}
 	if mach, err := executeStackSize(b, uint64(len(stack))); err != nil {
-		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
 	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
-		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(compilationOfErr(asm))
 		t.Error(err.Error())
+	}
+}
+func TestDeref4(t *testing.T) {
+	rA := randomGpRegisterWord()
+	rB := nextRandomGpRegister(rA)
+	rC := nextRandomGpRegister(rB)
+	asm := fmt.Sprintf(`
+		section '.code'
+		@entry
+			mov r%v, bp
+			mov BYTE [bp+1], 69
+			mov r%vb, 1
+			mov r%vb, [r%vh + r%vb]
+			exit r%vb
+		`, rA, rB, rC, rA, rB, rC)
+	b, err := assembleAndLink(asm)
+	if err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	}
+	if s, err := execute(b); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exit := s.GetExitCode(); exit != 69 {
+		t.Error(compilationOfErr(asm))
+		t.Errorf("Expected exit code %v got %v", 69, exit)
+	}
+}
+func TestDeref5(t *testing.T) {
+	rA := byte(rand.Int() % vm.GP_REG_MAX)
+	rB := (rA + 1) % vm.GP_REG_MAX
+	rC := (rB + 1) % vm.GP_REG_MAX
+	asm := fmt.Sprintf(`
+		section '.code'
+		@entry
+			mov r%v, bp
+			mov BYTE [bp+1], 69
+			mov r%vb, 1
+			mov r%vb, [r%vh + r%vb]
+			exit r%vb
+		`, rA, rB, rC, rA, rB, rC)
+	b, err := assembleAndLink(asm)
+	if err != nil {
+		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(err)
+	}
+	if s, err := execute(b); err != nil {
+		t.Errorf("Compilation of:\n %s", asm)
+		t.Error(err)
+	} else if exit := s.GetExitCode(); exit != 69 {
+		t.Errorf("Compilation of:\n %s", asm)
+		t.Errorf("Expected exit code %v got %v", 69, exit)
 	}
 }
 func TestDeref1F(t *testing.T) {
@@ -149,31 +201,5 @@ func TestDeref2F(t *testing.T) {
 	} else if ok, err := regexp.MatchString("Segmentation fault", err.Error()); !ok || err != nil {
 		t.Errorf("Expected segmentation fault")
 		t.Error(err)
-	}
-}
-func TestDeref4(t *testing.T) {
-	rA := byte(rand.Int() % vm.GP_REG_MAX)
-	rB := (rA + 1) % vm.GP_REG_MAX
-	rC := (rB + 1) % vm.GP_REG_MAX
-	asm := fmt.Sprintf(`
-		section '.code'
-		@entry
-			mov r%v, bp
-			mov BYTE [bp+1], 69
-			mov r%vb, 1
-			mov r%vb, [r%vh + r%vb]
-			exit r%vb
-		`, rA, rB, rC, rA, rB, rC)
-	b, err := assembleAndLink(asm)
-	if err != nil {
-		t.Errorf("Compilation of:\n%s", asm)
-		t.Error(err)
-	}
-	if s, err := execute(b); err != nil {
-		t.Errorf("Compilation of:\n %s", asm)
-		t.Error(err)
-	} else if exit := s.GetExitCode(); exit != 69 {
-		t.Errorf("Compilation of:\n %s", asm)
-		t.Errorf("Expected exit code %v got %v", 69, exit)
 	}
 }
