@@ -64,7 +64,7 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 		return err
 	}
 	immV := binary.BigEndian.Uint64(param)
-	regV := state.GetRegVAsUint64(int(data.reg), data.r1sz)
+	regV := state.GetRegVAsU64(int(data.reg), data.r1sz)
 	switch opType {
 	case OP_ADDIR:
 		err = state.addValues(regV, immV,

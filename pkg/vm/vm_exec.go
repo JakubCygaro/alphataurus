@@ -183,7 +183,7 @@ func (state *VmState) exitI(param []byte) {
 func (state *VmState) exitR(param []byte) {
 	reg := param[0]
 	dataSz := param[1]
-	code := state.GetRegVAsUint64(int(reg), dataSz)
+	code := state.GetRegVAsU64(int(reg), dataSz)
 	state.exitImpl(code)
 }
 func (state *VmState) exitImpl(code uint64) {

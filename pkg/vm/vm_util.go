@@ -1,7 +1,18 @@
 package vm
+
 import (
 	"fmt"
+
+	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
+
+func (state* VmState) isWithinStack(addr uint64) (int, error) {
+	inStack := state.VirtToRealSp(int(addr))
+	if inStack < 0 || inStack >= len(state.stack) {
+		return -1, errors.SegmentationFault(addr, state.byteCodePos)
+	}
+	return inStack, nil
+}
 
 func IsValidDataSize(sz byte) error {
 	if sz < SZ_8 || sz > SZ_64{
@@ -41,7 +52,7 @@ func DataSizeToByteCount(dataSz byte) int {
 	}
 	return -1
 }
-func (state *VmState) GetRegVAsUint64(reg int, dataSz byte) uint64 {
+func (state *VmState) GetRegVAsU64(reg int, dataSz byte) uint64 {
 	ret := uint64(0)
 	r := &state.regs.r[reg]
 	switch dataSz {
@@ -53,6 +64,21 @@ func (state *VmState) GetRegVAsUint64(reg int, dataSz byte) uint64 {
 		ret = uint64(r.GetValAsU32())
 	case SZ_64:
 		ret = uint64(r.GetValAsU64())
+	}
+	return ret
+}
+func (state *VmState) GetRegVAsS64(reg int, dataSz byte) int64 {
+	ret := int64(0)
+	r := &state.regs.r[reg]
+	switch dataSz {
+	case SZ_8:
+		ret = int64(r.GetValAsU8())
+	case SZ_16:
+		ret = int64(r.GetValAsU16())
+	case SZ_32:
+		ret = int64(r.GetValAsU32())
+	case SZ_64:
+		ret = int64(r.GetValAsU64())
 	}
 	return ret
 }

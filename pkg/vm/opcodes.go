@@ -159,10 +159,13 @@ const (
 	OP_MOVIR   = 0    // move imediate value to register
 	OP_MOVRR   = iota // move register to register
 	OP_MOVDRI         // move dereference to register, [<address>]
+	OP_MOVDRO0        // move dereference to register, like [rx]
 	OP_MOVDRO1        // move dereference to register, like [rx + <signed offset>]
 	OP_MOVDRO2        // move dereference to register, like [(rx + rx) +/- <signed offset>]
 	OP_MOVID          // move immediate value to deref
 	OP_MOVRD          // move register value into deref
+	OP_MOVRDO0        // move register value into deref
+	OP_MOVIDO0        // move immediate value to deref
 	OP_MOVRDO1        // move register value into deref with one offset register
 	OP_MOVIDO1        // move immediate value to deref with one offset register
 	OP_MOVRDO2        // move register value into deref with two offset registers

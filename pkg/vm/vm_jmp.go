@@ -66,7 +66,7 @@ func (state *VmState) jmpIP(lastByte byte, param []byte) error {
 	dataSz := (lastByte & 0b1100_0000) >> 6
 	regV := int64(0)
 	if IsMovRRAllowed(reg) {
-		regV = int64(state.GetRegVAsUint64(int(reg), dataSz))
+		regV = int64(state.GetRegVAsU64(int(reg), dataSz))
 	}
 	opTy := (lastByte & 0b0011_0000) >> 4
 	dest := uint64(0)

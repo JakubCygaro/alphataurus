@@ -90,7 +90,7 @@ func (vm *VmState) GetRegisters() []Register {
 func (vm *VmState) GetRegistersAsU64() []uint64 {
 	ret := make([]uint64, len(vm.regs.r))
 	for i := range vm.regs.r {
-		ret[i] = vm.GetRegVAsUint64(i, SZ_64)
+		ret[i] = vm.GetRegVAsU64(i, SZ_64)
 	}
 	return ret
 }
