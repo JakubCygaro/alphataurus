@@ -54,6 +54,8 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 			err = vm.movIR(opCodeBytes[0], param)
 		case OP_MOVDRI:
 			err = vm.movDRI(opCodeBytes[0], param)
+		case OP_MOVDRO0:
+			err = vm.movDRO0(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_MOVDRO1:
 			err = vm.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_MOVDRO2:
@@ -62,12 +64,16 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 			err = vm.movID(opCodeBytes[1], param)
 		case OP_MOVRD:
 			err = vm.movRD(opCodeBytes[1], param)
+		case OP_MOVIDO0:
+			err = vm.movIDO0(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_MOVIDO1:
 			err = vm.movIDO1(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_MOVRDO1:
-			err = vm.movRDO1(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_MOVIDO2:
 			err = vm.movIDO2(opCodeBytes[1], opCodeBytes[0], param)
+		case OP_MOVRDO0:
+			err = vm.movRDO0(opCodeBytes[1], opCodeBytes[0], param)
+		case OP_MOVRDO1:
+			err = vm.movRDO1(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_MOVRDO2:
 			err = vm.movRDO2(opCodeBytes[1], opCodeBytes[0], param)
 		case OP_ADDRR:
