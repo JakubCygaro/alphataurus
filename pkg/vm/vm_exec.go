@@ -37,150 +37,161 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 		return err
 	}
 	for ; vm.GetIp() < vm.exeSegBase+vm.codeSize && !vm.exit; vm.incIp() {
-		var err error = nil
-		instAddr := vm.VirtToRealIp(vm.GetIp())
-		vm.byteCodePos = vm.GetIp()
-		opCodeBytes := vm.bytecode[instAddr : instAddr+OPCODE_SIZE]
-		param := vm.bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
-		opcode, err := vm.GetOpcode(opCodeBytes)
-		vm.currentOpcode = uint32(opcode)
-		if err != nil {
+		_, opCodeBytes, param := vm.fetch()
+		if err := vm.decode(opCodeBytes); err != nil {
 			return err
 		}
-		switch opcode {
-		case OP_MOVRR:
-			err = vm.movRR(opCodeBytes[0], param)
-		case OP_MOVIR:
-			err = vm.movIR(opCodeBytes[0], param)
-		case OP_MOVDRI:
-			err = vm.movDRI(opCodeBytes[0], param)
-		case OP_MOVDRO0:
-			err = vm.movDRO0(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_MOVDRO1:
-			err = vm.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_MOVDRO2:
-			err = vm.movDRO2(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_MOVID:
-			err = vm.movID(opCodeBytes[1], param)
-		case OP_MOVRD:
-			err = vm.movRD(opCodeBytes[1], param)
-		case OP_MOVIDO0:
-			err = vm.movIDO0(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_MOVIDO1:
-			err = vm.movIDO1(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_MOVIDO2:
-			err = vm.movIDO2(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_MOVRDO0:
-			err = vm.movRDO0(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_MOVRDO1:
-			err = vm.movRDO1(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_MOVRDO2:
-			err = vm.movRDO2(opCodeBytes[1], opCodeBytes[0], param)
-		case OP_ADDRR:
-			err = vm.arthRR(int(opcode), param)
-		case OP_SUBRR:
-			err = vm.arthRR(int(opcode), param)
-		case OP_MULRR:
-			err = vm.arthRR(int(opcode), param)
-		case OP_DIVRR:
-			err = vm.arthRR(int(opcode), param)
-		case OP_ADDIR:
-			err = vm.arthIR(int(opcode), opCodeBytes[0], param)
-		case OP_SUBIR:
-			err = vm.arthIR(int(opcode), opCodeBytes[0], param)
-		case OP_NOT:
-			err = vm.not(param)
-		case OP_ORRR:
-			err = vm.logRR(int(opcode), param)
-		case OP_ANDRR:
-			err = vm.logRR(int(opcode), param)
-		case OP_XORRR:
-			err = vm.logRR(int(opcode), param)
-		case OP_LSHRR:
-			err = vm.logRR(int(opcode), param)
-		case OP_RSHRR:
-			err = vm.logRR(int(opcode), param)
-		case OP_ORIR:
-			err = vm.logIR(int(opcode), opCodeBytes[0], param)
-		case OP_ANDIR:
-			err = vm.logIR(int(opcode), opCodeBytes[0], param)
-		case OP_XORIR:
-			err = vm.logIR(int(opcode), opCodeBytes[0], param)
-		case OP_LSHIR:
-			err = vm.logIR(int(opcode), opCodeBytes[0], param)
-		case OP_RSHIR:
-			err = vm.logIR(int(opcode), opCodeBytes[0], param)
-		case OP_INCR:
-			err = vm.incR(param)
-		case OP_DECR:
-			err = vm.decR(param)
-		case OP_JMP:
-			err = vm.jmp(opCodeBytes[0], param)
-		case OP_JMPE:
-			err = vm.jmpE(opCodeBytes[0], param)
-		case OP_JMPNE:
-			err = vm.jmpNE(opCodeBytes[0], param)
-		case OP_JMPZ:
-			err = vm.jmpZ(opCodeBytes[0], param)
-		case OP_JMPNZ:
-			err = vm.jmpNZ(opCodeBytes[0], param)
-		case OP_JMPG:
-			err = vm.jmpG(opCodeBytes[0], param)
-		case OP_JMPGE:
-			err = vm.jmpGE(opCodeBytes[0], param)
-		case OP_JMPL:
-			err = vm.jmpL(opCodeBytes[0], param)
-		case OP_JMPLE:
-			err = vm.jmpLE(opCodeBytes[0], param)
-		case OP_JMPIP:
-			err = vm.jmpIP(opCodeBytes[0], param)
-		case OP_JMPEIP:
-			err = vm.jmpEIP(opCodeBytes[0], param)
-		case OP_JMPNEIP:
-			err = vm.jmpNEIP(opCodeBytes[0], param)
-		case OP_JMPZIP:
-			err = vm.jmpZIP(opCodeBytes[0], param)
-		case OP_JMPNZIP:
-			err = vm.jmpNZIP(opCodeBytes[0], param)
-		case OP_JMPGIP:
-			err = vm.jmpGIP(opCodeBytes[0], param)
-		case OP_JMPGEIP:
-			err = vm.jmpGEIP(opCodeBytes[0], param)
-		case OP_JMPLIP:
-			err = vm.jmpLIP(opCodeBytes[0], param)
-		case OP_JMPLEIP:
-			err = vm.jmpLEIP(opCodeBytes[0], param)
-		case OP_PUSHI:
-			err = vm.push(int(opcode), opCodeBytes[0], param)
-		case OP_PUSHR:
-			err = vm.push(int(opcode), opCodeBytes[0], param)
-		case OP_POP:
-			err = vm.popR(opCodeBytes[0], param)
-		case OP_CMPRR:
-			err = vm.cmpRR(opCodeBytes[0], param)
-		case OP_CMPIR:
-			err = vm.cmpIR(opCodeBytes[0], param)
-		case OP_NOP:
-		case OP_CLR:
-			err = vm.clr()
-		case OP_CALL:
-			err = vm.call(param)
-		case OP_CALLIP:
-			err = vm.callIP(opCodeBytes[0], param)
-		case OP_RET:
-			err = vm.ret()
-		case OP_EXITI:
-			vm.exitI(param)
-		case OP_EXITR:
-			vm.exitR(param)
-		default:
-			return fmt.Errorf("Unhandled opcode %d, TODO", opcode)
-		}
-		if err != nil {
+		if err := vm.exec(opCodeBytes, param); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+func (state *VmState) fetch() (instAddr uint64, opCodeBytes, param []byte) {
+	instAddr = state.VirtToRealIp(state.GetIp())
+	state.byteCodePos = state.GetIp()
+	opCodeBytes = state.bytecode[instAddr : instAddr+OPCODE_SIZE]
+	param = state.bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
+	return instAddr, opCodeBytes, param
+}
+func (state *VmState) decode(opCodeBytes []byte) error {
+	opcode, err := state.GetOpcode(opCodeBytes)
+	state.currentOpcode = uint32(opcode)
+	return err
+}
+func (state *VmState) exec(opCodeBytes, param []byte) error {
+	var err error
+	opcode := state.currentOpcode
+	switch opcode {
+	case OP_MOVRR:
+		err = state.movRR(opCodeBytes[0], param)
+	case OP_MOVIR:
+		err = state.movIR(opCodeBytes[0], param)
+	case OP_MOVDRI:
+		err = state.movDRI(opCodeBytes[0], param)
+	case OP_MOVDRO0:
+		err = state.movDRO0(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVDRO1:
+		err = state.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVDRO2:
+		err = state.movDRO2(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVID:
+		err = state.movID(opCodeBytes[1], param)
+	case OP_MOVRD:
+		err = state.movRD(opCodeBytes[1], param)
+	case OP_MOVIDO0:
+		err = state.movIDO0(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVIDO1:
+		err = state.movIDO1(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVIDO2:
+		err = state.movIDO2(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVRDO0:
+		err = state.movRDO0(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVRDO1:
+		err = state.movRDO1(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVRDO2:
+		err = state.movRDO2(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_ADDRR:
+		err = state.arthRR(int(opcode), param)
+	case OP_SUBRR:
+		err = state.arthRR(int(opcode), param)
+	case OP_MULRR:
+		err = state.arthRR(int(opcode), param)
+	case OP_DIVRR:
+		err = state.arthRR(int(opcode), param)
+	case OP_ADDIR:
+		err = state.arthIR(int(opcode), opCodeBytes[0], param)
+	case OP_SUBIR:
+		err = state.arthIR(int(opcode), opCodeBytes[0], param)
+	case OP_NOT:
+		err = state.not(param)
+	case OP_ORRR:
+		err = state.logRR(int(opcode), param)
+	case OP_ANDRR:
+		err = state.logRR(int(opcode), param)
+	case OP_XORRR:
+		err = state.logRR(int(opcode), param)
+	case OP_LSHRR:
+		err = state.logRR(int(opcode), param)
+	case OP_RSHRR:
+		err = state.logRR(int(opcode), param)
+	case OP_ORIR:
+		err = state.logIR(int(opcode), opCodeBytes[0], param)
+	case OP_ANDIR:
+		err = state.logIR(int(opcode), opCodeBytes[0], param)
+	case OP_XORIR:
+		err = state.logIR(int(opcode), opCodeBytes[0], param)
+	case OP_LSHIR:
+		err = state.logIR(int(opcode), opCodeBytes[0], param)
+	case OP_RSHIR:
+		err = state.logIR(int(opcode), opCodeBytes[0], param)
+	case OP_INCR:
+		err = state.incR(param)
+	case OP_DECR:
+		err = state.decR(param)
+	case OP_JMP:
+		err = state.jmp(opCodeBytes[0], param)
+	case OP_JMPE:
+		err = state.jmpE(opCodeBytes[0], param)
+	case OP_JMPNE:
+		err = state.jmpNE(opCodeBytes[0], param)
+	case OP_JMPZ:
+		err = state.jmpZ(opCodeBytes[0], param)
+	case OP_JMPNZ:
+		err = state.jmpNZ(opCodeBytes[0], param)
+	case OP_JMPG:
+		err = state.jmpG(opCodeBytes[0], param)
+	case OP_JMPGE:
+		err = state.jmpGE(opCodeBytes[0], param)
+	case OP_JMPL:
+		err = state.jmpL(opCodeBytes[0], param)
+	case OP_JMPLE:
+		err = state.jmpLE(opCodeBytes[0], param)
+	case OP_JMPIP:
+		err = state.jmpIP(opCodeBytes[0], param)
+	case OP_JMPEIP:
+		err = state.jmpEIP(opCodeBytes[0], param)
+	case OP_JMPNEIP:
+		err = state.jmpNEIP(opCodeBytes[0], param)
+	case OP_JMPZIP:
+		err = state.jmpZIP(opCodeBytes[0], param)
+	case OP_JMPNZIP:
+		err = state.jmpNZIP(opCodeBytes[0], param)
+	case OP_JMPGIP:
+		err = state.jmpGIP(opCodeBytes[0], param)
+	case OP_JMPGEIP:
+		err = state.jmpGEIP(opCodeBytes[0], param)
+	case OP_JMPLIP:
+		err = state.jmpLIP(opCodeBytes[0], param)
+	case OP_JMPLEIP:
+		err = state.jmpLEIP(opCodeBytes[0], param)
+	case OP_PUSHI:
+		err = state.push(int(opcode), opCodeBytes[0], param)
+	case OP_PUSHR:
+		err = state.push(int(opcode), opCodeBytes[0], param)
+	case OP_POP:
+		err = state.popR(opCodeBytes[0], param)
+	case OP_CMPRR:
+		err = state.cmpRR(opCodeBytes[0], param)
+	case OP_CMPIR:
+		err = state.cmpIR(opCodeBytes[0], param)
+	case OP_NOP:
+	case OP_CLR:
+		err = state.clr()
+	case OP_CALL:
+		err = state.call(param)
+	case OP_CALLIP:
+		err = state.callIP(opCodeBytes[0], param)
+	case OP_RET:
+		err = state.ret()
+	case OP_EXITI:
+		state.exitI(param)
+	case OP_EXITR:
+		state.exitR(param)
+	default:
+		err = fmt.Errorf("Unhandled opcode %d, TODO", opcode)
+	}
+	return err
 }
 
 func (state *VmState) exitI(param []byte) {
