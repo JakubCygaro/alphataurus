@@ -227,6 +227,9 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 			s, _ := GetSizeKeyword(sized)
 			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
 		}
+		if ty == INST_TMOVIDO1 && mddata.Offset == 0{
+			ty = INST_TMOVIDO1_NO
+		}
 		mddata.DataSize = sized
 		p.currentInst = Instruction{
 			Ty:   ty,
@@ -247,6 +250,9 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 		} else if ty != INST_TMOVIDO2  && sized != 0xff {
 			s, _ := GetSizeKeyword(sized)
 			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+		}
+		if ty == INST_TMOVIDO2 && mddata.Offset == 0{
+			ty = INST_TMOVIDO2_NO
 		}
 		mddata.DataSize = sized
 		p.currentInst = Instruction{

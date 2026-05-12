@@ -69,28 +69,26 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 		err = state.movIR(opCodeBytes[0], param)
 	case OP_MOVDRI:
 		err = state.movDRI(opCodeBytes[0], param)
-	case OP_MOVDRO0:
-		err = state.movDRO0(opCodeBytes[1], opCodeBytes[0], param)
-	case OP_MOVDRO1:
-		err = state.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
-	case OP_MOVDRO2:
-		err = state.movDRO2(opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVID:
 		err = state.movID(opCodeBytes[1], param)
 	case OP_MOVRD:
 		err = state.movRD(opCodeBytes[1], param)
-	case OP_MOVIDO0:
-		err = state.movIDO0(opCodeBytes[1], opCodeBytes[0], param)
-	case OP_MOVIDO1:
-		err = state.movIDO1(opCodeBytes[1], opCodeBytes[0], param)
-	case OP_MOVIDO2:
-		err = state.movIDO2(opCodeBytes[1], opCodeBytes[0], param)
-	case OP_MOVRDO0:
-		err = state.movRDO0(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVDRO1:
+		err = state.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVDRO2:
+		err = state.movDRO2(opCodeBytes[2],opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVRDO1:
 		err = state.movRDO1(opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVRDO2:
-		err = state.movRDO2(opCodeBytes[1], opCodeBytes[0], param)
+		err = state.movRDO2(opCodeBytes[2],opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVIDO1_NO:
+		err = state.movIDO1NoOffset(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVIDO1:
+		err = state.movIDO1(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVIDO2_NO:
+		err = state.movIDO2NoOffset(opCodeBytes[2],opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVIDO2:
+		err = state.movIDO2(opCodeBytes[2],opCodeBytes[1], opCodeBytes[0], param)
 	case OP_ADDRR:
 		err = state.arthRR(int(opcode), param)
 	case OP_SUBRR:

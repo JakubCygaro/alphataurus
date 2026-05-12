@@ -101,7 +101,7 @@ func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 		var tro any
 		tr.GetValAs(vm.TY_UINT, vm.SZ_64, &tro)
 		trv := tro.(uint64)
-		if r, _ := mach.GetGpRXAsUint64(k); r != trv {
+		if r, _ := mach.GetGpRXAsU64(k); r != trv {
 			msg = strings.Join([]string{
 				fmt.Sprintf("State of general purpose register r%v was different from expected", k),
 				fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)", trv, r),

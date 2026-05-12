@@ -94,14 +94,14 @@ func (vm *VmState) GetRegistersAsU64() []uint64 {
 	}
 	return ret
 }
-func (vm *VmState) GetGpRXAsUint64(register byte) (uint64, error) {
+func (vm *VmState) GetGpRXAsU64(register byte) (uint64, error) {
 	var out any
 	if err := vm.GetGpRXAs(register, TY_UINT, SZ_64, &out); err != nil {
 		return 0, err
 	}
 	return out.(uint64), nil
 }
-func (vm *VmState) GetGpRXAsI64(register byte) (int64, error) {
+func (vm *VmState) GetGpRXAsS64(register byte) (int64, error) {
 	var out any
 	if err := vm.GetGpRXAs(register, TY_SINT, SZ_64, &out); err != nil {
 		return 0, err

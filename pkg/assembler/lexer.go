@@ -34,6 +34,8 @@ const (
 	TOKEN_TOPENPAREN
 	TOKEN_TCLOSEDPAREN
 	TOKEN_TCOLON
+	TOKEN_TSEMICOLON
+	TOKEN_TDOUBLESEMICOLON
 	TOKEN_TNEWLINE
 	TOKEN_TSINGLEQ
 	TOKEN_TAT
@@ -238,6 +240,19 @@ func (l *Lexer) ReadNextToken() error {
 		l.currentToken = Token{
 			Ty:  TOKEN_TCOLON,
 			Val: rune(b),
+		}
+	case b == ';':
+		if b, ok := l.readByte(); ok && b == ';' {
+			l.currentToken = Token{
+				Ty:  TOKEN_TDOUBLESEMICOLON,
+				Val: rune(b),
+			}
+		} else {
+			l.unreadByte()
+			l.currentToken = Token{
+				Ty:  TOKEN_TSEMICOLON,
+				Val: rune(b),
+			}
 		}
 	case b == '(':
 		l.currentToken = Token{

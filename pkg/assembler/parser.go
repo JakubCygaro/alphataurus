@@ -14,14 +14,17 @@ const (
 	INST_TMOVRR = iota
 	INST_TMOVIR
 	INST_TMOVDRI
+	INST_TMOVDRO0
 	INST_TMOVDRO1
 	INST_TMOVDRO2
 	INST_TMOVID
 	INST_TMOVRD
 	INST_TMOVRDO1
 	INST_TMOVIDO1
+	INST_TMOVIDO1_NO
 	INST_TMOVRDO2
 	INST_TMOVIDO2
+	INST_TMOVIDO2_NO
 	INST_TADDRR
 	INST_TSUBRR
 	INST_TDIVRR
@@ -219,6 +222,21 @@ func (p *Parser) ParseNext() (bool, error) {
 		err = p.parseAttribute()
 		if err != nil {
 			return false, err
+		}
+	case TOKEN_TDOUBLESEMICOLON:
+		for {
+			if err = p.lexer.ReadNextToken(); err != nil {
+				return false, err
+			}
+			switch p.lexer.CurrentToken().Ty {
+			case TOKEN_TNEWLINE:
+				p.lexer.UnreadToken()
+			case TOKEN_TEOF:
+				p.lexer.UnreadToken()
+			default:
+				continue
+			}
+			break
 		}
 	default:
 		return false, fmt.Errorf("Unimplemented instruction %s", p.lexer.CurrentPosition())

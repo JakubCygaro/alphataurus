@@ -111,15 +111,10 @@ var (
 		4: handle(OP_MOVRD),
 	})
 	p1XXX = nested(OpCodeMap{
-		0: handle(OP_MOVDRO0),
 		1: handle(OP_MOVDRO1),
-		2: handle(OP_MOVDRO2),
-		3: handle(OP_MOVRDO0),
-		4: handle(OP_MOVRDO1),
-		5: handle(OP_MOVRDO2),
-		6: handle(OP_MOVIDO0),
-		7: handle(OP_MOVIDO1),
-		8: handle(OP_MOVIDO2),
+		3: handle(OP_MOVRDO1),
+		4: handle(OP_MOVIDO1_NO),
+		5: handle(OP_MOVIDO1),
 	})
 	p0XXX = nested(OpCodeMap{
 		0: p00XX,
@@ -129,6 +124,9 @@ var (
 	oPCODE_MAP = OpCodeMap{
 		0: p0XXX,
 		1: p1XXX,
+		2: handle(OP_MOVIDO2_NO),
+		3: handle(OP_MOVIDO2),
+		4: handle(OP_MOVDRO2),
 	}
 )
 
@@ -162,16 +160,15 @@ const (
 	OP_MOVIR   = 0    // move imediate value to register
 	OP_MOVRR   = iota // move register to register
 	OP_MOVDRI         // move dereference to register, [<address>]
-	OP_MOVDRO0        // move dereference to register, like [rx]
 	OP_MOVDRO1        // move dereference to register, like [rx + <signed offset>]
 	OP_MOVDRO2        // move dereference to register, like [(rx + rx) +/- <signed offset>]
 	OP_MOVID          // move immediate value to deref
 	OP_MOVRD          // move register value into deref
-	OP_MOVRDO0        // move register value into deref
-	OP_MOVIDO0        // move immediate value to deref
 	OP_MOVRDO1        // move register value into deref with one offset register
-	OP_MOVIDO1        // move immediate value to deref with one offset register
 	OP_MOVRDO2        // move register value into deref with two offset registers
+	OP_MOVIDO1_NO        // move immediate value to deref, offset = 0
+	OP_MOVIDO1        // move immediate value to deref with one offset register
+	OP_MOVIDO2_NO        // move immediate value to deref with two offset registers, offset = 0
 	OP_MOVIDO2        // move immediate value to deref with two offset registers
 	OP_ADDRR          // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
