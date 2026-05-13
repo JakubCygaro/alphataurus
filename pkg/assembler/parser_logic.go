@@ -16,9 +16,9 @@ func (p *Parser) parseLogical(logTy int) error {
 			"First operand to instruction must be a valid register",
 			p.lexer.line, p.lexer.col)
 	} else {
-		op1.Val = int(expr.Val.(ConstExpr).Val)
+		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
 	}
-	if !vm.IsGpReg(byte(op1.Val.(int))){
+	if !vm.IsGpReg(byte(op1.Val.(RegisterData).Reg)){
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Disallowed first operand register",
 			p.lexer.line, p.lexer.col)

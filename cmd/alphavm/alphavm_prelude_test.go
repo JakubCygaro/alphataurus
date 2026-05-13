@@ -16,6 +16,9 @@ const (
 	DEFAULT_STACK_SIZE = 16
 )
 
+func expectedExitCode(expected, got uint64) error {
+	return fmt.Errorf("Expected exit code %v, but got %v", expected, got)
+}
 func compilationOfErr(asm string) error {
 	return fmt.Errorf("Compilation of:\n%s", asm)
 }

@@ -3,6 +3,7 @@ package alphavm
 import (
 	"fmt"
 	"math"
+	"math/rand"
 	"regexp"
 	"testing"
 
@@ -55,30 +56,49 @@ func TestMov2(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 }
-// func TestMov3(t *testing.T) {
-// 	asm := fmt.Sprintf(`
-// 	section '.code'
-// 	@entry
-// 		push WORD 0
-// 		mov bp, sp
-// 		mov WORD [bp], 0x1111111100000000
-// 		mov HALF [bp], 0x4d3c0000
-// 		mov QUARTER [bp], 0x2b00
-// 		mov BYTE [bp], 0x1a
-// 	`)
-// 	mach, err := assembleAndExecute(asm)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// 	// if err := expectGpRegisters(asm, &mach, ExpMap{
-// 	// 	vm.R0_IDX: vm.RegisterWithValueSized(uint64(r0_v), vm.SZ_8),
-// 	// 	vm.R1_IDX: vm.RegisterWithValueSized(uint64(r1_v), vm.SZ_16),
-// 	// 	vm.R2_IDX: vm.RegisterWithValueSized(uint64(r2_v), vm.SZ_32),
-// 	// 	vm.R3_IDX: vm.RegisterWithValue(uint64(r3_v)),
-// 	// }); err != nil {
-// 	// 	t.Errorf(err.Error())
-// 	// }
-// }
+func TestMov3(t *testing.T) {
+	rA, rAsz := randomGpRegisterWord(), byte(vm.SZ_64)
+	rAv := rand.Int63n(int64(math.MaxUint32))
+	rB, rBsz := randomGpRegisterWord(), byte(vm.SZ_32)
+	rBv := rand.Int63n(int64(math.MaxUint16))
+	rC, rCsz := randomGpRegisterWord(), byte(vm.SZ_16)
+	rCv := rand.Int63n(int64(math.MaxUint8))
+	rD, rDsz := randomGpRegisterWord(), byte(vm.SZ_8)
+	rDv := rand.Int63n(int64(math.MaxUint8))
+	rE := randomGpRegisterWord()
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		push BYTE 69
+		mov bp, sp
+		mov WORD [bp],    0x00000000%x
+		mov HALF [bp],    0x0000%x
+		mov QUARTER [bp], 0x00%x
+		mov BYTE [bp],    0x%x
+		mov %s, [bp]
+		mov %s, [bp]
+		and %s,           0x00ff
+		mov %s, [bp]
+		and %s, 		  0x0000ffff
+		mov %s, [bp]
+		and %s,           0x00000000ffffffff
+		mov %s, [bp]
+		sub %s, %s
+		exit %s
+	`, rAv, rBv, rCv, rDv,
+		regStr(rA, rAsz), regStr(rB, rBsz), regStr(rB, rBsz),
+		regStr(rC, rCsz), regStr(rC, rCsz), regStr(rD, rDsz), regStr(rD, rDsz),
+		regStr(rE, vm.SZ_8), regStr(rD, rDsz), regStr(rE, vm.SZ_8),
+		regStr(rD, rDsz),
+	)
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if mach.GetExitCode() != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, mach.GetExitCode()))
+	}
+}
 func TestMov1F(t *testing.T) {
 	rA, rAsz := randomGpRegisterWord(), byte(vm.SZ_8)
 	rB, rBsz := nextRandomGpRegister(rA), byte(vm.SZ_64)

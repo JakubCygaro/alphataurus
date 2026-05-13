@@ -10,6 +10,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
+
 const assembly2 = `
 export 'atoi'
 section '.code'
@@ -25,22 +26,26 @@ const assembly = `
 import 'atoi'
 section '.code'
 @entry
-	mov r4, bp
-	mov BYTE [bp+1], 69
-	mov r5b, 1
-	mov r6b, [r4h + r5b]
-	exit r6b
-	;;push WORD 0
-	;;mov bp, sp
-	;;mov WORD [bp], 0x1111111100000000
-	;;mov HALF [bp], 0x4d3c0000
-	;;mov QUARTER [bp], 0x2b00
-	;;mov BYTE [bp], 0x1a
-	;;exit 0
+	push BYTE 69
+	mov bp, sp
+	mov WORD [bp],    0x0000000043434343
+	mov HALF [bp],    0x00004545
+	mov QUARTER [bp], 0x002c
+	mov BYTE [bp],    0x1a
+	mov r1b, [bp]
+	mov r2q, [bp]
+	and r2q, 0x00ff
+	mov r3h, [bp]
+	and r3h, 0x0000ffff
+	mov r4, [bp]
+	and r4,  0x00000000ffffffff
+	mov r5b, [bp]
+	sub r1b, r5b
+	exit r1b
 `
 
 func main() {
-	sources := []string { assembly, assembly2 }
+	sources := []string{assembly, assembly2}
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(s)))
@@ -65,7 +70,7 @@ func main() {
 		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
-	mach := vm.CreateVmState(6*8)
+	mach := vm.CreateVmState(6 * 8)
 	err = mach.Execute(elf)
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
@@ -92,7 +97,5 @@ func main() {
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
-	if mach.GetExitCode() != 69 {
-		os.Exit(-1)
-	}
+	os.Exit(int(mach.GetExitCode()))
 }
