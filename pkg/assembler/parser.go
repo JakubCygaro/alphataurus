@@ -195,6 +195,23 @@ func NewParser(reader bufio.Reader) Parser {
 func (p *Parser) CurrentInst() Instruction {
 	return p.currentInst
 }
+func (p *Parser) SkipCommentLine() error {
+	for {
+		if err := p.lexer.ReadNextToken(); err != nil {
+			return err
+		}
+		switch p.lexer.CurrentToken().Ty {
+		case TOKEN_TNEWLINE:
+			p.lexer.UnreadToken()
+		case TOKEN_TEOF:
+			p.lexer.UnreadToken()
+		default:
+			continue
+		}
+		break
+	}
+	return nil
+}
 func (p *Parser) ParseNext() (bool, error) {
 	var err error = nil
 	var start Token
@@ -224,24 +241,14 @@ func (p *Parser) ParseNext() (bool, error) {
 			return false, err
 		}
 	case TOKEN_TDOUBLESEMICOLON:
-		for {
-			if err = p.lexer.ReadNextToken(); err != nil {
-				return false, err
-			}
-			switch p.lexer.CurrentToken().Ty {
-			case TOKEN_TNEWLINE:
-				p.lexer.UnreadToken()
-			case TOKEN_TEOF:
-				p.lexer.UnreadToken()
-			default:
-				continue
-			}
-			break
-		}
+		p.SkipCommentLine()
 	default:
 		return false, fmt.Errorf("Unimplemented instruction %s", p.lexer.CurrentPosition())
 	}
 	err = p.lexer.ReadNextToken()
+	if p.lexer.CurrentToken().Ty == TOKEN_TDOUBLESEMICOLON {
+		p.SkipCommentLine()
+	}
 	if p.lexer.CurrentToken().Ty != TOKEN_TNEWLINE &&
 		p.lexer.CurrentToken().Ty != TOKEN_TEOF {
 

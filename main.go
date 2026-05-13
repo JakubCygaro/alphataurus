@@ -25,23 +25,27 @@ atoi:
 const assembly = `
 import 'atoi'
 section '.code'
+fail:
+	exit 1
 @entry
 	mov r7, 1
 	lsh r7, 1
+	mov r1, 2 ;; divisor
+	mov r4, 1 ;; comparer
+
+L0:
+	cmp r7, 1024
+	jg leave
 	mov r0, r7
-	mov r1, 2
 	div UNSIGNED WORD
-	cmp r2, 1
+	cmp r2, r4
 	jne fail
 	lsh r7, 1
-	mov r0, r7
-	mov r1, 2
-	div UNSIGNED WORD
-	cmp r2, 2
-	jne fail
+	lsh r4, 1
+jmp L0
+
+leave:
 	exit 0
-fail:
-	exit 1
 `
 
 func main() {
