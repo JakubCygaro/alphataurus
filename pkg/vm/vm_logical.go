@@ -87,8 +87,8 @@ func (state *VmState) cmpRR(lastByte byte, param []byte) error {
 	return state.cmpImpl(minV, subV, ty, dataSz)
 }
 func (state *VmState) cmpIR(lastByte byte, param []byte) error {
-	var subtrahend, minuend, dataSz, ty byte
-	subtrahend |= (lastByte & 0b11110000) >> 4
+	var minuend, dataSz, ty byte
+	minuend |= (lastByte & 0b11110000) >> 4
 	dataSz |= (lastByte & 0b00001100) >> 2
 	ty = (lastByte & 0b00000001)
 	if ty == 1 {

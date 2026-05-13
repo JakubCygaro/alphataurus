@@ -36,7 +36,7 @@ func TestExitR1(t *testing.T) {
 		@entry
 			mov %s, %v
 			exit %s
-	`, regStr(r, rsz), exitV, 
+	`, regStr(r, rsz), exitV,
 		regStr(r, rsz))
 	switch rsz {
 	case vm.SZ_8:

@@ -26,22 +26,22 @@ const assembly = `
 import 'atoi'
 section '.code'
 @entry
-	push BYTE 69
-	mov bp, sp
-	mov WORD [bp],    0x0000000043434343
-	mov HALF [bp],    0x00004545
-	mov QUARTER [bp], 0x002c
-	mov BYTE [bp],    0x1a
-	mov r1b, [bp]
-	mov r2q, [bp]
-	and r2q, 0x00ff
-	mov r3h, [bp]
-	and r3h, 0x0000ffff
-	mov r4, [bp]
-	and r4,  0x00000000ffffffff
-	mov r5b, [bp]
-	sub r1b, r5b
-	exit r1b
+	mov r7, 1
+	lsh r7, 1
+	mov r0, r7
+	mov r1, 2
+	div UNSIGNED WORD
+	cmp r2, 1
+	jne fail
+	lsh r7, 1
+	mov r0, r7
+	mov r1, 2
+	div UNSIGNED WORD
+	cmp r2, 2
+	jne fail
+	exit 0
+fail:
+	exit 1
 `
 
 func main() {
