@@ -13,18 +13,7 @@ func (state *VmState) logIR(opType int, lastByte byte, param []byte) error {
 	fVal, sVal :=
 		state.GetRegVAsU64(int(first), dataSize),
 		binary.BigEndian.Uint64(param)
-	switch opType {
-	case OP_ORIR:
-		fVal = fVal | sVal
-	case OP_ANDIR:
-		fVal = fVal & sVal
-	case OP_XORIR:
-		fVal = fVal ^ sVal
-	case OP_LSHIR:
-		fVal = fVal << sVal
-	case OP_RSHIR:
-		fVal = fVal >> sVal
-	}
+	fVal = state.logImpl(fVal, sVal, opType)
 	state.putValInRegWithSize(int(first), dataSize, fVal)
 	return nil
 }
@@ -39,20 +28,24 @@ func (state *VmState) logRR(opType int, param []byte) error {
 	fVal, sVal :=
 		state.GetRegVAsU64(int(data.src), data.r1sz),
 		state.GetRegVAsU64(int(data.dest), data.r2sz)
-	switch opType {
-	case OP_ORRR:
-		fVal = fVal | sVal
-	case OP_ANDRR:
-		fVal = fVal & sVal
-	case OP_XORRR:
-		fVal = fVal ^ sVal
-	case OP_LSHRR:
-		fVal = fVal << sVal
-	case OP_RSHRR:
-		fVal = fVal >> sVal
-	}
+	fVal = state.logImpl(fVal, sVal, opType)
 	state.putValInRegWithSize(int(data.src), data.r1sz, fVal)
 	return nil
+}
+func (state *VmState) logImpl(a, b uint64, opType int) uint64 {
+	switch {
+	case opType == OP_ORRR || opType == OP_ORIR:
+		a = a | b
+	case opType == OP_ANDRR || opType == OP_ADDIR:
+		a = a & b
+	case opType == OP_XORRR || opType == OP_XORIR:
+		a = a ^ b
+	case opType == OP_LSHRR || opType == OP_LSHIR:
+		a = a << b
+	case opType == OP_RSHRR || opType == OP_RSHIR:
+		a = a >> b
+	}
+	return a
 }
 func (state *VmState) not(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
@@ -78,8 +71,8 @@ func (state *VmState) cmpRR(lastByte byte, param []byte) error {
 		return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
 	}
 	var subV, minV uint64
-	minV = binary.BigEndian.Uint64(state.regs.r[minuend][:])
-	subV = binary.BigEndian.Uint64(state.regs.r[subtrahend][:])
+	minV = state.GetRegVAsU64(int(minuend), dataSz)
+	subV = state.GetRegVAsU64(int(subtrahend), dataSz)
 
 	if dataSz != SZ_64 && ty == TY_FLOAT {
 		return errors.BadArthmeticOperation(state.byteCodePos)
@@ -98,7 +91,7 @@ func (state *VmState) cmpIR(lastByte byte, param []byte) error {
 		return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
 	}
 	var subV, minV uint64
-	minV = binary.BigEndian.Uint64(state.regs.r[minuend][:])
+	minV = state.GetRegVAsU64(int(minuend), dataSz)
 	subV = binary.BigEndian.Uint64(param)
 
 	if dataSz != SZ_64 && ty == TY_FLOAT {

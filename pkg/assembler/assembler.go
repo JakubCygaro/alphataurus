@@ -101,7 +101,7 @@ func (a *Assembler) EmitBytecode() (int, error) {
 		case INST_TSUBIR:
 			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TNOT:
-			err = a.emitNot(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitNot(inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TANDRR:
 			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TORRR:
@@ -481,10 +481,15 @@ func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitNot(ty int, data InstLogicalData, out *[]byte) error {
+func (a *Assembler) emitNot(data InstLogicalData, out *[]byte) error {
 	opCode := a.opCodes[vm.OP_NOT]
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
-	*out = binary.BigEndian.AppendUint64(*out, uint64(data.First.Reg))
+	param := [8]byte {
+		byte(data.First.Reg),
+		data.First.Size,
+		0,0,0,0,0,0,
+	}
+	*out = append(*out, param[:]...)
 	return nil
 }
 func (a *Assembler) emitInc(data InstIncDecData, out *[]byte) error {
