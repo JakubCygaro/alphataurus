@@ -282,3 +282,64 @@ func TestOr1(t *testing.T) {
 		t.Error(err)
 	}
 }
+func TestXor1(t *testing.T) {
+	const stackSize int = 1 + 2 + 4 + 8
+	stack := makeTestingStack(stackSize)
+	initV := rand.Int63()
+	sV := rand.Int63()
+	stack.push(uint8(initV) ^ uint8(sV))
+	stack.push(uint16(initV) ^ uint16(sV))
+	stack.push(uint32(initV) ^ uint32(sV))
+	stack.push(uint64(initV) ^ uint64(sV))
+	rA := randomGpRegisterWord()
+	rB := nextRandomGpRegister(rA)
+	rC := nextRandomGpRegister(rB)
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		mov %s, %v
+		mov %s, %v
+		;; XOR SZ_8
+		mov %s, %s
+		xor %s, %s
+		push %s
+		;; XOR SZ_16
+		mov %s, %s
+		xor %s, %s
+		push %s
+		;; XOR SZ_32
+		mov %s, %s
+		xor %s, %s
+		push %s
+		;; XOR SZ_64
+		mov %s, %s
+		xor %s, %s
+		push %s
+		exit 0
+	`,
+		regStr(rA, vm.SZ_64), initV,
+		regStr(rB, vm.SZ_64), sV,
+		regStr(rC, vm.SZ_8), regStr(rA, vm.SZ_8),
+		regStr(rC, vm.SZ_8), regStr(rB, vm.SZ_8),
+		regStr(rC, vm.SZ_8),
+		regStr(rC, vm.SZ_16), regStr(rA, vm.SZ_16),
+		regStr(rC, vm.SZ_16), regStr(rB, vm.SZ_16),
+		regStr(rC, vm.SZ_16),
+		regStr(rC, vm.SZ_32), regStr(rA, vm.SZ_32),
+		regStr(rC, vm.SZ_32), regStr(rB, vm.SZ_32),
+		regStr(rC, vm.SZ_32),
+		regStr(rC, vm.SZ_64), regStr(rA, vm.SZ_64),
+		regStr(rC, vm.SZ_64), regStr(rB, vm.SZ_64),
+		regStr(rC, vm.SZ_64),
+	)
+	if elf, err := assembleAndLink(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if mach, err := executeStackSize(elf, uint64(stackSize)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	}
+}
