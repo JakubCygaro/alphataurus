@@ -224,9 +224,14 @@ func (p *Parser) ParseNext() (bool, error) {
 		if start.Ty == TOKEN_TEOF {
 			return false, nil
 		}
-		if start.Ty != TOKEN_TNEWLINE {
+		if start.Ty == TOKEN_TDOUBLESEMICOLON {
+			err = p.SkipCommentLine()
+		} else if start.Ty != TOKEN_TNEWLINE {
 			break
 		}
+	}
+	if err != nil {
+		return false, err
 	}
 	p.currentInst.Col, p.currentInst.Line = start.Col, start.Line
 	switch start.Ty {
@@ -240,14 +245,12 @@ func (p *Parser) ParseNext() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-	case TOKEN_TDOUBLESEMICOLON:
-		p.SkipCommentLine()
 	default:
 		return false, fmt.Errorf("Unimplemented instruction %s", p.lexer.CurrentPosition())
 	}
 	err = p.lexer.ReadNextToken()
 	if p.lexer.CurrentToken().Ty == TOKEN_TDOUBLESEMICOLON {
-		p.SkipCommentLine()
+		err = p.SkipCommentLine()
 	}
 	if p.lexer.CurrentToken().Ty != TOKEN_TNEWLINE &&
 		p.lexer.CurrentToken().Ty != TOKEN_TEOF {
