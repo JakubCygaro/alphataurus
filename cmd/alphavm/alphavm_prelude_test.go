@@ -19,7 +19,7 @@ const (
 func expectedExitCode(expected, got uint64) error {
 	return fmt.Errorf("Expected exit code %v, but got %v", expected, got)
 }
-func compilationOfErr(asm string) error {
+func compilationOfErr(asm ...string) error {
 	return fmt.Errorf("Compilation of:\n%s", asm)
 }
 func assemblingErrorExpected() error {
@@ -70,13 +70,17 @@ func assemble(source string) ([]byte, error) {
 	code, err := asmblr.Assemble()
 	return code, err
 }
-func assembleAndLink(source string) (vm.AlphaELFFile, error) {
-	code, err := assemble(source)
-	if err != nil {
-		return vm.AlphaELFFile{}, fmt.Errorf("Assembling error: %v", err)
+func assembleAndLink(source ...string) (vm.AlphaELFFile, error) {
+	assembled := make([]linker.LinkerInput, 0)
+	for _, s := range source {
+		if code, err := assemble(s); err != nil {
+			return vm.AlphaELFFile{}, fmt.Errorf("Assembling error: %v", err)
+		} else {
+			assembled = append(assembled, linker.Bytes(code))
+		}
 	}
 	ld := linker.NewLinker()
-	linked, err := ld.Link([]linker.LinkerInput{linker.Bytes(code)})
+	linked, err := ld.Link(assembled)
 	if err != nil {
 		err = fmt.Errorf("Linking error: %v", err)
 	}
