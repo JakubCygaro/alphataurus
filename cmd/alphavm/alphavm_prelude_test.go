@@ -53,7 +53,7 @@ func regStr(reg, sz byte) string {
 	}
 }
 func nextRandomGpRegister(reg byte) byte {
-	return byte((reg + 1) % vm.GP_REG_MAX)
+	return byte((reg + 1) % vm.GP_REG_MAX + 1)
 }
 func execute(elf vm.AlphaELFFile) (vm.VmState, error) {
 	return executeStackSize(elf, DEFAULT_STACK_SIZE)
@@ -130,7 +130,7 @@ func makeTestingStack(capacity int) testingStack {
 	return make(testingStack, 0, capacity)
 }
 
-func (s *testingStack) push(value any) {
+func (s *testingStack) push(value any) any {
 	if u8, ok := value.(uint8); ok {
 		*s = append(*s, u8)
 	} else if u16, ok := value.(uint16); ok {
@@ -140,6 +140,7 @@ func (s *testingStack) push(value any) {
 	} else if u64, ok := value.(uint64); ok {
 		*s = binary.BigEndian.AppendUint64(*s, u64)
 	}
+	return value
 }
 
 func expectStack(mach *vm.VmState, stack vm.VmStack) error {

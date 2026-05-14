@@ -48,13 +48,13 @@ func (state *VmState) logImpl(a, b uint64, opType int) uint64 {
 	return a
 }
 func (state *VmState) not(param []byte) error {
-	reg := binary.BigEndian.Uint64(param)
+	reg := param[0]
+	dataSz := param[1]
 	if !IsGpReg(byte(reg)) {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
-	regV := binary.BigEndian.Uint64(state.regs.r[reg][:])
-
-	binary.BigEndian.PutUint64(state.regs.r[reg][:], ^regV)
+	regV := ^state.GetRegVAsU64(int(reg), dataSz)
+	state.putValInRegWithSize(int(reg), dataSz, regV)
 	return nil
 }
 func (state *VmState) clr() error {

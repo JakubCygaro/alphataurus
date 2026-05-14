@@ -24,53 +24,10 @@ atoi:
 `
 const assembly = `
 section '.code'
-fail:
-		exit 1
 @entry
-		mov bp, sp
-		push BYTE 1
-		push BYTE 2
-		push BYTE 3
-		push BYTE 4
-		push BYTE 5
-		push BYTE 6
-		push BYTE 7
-		push BYTE 8
-
-		;; pack into r0
-
-		mov r0b, [bp+1]
-		lsh r0, 8
-		mov r0b, [bp+2]
-		lsh r0, 8
-		mov r0b, [bp+3]
-		lsh r0, 8
-		mov r0b, [bp+4]
-		lsh r0, 8
-		mov r0b, [bp+5]
-		lsh r0, 8
-		mov r0b, [bp+6]
-		lsh r0, 8
-		mov r0b, [bp+7]
-		lsh r0, 8
-		mov r0b, [bp+8]
-
-		;; check
-
-		mov r1, 8 ;; loop counter
-
-L0:
-		cmp r1, 0 ;; loop check
-		jle leave
-		pop r2b
-		cmp r0b, r2b
-		jne fail
-		rsh r0, 8
-		dec r1
-		jmp L0
-
-leave:
-exit 0
+	mov r0, 1
+	not r0
+	exit 0
 `
 
 func main() {
