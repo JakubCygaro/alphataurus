@@ -1,7 +1,6 @@
 package alphavm
 
 import (
-	// "fmt"
 	"fmt"
 	"math/rand"
 	"testing"
