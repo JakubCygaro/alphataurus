@@ -30,9 +30,15 @@ func IsValidDataType(sz byte) error {
 func IsGpReg(b byte) bool {
 	return b <= GP_REG_MAX
 }
+func IsMovIntoRAllowed(b byte) bool {
+	return b <= SP_IDX
+}
+func IsMovFromRAllowed(b byte) bool {
+	return b <= IP_IDX
+}
 // Check if moving from or into this register is allowed
 func IsMovRRAllowed(b byte) bool {
-	return b <= SP_IDX
+	return IsMovFromRAllowed(b) && IsMovIntoRAllowed(b)
 }
 // Check if pushing the value of this register onto the stack is allowed
 func IsPushRAllowed(b byte) bool {

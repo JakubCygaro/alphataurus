@@ -10,7 +10,7 @@ func (state *VmState) movRR(lastByte byte, param []byte) error {
 	src |= (param[7] & 0xf0) >> 4
 	dest |= (param[7] & 0x0f)
 	dataSz := (lastByte & 0b0000_0011)
-	if !IsMovRRAllowed(src) {
+	if !IsMovFromRAllowed(src) {
 		return errors.DisallowedSrcRegister(int(src), state.byteCodePos)
 	} else if !IsMovRRAllowed(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
@@ -154,7 +154,7 @@ func (state *VmState) movRD(lastByte byte, param []byte) error {
 	source := lastByte & 0b0000_1111
 	dataSz := lastByte & 0b0011_0000
 	dest := p
-	if !IsMovRRAllowed(byte(source)) {
+	if !IsMovFromRAllowed(byte(source)) {
 		return errors.DisallowedSrcRegister(int(source), state.byteCodePos)
 	}
 	if inStack, e := state.isWithinStack(dest); e != nil {
@@ -200,7 +200,7 @@ func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
 func (state *VmState) movRDO1(byte3, byte4 byte, param []byte) error {
 	dParams := state.getDerefParamsO1(byte3, byte4)
 	source := dParams.dest
-	if !IsMovRRAllowed(source) {
+	if !IsMovFromRAllowed(source) {
 		return errors.DisallowedSrcRegister(int(source), state.byteCodePos)
 	}
 	if !IsMovRRAllowed(dParams.reg1) {
@@ -275,7 +275,7 @@ func (state *VmState) movRDO2(byte2, byte3, byte4 byte, param []byte) error {
 	if err := state.isMovXRO2Allowed(dParams); err != nil {
 		return err
 	}
-	if !IsMovRRAllowed(source) {
+	if !IsMovFromRAllowed(source) {
 		return errors.DisallowedSrcRegister(int(source), state.byteCodePos)
 	}
 	p := binary.BigEndian.Uint64(param)

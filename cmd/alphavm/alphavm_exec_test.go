@@ -4,6 +4,7 @@ import (
 	// "encoding/binary"
 	"fmt"
 	"math/rand"
+	"strings"
 
 	// "regexp"
 	// "strings"
@@ -52,5 +53,26 @@ func TestExitR1(t *testing.T) {
 	} else if s.GetExitCode() != exitV {
 		t.Error(compilationOfErr(lines))
 		t.Errorf("Expected exit code %v, got %v", exitV, s.GetExitCode())
+	}
+}
+func TestNop1(t *testing.T) {
+	lines := []string{
+		"section '.code'",
+		"@entry",
+		"	mov r0, ip",
+	}
+	for range rand.Int() % 15 {
+		lines = append(lines, "    nop")
+	}
+	lines = append(lines, "    mov r1, ip")
+	lines = append(lines, "    sub SIGNED r0, r1")
+	lines = append(lines, "    exit r0")
+	asm := strings.Join(lines, "\n")
+	if s, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exit := s.GetExitCode(); int64(exit) > 0 {
+		t.Error(compilationOfErr(asm))
+		t.Errorf("Expected negative exit code got %v", exit)
 	}
 }
