@@ -102,6 +102,15 @@ func (t *SymbolTable) GetByName(name string) (*SymbolData, int, bool) {
 	}
 	return nil, -1, false
 }
+func (t *SymbolTable) GetName(idx int) (string, bool) {
+	for n, i := range t.ByName {
+		if i == idx {
+			return n, true
+		}
+	}
+	return "", false
+
+}
 
 const (
 	RELOC_TINVALID = 0
@@ -305,9 +314,8 @@ func writeSymbolDef(sname string, sym SymbolData) []byte {
 }
 func WriteSymbols(st *SymbolTable) ([]byte, error) {
 	syms := make([]byte, 0, 64)
-
-	for sname, idx := range (*st).ByName {
-		sym := (*st).InOrder[idx]
+	for idx, sym := range (*st).InOrder {
+		sname, _ := st.GetName(idx)
 		syms = append(syms, writeSymbolDef(sname, *sym)...)
 	}
 

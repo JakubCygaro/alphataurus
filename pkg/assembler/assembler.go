@@ -631,12 +631,13 @@ func (a *Assembler) declareLabel(data InstLabData) error {
 			return errors.ImportedSymbolDeclared(data.Label, a.line, a.col)
 		}
 	} else {
-		a.symbols.AddSymbol(vm.SymbolData{
+		lab := vm.SymbolData{
 			Ty:   vm.SYM_TFUNC,
 			Vis:  vm.SYM_VPRIVATE,
 			Loc:  posAsInstAddr,
 			Name: data.Label,
-		})
+		}
+		a.symbols.AddSymbol(lab)
 	}
 	return nil
 }

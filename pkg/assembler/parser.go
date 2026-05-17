@@ -230,9 +230,6 @@ func (p *Parser) ParseNext() (bool, error) {
 			break
 		}
 	}
-	if err != nil {
-		return false, err
-	}
 	p.currentInst.Col, p.currentInst.Line = start.Col, start.Line
 	switch start.Ty {
 	case TOKEN_TIDENT:

@@ -12,22 +12,29 @@ import (
 )
 
 const assembly2 = `
-export 'atoi'
+export 'add'
 section '.code'
-atoi:
+add:
 	push bp
 	mov bp, sp
-	sub r1b, 0x30
+	add r1b, r2b
 	mov r0b, r1b
 	pop bp
 	ret
 `
 const assembly = `
+import 'add'
 section '.code'
 @entry
-	mov r0, 1
-	not r0
-	exit 0
+_start:
+	mov bp, sp
+	add sp, 2
+	mov BYTE [bp+1], 17
+	mov BYTE [bp+2], 193
+	mov r1b, [bp+1]
+	mov r2b, [bp+2]
+	call add
+	exit r0b
 `
 
 func main() {
@@ -56,7 +63,7 @@ func main() {
 		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
-	mach := vm.CreateVmState(6 * 8)
+	mach := vm.CreateVmState(24)
 	err = mach.Execute(elf)
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
@@ -83,5 +90,5 @@ func main() {
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
-	os.Exit(int(mach.GetExitCode()))
+	// os.Exit(int(mach.GetExitCode()))
 }
