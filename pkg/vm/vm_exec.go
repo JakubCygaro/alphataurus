@@ -49,6 +49,7 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 }
 func (state *VmState) fetch() (instAddr uint64, opCodeBytes, param []byte) {
 	instAddr = state.VirtToRealIp(state.GetIp())
+	fmt.Printf("instAddr: %v\n", instAddr / INSTRUCTION_SIZE)
 	state.byteCodePos = state.GetIp()
 	opCodeBytes = state.bytecode[instAddr : instAddr+OPCODE_SIZE]
 	param = state.bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
@@ -56,7 +57,8 @@ func (state *VmState) fetch() (instAddr uint64, opCodeBytes, param []byte) {
 }
 func (state *VmState) decode(opCodeBytes []byte) error {
 	opcode, err := state.GetOpcode(opCodeBytes)
-	state.currentOpcode = uint32(opcode)
+	state.currentOpcode = opcode
+	fmt.Printf("op: [%s]\n", state.currentOpcode.String())
 	return err
 }
 func (state *VmState) exec(opCodeBytes, param []byte) error {

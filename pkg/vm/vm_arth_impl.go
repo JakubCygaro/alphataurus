@@ -33,7 +33,7 @@ func (state *VmState) arthRR(opType int, param []byte) error {
 	}
 	srcV := binary.BigEndian.Uint64(state.regs.r[data.src][:])
 	destV := binary.BigEndian.Uint64(state.regs.r[data.dest][:])
-	switch opType {
+	switch OpCodeVal(opType) {
 	case OP_ADDRR:
 		err = state.addValues(srcV, destV,
 			data.ty, data.r2sz,
@@ -65,7 +65,7 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 	}
 	immV := binary.BigEndian.Uint64(param)
 	regV := state.GetRegVAsU64(int(data.reg), data.r1sz)
-	switch opType {
+	switch OpCodeVal(opType) {
 	case OP_ADDIR:
 		err = state.addValues(regV, immV,
 			data.ty, data.r1sz,

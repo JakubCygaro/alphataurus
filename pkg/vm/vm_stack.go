@@ -12,7 +12,7 @@ func (state *VmState) push(opTy int, lastByte byte, param []byte) error {
 	// 2 bits for the data size
 	dataSz := (0b00000011 & lastByte)
 	byteSpan := DataSizeToByteCount(dataSz)
-	switch opTy {
+	switch OpCodeVal(opTy) {
 	case OP_PUSHI:
 		val = param[8-byteSpan:]
 	case OP_PUSHR:

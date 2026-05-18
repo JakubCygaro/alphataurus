@@ -10,35 +10,41 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
-
-const assembly2 = `
-export 'add'
+const assembly3 = `
+export 'bar'
 section '.code'
-add:
+bar:
 	push bp
 	mov bp, sp
-	add r1b, r2b
-	mov r0b, r1b
+	mov r0b, 184
+	pop bp
+	ret
+`
+
+const assembly2 = `
+export 'foo'
+import 'bar'
+section '.code'
+foo:
+	push bp
+	mov bp, sp
+	call bar
+	mov r2, 14
 	pop bp
 	ret
 `
 const assembly = `
-import 'add'
+import 'foo'
 section '.code'
 @entry
 _start:
-	mov bp, sp
-	add sp, 2
-	mov BYTE [bp+1], 17
-	mov BYTE [bp+2], 193
-	mov r1b, [bp+1]
-	mov r2b, [bp+2]
-	call add
+	call foo
+	mov r1, 69
 	exit r0b
 `
 
 func main() {
-	sources := []string{assembly, assembly2}
+	sources := []string{assembly, assembly2, assembly3}
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(s)))
@@ -63,7 +69,7 @@ func main() {
 		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
-	mach := vm.CreateVmState(24)
+	mach := vm.CreateVmState(64)
 	err = mach.Execute(elf)
 	if err != nil {
 		os.Stderr.WriteString(err.Error())
@@ -90,5 +96,5 @@ func main() {
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
-	// os.Exit(int(mach.GetExitCode()))
+	os.Exit(int(mach.GetExitCode()))
 }

@@ -227,7 +227,7 @@ func (state *VmState) movXDO1GetAddr(r1V, off int64, opTy byte) (int, error) {
 	case OP_TDIV:
 		addr = uint64(r1V / off)
 	default:
-		return -1, errors.BadOpcode(state.currentOpcode, state.byteCodePos)
+		return -1, errors.BadOpcode(uint32(state.currentOpcode), state.byteCodePos)
 	}
 	if inStack, e := state.isWithinStack(addr); e != nil {
 		return inStack, e
@@ -298,7 +298,7 @@ func (state *VmState) movXDO2GetAddr(r1V, r2V, off int64, opTy byte) (int, error
 	case OP_TSUB:
 		addr = uint64(r1V + r2V - off)
 	default:
-		return -1, errors.BadOpcode(state.currentOpcode, state.byteCodePos)
+		return -1, errors.BadOpcode(uint32(state.currentOpcode), state.byteCodePos)
 	}
 	if inStack, e := state.isWithinStack(addr); e != nil {
 		return inStack, e

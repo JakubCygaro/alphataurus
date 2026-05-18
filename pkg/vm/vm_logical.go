@@ -13,7 +13,7 @@ func (state *VmState) logIR(opType int, lastByte byte, param []byte) error {
 	fVal, sVal :=
 		state.GetRegVAsU64(int(first), dataSize),
 		binary.BigEndian.Uint64(param)
-	fVal = state.logImpl(fVal, sVal, opType)
+	fVal = state.logImpl(fVal, sVal, OpCodeVal(opType))
 	state.putValInRegWithSize(int(first), dataSize, fVal)
 	return nil
 }
@@ -28,11 +28,11 @@ func (state *VmState) logRR(opType int, param []byte) error {
 	fVal, sVal :=
 		state.GetRegVAsU64(int(data.src), data.r1sz),
 		state.GetRegVAsU64(int(data.dest), data.r2sz)
-	fVal = state.logImpl(fVal, sVal, opType)
+	fVal = state.logImpl(fVal, sVal, OpCodeVal(opType))
 	state.putValInRegWithSize(int(data.src), data.r1sz, fVal)
 	return nil
 }
-func (state *VmState) logImpl(a, b uint64, opType int) uint64 {
+func (state *VmState) logImpl(a, b uint64, opType OpCodeVal) uint64 {
 	switch {
 	case opType == OP_ORRR || opType == OP_ORIR:
 		a = a | b

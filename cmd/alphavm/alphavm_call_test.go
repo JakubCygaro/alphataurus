@@ -76,3 +76,45 @@ func TestCall2(t *testing.T) {
 		t.Error(expectedExitCode(0, exit))
 	}
 }
+func TestCall3(t *testing.T) {
+	a := byte(rand.Int())
+	asm := `
+	import 'foo'
+	section '.code'
+	@entry
+	_start:
+		call foo
+		exit r0b
+	`
+	asm2 := `
+	export 'foo'
+	import 'bar'
+	section '.code'
+	foo:
+		push bp
+		mov bp, sp
+		call bar
+		pop bp
+		ret
+	`
+	asm3 := fmt.Sprintf(`
+	export 'bar'
+	section '.code'
+	bar:
+		push bp
+		mov bp, sp
+		mov r0b, %v
+		pop bp
+		ret
+	`, a)
+	if elf, err := assembleAndLink(asm, asm2, asm3); err != nil {
+		t.Error(compilationOfErr(asm, asm2, asm3))
+		t.Error(err)
+	} else if mach, err := executeStackSize(elf, 32); err != nil {
+		t.Error(compilationOfErr(asm, asm2, asm3))
+		t.Error(err)
+	} else if exit := mach.GetExitCode(); exit != uint64(a) {
+		t.Error(compilationOfErr(asm, asm2, asm3))
+		t.Error(expectedExitCode(uint64(a), exit))
+	}
+}

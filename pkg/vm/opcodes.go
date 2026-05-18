@@ -20,9 +20,9 @@ type OpMapVal struct {
 	ty int8
 	// handle HandleFunc
 	op     OpCodeVal
-	nested OpCodeMap
+	nested opCodeMap
 }
-type OpCodeMap map[int8]OpMapVal
+type opCodeMap map[int8]OpMapVal
 
 func handle(op OpCodeVal) OpMapVal {
 	return OpMapVal{
@@ -30,7 +30,7 @@ func handle(op OpCodeVal) OpMapVal {
 		op: op,
 	}
 }
-func nested(nest OpCodeMap) OpMapVal {
+func nested(nest opCodeMap) OpMapVal {
 	return OpMapVal{
 		ty:     NEST,
 		nested: nest,
@@ -39,7 +39,7 @@ func nested(nest OpCodeMap) OpMapVal {
 
 var (
 	//arth
-	p002X = nested(OpCodeMap{
+	p002X = nested(opCodeMap{
 		0:  handle(OP_ADDRR),
 		1:  handle(OP_INCR),
 		2:  handle(OP_SUBRR),
@@ -61,7 +61,7 @@ var (
 	})
 	//jumps
 	//direct jumps
-	p030X = nested(OpCodeMap{
+	p030X = nested(opCodeMap{
 		0: handle(OP_JMP),
 		1: handle(OP_JMPE),
 		2: handle(OP_JMPNE),
@@ -72,7 +72,7 @@ var (
 		7: handle(OP_JMPL),
 		8: handle(OP_JMPLE),
 	})
-	p03XX = nested(OpCodeMap{
+	p03XX = nested(opCodeMap{
 		0: p030X,
 		//ip relative jumps
 		1:  handle(OP_JMPIP),
@@ -86,7 +86,7 @@ var (
 		9:  handle(OP_JMPLEIP),
 		10: handle(OP_CALLIP),
 	})
-	p00XX = nested(OpCodeMap{
+	p00XX = nested(opCodeMap{
 		0:  handle(OP_MOVRR),
 		1:  handle(OP_MOVIR),
 		2:  p002X,
@@ -101,7 +101,7 @@ var (
 		12: handle(OP_RSHIR),
 		13: handle(OP_CMPIR),
 	})
-	p01XX = nested(OpCodeMap{
+	p01XX = nested(opCodeMap{
 		// stack manipulation, leave a byte for data size
 		0: handle(OP_PUSHR),
 		1: handle(OP_PUSHI),
@@ -110,18 +110,18 @@ var (
 		3: handle(OP_MOVID),
 		4: handle(OP_MOVRD),
 	})
-	p1XXX = nested(OpCodeMap{
+	p1XXX = nested(opCodeMap{
 		1: handle(OP_MOVDRO1),
 		3: handle(OP_MOVRDO1),
 		4: handle(OP_MOVIDO1_NO),
 		5: handle(OP_MOVIDO1),
 	})
-	p0XXX = nested(OpCodeMap{
+	p0XXX = nested(opCodeMap{
 		0: p00XX,
 		1: p01XX,
 		3: p03XX,
 	})
-	oPCODE_MAP = OpCodeMap{
+	oPCODE_MAP = opCodeMap{
 		0: p0XXX,
 		1: p1XXX,
 		2: handle(OP_MOVIDO2_NO),
@@ -156,21 +156,22 @@ const (
 	INSTRUCTION_SIZE = OPCODE_SIZE + ARGUMENT_SIZE // size of a single instruction in bytes
 )
 
+//go:generate stringer -type=OpCodeVal
 const (
-	OP_MOVIR   = 0    // move imediate value to register
-	OP_MOVRR   = iota // move register to register
-	OP_MOVDRI         // move dereference to register, [<address>]
-	OP_MOVDRO1        // move dereference to register, like [rx + <signed offset>]
-	OP_MOVDRO2        // move dereference to register, like [(rx + rx) +/- <signed offset>]
-	OP_MOVID          // move immediate value to deref
-	OP_MOVRD          // move register value into deref
-	OP_MOVRDO1        // move register value into deref with one offset register
-	OP_MOVRDO2        // move register value into deref with two offset registers
-	OP_MOVIDO1_NO        // move immediate value to deref, offset = 0
-	OP_MOVIDO1        // move immediate value to deref with one offset register
-	OP_MOVIDO2_NO        // move immediate value to deref with two offset registers, offset = 0
-	OP_MOVIDO2        // move immediate value to deref with two offset registers
-	OP_ADDRR          // add register to register and store into second register, singedness and registers passed in parameter
+	OP_MOVIR      OpCodeVal = iota // move imediate value to register
+	OP_MOVRR                       // move register to register
+	OP_MOVDRI                      // move dereference to register, [<address>]
+	OP_MOVDRO1                     // move dereference to register, like [rx + <signed offset>]
+	OP_MOVDRO2                     // move dereference to register, like [(rx + rx) +/- <signed offset>]
+	OP_MOVID                       // move immediate value to deref
+	OP_MOVRD                       // move register value into deref
+	OP_MOVRDO1                     // move register value into deref with one offset register
+	OP_MOVRDO2                     // move register value into deref with two offset registers
+	OP_MOVIDO1_NO                  // move immediate value to deref, offset = 0
+	OP_MOVIDO1                     // move immediate value to deref with one offset register
+	OP_MOVIDO2_NO                  // move immediate value to deref with two offset registers, offset = 0
+	OP_MOVIDO2                     // move immediate value to deref with two offset registers
+	OP_ADDRR                       // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR
 	OP_SUBIR
@@ -237,7 +238,7 @@ const (
 	OP_TDIV
 )
 
-func recurseIntoOpCodeMap(layer int, opcodes *OpCodeMap, bytes []byte, ret *map[uint32]OpCodeVal) {
+func recurseIntoOpCodeMap(layer int, opcodes *opCodeMap, bytes []byte, ret *OpCodeMap) {
 	current := opcodes
 	for k, v := range *current {
 		bytes[layer] = byte(k)
@@ -249,9 +250,14 @@ func recurseIntoOpCodeMap(layer int, opcodes *OpCodeMap, bytes []byte, ret *map[
 	}
 }
 
-func GenerateOpcodeMap() map[uint32]OpCodeVal {
-	ret := make(map[uint32]OpCodeVal)
+type OpCodeMap map[uint32]OpCodeVal
+
+func GenerateOpcodeMap() OpCodeMap {
+	ret := make(OpCodeMap)
 	bytes := make([]byte, 4)
 	recurseIntoOpCodeMap(3, &oPCODE_MAP, bytes, &ret)
 	return ret
+}
+func (m *OpCodeMap) GetBytes(op OpCodeVal) uint32 {
+	return uint32((*m)[uint32(op)])
 }

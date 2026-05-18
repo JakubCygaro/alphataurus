@@ -1,8 +1,11 @@
 module github.com/JakubCygaro/alphataurus
 
-go 1.22.2
+go 1.25.0
 
 require (
 	github.com/alexflint/go-arg v1.6.1 // indirect
 	github.com/alexflint/go-scalar v1.2.0 // indirect
+	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
+	golang.org/x/tools v0.45.0 // indirect
 )

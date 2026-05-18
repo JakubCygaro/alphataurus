@@ -14,7 +14,7 @@ type VmState struct {
 	stackSegBase  int
 	byteCodePos   uint64
 	exeSegBase    uint64
-	currentOpcode uint32
+	currentOpcode OpCodeVal
 	exitCode      uint64
 	exit          bool
 }
