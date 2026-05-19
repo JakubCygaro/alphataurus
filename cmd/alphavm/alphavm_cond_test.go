@@ -86,7 +86,7 @@ func TestJmpE1(t *testing.T) {
 		vm.R5_IDX: vm.RegisterWithValue(1337),
 	}); err != nil {
 		t.Error(compilationOfErr(asm))
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestJmpG2(t *testing.T) {

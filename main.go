@@ -10,6 +10,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
+
 const assembly3 = `
 export 'bar'
 section '.code'
@@ -70,6 +71,9 @@ func main() {
 		os.Exit(-1)
 	}
 	mach := vm.CreateVmState(64)
+	mach.SetOpCodeTrace(func(op vm.OpCodeVal) {
+		fmt.Printf("[%s]\n", op.String())
+	})
 	err = mach.Execute(elf)
 	if err != nil {
 		os.Stderr.WriteString(err.Error())

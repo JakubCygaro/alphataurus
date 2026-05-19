@@ -123,7 +123,7 @@ func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 			fmt.Sprintf("Compilation of %s", asm),
 			msg,
 		}, "\n")
-		return fmt.Errorf(msg)
+		return fmt.Errorf("%s", msg)
 	}
 	return nil
 }

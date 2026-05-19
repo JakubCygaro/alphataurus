@@ -19,7 +19,7 @@ func TestExpressions1(t *testing.T) {
 			switch op {
 			case vm.OP_TADD:
 				opCh = '+'
-				res += arg
+			res += arg
 			case vm.OP_TSUB:
 				opCh = '-'
 				res -= arg
@@ -51,7 +51,7 @@ func TestExpressions1(t *testing.T) {
 		if err := expectGpRegisters(asm, &mach, ExpMap{
 			rA: vm.RegisterWithValue(uint64(endVal)),
 		}); err != nil {
-			t.Errorf(err.Error())
+			t.Error(err.Error())
 			break
 		}
 	}
@@ -102,7 +102,7 @@ func TestExpressions2(t *testing.T) {
 		if err := expectGpRegisters(asm, &mach, ExpMap{
 			rA: vm.RegisterWithValue(uint64(math.Float64bits(endVal))),
 		}); err != nil {
-			t.Errorf(err.Error())
+			t.Error(err.Error())
 			break
 		}
 	}

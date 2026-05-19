@@ -17,6 +17,11 @@ type VmState struct {
 	currentOpcode OpCodeVal
 	exitCode      uint64
 	exit          bool
+	dbgAd dbgAdapters
+}
+type OpCodeTraceFn func(OpCodeVal)
+type dbgAdapters struct {
+	opcodeTrace OpCodeTraceFn
 }
 type Flags struct {
 	Cf, Pf, Zf, Sf, Of bool
@@ -28,8 +33,13 @@ func CreateVmState(stackSize uint64) VmState {
 		},
 		flags: Flags{},
 		stack: make(VmStack, stackSize),
+		dbgAd: dbgAdapters{},
 	}
 	return state
+}
+
+func (vm *VmState) SetOpCodeTrace(fn OpCodeTraceFn) {
+	vm.dbgAd.opcodeTrace = fn
 }
 func (vm *VmState) ClearState() {
 	vm.regs.r = [11]Register{}

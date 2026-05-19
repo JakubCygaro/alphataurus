@@ -30,7 +30,7 @@ func TestMov1(t *testing.T) {
 		vm.R2_IDX: vm.RegisterWithValue(math.Float64bits(r2_v)),
 		vm.R3_IDX: vm.RegisterWithValue(math.Float64bits(r3_v)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestMov2(t *testing.T) {
@@ -53,7 +53,7 @@ func TestMov2(t *testing.T) {
 		vm.R2_IDX: vm.RegisterWithValueSized(uint64(r2_v), vm.SZ_32),
 		vm.R3_IDX: vm.RegisterWithValue(uint64(r3_v)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestMov3(t *testing.T) {

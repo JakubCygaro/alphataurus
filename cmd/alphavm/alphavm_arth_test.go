@@ -30,7 +30,7 @@ func TestAddIR1(t *testing.T) {
 		vm.R2_IDX: vm.RegisterWithValue(uint64(r2_v)),
 		vm.R5_IDX: vm.RegisterWithValue(math.Float64bits(r5_v)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestAddIR2(t *testing.T) {
@@ -51,7 +51,7 @@ func TestAddIR2(t *testing.T) {
 	if err = expectGpRegisters(asm, &mach, ExpMap{
 		r: vm.RegisterWithValue(uint64(reg_v + reg_add)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestAddIR3(t *testing.T) {
@@ -72,7 +72,7 @@ func TestAddIR3(t *testing.T) {
 	if err := expectGpRegisters(asm, &mach, ExpMap{
 		r: vm.RegisterWithValue(uint64(reg_v + reg_add)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestAddIR4(t *testing.T) {
@@ -93,7 +93,7 @@ func TestAddIR4(t *testing.T) {
 	if err := expectGpRegisters(asm, &mach, ExpMap{
 		r: vm.RegisterWithValue(math.Float64bits(reg_v + reg_add)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestSubIR1(t *testing.T) {
@@ -114,7 +114,7 @@ func TestSubIR1(t *testing.T) {
 	if err := expectGpRegisters(asm, &mach, ExpMap{
 		r: vm.RegisterWithValue(uint64(reg_v - reg_sub)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestSubIR2(t *testing.T) {
@@ -135,7 +135,7 @@ func TestSubIR2(t *testing.T) {
 	if err := expectGpRegisters(asm, &mach, ExpMap{
 		r: vm.RegisterWithValue(uint64(reg_v - reg_sub)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestSubIR3(t *testing.T) {
@@ -156,7 +156,7 @@ func TestSubIR3(t *testing.T) {
 	if err := expectGpRegisters(asm, &mach, ExpMap{
 		r: vm.RegisterWithValue(math.Float64bits(reg_v - reg_sub)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestAddRR1(t *testing.T) {
@@ -179,7 +179,7 @@ func TestAddRR1(t *testing.T) {
 		rA: vm.RegisterWithValue(rAV + rBV),
 		rB: vm.RegisterWithValue(rBV),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestAddRR2(t *testing.T) {
@@ -202,7 +202,7 @@ func TestAddRR2(t *testing.T) {
 		rA: vm.RegisterWithValue(uint64(rAV + rBV)),
 		rB: vm.RegisterWithValue(uint64(rBV)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestAddRR3(t *testing.T) {
@@ -225,7 +225,7 @@ func TestAddRR3(t *testing.T) {
 		rA: vm.RegisterWithValue(math.Float64bits(rAV + rBV)),
 		rB: vm.RegisterWithValue(math.Float64bits(rBV)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestSubRR1(t *testing.T) {
@@ -248,7 +248,7 @@ func TestSubRR1(t *testing.T) {
 		rA: vm.RegisterWithValue(uint64(rAV - rBV)),
 		rB: vm.RegisterWithValue(uint64(rBV)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestSubRR2(t *testing.T) {
@@ -271,7 +271,7 @@ func TestSubRR2(t *testing.T) {
 		rA: vm.RegisterWithValue(uint64(rAV - rBV)),
 		rB: vm.RegisterWithValue(uint64(rBV)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestSubRR3(t *testing.T) {
@@ -294,7 +294,7 @@ func TestSubRR3(t *testing.T) {
 		rA: vm.RegisterWithValue(math.Float64bits(rAV - rBV)),
 		rB: vm.RegisterWithValue(math.Float64bits(rBV)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 }
 func TestDivRR1(t *testing.T) {
@@ -317,7 +317,7 @@ func TestDivRR1(t *testing.T) {
 		vm.R2_IDX: vm.RegisterWithValue(rAV / rBV),
 		vm.R3_IDX: vm.RegisterWithValue(rAV % rBV),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err)
 	}
 }
 func TestDivRR2(t *testing.T) {
@@ -340,7 +340,7 @@ func TestDivRR2(t *testing.T) {
 		vm.R2_IDX: vm.RegisterWithValue(uint64(rAV / rBV)),
 		vm.R3_IDX: vm.RegisterWithValue(uint64(rAV % rBV)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err)
 	}
 }
 func TestDivRR3(t *testing.T) {
@@ -363,7 +363,7 @@ func TestDivRR3(t *testing.T) {
 		vm.R2_IDX: vm.RegisterWithValue(math.Float64bits(rAV / rBV)),
 		vm.R3_IDX: vm.RegisterWithValue(0),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err)
 	}
 }
 func TestMulRR1(t *testing.T) {
@@ -385,7 +385,7 @@ func TestMulRR1(t *testing.T) {
 		vm.R1_IDX: vm.RegisterWithValue(rBV),
 		vm.R2_IDX: vm.RegisterWithValue(rAV * rBV),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err)
 	}
 }
 func TestMulRR2(t *testing.T) {
@@ -407,7 +407,7 @@ func TestMulRR2(t *testing.T) {
 		vm.R1_IDX: vm.RegisterWithValue(uint64(rBV)),
 		vm.R2_IDX: vm.RegisterWithValue(uint64(rAV * rBV)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err)
 	}
 }
 func TestMulRR3(t *testing.T) {
@@ -429,7 +429,7 @@ func TestMulRR3(t *testing.T) {
 		vm.R1_IDX: vm.RegisterWithValue(math.Float64bits(rBV)),
 		vm.R2_IDX: vm.RegisterWithValue(math.Float64bits(rAV * rBV)),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err)
 	}
 }
 func TestIncAndDec1(t *testing.T) {
@@ -455,7 +455,7 @@ func TestIncAndDec1(t *testing.T) {
 	if err := expectGpRegisters(asm, &mach, ExpMap{
 		rA: vm.RegisterWithValue(rAV + incrT - decrT),
 	}); err != nil {
-		t.Errorf(err.Error())
+		t.Error(err.Error())
 	}
 
 }

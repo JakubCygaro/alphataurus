@@ -138,7 +138,7 @@ func (l *Linker) collect(b Bytes, meta inputMetadata) error {
 }
 func (l *Linker) link() (vm.AlphaELFFile, error) {
 	ret := vm.AlphaELFFile{}
-	data := make([]byte, 0)
+	collectedCode := make([]byte, 0)
 	codeBaseOff := uint64(0)
 	for idx, obj := range l.objectFiles {
 		if err := l.readGlobalSymbols(objFileIdx(idx),
@@ -146,9 +146,9 @@ func (l *Linker) link() (vm.AlphaELFFile, error) {
 
 			return ret, err
 		}
-		codeBaseOff += uint64(len(data))
-		data = append(data, obj.Loaded.Code...)
-		ret.CodeSize += uint64(len(obj.Loaded.Code))
+		collectedCode = append(collectedCode, obj.Loaded.Code...)
+		objCodeSize := uint64(len(obj.Loaded.Code))
+		ret.CodeSize += objCodeSize
 		l.relocations[objFileIdx(idx)] = fileReloc{
 			CodeSecOff: codeBaseOff,
 		}
@@ -158,6 +158,7 @@ func (l *Linker) link() (vm.AlphaELFFile, error) {
 		} else if obj.Loaded.Header.HasEntry {
 			return ret, fmt.Errorf("Multiple entry points defined")
 		}
+		codeBaseOff += objCodeSize
 	}
 
 	ret.Version = 0x00000001
@@ -172,25 +173,25 @@ func (l *Linker) link() (vm.AlphaELFFile, error) {
 			// if this is an import symbol
 			if symInFile.Loc == 0 {
 				// find the symbol
-				f, _, s, ok := l.globals.GetSymbol(symInFile.Name)
+				f, _, symInGlobals, ok := l.globals.GetSymbol(symInFile.Name)
 				if !ok {
 					return ret, fmt.Errorf("Unresolved symbol '%s'", symInFile.Name)
 				}
 				relocated := l.relocations[objFileIdx(f)]
-				realRef = +s.Loc + relocated.CodeSecOff
+				realRef = +symInGlobals.Loc + relocated.CodeSecOff
 			} else {
 				realRef = +symInFile.Loc + thisObjRels.CodeSecOff
 			}
 			// now apply the patch
 			switch rel.PatchSize {
 			case 8:
-				binary.BigEndian.PutUint64(data[realLoc:], realRef)
+				binary.BigEndian.PutUint64(collectedCode[realLoc:], realRef)
 			case 4:
-				binary.BigEndian.PutUint32(data[realLoc:], uint32(realRef))
+				binary.BigEndian.PutUint32(collectedCode[realLoc:], uint32(realRef))
 			case 2:
-				binary.BigEndian.PutUint16(data[realLoc:], uint16(realRef))
+				binary.BigEndian.PutUint16(collectedCode[realLoc:], uint16(realRef))
 			case 1:
-				data[realLoc] = byte(realRef)
+				collectedCode[realLoc] = byte(realRef)
 			default:
 				return ret, fmt.Errorf("Bad patch size of %d", rel.PatchSize)
 			}
@@ -198,8 +199,8 @@ func (l *Linker) link() (vm.AlphaELFFile, error) {
 	}
 
 	ret.CodeStart = 0
-	ret.CodeSize = uint64(len(data))
-	ret.Data = data
+	ret.CodeSize = uint64(len(collectedCode))
+	ret.Data = collectedCode
 	// ret.CodeSize = l.objectFiles[0].Loaded.Header.CodeSize
 	// ret.StaticDataStart = l.objectFiles[0].Loaded.Header.StaticDataStart
 	// ret.StaticDataSize = l.objectFiles[0].Loaded.Header.StaticDataSize
