@@ -2,8 +2,8 @@ package assembler
 
 import (
 	"encoding/binary"
-	"fmt"
 
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -29,7 +29,7 @@ func (a *Assembler) Assemble() ([]byte, error) {
 			}
 			a.instCount += instCount
 		default:
-			return nil, fmt.Errorf("Disallowed top level instruction")
+			return nil, errors.DisalloweTopLevelInstruction(a.line, a.col)
 		}
 	}
 	if err != nil {

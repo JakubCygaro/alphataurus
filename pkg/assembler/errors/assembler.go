@@ -76,3 +76,13 @@ func MultipleSymbolDefinitions(name string, line, col uint64) AssemblerError {
 	}
 	return err
 }
+func DisalloweTopLevelInstruction(line, col uint64) AssemblerError {
+	err := AssemblerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return "Disallowed top level instruction"
+		},
+	}
+	return err
+}

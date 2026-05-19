@@ -140,3 +140,23 @@ func TestJmpG1(t *testing.T) {
 		t.Error(err)
 	}
 }
+func TestClr1(t *testing.T) {
+	asm := `
+	section '.code'
+	@entry
+		mov r0, 10
+		cmp r0, 11
+		clr
+		jl fail
+		exit 0
+	fail:
+		exit 1
+	`
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exit := mach.GetExitCode(); exit != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exit))
+	}
+}

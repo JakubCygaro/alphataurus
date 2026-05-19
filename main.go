@@ -35,13 +35,15 @@ foo:
 	ret
 `
 const assembly = `
-import 'foo'
 section '.code'
 @entry
-_start:
-	call foo
-	mov r1, 69
-	exit r0b
+	mov r0, 10
+	cmp r0, 11
+	clr
+	jl fail
+	exit 0
+fail:
+	exit 1
 `
 
 func main() {

@@ -183,7 +183,8 @@ func (a *Assembler) EmitBytecode() (int, error) {
 				_, ent := a.currentCodePos()
 				a.entry = ent
 			}
-
+		case INST_TCLR:
+			err = a.emitClr(&(a.bytecode))
 		default:
 			a.lastInst = inst
 			return instCount, err
@@ -758,6 +759,12 @@ func (a *Assembler) emitPop(data InstPushPopData, out *[]byte) error {
 func (a *Assembler) emitNop(out *[]byte) error {
 	nop := a.opCodes.GetBytes(vm.OP_NOP)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(nop))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
+	return nil
+}
+func (a *Assembler) emitClr(out *[]byte) error {
+	clr := a.opCodes.GetBytes(vm.OP_CLR)
+	*out = binary.BigEndian.AppendUint32(*out, uint32(clr))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	return nil
 }
