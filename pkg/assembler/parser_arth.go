@@ -82,7 +82,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Ty: ty,
 			Data: InstArthData{
-				Source:  op2.UnpackAsRegisterData(),
+				Src:  op2.UnpackAsRegisterData(),
 				Dest: op1.Val.(RegisterData),
 				Ty:   valTy,
 			},

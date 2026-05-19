@@ -148,6 +148,9 @@ func TestClr1(t *testing.T) {
 		cmp r0, 11
 		clr
 		jl fail
+		cmp r0, 10
+		clr
+		je fail
 		exit 0
 	fail:
 		exit 1

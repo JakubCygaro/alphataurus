@@ -118,3 +118,22 @@ func TestMov1F(t *testing.T) {
 		t.Error(assemblingErrorExpected())
 	}
 }
+func TestMov2F(t *testing.T) {
+	rA, rAsz := byte(vm.IP_IDX), byte(vm.SZ_64)
+	rB, rBsz := randomGpRegisterWord(), byte(vm.SZ_64)
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		mov %s, %s
+	`, regStr(rA, rAsz), regStr(rB, rBsz))
+	if _, err := assemble(asm); err != nil {
+		if ok, _ := regexp.MatchString("Disallowed destination register", err.Error()); !ok {
+			t.Error(compilationOfErr(asm))
+			t.Errorf("Expected disallowed destination register error, " +
+				"got a different error")
+		}
+	} else {
+		t.Error(compilationOfErr(asm))
+		t.Error(assemblingErrorExpected())
+	}
+}

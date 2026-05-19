@@ -106,7 +106,7 @@ type InstIncDecData struct {
 	Reg RegisterData
 }
 type InstArthData struct {
-	Source, Dest RegisterData
+	Src, Dest RegisterData
 	Imm          uint64
 	Ty           int
 	DataSize     byte
@@ -154,7 +154,7 @@ type InstDerefMovData struct {
 }
 type InstMovDerefData struct {
 	DataSize  byte
-	SourceReg RegisterData
+	Src RegisterData
 	Imm       uint64
 	Offset    int64
 	OReg1     RegisterData

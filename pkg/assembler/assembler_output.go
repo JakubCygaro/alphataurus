@@ -13,6 +13,8 @@ func (a *Assembler) Assemble() ([]byte, error) {
 	ok, err = a.parser.ParseNext()
 	for ; ok && err == nil; ok, err = a.parser.ParseNext() {
 		inst := a.parser.CurrentInst()
+		a.line = inst.Line
+		a.col = inst.Col
 		switch inst.Ty {
 		case INST_TEXPORT:
 			if err := a.handleExport(inst.Data.(InstImportExportData)); err != nil {
@@ -29,7 +31,7 @@ func (a *Assembler) Assemble() ([]byte, error) {
 			}
 			a.instCount += instCount
 		default:
-			return nil, errors.DisalloweTopLevelInstruction(a.line, a.col)
+			return nil, errors.DisallowedTopLevelInstruction(a.line, a.col)
 		}
 	}
 	if err != nil {

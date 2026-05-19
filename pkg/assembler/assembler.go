@@ -212,6 +212,12 @@ func (a *Assembler) emitMovIR(data InstMovData, out *[]byte) error {
 func (a *Assembler) emitMovRR(data InstMovData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest)){
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
+	if !vm.IsMovFromRAllowed(byte(data.Src)){
+		return errors.DisallowedSourceRegister(a.line, a.col)
+	}
 	destsrc := 0b00001111 & byte(data.Dest)
 	destsrc |= (0b00001111 & byte(data.Src)) << 4
 	dataSz := (0b0000_0011 & data.DataSize)
@@ -224,6 +230,9 @@ func (a *Assembler) emitMovRR(data InstMovData, out *[]byte) error {
 func (a *Assembler) emitMovDRI(data InstDerefMovData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRI)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)){
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
 	lastByte := (0b0000_1111 & byte(data.Dest.Reg))
 	lastByte |= (0b0000_0011 & data.Dest.Size) << 4
 	(*out)[len(*out)-4] = lastByte
@@ -233,6 +242,9 @@ func (a *Assembler) emitMovDRI(data InstDerefMovData, out *[]byte) error {
 func (a *Assembler) emitMovDRO1(data InstDerefMovData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRO1)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)){
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
 	lastByte := (0b0000_1111 & byte(data.Dest.Reg)) << 4
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
 	penultByte := (0b0000_0011 & byte(data.Dest.Size)) << 4
@@ -246,6 +258,9 @@ func (a *Assembler) emitMovDRO1(data InstDerefMovData, out *[]byte) error {
 func (a *Assembler) emitMovDRO2(data InstDerefMovData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRO2)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)){
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
 	byte4 := (0b0000_1111 & byte(data.Dest.Reg)) << 4
 	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
 	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
@@ -271,8 +286,11 @@ func (a *Assembler) emitMovID(data InstMovDerefData, out *[]byte) error {
 func (a *Assembler) emitMovRD(data InstMovDerefData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRD)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	lastByte := 0b0000_1111 & byte(data.SourceReg.Reg)
-	lastByte |= (0b0000_0011 & data.SourceReg.Size) << 4
+	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)){
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
+	lastByte := 0b0000_1111 & byte(data.Src.Reg)
+	lastByte |= (0b0000_0011 & data.Src.Size) << 4
 	(*out)[len(*out)-4] = lastByte
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
@@ -302,9 +320,12 @@ func (a *Assembler) emitMovIDO1(instTy int, data InstMovDerefData, out *[]byte) 
 func (a *Assembler) emitMovRDO1(data InstMovDerefData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRDO1)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	lastByte := (0b0000_1111 & byte(data.SourceReg.Reg)) << 4
+	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)){
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
+	lastByte := (0b0000_1111 & byte(data.Src.Reg)) << 4
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
-	penultByte := (0b0000_0011 & byte(data.SourceReg.Size)) << 4
+	penultByte := (0b0000_0011 & byte(data.Src.Size)) << 4
 	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
 	penultByte |= (0b0000_0011 & byte(data.OpTy))
 	(*out)[len(*out)-4] = lastByte
@@ -344,20 +365,23 @@ func (a *Assembler) emitMovIDO2(instTy int, data InstMovDerefData, out *[]byte) 
 }
 func (a *Assembler) emitMovRDO2(data InstMovDerefData, out *[]byte) error {
 	if data.OReg1.Size != data.OReg2.Size ||
-		data.SourceReg.Size < data.OReg1.Size {
+		data.Src.Size < data.OReg1.Size {
 		return errors.MismatchedRegisterSizes(
 			a.parser.currentInst.Line,
 			a.parser.currentInst.Col,
 		)
 	}
+	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)){
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
 	mov := a.opCodes.GetBytes(vm.OP_MOVRDO1)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	byte4 := (0b0000_1111 & byte(data.SourceReg.Reg)) << 4
+	byte4 := (0b0000_1111 & byte(data.Src.Reg)) << 4
 	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
 	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
 	byte3 |= (0b0000_0011 & byte(data.OpTy))
-	byte2 := (0b0000_0011 & data.SourceReg.Size)
+	byte2 := (0b0000_0011 & data.Src.Size)
 	(*out)[len(*out)-4] = byte4
 	(*out)[len(*out)-3] = byte3
 	(*out)[len(*out)-2] = byte2
@@ -367,6 +391,12 @@ func (a *Assembler) emitMovRDO2(data InstMovDerefData, out *[]byte) error {
 func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 	var opCode uint32
 	sized := false
+	if !vm.IsArthRAllowed(byte(data.Src.Reg)) {
+		return errors.DisallowedSourceRegister(a.line, a.col)
+	}
+	if !vm.IsArthRAllowed(byte(data.Dest.Reg)) {
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
 	switch op {
 	case INST_TADDRR:
 		opCode = a.opCodes.GetBytes(vm.OP_ADDRR)
@@ -386,11 +416,11 @@ func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 		tySizesByte |= (0b000_0011 & byte(data.DataSize)) << 2
 		tySizesByte |= (0b000_0011 & byte(data.DataSize)) << 4
 	} else {
-		tySizesByte |= (0b000_0011 & byte(data.Source.Size)) << 2
+		tySizesByte |= (0b000_0011 & byte(data.Src.Size)) << 2
 		tySizesByte |= (0b000_0011 & byte(data.Dest.Size)) << 4
 	}
 	param := [8]byte{
-		byte(data.Source.Reg),
+		byte(data.Src.Reg),
 		byte(data.Dest.Reg),
 		byte(tySizesByte),
 		0,
@@ -413,6 +443,12 @@ func (a *Assembler) emitLogRR(op int, data InstLogicalData, out *[]byte) error {
 			a.parser.currentInst.Line,
 			a.parser.currentInst.Col,
 		)
+	}
+	if !vm.IsArthRAllowed(byte(data.First.Reg)) {
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
+	if !vm.IsLogRAllowed(byte(data.Second.Reg)) {
+		return errors.DisallowedSourceRegister(a.line, a.col)
 	}
 	var opCode uint32
 	switch op {
@@ -444,6 +480,9 @@ func (a *Assembler) emitLogRR(op int, data InstLogicalData, out *[]byte) error {
 	return nil
 }
 func (a *Assembler) emitLogIR(ty int, data InstLogicalData, out *[]byte) error {
+	if !vm.IsArthRAllowed(byte(data.First.Reg)) {
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
 	var opCode uint32
 	switch ty {
 	case INST_TANDIR:
@@ -466,6 +505,9 @@ func (a *Assembler) emitLogIR(ty int, data InstLogicalData, out *[]byte) error {
 	return nil
 }
 func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
+	if !vm.IsArthRAllowed(byte(data.Dest.Reg)) {
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
 	var opCode uint32
 	switch ty {
 	case INST_TADDIR:
@@ -494,12 +536,18 @@ func (a *Assembler) emitNot(data InstLogicalData, out *[]byte) error {
 	return nil
 }
 func (a *Assembler) emitInc(data InstIncDecData, out *[]byte) error {
+	if !vm.IsArthRAllowed(byte(data.Reg.Reg)) {
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
 	inc := a.opCodes.GetBytes(vm.OP_INCR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(inc))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg.Reg))
 	return nil
 }
 func (a *Assembler) emitDec(data InstIncDecData, out *[]byte) error {
+	if !vm.IsArthRAllowed(byte(data.Reg.Reg)) {
+		return errors.DisallowedDestinationRegister(a.line, a.col)
+	}
 	dec := a.opCodes.GetBytes(vm.OP_DECR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(dec))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg.Reg))

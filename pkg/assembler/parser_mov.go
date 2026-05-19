@@ -182,10 +182,10 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 	mddata := InstMovDerefData{}
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
-		mddata.SourceReg = op2.UnpackAsRegisterData()
+		mddata.Src = op2.UnpackAsRegisterData()
 	case CONSTEXPR_TILIT:
 		mddata.Imm = uint64(op2.Val)
-		mddata.SourceReg = GetInvalidRegister()
+		mddata.Src = GetInvalidRegister()
 	//TODO: label support
 	default:
 		return errors.FailedToParse("mov instruction",
@@ -196,7 +196,7 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 	case DEREF_T0RO:
 		mddata.Offset = dData.Offset
 		ty := INST_TMOVRD
-		if mddata.SourceReg.IsInvalidRegister() {
+		if mddata.Src.IsInvalidRegister() {
 			ty = INST_TMOVID
 		}
 		// if this is an immediate move into a deref we need a size parameter
@@ -217,7 +217,7 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 		mddata.Offset = dData.Offset
 		mddata.OpTy = dData.OffsetOp
 		ty := INST_TMOVRDO1
-		if mddata.SourceReg.IsInvalidRegister() {
+		if mddata.Src.IsInvalidRegister() {
 			ty = INST_TMOVIDO1
 		}
 		// like mov WORD [bp+1], 100
@@ -241,7 +241,7 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 		mddata.Offset = dData.Offset
 		mddata.OpTy = dData.OffsetOp
 		ty := INST_TMOVRDO2
-		if mddata.SourceReg.IsInvalidRegister() {
+		if mddata.Src.IsInvalidRegister() {
 			ty = INST_TMOVIDO2
 		}
 		// like mov WORD [bp+r0+1], 100

@@ -31,10 +31,16 @@ func IsGpReg(b byte) bool {
 	return b <= GP_REG_MAX
 }
 func IsMovIntoRAllowed(b byte) bool {
-	return b <= SP_IDX
+	return b < IP_IDX
 }
 func IsMovFromRAllowed(b byte) bool {
 	return b <= IP_IDX
+}
+func IsArthRAllowed(a byte) bool {
+	return IsMovIntoRAllowed(a)
+}
+func IsLogRAllowed(a byte) bool {
+	return IsMovIntoRAllowed(a)
 }
 // Check if moving from or into this register is allowed
 func IsMovRRAllowed(b byte) bool {

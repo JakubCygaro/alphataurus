@@ -37,13 +37,7 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	mov r0, 10
-	cmp r0, 11
-	clr
-	jl fail
-	exit 0
-fail:
-	exit 1
+	mov ip, r4
 `
 
 func main() {
