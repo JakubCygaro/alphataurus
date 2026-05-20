@@ -103,7 +103,7 @@ func (p *Parser) parseCmp() error {
 	}
 	return nil
 }
-func (p *Parser) parseJmp(ty int) error {
+func (p *Parser) parseJmp(ty InstTy) error {
 	inst := Instruction{
 		Ty: ty,
 	}
@@ -144,7 +144,7 @@ func (p *Parser) parseJmp(ty int) error {
 	p.currentInst = inst
 	return nil
 }
-func (p *Parser) parseJmpIP(ty int, expr *Expr) error {
+func (p *Parser) parseJmpIP(ty InstTy, expr *Expr) error {
 	derefExpr := expr.Val.(DerefExpr)
 	deref, err := p.processDeref(derefExpr.Inner)
 	if err != nil {

@@ -18,7 +18,7 @@ func (p *Parser) parseLogical(logTy int) error {
 	} else {
 		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
 	}
-	if !vm.IsGpReg(byte(op1.Val.(RegisterData).Reg)){
+	if !vm.IsGpReg(byte(op1.Val.(RegisterData).Reg)) {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Disallowed first operand register",
 			p.lexer.line, p.lexer.col)
@@ -28,7 +28,7 @@ func (p *Parser) parseLogical(logTy int) error {
 		p.currentInst = Instruction{
 			Ty: INST_TNOT,
 			Data: InstLogicalData{
-				First:  op1.Val.(RegisterData),
+				First: op1.Val.(RegisterData),
 			},
 		}
 		return nil
@@ -58,12 +58,12 @@ func (p *Parser) parseLogical(logTy int) error {
 	}
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
-		if !vm.IsGpReg(byte(op2.Val)){
+		if !vm.IsGpReg(byte(op2.Val)) {
 			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Disallowed second operand register",
-			p.lexer.line, p.lexer.col)
+				"Disallowed second operand register",
+				p.lexer.line, p.lexer.col)
 		}
-		var ty int
+		var ty InstTy
 		switch logTy {
 		case LOG_TOR:
 			ty = INST_TORRR
@@ -79,12 +79,12 @@ func (p *Parser) parseLogical(logTy int) error {
 		p.currentInst = Instruction{
 			Ty: ty,
 			Data: InstLogicalData{
-				First: op1.Val.(RegisterData),
-				Second:  op2.UnpackAsRegisterData(),
+				First:  op1.Val.(RegisterData),
+				Second: op2.UnpackAsRegisterData(),
 			},
 		}
 	case CONSTEXPR_TILIT:
-		var ty int
+		var ty InstTy
 		switch logTy {
 		case LOG_TOR:
 			ty = INST_TORIR
@@ -101,7 +101,7 @@ func (p *Parser) parseLogical(logTy int) error {
 			Ty: ty,
 			Data: InstLogicalData{
 				First: op1.Val.(RegisterData),
-				Imm:  op2.Val,
+				Imm:   op2.Val,
 			},
 		}
 	default:

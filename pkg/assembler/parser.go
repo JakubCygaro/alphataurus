@@ -9,9 +9,11 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
+//go:generate stringer -type=InstTy
+type InstTy int
 
 const (
-	INST_TMOVRR = iota
+	INST_TMOVRR InstTy = iota
 	INST_TMOVIR
 	INST_TMOVDRI
 	INST_TMOVDRO0
@@ -127,7 +129,7 @@ type InstJmpData struct {
 type InstJmpIPData struct {
 	Reg    RegisterData
 	Offset int64
-	JmpTy  int
+	JmpTy  InstTy
 	OpTy   int
 }
 type InstCallIPData struct {
@@ -181,7 +183,7 @@ type InstExitData struct {
 	Reg RegisterData
 }
 type Instruction struct {
-	Ty        int
+	Ty        InstTy
 	Data      any
 	Line, Col uint64
 }

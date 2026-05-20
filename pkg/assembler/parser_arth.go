@@ -72,7 +72,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 				"Disallowed destination register",
 				p.lexer.line, p.lexer.col)
 		}
-		var ty int
+		var ty InstTy
 		switch arthTy {
 		case ARTH_TADD:
 			ty = INST_TADDRR
@@ -88,7 +88,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			},
 		}
 	case CONSTEXPR_TILIT:
-		var ty int
+		var ty InstTy
 		switch arthTy {
 		case ARTH_TADD:
 			ty = INST_TADDIR
@@ -104,7 +104,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			},
 		}
 	case CONSTEXPR_TFLIT:
-		var ty int
+		var ty InstTy
 		switch arthTy {
 		case ARTH_TADD:
 			ty = INST_TADDIR
@@ -161,7 +161,7 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 	} else {
 		size = sz
 	}
-	var ty int
+	var ty InstTy
 	switch arthTy {
 	case ARTH_TDIV:
 		ty = INST_TDIVRR

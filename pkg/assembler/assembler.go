@@ -11,7 +11,7 @@ import (
 type unresolvedJump struct {
 	Ident string
 	// what instruction is gonna get patched
-	InstTy int
+	InstTy InstTy
 }
 type unresolvedJumpMap map[int]unresolvedJump
 
@@ -77,51 +77,51 @@ func (a *Assembler) EmitBytecode() (int, error) {
 		case INST_TMOVRD:
 			err = a.emitMovRD(inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVIDO1_NO:
-			err = a.emitMovIDO1(int(inst.Ty), inst.Data.(InstMovDerefData), &(a.bytecode))
+			err = a.emitMovIDO1(inst.Ty, inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVIDO1:
-			err = a.emitMovIDO1(int(inst.Ty), inst.Data.(InstMovDerefData), &(a.bytecode))
+			err = a.emitMovIDO1(inst.Ty, inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVRDO1:
 			err = a.emitMovRDO1(inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVIDO2_NO:
-			err = a.emitMovIDO2(int(inst.Ty), inst.Data.(InstMovDerefData), &(a.bytecode))
+			err = a.emitMovIDO2(inst.Ty, inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVIDO2:
-			err = a.emitMovIDO2(int(inst.Ty), inst.Data.(InstMovDerefData), &(a.bytecode))
+			err = a.emitMovIDO2(inst.Ty, inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TMOVRDO2:
 			err = a.emitMovRDO2(inst.Data.(InstMovDerefData), &(a.bytecode))
 		case INST_TADDRR:
-			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
+			err = a.emitArthRR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TSUBRR:
-			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
+			err = a.emitArthRR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TMULRR:
-			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
+			err = a.emitArthRR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TDIVRR:
-			err = a.emitArthRR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
+			err = a.emitArthRR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TADDIR:
-			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
+			err = a.emitArthIR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TSUBIR:
-			err = a.emitArthIR(int(inst.Ty), inst.Data.(InstArthData), &(a.bytecode))
+			err = a.emitArthIR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
 		case INST_TNOT:
 			err = a.emitNot(inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TANDRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TORRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TXORRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TLSHRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TRSHRR:
-			err = a.emitLogRR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TANDIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TORIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TXORIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TLSHIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TRSHIR:
-			err = a.emitLogIR(int(inst.Ty), inst.Data.(InstLogicalData), &(a.bytecode))
+			err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
 		case INST_TINCR:
 			err = a.emitInc(inst.Data.(InstIncDecData), &(a.bytecode))
 		case INST_TDECR:
@@ -131,27 +131,27 @@ func (a *Assembler) EmitBytecode() (int, error) {
 		case INST_TCMPIR:
 			err = a.emitCmpIR(inst.Data.(InstCmpData), &(a.bytecode))
 		case INST_TJMP:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPE:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPNE:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPZ:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPNZ:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPG:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPGE:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPL:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPLE:
-			err = a.emitJmp(int(inst.Ty), inst.Data.(InstJmpData), &(a.bytecode))
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPIP0R:
-			err = a.emitJmpIP(int(inst.Ty), inst.Data.(InstJmpIPData), &(a.bytecode))
+			err = a.emitJmpIP(inst.Ty, inst.Data.(InstJmpIPData), &(a.bytecode))
 		case INST_TJMPIP1R:
-			err = a.emitJmpIP(int(inst.Ty), inst.Data.(InstJmpIPData), &(a.bytecode))
+			err = a.emitJmpIP(inst.Ty, inst.Data.(InstJmpIPData), &(a.bytecode))
 		case INST_TLABEL:
 			err = a.declareLabel(inst.Data.(InstLabData))
 			instCount--
@@ -166,9 +166,9 @@ func (a *Assembler) EmitBytecode() (int, error) {
 		case INST_TCALL:
 			err = a.emitCall(inst.Data.(InstCallData), &(a.bytecode))
 		case INST_TCALLIP0R:
-			err = a.emitCallIP(int(inst.Ty), inst.Data.(InstCallIPData), &(a.bytecode))
+			err = a.emitCallIP(inst.Ty, inst.Data.(InstCallIPData), &(a.bytecode))
 		case INST_TCALLIP1R:
-			err = a.emitCallIP(int(inst.Ty), inst.Data.(InstCallIPData), &(a.bytecode))
+			err = a.emitCallIP(inst.Ty, inst.Data.(InstCallIPData), &(a.bytecode))
 		case INST_TRET:
 			err = a.emitRet(&(a.bytecode))
 		case INST_TEXITI:
@@ -295,7 +295,7 @@ func (a *Assembler) emitMovRD(data InstMovDerefData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitMovIDO1(instTy int, data InstMovDerefData, out *[]byte) error {
+func (a *Assembler) emitMovIDO1(instTy InstTy, data InstMovDerefData, out *[]byte) error {
 	lastByte := byte(0)
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
 	penultByte := (0b0000_0011 & byte(data.DataSize)) << 4
@@ -333,7 +333,7 @@ func (a *Assembler) emitMovRDO1(data InstMovDerefData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitMovIDO2(instTy int, data InstMovDerefData, out *[]byte) error {
+func (a *Assembler) emitMovIDO2(instTy InstTy, data InstMovDerefData, out *[]byte) error {
 	if data.OReg1.Size != data.OReg2.Size {
 		return errors.MismatchedRegisterSizes(
 			a.parser.currentInst.Line,
@@ -388,7 +388,7 @@ func (a *Assembler) emitMovRDO2(data InstMovDerefData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
+func (a *Assembler) emitArthRR(op InstTy, data InstArthData, out *[]byte) error {
 	var opCode uint32
 	sized := false
 	if !vm.IsArthRAllowed(byte(data.Src.Reg)) {
@@ -437,7 +437,7 @@ func (a *Assembler) emitArthRR(op int, data InstArthData, out *[]byte) error {
 	// *out = append(*out, 0, 0, 0, 0)
 	return nil
 }
-func (a *Assembler) emitLogRR(op int, data InstLogicalData, out *[]byte) error {
+func (a *Assembler) emitLogRR(op InstTy, data InstLogicalData, out *[]byte) error {
 	if data.First.Size < data.Second.Size {
 		return errors.MismatchedRegisterSizes(
 			a.parser.currentInst.Line,
@@ -479,7 +479,7 @@ func (a *Assembler) emitLogRR(op int, data InstLogicalData, out *[]byte) error {
 	*out = append(*out, param[:]...)
 	return nil
 }
-func (a *Assembler) emitLogIR(ty int, data InstLogicalData, out *[]byte) error {
+func (a *Assembler) emitLogIR(ty InstTy, data InstLogicalData, out *[]byte) error {
 	if !vm.IsArthRAllowed(byte(data.First.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
@@ -504,7 +504,7 @@ func (a *Assembler) emitLogIR(ty int, data InstLogicalData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitArthIR(ty int, data InstArthData, out *[]byte) error {
+func (a *Assembler) emitArthIR(ty InstTy, data InstArthData, out *[]byte) error {
 	if !vm.IsArthRAllowed(byte(data.Dest.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
@@ -577,7 +577,7 @@ func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) jmpInstToOpCode(ty int) uint32 {
+func (a *Assembler) jmpInstToOpCode(ty InstTy) uint32 {
 	var opcode uint32
 	switch ty {
 	case INST_TJMP:
@@ -601,7 +601,7 @@ func (a *Assembler) jmpInstToOpCode(ty int) uint32 {
 	}
 	return opcode
 }
-func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
+func (a *Assembler) emitJmp(ty InstTy, data InstJmpData, out *[]byte) error {
 	opcode := a.jmpInstToOpCode(ty)
 	position := len(*out)
 	if addr, ok := data.Address.(uint64); ok {
@@ -618,7 +618,7 @@ func (a *Assembler) emitJmp(ty int, data InstJmpData, out *[]byte) error {
 	return nil
 }
 
-func (a *Assembler) absoluteJmpToIPJmp(instTy int) (opcode uint32) {
+func (a *Assembler) absoluteJmpToIPJmp(instTy InstTy) (opcode uint32) {
 	switch instTy {
 	case INST_TJMP:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPIP)
@@ -642,7 +642,7 @@ func (a *Assembler) absoluteJmpToIPJmp(instTy int) (opcode uint32) {
 	return opcode
 }
 
-func (a *Assembler) emitJmpIP(ty int, data InstJmpIPData, out *[]byte) error {
+func (a *Assembler) emitJmpIP(ty InstTy, data InstJmpIPData, out *[]byte) error {
 	opcode := a.absoluteJmpToIPJmp(data.JmpTy)
 	var reg byte
 	reg = byte(data.OpTy)
@@ -816,7 +816,7 @@ func (a *Assembler) emitClr(out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	return nil
 }
-func (a *Assembler) emitCallIP(ty int, data InstCallIPData, out *[]byte) error {
+func (a *Assembler) emitCallIP(ty InstTy, data InstCallIPData, out *[]byte) error {
 	call := a.opCodes.GetBytes(vm.OP_CALLIP)
 	var reg byte
 	reg = byte(data.OpTy)
