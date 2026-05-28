@@ -125,6 +125,7 @@ type InstCmpData struct {
 }
 type InstJmpData struct {
 	Address any
+	Absolute bool
 }
 type InstJmpIPData struct {
 	Reg    RegisterData

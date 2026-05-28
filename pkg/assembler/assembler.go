@@ -11,7 +11,8 @@ import (
 type unresolvedJump struct {
 	Ident string
 	// what instruction is gonna get patched
-	InstTy InstTy
+	InstTy   InstTy
+	Absolute bool
 }
 type unresolvedJumpMap map[int]unresolvedJump
 
@@ -212,10 +213,10 @@ func (a *Assembler) emitMovIR(data InstMovData, out *[]byte) error {
 func (a *Assembler) emitMovRR(data InstMovData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest)){
+	if !vm.IsMovIntoRAllowed(byte(data.Dest)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
-	if !vm.IsMovFromRAllowed(byte(data.Src)){
+	if !vm.IsMovFromRAllowed(byte(data.Src)) {
 		return errors.DisallowedSourceRegister(a.line, a.col)
 	}
 	destsrc := 0b00001111 & byte(data.Dest)
@@ -230,7 +231,7 @@ func (a *Assembler) emitMovRR(data InstMovData, out *[]byte) error {
 func (a *Assembler) emitMovDRI(data InstDerefMovData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRI)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)){
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	lastByte := (0b0000_1111 & byte(data.Dest.Reg))
@@ -242,7 +243,7 @@ func (a *Assembler) emitMovDRI(data InstDerefMovData, out *[]byte) error {
 func (a *Assembler) emitMovDRO1(data InstDerefMovData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRO1)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)){
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	lastByte := (0b0000_1111 & byte(data.Dest.Reg)) << 4
@@ -258,7 +259,7 @@ func (a *Assembler) emitMovDRO1(data InstDerefMovData, out *[]byte) error {
 func (a *Assembler) emitMovDRO2(data InstDerefMovData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRO2)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)){
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	byte4 := (0b0000_1111 & byte(data.Dest.Reg)) << 4
@@ -286,7 +287,7 @@ func (a *Assembler) emitMovID(data InstMovDerefData, out *[]byte) error {
 func (a *Assembler) emitMovRD(data InstMovDerefData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRD)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)){
+	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	lastByte := 0b0000_1111 & byte(data.Src.Reg)
@@ -320,7 +321,7 @@ func (a *Assembler) emitMovIDO1(instTy InstTy, data InstMovDerefData, out *[]byt
 func (a *Assembler) emitMovRDO1(data InstMovDerefData, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRDO1)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)){
+	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	lastByte := (0b0000_1111 & byte(data.Src.Reg)) << 4
@@ -371,7 +372,7 @@ func (a *Assembler) emitMovRDO2(data InstMovDerefData, out *[]byte) error {
 			a.parser.currentInst.Col,
 		)
 	}
-	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)){
+	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	mov := a.opCodes.GetBytes(vm.OP_MOVRDO1)
@@ -527,10 +528,10 @@ func (a *Assembler) emitArthIR(ty InstTy, data InstArthData, out *[]byte) error 
 func (a *Assembler) emitNot(data InstLogicalData, out *[]byte) error {
 	opCode := a.opCodes.GetBytes(vm.OP_NOT)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
-	param := [8]byte {
+	param := [8]byte{
 		byte(data.First.Reg),
 		data.First.Size,
-		0,0,0,0,0,0,
+		0, 0, 0, 0, 0, 0,
 	}
 	*out = append(*out, param[:]...)
 	return nil
@@ -609,8 +610,9 @@ func (a *Assembler) emitJmp(ty InstTy, data InstJmpData, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
 	} else {
 		a.unresolvedJumps[position] = unresolvedJump{
-			Ident:  data.Address.(string),
-			InstTy: ty,
+			Ident:    data.Address.(string),
+			InstTy:   ty,
+			Absolute: data.Absolute,
 		}
 		*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes.GetBytes(vm.OP_NOP)))
 		*out = binary.BigEndian.AppendUint64(*out, uint64(0))
@@ -741,6 +743,14 @@ func (a *Assembler) resolveJumpInsturctions() error {
 			var err error
 			if unresolved.InstTy == INST_TCALL {
 				err = a.patchCallIP(unresolved, sym, codePos)
+			} else if unresolved.Absolute {
+				err = a.patchJmp(unresolved, codePos, sym.Loc)
+				reloc := vm.RelocData{
+					Loc:       uint64(codePos) + vm.OPCODE_SIZE,
+					Ref:       uint64(symIdx),
+					PatchSize: 8,
+				}
+			a.relocations = append(a.relocations, reloc)
 			} else {
 				err = a.patchJmpIP(unresolved, sym, codePos)
 			}

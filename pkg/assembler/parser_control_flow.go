@@ -94,9 +94,9 @@ func (p *Parser) parseCmp() error {
 		p.currentInst = Instruction{
 			Ty: INST_TCMPIR,
 			Data: InstCmpData{
-				Ty:  ty,
-				Min: op1.Val.(RegisterData),
-				Imm: op2.Val.(uint64),
+				Ty:         ty,
+				Min:        op1.Val.(RegisterData),
+				Imm:        op2.Val.(uint64),
 				ImmIsFloat: true,
 			},
 		}
@@ -107,9 +107,23 @@ func (p *Parser) parseJmp(ty InstTy) error {
 	inst := Instruction{
 		Ty: ty,
 	}
+	var absolute bool
 	addr := Token{Ty: INVALID}
+	if err := p.lexer.ReadNextToken(); err != nil {
+		return err
+	} else if p.lexer.CurrentToken().Ty == TOKEN_TABSOLUTE {
+		absolute = true
+	} else {
+		p.lexer.UnreadToken()
+		absolute = false
+	}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
+	} else if expr.Ty == EXPR_TDEREF && absolute {
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"ABSOLUTE jump disallowed with IP regiter relative offsets",
+			p.lexer.line, p.lexer.col,
+		)
 	} else if expr.Ty == EXPR_TDEREF {
 		return p.parseJmpIP(ty, expr)
 	} else if eval, ok := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TIDENT {
@@ -129,12 +143,19 @@ func (p *Parser) parseJmp(ty InstTy) error {
 	}
 	switch addr.Ty {
 	case TOKEN_TINTEGER_LIT:
+		if absolute {
+			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+				"Unnecessary use of ABSOLUTE keyword",
+				p.lexer.line, p.lexer.col)
+		}
 		inst.Data = InstJmpData{
-			Address: addr.Val.(uint64),
+			Address:  addr.Val.(uint64),
+			Absolute: absolute,
 		}
 	case TOKEN_TIDENT:
 		inst.Data = InstJmpData{
-			Address: addr.Val.(string),
+			Address:  addr.Val.(string),
+			Absolute: absolute,
 		}
 	default:
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),

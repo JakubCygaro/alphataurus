@@ -44,6 +44,7 @@ const (
 	TOKEN_THALF
 	TOKEN_TWORD
 	TOKEN_TQUARTER
+	TOKEN_TABSOLUTE
 	TOKEN_TEOF
 )
 
@@ -56,6 +57,7 @@ var keywords = map[string]int{
 	"HALF":     TOKEN_THALF,
 	"QUARTER":  TOKEN_TQUARTER,
 	"WORD":     TOKEN_TWORD,
+	"ABSOLUTE":     TOKEN_TABSOLUTE,
 }
 var keywordNames map[int]string = makeKeywordNames()
 
