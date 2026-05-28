@@ -159,7 +159,7 @@ func TestCall4(t *testing.T) {
 	)
 	for _, f := range functions {
 		entryLines = append(entryLines,
-			fmt.Sprintf("call '%s'", f.fn))	
+			fmt.Sprintf("call %s", f.fn))	
 	}
 	entryLines = append(entryLines,
 		fmt.Sprintf("exit %s", regStr(rA, vm.SZ_64)),

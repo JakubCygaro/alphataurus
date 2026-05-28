@@ -1,10 +1,12 @@
 package alphavm
+
 import (
 	"fmt"
-	"math/rand"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	"math/rand"
 	"testing"
 )
+
 func TestCmp1(t *testing.T) {
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
 	rAV := uint64(rand.Float64() * 1000)
@@ -138,6 +140,88 @@ func TestJmpG1(t *testing.T) {
 	}); err != nil {
 		t.Error(compilationOfErr(asm))
 		t.Error(err)
+	}
+}
+func TestJumps1(t *testing.T) {
+	type opToTest struct {
+		opcode   string
+		testFunc func(a, b int32) bool
+	}
+	conds := make([]opToTest, 0)
+	conds = append(conds, opToTest{
+		opcode: "je",
+		testFunc: func(a, b int32) bool {
+			return a == b
+		},
+	})
+	conds = append(conds, opToTest{
+		opcode: "jz",
+		testFunc: func(a, b int32) bool {
+			return a == b
+		},
+	})
+	conds = append(conds, opToTest{
+		opcode: "jne",
+		testFunc: func(a, b int32) bool {
+			return a != b
+		},
+	})
+	conds = append(conds, opToTest{
+		opcode: "jnz",
+		testFunc: func(a, b int32) bool {
+			return a != b
+		},
+	})
+	conds = append(conds, opToTest{
+		opcode: "jg",
+		testFunc: func(a, b int32) bool {
+			return a > b
+		},
+	})
+	conds = append(conds, opToTest{
+		opcode: "jge",
+		testFunc: func(a, b int32) bool {
+			return a >= b
+		},
+	})
+	conds = append(conds, opToTest{
+		opcode: "jl",
+		testFunc: func(a, b int32) bool {
+			return a < b
+		},
+	})
+	conds = append(conds, opToTest{
+		opcode: "jle",
+		testFunc: func(a, b int32) bool {
+			return a <= b
+		},
+	})
+	for _, c := range conds {
+		a := rand.Int31n(10_000) - 5000
+		b := rand.Int31n(10_000) - 5000
+		asm := fmt.Sprintf(`
+		section '.code'
+		@entry
+			mov r0, %v
+			cmp r0, %v
+			%s passed
+			exit 0
+		passed:
+			exit 1
+		`, a, b, c.opcode)
+		var expect uint64
+		if c.testFunc(a, b){
+			expect = 1
+		} else {
+			expect = 0
+		}
+		if mach, err := assembleAndExecute(asm); err != nil {
+			t.Error(compilationOfErr(asm))
+			t.Error(err)
+		} else if exit := mach.GetExitCode(); exit != expect {
+			t.Error(compilationOfErr(asm))
+			t.Error(expectedExitCode(expect, exit))
+		}
 	}
 }
 func TestClr1(t *testing.T) {
