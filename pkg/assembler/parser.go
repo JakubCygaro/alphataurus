@@ -121,7 +121,6 @@ type InstCmpData struct {
 	Ty         int
 	Sub, Min   RegisterData
 	Imm        uint64
-	ImmIsFloat bool
 }
 type InstJmpData struct {
 	Address any

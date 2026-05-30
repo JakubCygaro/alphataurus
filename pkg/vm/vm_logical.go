@@ -83,10 +83,7 @@ func (state *VmState) cmpIR(lastByte byte, param []byte) error {
 	var minuend, dataSz, ty byte
 	minuend |= (lastByte & 0b11110000) >> 4
 	dataSz |= (lastByte & 0b00001100) >> 2
-	ty = (lastByte & 0b00000001)
-	if ty == 1 {
-		ty = TY_FLOAT
-	}
+	ty = (lastByte & 0b00000011)
 	if !IsGpReg(minuend) {
 		return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
 	}

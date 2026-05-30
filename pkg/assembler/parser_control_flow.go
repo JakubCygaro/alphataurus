@@ -13,10 +13,14 @@ func (p *Parser) parseCmp() error {
 		return err
 	}
 	op1 := p.lexer.CurrentToken()
-	ty := vm.TY_SINT
+	ty := vm.TY_UINT
 	switch op1.Ty {
 	case TOKEN_TFLOAT:
 		ty = vm.TY_FLOAT
+	case TOKEN_TSIGNED:
+		ty = vm.TY_SINT
+	case TOKEN_TUNSIGNED:
+		ty = vm.TY_UINT
 	default:
 		p.lexer.UnreadToken()
 	}
@@ -91,13 +95,17 @@ func (p *Parser) parseCmp() error {
 			},
 		}
 	case TOKEN_TFLOAT_LIT:
+		if ty != vm.TY_FLOAT {
+			return errors.FailedToParse("cmp instruction",
+				"Immediate float value comparison with non FLOAT cmp instruction",
+				op2.Line, op2.Col)	
+		}
 		p.currentInst = Instruction{
 			Ty: INST_TCMPIR,
 			Data: InstCmpData{
 				Ty:         ty,
 				Min:        op1.Val.(RegisterData),
 				Imm:        op2.Val.(uint64),
-				ImmIsFloat: true,
 			},
 		}
 	}

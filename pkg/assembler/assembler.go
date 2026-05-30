@@ -570,10 +570,8 @@ func (a *Assembler) emitCmpIR(data InstCmpData, out *[]byte) error {
 	// subtrahend |= (lastByte & 0xf0) >> 4
 	// minuend |= (lastByte & 0x0f)
 	regs := (0b00001111 & byte(data.Min.Reg)) << 4
-	regs |= (0b00001111 & byte(data.Min.Size)) << 2
-	if data.ImmIsFloat {
-		regs |= 0b0000_0001
-	}
+	regs |= (0b00000011 & byte(data.Min.Size)) << 2
+	regs |= (0b0000_0011 & byte(data.Ty))
 	(*out)[len(*out)-4] = regs
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
