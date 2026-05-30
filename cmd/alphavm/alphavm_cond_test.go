@@ -223,6 +223,33 @@ func TestJumps1(t *testing.T) {
 			t.Error(expectedExitCode(expect, exit))
 		}
 	}
+	for _, c := range conds {
+		a := rand.Int31n(10_000) - 5000
+		b := rand.Int31n(10_000) - 5000
+		asm := fmt.Sprintf(`
+		section '.code'
+		@entry
+			mov r0, %v
+			cmp r0, %v
+			%s ABSOLUTE passed
+			exit 0
+		passed:
+			exit 1
+		`, a, b, c.opcode)
+		var expect uint64
+		if c.testFunc(a, b){
+			expect = 1
+		} else {
+			expect = 0
+		}
+		if mach, err := assembleAndExecute(asm); err != nil {
+			t.Error(compilationOfErr(asm))
+			t.Error(err)
+		} else if exit := mach.GetExitCode(); exit != expect {
+			t.Error(compilationOfErr(asm))
+			t.Error(expectedExitCode(expect, exit))
+		}
+	}
 }
 func TestClr1(t *testing.T) {
 	asm := `
