@@ -1,11 +1,13 @@
 package alphavm
+
 import (
 	"fmt"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"math"
 	"math/rand"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"testing"
 )
+
 func TestExpressions1(t *testing.T) {
 	for range 100 {
 		startingVal := rand.Intn(100)
@@ -19,7 +21,7 @@ func TestExpressions1(t *testing.T) {
 			switch op {
 			case vm.OP_TADD:
 				opCh = '+'
-			res += arg
+				res += arg
 			case vm.OP_TSUB:
 				opCh = '-'
 				res -= arg

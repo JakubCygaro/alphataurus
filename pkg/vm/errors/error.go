@@ -19,7 +19,7 @@ func (e AlphaVMError) Error() string {
 func DisallowedSrcRegister(reg int, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_DISALLOWED_SOURCE_REGISTER,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return fmt.Sprintf("Disallowed source register %d", reg)
 		},
@@ -29,7 +29,7 @@ func DisallowedSrcRegister(reg int, pos uint64) AlphaVMError {
 func DisallowedDestRegister(reg int, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_DISALLOWED_DESTINATION_REGISTER,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return fmt.Sprintf("Disallowed destination register %d", reg)
 		},
@@ -39,7 +39,7 @@ func DisallowedDestRegister(reg int, pos uint64) AlphaVMError {
 func BadCodeSectionSize() AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_BAD_CODE_SEC_SIZE,
-		Pos: 0x0,
+		Pos:  0x0,
 		construct: func() string {
 			return "Bad code section size"
 		},
@@ -49,7 +49,7 @@ func BadCodeSectionSize() AlphaVMError {
 func BadArthmeticOperation(pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_ARTH_EXCEPTION,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return "Arthmetic exception"
 		},
@@ -59,7 +59,7 @@ func BadArthmeticOperation(pos uint64) AlphaVMError {
 func BadOperandSizes(s1, s2 byte, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_BAD_OPERAND_SIZES,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return fmt.Sprintf("Bad operand sizes (%d) and (%d)", s1, s2)
 		},
@@ -69,7 +69,7 @@ func BadOperandSizes(s1, s2 byte, pos uint64) AlphaVMError {
 func NoEntry() AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_NO_ENTRY,
-		Pos: 0,
+		Pos:  0,
 		construct: func() string {
 			return "No execution entry point"
 		},
@@ -79,7 +79,7 @@ func NoEntry() AlphaVMError {
 func BadOpcode(opcode uint32, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_BAD_OPCODE,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return fmt.Sprintf("Bad opcode (0x%08x)", opcode)
 		},
@@ -89,7 +89,7 @@ func BadOpcode(opcode uint32, pos uint64) AlphaVMError {
 func DisallowedOp1Register(reg int, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_DISALLOWED_OPERAND_1_REGISTER,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return fmt.Sprintf("Disallowed first operand register (%d)", reg)
 		},
@@ -99,7 +99,7 @@ func DisallowedOp1Register(reg int, pos uint64) AlphaVMError {
 func DisallowedOp2Register(reg int, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_DISALLOWED_OPERAND_2_REGISTER,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return fmt.Sprintf("Disallowed second operand register (%d)", reg)
 		},
@@ -109,7 +109,7 @@ func DisallowedOp2Register(reg int, pos uint64) AlphaVMError {
 func StackUnderflow(pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_STACK_UNDERFLOW,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return "Stack underflow"
 		},
@@ -119,7 +119,7 @@ func StackUnderflow(pos uint64) AlphaVMError {
 func StackOverflow(pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_STACK_UNDERFLOW,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return "Stack overflow"
 		},
@@ -129,7 +129,7 @@ func StackOverflow(pos uint64) AlphaVMError {
 func SegmentationFault(address uint64, pos uint64) AlphaVMError {
 	err := AlphaVMError{
 		Type: ERR_DISALLOWED_DESTINATION_REGISTER,
-		Pos: pos,
+		Pos:  pos,
 		construct: func() string {
 			return fmt.Sprintf("Segmentation fault, address (0x%08x)", address)
 		},

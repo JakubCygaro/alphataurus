@@ -79,19 +79,19 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 	case OP_MOVDRO1:
 		err = state.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVDRO2:
-		err = state.movDRO2(opCodeBytes[2],opCodeBytes[1], opCodeBytes[0], param)
+		err = state.movDRO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVRDO1:
 		err = state.movRDO1(opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVRDO2:
-		err = state.movRDO2(opCodeBytes[2],opCodeBytes[1], opCodeBytes[0], param)
+		err = state.movRDO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVIDO1_NO:
 		err = state.movIDO1NoOffset(opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVIDO1:
 		err = state.movIDO1(opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVIDO2_NO:
-		err = state.movIDO2NoOffset(opCodeBytes[2],opCodeBytes[1], opCodeBytes[0], param)
+		err = state.movIDO2NoOffset(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVIDO2:
-		err = state.movIDO2(opCodeBytes[2],opCodeBytes[1], opCodeBytes[0], param)
+		err = state.movIDO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
 	case OP_ADDRR:
 		err = state.arthRR(int(opcode), param)
 	case OP_SUBRR:

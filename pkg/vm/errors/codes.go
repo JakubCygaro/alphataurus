@@ -12,4 +12,3 @@ const (
 	ERR_BAD_OPERAND_SIZES
 	ERR_NO_ENTRY
 )
-

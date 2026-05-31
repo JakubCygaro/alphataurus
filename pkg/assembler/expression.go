@@ -42,9 +42,9 @@ var associativeOperators = map[int]void{
 }
 
 type Expr struct {
-	Ty  int
-	Val any
-	Line, Col uint64 
+	Ty        int
+	Val       any
+	Line, Col uint64
 }
 
 type ConstExpr struct {
@@ -179,6 +179,7 @@ func (e *ConstExpr) AsFloat() float64 {
 		return math.NaN()
 	}
 }
+
 // CONSTEXPR_TREG stores its register data in the bits of the uint64 Val field
 //
 // As such it needs to be extracted to be usable
@@ -187,7 +188,7 @@ func (c ConstExpr) UnpackAsRegisterData() RegisterData {
 }
 func UnpackRegisterData(packed uint64) RegisterData {
 	return RegisterData{
-		Reg: int(byte(packed)),
+		Reg:  int(byte(packed)),
 		Size: byte(packed >> 8),
 	}
 }

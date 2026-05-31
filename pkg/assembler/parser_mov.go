@@ -223,11 +223,11 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 		// like mov WORD [bp+1], 100
 		if ty == INST_TMOVIDO1 && sized == 0xff {
 			return errors.MissingDataSize(inner.Line, inner.Col)
-		} else if ty != INST_TMOVIDO1  && sized != 0xff {
+		} else if ty != INST_TMOVIDO1 && sized != 0xff {
 			s, _ := GetSizeKeyword(sized)
 			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
 		}
-		if ty == INST_TMOVIDO1 && mddata.Offset == 0{
+		if ty == INST_TMOVIDO1 && mddata.Offset == 0 {
 			ty = INST_TMOVIDO1_NO
 		}
 		mddata.DataSize = sized
@@ -247,11 +247,11 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 		// like mov WORD [bp+r0+1], 100
 		if ty == INST_TMOVIDO2 && sized == 0xff {
 			return errors.MissingDataSize(inner.Line, inner.Col)
-		} else if ty != INST_TMOVIDO2  && sized != 0xff {
+		} else if ty != INST_TMOVIDO2 && sized != 0xff {
 			s, _ := GetSizeKeyword(sized)
 			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
 		}
-		if ty == INST_TMOVIDO2 && mddata.Offset == 0{
+		if ty == INST_TMOVIDO2 && mddata.Offset == 0 {
 			ty = INST_TMOVIDO2_NO
 		}
 		mddata.DataSize = sized

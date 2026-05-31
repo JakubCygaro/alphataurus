@@ -67,7 +67,7 @@ type SymbolData struct {
 	Ty  byte
 	Vis byte
 	// the location is defined with the deadzone added, so any value below the deadzone is treated as invalid
-	Loc uint64
+	Loc  uint64
 	Name string
 }
 
@@ -259,9 +259,9 @@ func readSymbols(symbolSec []byte) (SymbolTable, error) {
 			return table, fmt.Errorf("Invalid symbol `%s` visibility [%d]", name, vis)
 		}
 		sym := SymbolData{
-			Ty:  ty,
-			Vis: vis,
-			Loc: loc,
+			Ty:   ty,
+			Vis:  vis,
+			Loc:  loc,
 			Name: name,
 		}
 		table.AddSymbol(sym)

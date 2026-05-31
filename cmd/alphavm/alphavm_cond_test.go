@@ -288,7 +288,7 @@ func TestJumps1(t *testing.T) {
 			t.Errorf("Object file does not contain relocations. " +
 				"Relocations were expected with ABSOLUTE jumps")
 		} else if elf, err := ld.Link(
-			[]linker.LinkerInput{ linker.Bytes(obj) }); err != nil {
+			[]linker.LinkerInput{linker.Bytes(obj)}); err != nil {
 			t.Error(compilationOfErr(asm))
 			t.Error(err)
 		} else if mach, err := execute(elf); err != nil {

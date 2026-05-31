@@ -1,11 +1,13 @@
 package alphavm
+
 import (
 	"fmt"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"math"
 	"math/rand"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"testing"
 )
+
 func TestAddIR1(t *testing.T) {
 	r0_v, r1_v := 69, -420
 	r2_v := r0_v + r1_v

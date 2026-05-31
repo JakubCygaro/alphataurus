@@ -9,6 +9,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
+
 //go:generate stringer -type=InstTy
 type InstTy int
 
@@ -109,21 +110,21 @@ type InstIncDecData struct {
 }
 type InstArthData struct {
 	Src, Dest RegisterData
-	Imm          uint64
-	Ty           int
-	DataSize     byte
+	Imm       uint64
+	Ty        int
+	DataSize  byte
 }
 type InstLogicalData struct {
 	First, Second RegisterData
 	Imm           uint64
 }
 type InstCmpData struct {
-	Ty         int
-	Sub, Min   RegisterData
-	Imm        uint64
+	Ty       int
+	Sub, Min RegisterData
+	Imm      uint64
 }
 type InstJmpData struct {
-	Address any
+	Address  any
 	Absolute bool
 }
 type InstJmpIPData struct {
@@ -155,14 +156,14 @@ type InstDerefMovData struct {
 	OpTy   int
 }
 type InstMovDerefData struct {
-	DataSize  byte
-	Src RegisterData
-	Imm       uint64
-	Offset    int64
-	OReg1     RegisterData
-	OReg2     RegisterData
-	Label     string
-	OpTy      int
+	DataSize byte
+	Src      RegisterData
+	Imm      uint64
+	Offset   int64
+	OReg1    RegisterData
+	OReg2    RegisterData
+	Label    string
+	OpTy     int
 }
 type Parser struct {
 	lexer        Lexer

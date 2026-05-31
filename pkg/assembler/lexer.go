@@ -57,7 +57,7 @@ var keywords = map[string]int{
 	"HALF":     TOKEN_THALF,
 	"QUARTER":  TOKEN_TQUARTER,
 	"WORD":     TOKEN_TWORD,
-	"ABSOLUTE":     TOKEN_TABSOLUTE,
+	"ABSOLUTE": TOKEN_TABSOLUTE,
 }
 var keywordNames map[int]string = makeKeywordNames()
 
@@ -88,13 +88,14 @@ func GetSizeKeyword(size byte) (string, bool) {
 	}
 }
 func GetInvalidRegister() RegisterData {
-	return RegisterData {
-		Reg: math.MaxInt64,
+	return RegisterData{
+		Reg:  math.MaxInt64,
 		Size: math.MaxInt8,
 	}
 }
+
 type RegisterData struct {
-	Reg int
+	Reg  int
 	Size byte
 }
 
@@ -344,11 +345,11 @@ func (l *Lexer) ReadNextToken() error {
 			}
 		}
 		val := string(buf)
-		if reg, sz,  ok := recognizeRegister(val); ok {
+		if reg, sz, ok := recognizeRegister(val); ok {
 			l.currentToken = Token{
-				Ty:  TOKEN_TREG,
-				Val: RegisterData {
-					Reg: reg,
+				Ty: TOKEN_TREG,
+				Val: RegisterData{
+					Reg:  reg,
 					Size: sz,
 				},
 			}
@@ -495,10 +496,10 @@ func (l *Lexer) readDigit(b byte) error {
 
 func recognizeRegister(s string) (int, byte, bool) {
 	var sz byte = vm.SZ_64
-	if len(s) < 2  || len(s) > 3 {
+	if len(s) < 2 || len(s) > 3 {
 		return -1, sz, false
 	}
-	rx := s[1]-'0'
+	rx := s[1] - '0'
 	// GP case
 	if s[0] == 'r' && numberCheck(s[1]) && rx <= vm.GP_REG_MAX {
 		if len(s) == 3 {

@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	AELF_FILE_MAG         = "AELF"
+	AELF_FILE_MAG = "AELF"
 )
 
 type AlphaELFFile struct {

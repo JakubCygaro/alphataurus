@@ -4,7 +4,6 @@ import (
 	"fmt"
 )
 
-
 type AssemblerError struct {
 	Line, Col uint64
 	construct constructMessage
@@ -15,9 +14,9 @@ func (e AssemblerError) Error() string {
 }
 
 func RedeclaredLabel(label, first string, line, col uint64) AssemblerError {
-	err := AssemblerError {
+	err := AssemblerError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return fmt.Sprintf("label '%s' redeclared at (%s)", label, first)
 		},
@@ -25,9 +24,9 @@ func RedeclaredLabel(label, first string, line, col uint64) AssemblerError {
 	return err
 }
 func MultipleEntry(line, col uint64) AssemblerError {
-	err := AssemblerError {
+	err := AssemblerError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return "multiple entry points defined"
 		},
@@ -35,9 +34,9 @@ func MultipleEntry(line, col uint64) AssemblerError {
 	return err
 }
 func ImportedSymbolDeclared(name string, line, col uint64) AssemblerError {
-	err := AssemblerError {
+	err := AssemblerError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return fmt.Sprintf("imported symbol '%s' declared at (%v:%v)", name, line, col)
 		},
@@ -46,9 +45,9 @@ func ImportedSymbolDeclared(name string, line, col uint64) AssemblerError {
 }
 
 func UnresolvedLabel(label string) AssemblerError {
-	err := AssemblerError {
+	err := AssemblerError{
 		Line: 0,
-		Col: 0,
+		Col:  0,
 		construct: func() string {
 			return fmt.Sprintf("label '%s' unresolved", label)
 		},
@@ -56,9 +55,9 @@ func UnresolvedLabel(label string) AssemblerError {
 	return err
 }
 func UnresolvedSymbol(label string) AssemblerError {
-	err := AssemblerError {
+	err := AssemblerError{
 		Line: 0,
-		Col: 0,
+		Col:  0,
 		construct: func() string {
 			return fmt.Sprintf("symbol '%s' is unresolved", label)
 		},
@@ -67,9 +66,9 @@ func UnresolvedSymbol(label string) AssemblerError {
 }
 
 func MultipleSymbolDefinitions(name string, line, col uint64) AssemblerError {
-	err := AssemblerError {
+	err := AssemblerError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return fmt.Sprintf("symbol '%s' redefined", name)
 		},

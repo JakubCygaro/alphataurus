@@ -12,14 +12,14 @@ import (
 
 var args struct {
 	Input  []string `arg:"positional,required"`
-	Output string `arg:"-o,--output" help:"output file path"`
+	Output string   `arg:"-o,--output" help:"output file path"`
 }
 
 func main() {
 	arg.MustParse(&args)
 	ld := linker.NewLinker()
 	files := make([]linker.LinkerInput, 0, len(args.Input))
-	for _, f:= range args.Input {
+	for _, f := range args.Input {
 		files = append(files, linker.SourcePath(f))
 	}
 	out, err := ld.Link(files)
@@ -47,4 +47,3 @@ func main() {
 		os.Exit(-1)
 	}
 }
-

@@ -60,7 +60,7 @@ func (state *VmState) popImpl(bytes int) ([]byte, error) {
 	if state.GetRealSp() < 0 {
 		return nil, errors.StackUnderflow(state.byteCodePos)
 	}
-	val := state.stack[state.GetRealSp()-bytes+1:state.GetRealSp()+1]
+	val := state.stack[state.GetRealSp()-bytes+1 : state.GetRealSp()+1]
 	var sp = binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
 	sp -= uint64(bytes)
 	binary.BigEndian.PutUint64(state.regs.r[SP_IDX][:], sp)
@@ -72,7 +72,7 @@ func (state *VmState) putValInStackWithSize(dataSz byte, val uint64, address int
 		return errors.StackOverflow(state.byteCodePos)
 	}
 	bytes := DataSizeToByteCount(dataSz)
-	s := state.stack[address:address+bytes]
+	s := state.stack[address : address+bytes]
 	switch dataSz {
 	case SZ_8:
 		s[0] = byte(val)

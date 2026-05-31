@@ -6,7 +6,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
 
-func (state* VmState) isWithinStack(addr uint64) (int, error) {
+func (state *VmState) isWithinStack(addr uint64) (int, error) {
 	inStack := state.VirtToRealSp(int(addr))
 	if inStack < 0 || inStack >= len(state.stack) {
 		return -1, errors.SegmentationFault(addr, state.byteCodePos)
@@ -15,17 +15,18 @@ func (state* VmState) isWithinStack(addr uint64) (int, error) {
 }
 
 func IsValidDataSize(sz byte) error {
-	if sz < SZ_8 || sz > SZ_64{
+	if sz < SZ_8 || sz > SZ_64 {
 		return fmt.Errorf("Invalid data size")
 	}
 	return nil
 }
 func IsValidDataType(sz byte) error {
-	if sz < TY_SINT || sz > TY_FLOAT{
+	if sz < TY_SINT || sz > TY_FLOAT {
 		return fmt.Errorf("Invalid data type")
 	}
 	return nil
 }
+
 // Check if register is a valid general purpose register index
 func IsGpReg(b byte) bool {
 	return b <= GP_REG_MAX
@@ -42,14 +43,17 @@ func IsArthRAllowed(a byte) bool {
 func IsLogRAllowed(a byte) bool {
 	return IsMovIntoRAllowed(a)
 }
+
 // Check if moving from or into this register is allowed
 func IsMovRRAllowed(b byte) bool {
 	return IsMovFromRAllowed(b) && IsMovIntoRAllowed(b)
 }
+
 // Check if pushing the value of this register onto the stack is allowed
 func IsPushRAllowed(b byte) bool {
 	return IsGpReg(b) || b == SP_IDX || b == BP_IDX
 }
+
 // Get the byte count for a given data size value
 func DataSizeToByteCount(dataSz byte) int {
 	switch dataSz {

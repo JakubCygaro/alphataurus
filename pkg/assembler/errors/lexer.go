@@ -15,9 +15,9 @@ func (e LexerError) Error() string {
 	return fmt.Sprintf("Lexer error at (%v:%v): %s", e.Line, e.Col, e.construct())
 }
 func UnrecognizedChar(char rune, line, col uint64) LexerError {
-	err := LexerError {
+	err := LexerError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return fmt.Sprintf("Unrecognized character `%c`", char)
 		},
@@ -26,9 +26,9 @@ func UnrecognizedChar(char rune, line, col uint64) LexerError {
 }
 
 func MalformedIntegerLit(line, col uint64) LexerError {
-	err := LexerError {
+	err := LexerError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return "Malformed integer number literal"
 		},
@@ -36,9 +36,9 @@ func MalformedIntegerLit(line, col uint64) LexerError {
 	return err
 }
 func MalformedFloatLit(line, col uint64) LexerError {
-	err := LexerError {
+	err := LexerError{
 		Line: line,
-		Col: col,
+		Col:  col,
 		construct: func() string {
 			return "Malformed floating point number literal"
 		},

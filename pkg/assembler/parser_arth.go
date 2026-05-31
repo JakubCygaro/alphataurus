@@ -171,7 +171,7 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 	p.currentInst = Instruction{
 		Ty: ty,
 		Data: InstArthData{
-			Ty: valTy,
+			Ty:       valTy,
 			DataSize: size,
 		},
 	}

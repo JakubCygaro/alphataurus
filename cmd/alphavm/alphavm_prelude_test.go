@@ -26,7 +26,7 @@ func assemblingErrorExpected() error {
 	return fmt.Errorf("An assembling error was expected")
 }
 func randomGpRegisterWord() byte {
-	return byte(rand.Int() % vm.GP_REG_MAX+1)
+	return byte(rand.Int()%vm.GP_REG_MAX + 1)
 }
 func randomGpRegisterWithSize() (byte, byte) {
 	return randomGpRegisterWord(), byte(rand.Int()%vm.SZ_64 + 1)
@@ -53,7 +53,7 @@ func regStr(reg, sz byte) string {
 	}
 }
 func nextRandomGpRegister(reg byte) byte {
-	return byte((reg + 1) % vm.GP_REG_MAX + 1)
+	return byte((reg+1)%vm.GP_REG_MAX + 1)
 }
 func execute(elf vm.AlphaELFFile) (vm.VmState, error) {
 	return executeStackSize(elf, DEFAULT_STACK_SIZE)

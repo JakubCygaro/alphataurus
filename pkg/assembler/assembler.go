@@ -748,7 +748,7 @@ func (a *Assembler) resolveJumpInsturctions() error {
 					Ref:       uint64(symIdx),
 					PatchSize: 8,
 				}
-			a.relocations = append(a.relocations, reloc)
+				a.relocations = append(a.relocations, reloc)
 			} else {
 				err = a.patchJmpIP(unresolved, sym, codePos)
 			}

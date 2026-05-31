@@ -123,7 +123,7 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			op.Ty == TOKEN_TEOF ||
 			op.Ty == TOKEN_TNEWLINE ||
 			op.Ty == TOKEN_TCLOSEDPAREN ||
-			op.Ty == TOKEN_TDOUBLESEMICOLON{
+			op.Ty == TOKEN_TDOUBLESEMICOLON {
 			p.lexer.UnreadToken()
 			break
 		}

@@ -98,14 +98,14 @@ func (p *Parser) parseCmp() error {
 		if ty != vm.TY_FLOAT {
 			return errors.FailedToParse("cmp instruction",
 				"Immediate float value comparison with non FLOAT cmp instruction",
-				op2.Line, op2.Col)	
+				op2.Line, op2.Col)
 		}
 		p.currentInst = Instruction{
 			Ty: INST_TCMPIR,
 			Data: InstCmpData{
-				Ty:         ty,
-				Min:        op1.Val.(RegisterData),
-				Imm:        op2.Val.(uint64),
+				Ty:  ty,
+				Min: op1.Val.(RegisterData),
+				Imm: op2.Val.(uint64),
 			},
 		}
 	}

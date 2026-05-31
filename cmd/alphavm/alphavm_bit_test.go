@@ -41,6 +41,7 @@ func TestLsh1(t *testing.T) {
 		t.Error(expectedExitCode(0, exit))
 	}
 }
+
 // this tests packs 8 bytes from the stack into r0 register and then compares it
 // as r0b to these values on the stack
 func TestLshRsh1(t *testing.T) {

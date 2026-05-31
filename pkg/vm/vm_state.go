@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 )
+
 type VmState struct {
 	regs     Registers
 	flags    Flags
@@ -17,7 +18,7 @@ type VmState struct {
 	currentOpcode OpCodeVal
 	exitCode      uint64
 	exit          bool
-	dbgAd dbgAdapters
+	dbgAd         dbgAdapters
 }
 type OpCodeTraceFn func(OpCodeVal)
 type dbgAdapters struct {
@@ -26,6 +27,7 @@ type dbgAdapters struct {
 type Flags struct {
 	Cf, Pf, Zf, Sf, Of bool
 }
+
 func CreateVmState(stackSize uint64) VmState {
 	state := VmState{
 		regs: Registers{
@@ -55,6 +57,7 @@ func (state *VmState) GetBp() uint64 {
 func (state *VmState) GetSp() uint64 {
 	return binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
 }
+
 // takes the virtual instruction pointer and transforms it into the real position of the
 // instruction in the bytecode []byte array
 //
@@ -80,6 +83,7 @@ func (state *VmState) GetIp() uint64 {
 func (state *VmState) setIp(v uint64) {
 	binary.BigEndian.PutUint64(state.regs.r[IP_IDX][:], v)
 }
+
 // increment IP so it points to the next instruction
 func (state *VmState) incIp() {
 	state.setIp(state.GetIp() + INSTRUCTION_SIZE)
@@ -125,6 +129,7 @@ func (vm *VmState) GetGpRXAsFloat64(register byte) (float64, error) {
 	}
 	return out.(float64), nil
 }
+
 // get X general purpose register value as uint64
 func (vm *VmState) GetGpRX(register byte) (Register, error) {
 	if !IsGpReg(register) {
@@ -136,6 +141,7 @@ func (vm *VmState) getRXAs(register byte, ty, dataSz byte, out *any) error {
 	r := &(vm.regs.r[int(register)])
 	return r.GetValAs(ty, dataSz, out)
 }
+
 // get X general purpose register value and cast it into a supported type value
 // returned via out
 func (vm *VmState) GetGpRXAs(register byte, ty, dataSz byte, out *any) error {
@@ -144,4 +150,3 @@ func (vm *VmState) GetGpRXAs(register byte, ty, dataSz byte, out *any) error {
 	}
 	return vm.getRXAs(register, ty, dataSz, out)
 }
-

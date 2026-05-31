@@ -13,7 +13,7 @@ func (state *VmState) incR(param []byte) error {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
 	r := &state.regs.r[reg]
-	r.IncrementRegU64(1);
+	r.IncrementRegU64(1)
 	return nil
 }
 func (state *VmState) decR(param []byte) error {
@@ -22,7 +22,7 @@ func (state *VmState) decR(param []byte) error {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
 	r := &state.regs.r[reg]
-	r.DecrementRegU64(1);
+	r.DecrementRegU64(1)
 	return nil
 }
 
