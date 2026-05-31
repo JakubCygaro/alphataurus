@@ -1,10 +1,14 @@
 package alphavm
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"math/rand"
 	"testing"
+
+	"github.com/JakubCygaro/alphataurus/pkg/linker"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func TestCmp1(t *testing.T) {
@@ -196,6 +200,7 @@ func TestJumps1(t *testing.T) {
 			return a <= b
 		},
 	})
+	// first test IP relative jumps
 	for _, c := range conds {
 		a := rand.Int31n(10_000) - 5000
 		b := rand.Int31n(10_000) - 5000
@@ -210,7 +215,7 @@ func TestJumps1(t *testing.T) {
 			exit 1
 		`, a, b, c.opcode)
 		var expect uint64
-		if c.testFunc(a, b){
+		if c.testFunc(a, b) {
 			expect = 1
 		} else {
 			expect = 0
@@ -223,6 +228,7 @@ func TestJumps1(t *testing.T) {
 			t.Error(expectedExitCode(expect, exit))
 		}
 	}
+	// then test absolute jumps
 	for _, c := range conds {
 		a := rand.Int31n(10_000) - 5000
 		b := rand.Int31n(10_000) - 5000
@@ -237,12 +243,28 @@ func TestJumps1(t *testing.T) {
 			exit 1
 		`, a, b, c.opcode)
 		var expect uint64
-		if c.testFunc(a, b){
+		if c.testFunc(a, b) {
 			expect = 1
 		} else {
 			expect = 0
 		}
-		if mach, err := assembleAndExecute(asm); err != nil {
+		ld := linker.NewLinker()
+		if obj, err := assemble(asm); err != nil {
+			t.Error(compilationOfErr(asm))
+			t.Error(err)
+		} else if h, err := vm.LoadObjFileHeader(
+			bufio.NewReader(bytes.NewReader(obj))); err != nil {
+			t.Error(compilationOfErr(asm))
+			t.Error(err)
+		} else if h.RelocsSize == 0 {
+			t.Error(compilationOfErr(asm))
+			t.Errorf("Object file does not contain relocations. " +
+				"Relocations were expected with ABSOLUTE jumps")
+		} else if elf, err := ld.Link(
+			[]linker.LinkerInput{ linker.Bytes(obj) }); err != nil {
+			t.Error(compilationOfErr(asm))
+			t.Error(err)
+		} else if mach, err := execute(elf); err != nil {
 			t.Error(compilationOfErr(asm))
 			t.Error(err)
 		} else if exit := mach.GetExitCode(); exit != expect {
