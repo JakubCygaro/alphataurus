@@ -200,7 +200,7 @@ func TestJumps1(t *testing.T) {
 			return a <= b
 		},
 	})
-	// first test IP relative jumps
+	// first test implicit IP relative jumps
 	for _, c := range conds {
 		a := rand.Int31n(10_000) - 5000
 		b := rand.Int31n(10_000) - 5000
@@ -212,6 +212,33 @@ func TestJumps1(t *testing.T) {
 			%s passed
 			exit 0
 		passed:
+			exit 1
+		`, a, b, c.opcode)
+		var expect uint64
+		if c.testFunc(a, b) {
+			expect = 1
+		} else {
+			expect = 0
+		}
+		if mach, err := assembleAndExecute(asm); err != nil {
+			t.Error(compilationOfErr(asm))
+			t.Error(err)
+		} else if exit := mach.GetExitCode(); exit != expect {
+			t.Error(compilationOfErr(asm))
+			t.Error(expectedExitCode(expect, exit))
+		}
+	}
+	// then test explicit relative IP jumps
+	for _, c := range conds {
+		a := rand.Int31n(10_000) - 5000
+		b := rand.Int31n(10_000) - 5000
+		asm := fmt.Sprintf(`
+		section '.code'
+		@entry
+			mov r0, %v
+			cmp r0, %v
+			%s [ip+12]
+			exit 0
 			exit 1
 		`, a, b, c.opcode)
 		var expect uint64
