@@ -29,7 +29,7 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 	dataSz |= (lastByte & 0b1100_0000) >> 6
 	ty |= (lastByte & 0b0011_0000) >> 4
 	dest |= (lastByte & 0b0000_1111)
-	if !IsGpReg(dest) {
+	if !IsMovIntoRAllowed(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
 	switch ty {

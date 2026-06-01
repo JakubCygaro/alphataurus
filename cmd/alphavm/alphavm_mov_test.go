@@ -140,20 +140,14 @@ func TestMov2F(t *testing.T) {
 	}
 }
 
-// test moving a value between every and each register
-func TestAllRRMoves1(t *testing.T) {
-	type reg assembler.RegisterData
+type reg assembler.RegisterData
+
+func makeFromRegistersList() []reg {
 	from := make([]reg, 0)
-	into := make([]reg, 0)
 	for r := range vm.GP_REG_MAX + 1 {
 		if vm.IsMovFromRAllowed(byte(r)) {
 			for sz := range vm.MAX_SZ + 1 {
 				from = append(from, reg{r, byte(sz)})
-			}
-		}
-		if vm.IsMovIntoRAllowed(byte(r)) {
-			for sz := range vm.MAX_SZ + 1 {
-				into = append(into, reg{r, byte(sz)})
 			}
 		}
 	}
@@ -161,10 +155,30 @@ func TestAllRRMoves1(t *testing.T) {
 		if vm.IsMovFromRAllowed(byte(r)) {
 			from = append(from, reg{r, byte(vm.SZ_64)})
 		}
+	}
+	return from
+}
+func makeIntoRegistersList() []reg {
+	into := make([]reg, 0)
+	for r := range vm.GP_REG_MAX + 1 {
+		if vm.IsMovIntoRAllowed(byte(r)) {
+			for sz := range vm.MAX_SZ + 1 {
+				into = append(into, reg{r, byte(sz)})
+			}
+		}
+	}
+	for r := vm.GP_REG_MAX + 1; r <= vm.MAX_REG_IDX; r++ {
 		if vm.IsMovIntoRAllowed(byte(r)) {
 			into = append(into, reg{r, byte(vm.SZ_64)})
 		}
 	}
+	return into
+}
+
+// test moving a value between every and each register
+func TestAllRRMoves1(t *testing.T) {
+	from := makeFromRegistersList()
+	into := makeIntoRegistersList()
 	lines := make([]string, 0)
 	lines = append(lines,
 		"section '.code'",
@@ -191,5 +205,45 @@ func TestAllRRMoves1(t *testing.T) {
 	if _, err := assembleAndExecute(asm); err != nil {
 		t.Error(compilationOfErr(asm))
 		t.Error(err)
+	}
+}
+
+// test moving a value between every and each register
+func TestAllRIMoves1(t *testing.T) {
+	into := makeIntoRegistersList()
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		"_start:",
+	)
+	for _, ir := range into {
+		val := rand.Int63()
+		if val == 0 {
+			val += 1
+		}
+		lines = append(lines,
+			fmt.Sprintf(
+				"mov %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				val,
+			),
+		)
+		lines = append(lines,
+			macroAssertRegister(
+				assembler.RegisterData(ir),
+				uint64(val),
+			),
+		)
+	}
+	lines = append(lines,
+		"exit 0")
+	asm := strings.Join(lines, "\n")
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitCode))
 	}
 }

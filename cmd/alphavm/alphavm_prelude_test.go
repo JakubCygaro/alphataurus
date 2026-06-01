@@ -187,3 +187,16 @@ func expectStack(mach *vm.VmState, stack vm.VmStack) error {
 	}
 	return nil
 }
+
+func macroAssertRegister(r assembler.RegisterData, expect uint64) string {
+	return fmt.Sprintf(`
+		cmp UNSIGNED %s, %v
+		je [ip+%v]
+		exit %v
+	`,
+		regStr(byte(r.Reg), r.Size),
+		expect,
+		vm.INSTRUCTION_SIZE,
+		expect,
+	)
+}

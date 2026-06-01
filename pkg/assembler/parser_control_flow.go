@@ -34,8 +34,10 @@ func (p *Parser) parseCmp() error {
 			"First operand to instruction must be a valid register",
 			p.lexer.line, p.lexer.col)
 	}
-	if op1.Val.(RegisterData).Reg > vm.GP_REG_MAX {
-		return fmt.Errorf("Disallowed minuend register %s", p.lexer.CurrentPosition())
+	if op1.Val.(RegisterData).Reg > vm.MAX_REG_IDX {
+		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+			"Disallowed minuend register",
+			p.lexer.line, p.lexer.col)
 	}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err

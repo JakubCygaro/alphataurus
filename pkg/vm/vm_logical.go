@@ -84,16 +84,10 @@ func (state *VmState) cmpIR(lastByte byte, param []byte) error {
 	minuend |= (lastByte & 0b11110000) >> 4
 	dataSz |= (lastByte & 0b00001100) >> 2
 	ty = (lastByte & 0b00000011)
-	if !IsGpReg(minuend) {
-		return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
-	}
 	var subV, minV uint64
 	minV = state.GetRegVAsU64(int(minuend), dataSz)
 	subV = binary.BigEndian.Uint64(param)
 
-	if dataSz != SZ_64 && ty == TY_FLOAT {
-		return errors.BadArthmeticOperation(state.byteCodePos)
-	}
 	return state.cmpImpl(minV, subV, ty, dataSz)
 }
 func (state *VmState) cmpImpl(minV, subV uint64, ty, dataSz byte) error {
