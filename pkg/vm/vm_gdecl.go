@@ -18,6 +18,8 @@ const (
 )
 const (
 	GP_REG_MAX = R7_IDX
+	MAX_REG_IDX = IP_IDX
+	MAX_SZ = SZ_64
 )
 
 const (

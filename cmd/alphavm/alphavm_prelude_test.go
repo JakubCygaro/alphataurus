@@ -20,7 +20,7 @@ func expectedExitCode(expected, got uint64) error {
 	return fmt.Errorf("Expected exit code %v, but got %v", expected, got)
 }
 func compilationOfErr(asm ...string) error {
-	return fmt.Errorf("Compilation of:\n%s", strings.Join(asm, "\n"))
+	return fmt.Errorf("Compilation of:\n%s", strings.Join(asm, "---\n"))
 }
 func assemblingErrorExpected() error {
 	return fmt.Errorf("An assembling error was expected")

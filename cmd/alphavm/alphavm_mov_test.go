@@ -5,8 +5,10 @@ import (
 	"math"
 	"math/rand"
 	"regexp"
+	"strings"
 	"testing"
 
+	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -135,5 +137,59 @@ func TestMov2F(t *testing.T) {
 	} else {
 		t.Error(compilationOfErr(asm))
 		t.Error(assemblingErrorExpected())
+	}
+}
+
+// test moving a value between every and each register
+func TestAllRRMoves1(t *testing.T) {
+	type reg assembler.RegisterData
+	from := make([]reg, 0)
+	into := make([]reg, 0)
+	for r := range vm.GP_REG_MAX + 1 {
+		if vm.IsMovFromRAllowed(byte(r)) {
+			for sz := range vm.MAX_SZ + 1 {
+				from = append(from, reg{r, byte(sz)})
+			}
+		}
+		if vm.IsMovIntoRAllowed(byte(r)) {
+			for sz := range vm.MAX_SZ + 1 {
+				into = append(into, reg{r, byte(sz)})
+			}
+		}
+	}
+	for r := vm.GP_REG_MAX + 1; r <= vm.MAX_REG_IDX; r++ {
+		if vm.IsMovFromRAllowed(byte(r)) {
+			from = append(from, reg{r, byte(vm.SZ_64)})
+		}
+		if vm.IsMovIntoRAllowed(byte(r)) {
+			into = append(into, reg{r, byte(vm.SZ_64)})
+		}
+	}
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		"_start:",
+	)
+	for _, fr := range from {
+		for _, ir := range into {
+			if ir.Size < fr.Size {
+				continue
+			}
+			lines = append(lines,
+				fmt.Sprintf(
+					"mov %s, %s",
+					regStr(byte(ir.Reg), ir.Size),
+					regStr(byte(fr.Reg), fr.Size),
+				),
+			)
+		}
+	}
+	lines = append(lines,
+		"exit 0")
+	asm := strings.Join(lines, "\n")
+	if _, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
 	}
 }
