@@ -209,7 +209,7 @@ func TestAllRRMoves1(t *testing.T) {
 }
 
 // test moving a value between every and each register
-func TestAllRIMoves1(t *testing.T) {
+func TestAllIRMoves1(t *testing.T) {
 	into := makeIntoRegistersList()
 	lines := make([]string, 0)
 	lines = append(lines,
