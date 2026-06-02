@@ -230,7 +230,7 @@ func TestAllIRMoves1(t *testing.T) {
 			),
 		)
 		lines = append(lines,
-			macroAssertRegister(
+			macroAssertEqRI(
 				assembler.RegisterData(ir),
 				uint64(val),
 			),

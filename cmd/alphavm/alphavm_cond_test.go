@@ -5,8 +5,10 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 
+	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -321,5 +323,62 @@ func TestClr1(t *testing.T) {
 	} else if exit := mach.GetExitCode(); exit != 0 {
 		t.Error(compilationOfErr(asm))
 		t.Error(expectedExitCode(0, exit))
+	}
+}
+func TestCmpRR1(t *testing.T) {
+	from := makeFromRegistersList()
+	into := makeIntoRegistersList()
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		"_start:",
+	)
+	for _, fr := range from {
+		for _, ir := range into {
+			if ir.Size != fr.Size ||
+				ir.Reg == fr.Reg ||
+				!vm.IsMovIntoRAllowed(byte(fr.Reg)) {
+				continue
+			}
+			var a, b uint64
+			switch ir.Size {
+			case vm.SZ_8:
+				a, b = uint64(byte(rand.Int63())), uint64(byte(rand.Int63()))
+			case vm.SZ_16:
+				a, b = uint64(uint16(rand.Int63())), uint64(uint16(rand.Int63()))
+			case vm.SZ_32:
+				a, b = uint64(uint32(rand.Int63())), uint64(uint32(rand.Int63()))
+			case vm.SZ_64:
+				a, b = uint64(rand.Int63()), uint64(rand.Int63())
+			}
+			lines = append(lines,
+				fmt.Sprintf(
+					"mov %s, %v",
+					regStr(byte(ir.Reg), ir.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"mov %s, %v",
+					regStr(byte(fr.Reg), fr.Size),
+					b,
+				),
+				macroAssertUGenericRR(
+					assembler.RegisterData(ir),
+					assembler.RegisterData(fr),
+					getComparison(a, b),
+				),
+			)
+		}
+	}
+	lines = append(lines,
+		"exit 0")
+	asm := strings.Join(lines, "\n")
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitCode))
 	}
 }

@@ -67,9 +67,9 @@ func (state *VmState) cmpRR(lastByte byte, param []byte) error {
 	minuend |= (lastByte & 0b0000_1111)
 	ty = param[0]
 	dataSz = param[1]
-	if !IsGpReg(minuend) {
-		return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
-	}
+	// if !IsGpReg(minuend) {
+	// 	return errors.DisallowedOp1Register(int(minuend), state.byteCodePos)
+	// }
 	var subV, minV uint64
 	minV = state.GetRegVAsU64(int(minuend), dataSz)
 	subV = state.GetRegVAsU64(int(subtrahend), dataSz)

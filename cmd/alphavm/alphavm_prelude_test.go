@@ -188,7 +188,38 @@ func expectStack(mach *vm.VmState, stack vm.VmStack) error {
 	return nil
 }
 
-func macroAssertRegister(r assembler.RegisterData, expect uint64) string {
+type AssertTy int
+
+const (
+	ASSERT_EQ AssertTy = iota
+	ASSERT_NEQ
+	ASSERT_G
+	ASSERT_GE
+	ASSERT_L
+	ASSERT_LE
+)
+
+func assertToOp(ty AssertTy) string {
+	switch ty {
+	case ASSERT_EQ:
+		return "je"
+	case ASSERT_NEQ:
+		return "jne"
+	case ASSERT_G:
+		return "jg"
+	case ASSERT_GE:
+		return "jge"
+	case ASSERT_L:
+		return "jl"
+	case ASSERT_LE:
+		return "jle"
+	default:
+		panic("unknown assert type")
+	}
+}
+
+// assert equality of r and expect, exit with code equal to expect on failure
+func macroAssertEqRI(r assembler.RegisterData, expect uint64) string {
 	return fmt.Sprintf(`
 		cmp UNSIGNED %s, %v
 		je [ip+%v]
@@ -199,4 +230,30 @@ func macroAssertRegister(r assembler.RegisterData, expect uint64) string {
 		vm.INSTRUCTION_SIZE,
 		expect,
 	)
+}
+
+// assert comparison of r and expect, exit with code equal to expect on failure
+//
+// comparison is r (AssertTy) expect
+func macroAssertUGenericRR(r, expect assembler.RegisterData, aT AssertTy) string {
+	return fmt.Sprintf(`
+		cmp UNSIGNED %s, %s
+		%s [ip+%v]
+		exit %v
+	`,
+		regStr(byte(r.Reg), r.Size),
+		regStr(byte(expect.Reg), expect.Size),
+		assertToOp(aT),
+		vm.INSTRUCTION_SIZE,
+		regStr(byte(expect.Reg), expect.Size),
+	)
+}
+
+func getComparison(a, b uint64) AssertTy {
+	switch {
+	case a == b:
+		return ASSERT_EQ
+	default:
+		return ASSERT_NEQ
+	}
 }

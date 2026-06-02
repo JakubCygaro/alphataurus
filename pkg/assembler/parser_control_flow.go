@@ -71,11 +71,11 @@ func (p *Parser) parseCmp() error {
 	}
 	switch op2.Ty {
 	case TOKEN_TREG:
-		if op2.Val.(RegisterData).Reg > vm.GP_REG_MAX {
-			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-				"Disallowed subtrahend register",
-				p.lexer.line, p.lexer.col)
-		}
+		// if op2.Val.(RegisterData).Reg > vm.GP_REG_MAX {
+		// 	return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+		// 		"Disallowed subtrahend register",
+		// 		p.lexer.line, p.lexer.col)
+		// }
 		if op1.Val.(RegisterData).Size != op2.Val.(RegisterData).Size {
 			return errors.MismatchedRegisterSizes(p.lexer.line, p.lexer.col)
 		}
