@@ -38,10 +38,11 @@ func TestStack1(t *testing.T) {
 	}
 }
 func TestStack2(t *testing.T) {
-	stack := makeTestingStack(3 * 8)
+	stack := makeTestingStack(0)
 	a := uint64(rand.Intn(101) - 50)
 	b := uint64(rand.Intn(101) - 50)
 	c := a + b
+	stack.push(uint64(0))
 	stack.push(a)
 	stack.push(b)
 	stack.push(c)
@@ -50,7 +51,7 @@ func TestStack2(t *testing.T) {
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
-		push BYTE 0
+		push WORD 0
 		mov bp, sp
 		mov WORD [bp+0], %v
 		mov WORD [bp+8], %v
@@ -61,22 +62,22 @@ func TestStack2(t *testing.T) {
 	`, a, b, rA, rB, rA, rB, rA)
 	elf, err := assembleAndLink(asm)
 	if err != nil {
-		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
 		return
 	}
 	if mach, err := executeStackSize(elf, uint64(len(stack))); err != nil {
-		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
 	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
-		t.Errorf("Compilation of:\n%s", asm)
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
 	} else if err := expectGpRegisters(asm, &mach, ExpMap{
 		rA: vm.Register(stack[16:24]),
 		rB: vm.Register(stack[8:16]),
 	}); err != nil {
+		t.Error(compilationOfErr(asm))
 		t.Error(err)
-		t.Errorf("Compilation of:\n%s", asm)
 	}
 }
 func TestStack1F(t *testing.T) {

@@ -109,6 +109,9 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 		return e
 	} else {
 		bytes := DataSizeToByteCount(dParams.destSz)
+		if inStack-bytes+1 < 0 {
+			return errors.StackUnderflow(state.byteCodePos)
+		}
 		copy(
 			state.regs.r[dParams.dest][8-bytes:],
 			state.stack[inStack-bytes+1:inStack+1],
@@ -131,9 +134,16 @@ func (state *VmState) movDRO2(byte2, byte3, byte4 byte, param []byte) error {
 		return e
 	} else {
 		bytes := DataSizeToByteCount(dParams.destSz)
+		if inStack-bytes+1 < 0 {
+			return errors.StackUnderflow(state.byteCodePos)
+		}
+		// copy(
+		// 	state.regs.r[dParams.dest][8-bytes:],
+		// 	state.stack[inStack:inStack+bytes],
+		// )
 		copy(
 			state.regs.r[dParams.dest][8-bytes:],
-			state.stack[inStack:inStack+bytes],
+			state.stack[inStack-bytes+1:inStack+1],
 		)
 	}
 	return nil

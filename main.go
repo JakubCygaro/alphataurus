@@ -37,12 +37,14 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	push QUARTER 48785
-	mov r0q, [sp]
-	pop QUARTER
-	cmp UNSIGNED r0q, 48785
-	je [ip+12]
-	exit 48785
+	push WORD 0
+	mov bp, sp
+	mov WORD [bp+8], 23
+	mov WORD [bp+16], 18446744073709551575
+	mov r6, [bp+8]
+	mov r0, [bp+16]
+	add SIGNED r6, r0
+	mov [bp+24], r6
 	exit 0
 `
 
