@@ -2,10 +2,13 @@ package alphavm
 
 import (
 	"fmt"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"math"
 	"math/rand"
+	"strings"
 	"testing"
+
+	"github.com/JakubCygaro/alphataurus/pkg/assembler"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func TestAddIR1(t *testing.T) {
@@ -460,4 +463,69 @@ func TestIncAndDec1(t *testing.T) {
 		t.Error(err.Error())
 	}
 
+}
+func TestArthIR1(t *testing.T) {
+	into := makeIntoRegistersList()
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		"_start:",
+	)
+	for _, ir := range into {
+		if !vm.IsArthRAllowed(byte(ir.Reg)) {
+			continue
+		}
+		var a, b uint64
+		switch ir.Size {
+		case vm.SZ_8:
+			a, b = uint64(byte(rand.Int63())), uint64(byte(rand.Int63()))
+		case vm.SZ_16:
+			a, b = uint64(uint16(rand.Int63())), uint64(uint16(rand.Int63()))
+		case vm.SZ_32:
+			a, b = uint64(uint32(rand.Int63())), uint64(uint32(rand.Int63()))
+		case vm.SZ_64:
+			a, b = uint64(rand.Int63()), uint64(rand.Int63())
+		}
+		lines = append(lines,
+			fmt.Sprintf(
+				"mov %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				a,
+			),
+			fmt.Sprintf(
+				"add UNSIGNED %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				b,
+			),
+			macroAssertEqRI(
+				assembler.RegisterData(ir),
+				a + b,
+			),
+			fmt.Sprintf(
+				"mov %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				a,
+			),
+			fmt.Sprintf(
+				"sub UNSIGNED %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				b,
+			),
+			macroAssertEqRI(
+				assembler.RegisterData(ir),
+				a - b,
+			),
+		)
+	}
+	lines = append(lines,
+		"exit 0")
+	asm := strings.Join(lines, "\n")
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitCode))
+	}
 }
