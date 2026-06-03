@@ -111,7 +111,7 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 		bytes := DataSizeToByteCount(dParams.destSz)
 		copy(
 			state.regs.r[dParams.dest][8-bytes:],
-			state.stack[inStack:inStack+bytes],
+			state.stack[inStack-bytes+1:inStack+1],
 		)
 	}
 	return nil

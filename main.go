@@ -37,9 +37,13 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	jmp [ip+12]
+	push QUARTER 48785
+	mov r0q, [sp]
+	pop QUARTER
+	cmp UNSIGNED r0q, 48785
+	je [ip+12]
+	exit 48785
 	exit 0
-	exit 1
 `
 
 func main() {

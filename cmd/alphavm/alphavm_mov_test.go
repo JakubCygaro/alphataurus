@@ -247,3 +247,58 @@ func TestAllIRMoves1(t *testing.T) {
 		t.Error(expectedExitCode(0, exitCode))
 	}
 }
+func TestMovDRI1(t *testing.T) {
+	into := makeIntoRegistersList()
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		"_start:",
+	)
+	for _, ir := range into {
+		if !vm.IsArthRAllowed(byte(ir.Reg)) {
+			continue
+		}
+		var val uint64
+		switch ir.Size {
+		case vm.SZ_8:
+			val = uint64(byte(rand.Int63()))
+		case vm.SZ_16:
+			val = uint64(uint16(rand.Int63()))
+		case vm.SZ_32:
+			val = uint64(uint32(rand.Int63()))
+		case vm.SZ_64:
+			val = uint64(rand.Int63())
+		}
+		sz, _ := assembler.GetSizeKeyword(ir.Size)
+		// bytes := vm.DataSizeToByteCount(ir.Size)
+		lines = append(lines,
+			fmt.Sprintf(
+				"push %s %v",
+				sz, val,
+			),
+			fmt.Sprintf(
+				"mov %s, [sp]",
+				regStr(byte(ir.Reg), ir.Size),
+			),
+			fmt.Sprintf(
+				"pop %s",
+				sz,
+			),
+			macroAssertEqRI(
+				assembler.RegisterData(ir),
+				val,
+			),
+		)
+	}
+	lines = append(lines,
+		"exit 0")
+	asm := strings.Join(lines, "\n")
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitCode))
+	}
+}
