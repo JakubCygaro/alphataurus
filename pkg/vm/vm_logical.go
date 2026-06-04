@@ -36,7 +36,7 @@ func (state *VmState) logImpl(a, b uint64, opType OpCodeVal) uint64 {
 	switch {
 	case opType == OP_ORRR || opType == OP_ORIR:
 		a = a | b
-	case opType == OP_ANDRR || opType == OP_ADDIR:
+	case opType == OP_ANDRR || opType == OP_ANDIR:
 		a = a & b
 	case opType == OP_XORRR || opType == OP_XORIR:
 		a = a ^ b

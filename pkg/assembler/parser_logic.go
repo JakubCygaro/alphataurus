@@ -18,7 +18,7 @@ func (p *Parser) parseLogical(logTy int) error {
 	} else {
 		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
 	}
-	if !vm.IsGpReg(byte(op1.Val.(RegisterData).Reg)) {
+	if !vm.IsLogRAllowed(byte(op1.Val.(RegisterData).Reg)) {
 		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 			"Disallowed first operand register",
 			p.lexer.line, p.lexer.col)

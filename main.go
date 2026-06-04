@@ -37,8 +37,11 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	push WORD 0
-	pop WORD
+	mov r0b, 251
+	and r0b, 194
+	cmp UNSIGNED r0b, 194
+	je [ip+12]
+	exit 194
 	exit 0
 `
 
