@@ -45,23 +45,40 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 	}
 	return nil
 }
+
+func (state *VmState) copyFromAddressToRegister(r *Register,
+	addr uint64, dataSz byte) error {
+	if inStack, e := state.isWithinStack(addr); e != nil {
+		return e
+	} else {
+		bytes := DataSizeToByteCount(dataSz)
+		if inStack-bytes+1 < 0 {
+			return errors.StackUnderflow(state.byteCodePos)
+		}
+		copy(
+			(*r)[8-bytes:],
+			state.stack[inStack-bytes+1:inStack+1],
+		)
+	}
+	return nil
+}
 func (state *VmState) movDRI(lastByte byte, param []byte) error {
 	dest := (lastByte & 0b0000_1111)
 	dataSz := (lastByte & 0b0011_0000)
-	bytes := DataSizeToByteCount(dataSz)
 	if !IsMovIntoRAllowed(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
 	addr := binary.BigEndian.Uint64(param)
-	if inStack, e := state.isWithinStack(addr); e != nil {
-		return e
-	} else {
-		copy(
-			state.regs.r[dest][8-bytes:],
-			state.stack[inStack:inStack+bytes],
-		)
-	}
-	return nil
+	// bytes := DataSizeToByteCount(dataSz)
+	// if inStack, e := state.isWithinStack(addr); e != nil {
+	// 	return e
+	// } else {
+	// 	copy(
+	// 		state.regs.r[dest][8-bytes:],
+	// 		state.stack[inStack:inStack+bytes],
+	// 	)
+	// }
+	return state.copyFromAddressToRegister(&state.regs.r[dest], addr, dataSz)
 }
 
 type derefParamsO1 struct {
@@ -105,19 +122,23 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	}
 	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
 	offset := int64(binary.BigEndian.Uint64(param))
-	if inStack, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
+	if addr, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
 		return e
 	} else {
-		bytes := DataSizeToByteCount(dParams.destSz)
-		if inStack-bytes+1 < 0 {
-			return errors.StackUnderflow(state.byteCodePos)
-		}
-		copy(
-			state.regs.r[dParams.dest][8-bytes:],
-			state.stack[inStack-bytes+1:inStack+1],
+		// bytes := DataSizeToByteCount(dParams.destSz)
+		// if addr-bytes+1 < 0 {
+		// 	return errors.StackUnderflow(state.byteCodePos)
+		// }
+		// copy(
+		// 	state.regs.r[dParams.dest][8-bytes:],
+		// 	state.stack[addr-bytes+1:addr+1],
+		// )
+		return state.copyFromAddressToRegister(
+			&state.regs.r[dParams.dest],
+			addr,
+			dParams.destSz,
 		)
 	}
-	return nil
 }
 func (state *VmState) movDRO2(byte2, byte3, byte4 byte, param []byte) error {
 	dParams := state.getDerefParamsO2(byte2, byte3, byte4)
@@ -130,34 +151,34 @@ func (state *VmState) movDRO2(byte2, byte3, byte4 byte, param []byte) error {
 	reg1V := int64(state.GetRegVAsU64(int(dParams.reg1), dParams.r1_2sz))
 	reg2V := int64(state.GetRegVAsU64(int(dParams.reg2), dParams.r1_2sz))
 	offset := int64(binary.BigEndian.Uint64(param))
-	if inStack, e := state.movXDO2GetAddr(reg1V, reg2V, offset, dParams.opTy); e != nil {
+	if addr, e := state.movXDO2GetAddr(reg1V, reg2V, offset, dParams.opTy); e != nil {
 		return e
 	} else {
-		bytes := DataSizeToByteCount(dParams.destSz)
-		if inStack-bytes+1 < 0 {
-			return errors.StackUnderflow(state.byteCodePos)
-		}
+		// bytes := DataSizeToByteCount(dParams.destSz)
+		// if addr-bytes+1 < 0 {
+		// 	return errors.StackUnderflow(state.byteCodePos)
+		// }
+		// // copy(
+		// // 	state.regs.r[dParams.dest][8-bytes:],
+		// // 	state.stack[inStack:inStack+bytes],
+		// // )
 		// copy(
 		// 	state.regs.r[dParams.dest][8-bytes:],
-		// 	state.stack[inStack:inStack+bytes],
+		// 	state.stack[addr-bytes+1:addr+1],
 		// )
-		copy(
-			state.regs.r[dParams.dest][8-bytes:],
-			state.stack[inStack-bytes+1:inStack+1],
+		return state.copyFromAddressToRegister(
+			&state.regs.r[dParams.dest],
+			addr,
+			dParams.destSz,
 		)
 	}
-	return nil
 }
 func (state *VmState) movID(lastByte byte, param []byte) error {
 	p := binary.BigEndian.Uint64(param)
 	dest := (p & 0xffff_ffff_0000_0000) >> 32
 	imm := uint64(int32((p & 0x0000_0000_ffff_ffff)))
 	dataSz := lastByte & 0b0000_0011
-	if inStack, e := state.isWithinStack(dest); e != nil {
-		return e
-	} else {
-		return state.putValInStackWithSize(dataSz, imm, inStack)
-	}
+	return state.putValInStackWithSize(dataSz, imm, dest)
 }
 func (state *VmState) movRD(lastByte byte, param []byte) error {
 	p := binary.BigEndian.Uint64(param)
@@ -172,8 +193,8 @@ func (state *VmState) movRD(lastByte byte, param []byte) error {
 	} else {
 		bytes := DataSizeToByteCount(dataSz)
 		copy(
+			state.stack[inStack-bytes+1:inStack+1],
 			state.regs.r[source][8-bytes:],
-			state.stack[inStack:inStack+bytes],
 		)
 	}
 	return nil
@@ -186,10 +207,10 @@ func (state *VmState) movIDO1NoOffset(byte3, byte4 byte, param []byte) error {
 	p := binary.BigEndian.Uint64(param)
 	imm := p
 	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
-	if inStack, e := state.movXDO1GetAddr(regV, 0, dParams.opTy); e != nil {
+	if addr, e := state.movXDO1GetAddr(regV, 0, dParams.opTy); e != nil {
 		return e
 	} else {
-		return state.putValInStackWithSize(dParams.destSz, imm, inStack)
+		return state.putValInStackWithSize(dParams.destSz, imm, addr)
 	}
 }
 func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
@@ -201,10 +222,10 @@ func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
 	imm := uint64(int32((p & 0x0000_0000_ffff_ffff)))
 	offset := int64((p & 0xffff_ffff_0000_0000) >> 32)
 	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
-	if inStack, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
+	if addr, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
 		return e
 	} else {
-		return state.putValInStackWithSize(dParams.destSz, imm, inStack)
+		return state.putValInStackWithSize(dParams.destSz, imm, addr)
 	}
 }
 func (state *VmState) movRDO1(byte3, byte4 byte, param []byte) error {
@@ -225,7 +246,7 @@ func (state *VmState) movRDO1(byte3, byte4 byte, param []byte) error {
 		return state.putValInStackWithSize(dParams.destSz, val, inStack)
 	}
 }
-func (state *VmState) movXDO1GetAddr(r1V, off int64, opTy byte) (int, error) {
+func (state *VmState) movXDO1GetAddr(r1V, off int64, opTy byte) (uint64, error) {
 	var addr uint64
 	switch opTy {
 	case OP_TADD:
@@ -237,13 +258,9 @@ func (state *VmState) movXDO1GetAddr(r1V, off int64, opTy byte) (int, error) {
 	case OP_TDIV:
 		addr = uint64(r1V / off)
 	default:
-		return -1, errors.BadOpcode(uint32(state.currentOpcode), state.byteCodePos)
+		return 0, errors.BadOpcode(uint32(state.currentOpcode), state.byteCodePos)
 	}
-	if inStack, e := state.isWithinStack(addr); e != nil {
-		return inStack, e
-	} else {
-		return inStack, nil
-	}
+	return addr, nil
 }
 func (state *VmState) movIDO2NoOffset(byte2, byte3, byte4 byte, param []byte) error {
 	dParams := state.getDerefParamsO2(byte2, byte3, byte4)
@@ -258,7 +275,7 @@ func (state *VmState) movIDO2NoOffset(byte2, byte3, byte4 byte, param []byte) er
 	if inStack, e := state.movXDO2GetAddr(reg1V, reg2V, offset, dParams.opTy); e != nil {
 		return e
 	} else {
-		return state.putValInStackWithSize(dParams.destSz, imm, int(inStack))
+		return state.putValInStackWithSize(dParams.destSz, imm, inStack)
 	}
 }
 func (state *VmState) movIDO2(byte2, byte3, byte4 byte, param []byte) error {
@@ -275,7 +292,7 @@ func (state *VmState) movIDO2(byte2, byte3, byte4 byte, param []byte) error {
 	if inStack, e := state.movXDO2GetAddr(reg1V, reg2V, offset, dParams.opTy); e != nil {
 		return e
 	} else {
-		return state.putValInStackWithSize(dParams.destSz, imm, int(inStack))
+		return state.putValInStackWithSize(dParams.destSz, imm, inStack)
 	}
 }
 
@@ -296,11 +313,11 @@ func (state *VmState) movRDO2(byte2, byte3, byte4 byte, param []byte) error {
 		return e
 	} else {
 		val := state.GetRegVAsU64(int(source), dParams.destSz)
-		return state.putValInStackWithSize(dParams.destSz, val, int(inStack))
+		return state.putValInStackWithSize(dParams.destSz, val, inStack)
 	}
 }
 
-func (state *VmState) movXDO2GetAddr(r1V, r2V, off int64, opTy byte) (int, error) {
+func (state *VmState) movXDO2GetAddr(r1V, r2V, off int64, opTy byte) (uint64, error) {
 	var addr uint64
 	switch opTy {
 	case OP_TADD:
@@ -308,13 +325,9 @@ func (state *VmState) movXDO2GetAddr(r1V, r2V, off int64, opTy byte) (int, error
 	case OP_TSUB:
 		addr = uint64(r1V + r2V - off)
 	default:
-		return -1, errors.BadOpcode(uint32(state.currentOpcode), state.byteCodePos)
+		return 0, errors.BadOpcode(uint32(state.currentOpcode), state.byteCodePos)
 	}
-	if inStack, e := state.isWithinStack(addr); e != nil {
-		return inStack, e
-	} else {
-		return inStack, nil
-	}
+	return addr, nil
 }
 
 func (state *VmState) isMovXRO2Allowed(params derefParamsO2) error {

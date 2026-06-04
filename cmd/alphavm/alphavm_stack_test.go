@@ -42,7 +42,6 @@ func TestStack2(t *testing.T) {
 	a := uint64(rand.Intn(101) - 50)
 	b := uint64(rand.Intn(101) - 50)
 	c := a + b
-	stack.push(uint64(0))
 	stack.push(a)
 	stack.push(b)
 	stack.push(c)

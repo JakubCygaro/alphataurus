@@ -21,7 +21,7 @@ func TestDeref1(t *testing.T) {
 	lines = append(lines,
 		"section '.code'",
 		"@entry",
-		"push BYTE 0",
+		"push WORD 0",
 		"mov bp, sp",
 	)
 	for i := 0; i < stackSize; i += 8 {
@@ -53,7 +53,7 @@ func TestDeref2(t *testing.T) {
 	lines = append(lines,
 		"section '.code'",
 		"@entry",
-		"push BYTE 0",
+		"push WORD 0",
 		"mov bp, sp",
 	)
 	for i := 0; i < stackSize; i += 8 {
@@ -86,7 +86,7 @@ func TestDeref3(t *testing.T) {
 	lines = append(lines,
 		"section '.code'",
 		"@entry",
-		"push BYTE 0",
+		"push WORD 0",
 		"mov bp, sp",
 	)
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
