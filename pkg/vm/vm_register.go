@@ -45,6 +45,13 @@ func (r *Register) PutValWithSize(dataSz byte, val uint64) {
 		binary.BigEndian.PutUint64((*r)[8-bytes:], uint64(val))
 	}
 }
+func (r *Register) CopyFromRegisterWithSize(other *Register, dataSz byte){
+	bytes := DataSizeToByteCount(dataSz)
+	copy(
+		(*r)[8-bytes:],
+		(*other)[8-bytes:],
+	)
+}
 func (r *Register) GetValAsU64() uint64 {
 	return binary.BigEndian.Uint64((*r)[:])
 }

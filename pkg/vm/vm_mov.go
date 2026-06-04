@@ -4,83 +4,6 @@ import (
 	"encoding/binary"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
-
-func (state *VmState) movRR(lastByte byte, param []byte) error {
-	var src, dest byte
-	src |= (param[7] & 0xf0) >> 4
-	dest |= (param[7] & 0x0f)
-	dataSz := (lastByte & 0b0000_0011)
-	if !IsMovFromRAllowed(src) {
-		return errors.DisallowedSrcRegister(int(src), state.byteCodePos)
-	} else if !IsMovIntoRAllowed(dest) {
-		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
-	} else {
-		bytes := DataSizeToByteCount(dataSz)
-		copy(
-			state.regs.r[dest][8-bytes:],
-			state.regs.r[src][8-bytes:],
-		)
-	}
-	return nil
-}
-func (state *VmState) movIR(lastByte byte, param []byte) error {
-	var ty, dest, dataSz byte
-	// type of value
-	dataSz |= (lastByte & 0b1100_0000) >> 6
-	ty |= (lastByte & 0b0011_0000) >> 4
-	dest |= (lastByte & 0b0000_1111)
-	if !IsMovIntoRAllowed(dest) {
-		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
-	}
-	switch ty {
-	case TY_SINT:
-		i64 := binary.BigEndian.Uint64(param)
-		state.putValInRegWithSize(int(dest), dataSz, i64)
-	case TY_FLOAT:
-		bits := binary.BigEndian.Uint64(param)
-		state.putValInRegWithSize(int(dest), dataSz, bits)
-	default:
-		u64 := binary.BigEndian.Uint64(param)
-		state.putValInRegWithSize(int(dest), dataSz, u64)
-	}
-	return nil
-}
-
-func (state *VmState) copyFromAddressToRegister(r *Register,
-	addr uint64, dataSz byte) error {
-	if inStack, e := state.isWithinStack(addr); e != nil {
-		return e
-	} else {
-		bytes := DataSizeToByteCount(dataSz)
-		if inStack-bytes+1 < 0 {
-			return errors.StackUnderflow(state.byteCodePos)
-		}
-		copy(
-			(*r)[8-bytes:],
-			state.stack[inStack-bytes+1:inStack+1],
-		)
-	}
-	return nil
-}
-func (state *VmState) movDRI(lastByte byte, param []byte) error {
-	dest := (lastByte & 0b0000_1111)
-	dataSz := (lastByte & 0b0011_0000)
-	if !IsMovIntoRAllowed(dest) {
-		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
-	}
-	addr := binary.BigEndian.Uint64(param)
-	// bytes := DataSizeToByteCount(dataSz)
-	// if inStack, e := state.isWithinStack(addr); e != nil {
-	// 	return e
-	// } else {
-	// 	copy(
-	// 		state.regs.r[dest][8-bytes:],
-	// 		state.stack[inStack:inStack+bytes],
-	// 	)
-	// }
-	return state.copyFromAddressToRegister(&state.regs.r[dest], addr, dataSz)
-}
-
 type derefParamsO1 struct {
 	dest, reg1, opTy, r1sz, destSz byte
 }
@@ -112,6 +35,70 @@ func (state *VmState) getDerefParamsO2(byte2, byte3, byte4 byte) derefParamsO2 {
 	ret.destSz = (byte2 & 0b0000_0011)
 	return ret
 }
+
+func (state *VmState) movRR(lastByte byte, param []byte) error {
+	var src, dest byte
+	src |= (param[7] & 0xf0) >> 4
+	dest |= (param[7] & 0x0f)
+	dataSz := (lastByte & 0b0000_0011)
+	if !IsMovFromRAllowed(src) {
+		return errors.DisallowedSrcRegister(int(src), state.byteCodePos)
+	} else if !IsMovIntoRAllowed(dest) {
+		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
+	} else {
+		state.regs.r[dest].CopyFromRegisterWithSize(
+			&state.regs.r[src],
+			dataSz,
+		)
+		// bytes := DataSizeToByteCount(dataSz)
+		// copy(
+		// 	state.regs.r[dest][8-bytes:],
+		// )
+	}
+	return nil
+}
+func (state *VmState) movIR(lastByte byte, param []byte) error {
+	var dest, dataSz byte
+	// type of value
+	dataSz |= (lastByte & 0b1100_0000) >> 6
+	// ty |= (lastByte & 0b0011_0000) >> 4
+	dest |= (lastByte & 0b0000_1111)
+	if !IsMovIntoRAllowed(dest) {
+		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
+	}
+	bits := binary.BigEndian.Uint64(param)
+	state.putValInRegWithSize(int(dest), dataSz, bits)
+	// switch ty {
+	// case TY_SINT:
+	// 	i64 := binary.BigEndian.Uint64(param)
+	// 	state.putValInRegWithSize(int(dest), dataSz, i64)
+	// case TY_FLOAT:
+	// default:
+	// 	u64 := binary.BigEndian.Uint64(param)
+	// 	state.putValInRegWithSize(int(dest), dataSz, u64)
+	// }
+	return nil
+}
+
+func (state *VmState) movDRI(lastByte byte, param []byte) error {
+	dest := (lastByte & 0b0000_1111)
+	dataSz := (lastByte & 0b0011_0000)
+	if !IsMovIntoRAllowed(dest) {
+		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
+	}
+	addr := binary.BigEndian.Uint64(param)
+	// bytes := DataSizeToByteCount(dataSz)
+	// if inStack, e := state.isWithinStack(addr); e != nil {
+	// 	return e
+	// } else {
+	// 	copy(
+	// 		state.regs.r[dest][8-bytes:],
+	// 		state.stack[inStack:inStack+bytes],
+	// 	)
+	// }
+	return state.copyFromAddressToRegister(&state.regs.r[dest], addr, dataSz)
+}
+
 func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	dParams := state.getDerefParamsO1(byte3, byte4)
 	if !IsMovIntoRAllowed(dParams.dest) {
@@ -125,14 +112,6 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	if addr, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
 		return e
 	} else {
-		// bytes := DataSizeToByteCount(dParams.destSz)
-		// if addr-bytes+1 < 0 {
-		// 	return errors.StackUnderflow(state.byteCodePos)
-		// }
-		// copy(
-		// 	state.regs.r[dParams.dest][8-bytes:],
-		// 	state.stack[addr-bytes+1:addr+1],
-		// )
 		return state.copyFromAddressToRegister(
 			&state.regs.r[dParams.dest],
 			addr,
@@ -154,18 +133,6 @@ func (state *VmState) movDRO2(byte2, byte3, byte4 byte, param []byte) error {
 	if addr, e := state.movXDO2GetAddr(reg1V, reg2V, offset, dParams.opTy); e != nil {
 		return e
 	} else {
-		// bytes := DataSizeToByteCount(dParams.destSz)
-		// if addr-bytes+1 < 0 {
-		// 	return errors.StackUnderflow(state.byteCodePos)
-		// }
-		// // copy(
-		// // 	state.regs.r[dParams.dest][8-bytes:],
-		// // 	state.stack[inStack:inStack+bytes],
-		// // )
-		// copy(
-		// 	state.regs.r[dParams.dest][8-bytes:],
-		// 	state.stack[addr-bytes+1:addr+1],
-		// )
 		return state.copyFromAddressToRegister(
 			&state.regs.r[dParams.dest],
 			addr,
@@ -188,16 +155,11 @@ func (state *VmState) movRD(lastByte byte, param []byte) error {
 	if !IsMovFromRAllowed(byte(source)) {
 		return errors.DisallowedSrcRegister(int(source), state.byteCodePos)
 	}
-	if inStack, e := state.isWithinStack(dest); e != nil {
-		return e
-	} else {
-		bytes := DataSizeToByteCount(dataSz)
-		copy(
-			state.stack[inStack-bytes+1:inStack+1],
-			state.regs.r[source][8-bytes:],
-		)
-	}
-	return nil
+	return state.copyFromRegisterToAddress(
+		&state.regs.r[source],
+		dest,
+		dataSz,
+	)
 }
 func (state *VmState) movIDO1NoOffset(byte3, byte4 byte, param []byte) error {
 	dParams := state.getDerefParamsO1(byte3, byte4)
@@ -284,7 +246,6 @@ func (state *VmState) movIDO2(byte2, byte3, byte4 byte, param []byte) error {
 		return err
 	}
 	p := binary.BigEndian.Uint64(param)
-	// ignore the low 2 bits since they are used as dataSz
 	imm := uint64(p & 0x0000_0000_ffff_ffff)
 	offset := int64((p & 0xffff_ffff_0000_0000) >> 32)
 	reg1V := state.GetRegVAsS64(int(dParams.reg1), dParams.r1_2sz)
@@ -336,6 +297,34 @@ func (state *VmState) isMovXRO2Allowed(params derefParamsO2) error {
 	}
 	if !IsMovRRAllowed(params.reg2) {
 		return errors.DisallowedOp2Register(int(params.reg2), state.byteCodePos)
+	}
+	return nil
+}
+func (state *VmState) copyFromAddressToRegister(r *Register,
+	addr uint64, dataSz byte) error {
+	if inStack, e := state.isWithinStack(addr); e != nil {
+		return e
+	} else {
+		bytes := DataSizeToByteCount(dataSz)
+		s := state.getStackSliceAt(inStack, bytes);
+		copy(
+			(*r)[8-bytes:],
+			s,
+		)
+	}
+	return nil
+}
+func (state *VmState) copyFromRegisterToAddress(r *Register,
+	addr uint64, dataSz byte) error {
+	if inStack, e := state.isWithinStack(addr); e != nil {
+		return e
+	} else {
+		bytes := DataSizeToByteCount(dataSz)
+		s := state.getStackSliceAt(inStack, bytes);
+		copy(
+			s,
+			(*r)[8-bytes:],
+		)
 	}
 	return nil
 }
