@@ -63,26 +63,34 @@ func (state *VmState) popImpl(bytes int) ([]byte, error) {
 	if state.GetRealSp() >= len(state.stack) {
 		return nil, errors.SegmentationFault(uint64(state.GetRealSp()), state.byteCodePos)
 	}
-
-	// val := state.stack[state.GetRealSp()-bytes+1 : state.GetRealSp()+1]
-	val := state.getStackSliceAt(state.GetRealSp(), bytes)
+	// ignore the error return value since we did our own validation
+	val, _ := state.getStackSliceAt(state.GetRealSp(), bytes)
 	var sp = binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
 	sp -= uint64(bytes)
 	binary.BigEndian.PutUint64(state.regs.r[SP_IDX][:], sp)
 	return val, nil
 }
-func (state *VmState) getStackSliceAt(realAddr int, bytes int) VmStack {
+// gets a slice to stack memory pointed to by realAddr
+//
+// error will be set to SegmentationFault error if the memory adress is outside of
+// the bounds of the stack
+func (state *VmState) getStackSliceAt(realAddr int, bytes int) (VmStack, error) {
+	if realAddr < 0 || realAddr >= len(state.stack) {
+		return nil, errors.SegmentationFault(uint64(realAddr), state.byteCodePos)
+	}
 	s := state.stack[realAddr-bytes+1 : realAddr+1]
-	return s
+	return s, nil
 }
 func (state *VmState) putValInStackWithSize(
 	dataSz byte, val uint64, address uint64) error {
 	if inStack, err := state.isWithinStack(address); err != nil {
 		return err
 	} else {
-		// s := state.stack[inStack-bytes+1 : inStack+1]
 		bytes := DataSizeToByteCount(dataSz)
-		s := state.getStackSliceAt(inStack, bytes)
+		s, err := state.getStackSliceAt(inStack, bytes)
+		if err != nil {
+			return err
+		}
 		switch dataSz {
 		case SZ_8:
 			s[0] = byte(val)

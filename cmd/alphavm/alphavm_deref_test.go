@@ -163,6 +163,50 @@ func TestDeref5(t *testing.T) {
 		t.Errorf("Expected exit code %v got %v", 69, exit)
 	}
 }
+func TestDeref6(t *testing.T) {
+	stackSize := (rand.Intn(32-5) + 5) * 8
+	stack := makeTestingStack(stackSize)
+	for range stackSize / 8 {
+		stack.push(uint64(rand.Intn(101) - 50))
+	}
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+	)
+	code := make([]string, 0)
+	code = append(code,
+		"push WORD 0",
+		"mov bp, sp",
+	)
+	codeSize := (len(code) + stackSize/8) * vm.INSTRUCTION_SIZE
+	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
+	for i := 0; i < stackSize; i += 8 {
+		v := binary.BigEndian.Uint64(stack[i : i+8])
+		code = append(code,
+			fmt.Sprintf(
+				"mov WORD [%v], %v",
+				stackBase + (i/8)*8,
+				int64(v),
+			),
+		)
+	}
+	lines = append(lines, code...)
+	asm := strings.Join(lines, "\n")
+	b, err := assembleAndLink(asm)
+	if err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+		return
+	}
+	if mach, err := executeStackSize(b, uint64(stackSize)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err.Error())
+	}
+}
 func TestDeref1F(t *testing.T) {
 	rA := byte(rand.Int() % vm.GP_REG_MAX)
 	asm := fmt.Sprintf(`

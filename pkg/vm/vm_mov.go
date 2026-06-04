@@ -304,13 +304,16 @@ func (state *VmState) copyFromAddressToRegister(r *Register,
 	addr uint64, dataSz byte) error {
 	if inStack, e := state.isWithinStack(addr); e != nil {
 		return e
-	} else {
+	} else{
 		bytes := DataSizeToByteCount(dataSz)
-		s := state.getStackSliceAt(inStack, bytes);
-		copy(
-			(*r)[8-bytes:],
-			s,
-		)
+		if s, err := state.getStackSliceAt(inStack, bytes); err != nil {
+			return err
+		} else {
+			copy(
+				(*r)[8-bytes:],
+				s,
+			)
+		}
 	}
 	return nil
 }
@@ -320,11 +323,14 @@ func (state *VmState) copyFromRegisterToAddress(r *Register,
 		return e
 	} else {
 		bytes := DataSizeToByteCount(dataSz)
-		s := state.getStackSliceAt(inStack, bytes);
-		copy(
-			s,
-			(*r)[8-bytes:],
-		)
+		if s, err := state.getStackSliceAt(inStack, bytes); err != nil {
+			return err
+		} else {
+			copy(
+				s,
+				(*r)[8-bytes:],
+			)
+		}
 	}
 	return nil
 }
