@@ -38,14 +38,7 @@ const assembly = `
 section '.code'
 @entry
 	push WORD 0
-	mov bp, sp
-	mov WORD [bp+0], 3
-	mov WORD [bp+8], 18446744073709551584
-	mov r1, [bp]
-	mov r5, [bp+0]
-	mov r6, [bp+8]
-	add SIGNED r5, r6
-	mov [bp+16], r5
+	pop WORD
 	exit 0
 `
 

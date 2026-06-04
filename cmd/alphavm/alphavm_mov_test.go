@@ -248,7 +248,6 @@ func TestAllIRMoves1(t *testing.T) {
 	}
 }
 func TestMovDRI1(t *testing.T) {
-	return
 	into := makeIntoRegistersList()
 	lines := make([]string, 0)
 	lines = append(lines,
@@ -257,7 +256,8 @@ func TestMovDRI1(t *testing.T) {
 		"_start:",
 	)
 	for _, ir := range into {
-		if !vm.IsArthRAllowed(byte(ir.Reg)) {
+		if !vm.IsArthRAllowed(byte(ir.Reg)) ||
+			ir.Reg == vm.SP_IDX {
 			continue
 		}
 		var val uint64

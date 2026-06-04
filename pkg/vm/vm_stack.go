@@ -60,6 +60,10 @@ func (state *VmState) popImpl(bytes int) ([]byte, error) {
 	if state.GetRealSp() < 0 {
 		return nil, errors.StackUnderflow(state.byteCodePos)
 	}
+	if state.GetRealSp() >= len(state.stack) {
+		return nil, errors.SegmentationFault(uint64(state.GetRealSp()), state.byteCodePos)
+	}
+
 	// val := state.stack[state.GetRealSp()-bytes+1 : state.GetRealSp()+1]
 	val := state.getStackSliceAt(state.GetRealSp(), bytes)
 	var sp = binary.BigEndian.Uint64(state.regs.r[SP_IDX][:])
