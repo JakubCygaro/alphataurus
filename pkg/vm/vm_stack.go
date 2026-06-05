@@ -70,15 +70,24 @@ func (state *VmState) popImpl(bytes int) ([]byte, error) {
 	binary.BigEndian.PutUint64(state.regs.r[SP_IDX][:], sp)
 	return val, nil
 }
+
 // gets a slice to stack memory pointed to by realAddr
 //
 // error will be set to SegmentationFault error if the memory adress is outside of
 // the bounds of the stack
 func (state *VmState) getStackSliceAt(realAddr int, bytes int) (VmStack, error) {
-	if realAddr < 0 || realAddr >= len(state.stack) {
-		return nil, errors.SegmentationFault(uint64(realAddr), state.byteCodePos)
+	start := realAddr - bytes + 1
+	end := realAddr + 1
+	if start < 0 || end > len(state.stack) {
+		return nil, errors.SegmentationFault(
+			uint64(realAddr + state.stackSegBase),
+			state.byteCodePos,
+		)
 	}
-	s := state.stack[realAddr-bytes+1 : realAddr+1]
+	// if realAddr < 0 || realAddr >= len(state.stack) {
+	// 	return nil, errors.SegmentationFault(uint64(realAddr), state.byteCodePos)
+	// }
+	s := state.stack[start:end]
 	return s, nil
 }
 func (state *VmState) putValInStackWithSize(

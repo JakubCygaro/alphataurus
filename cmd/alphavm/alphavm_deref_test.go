@@ -169,24 +169,23 @@ func TestDeref6(t *testing.T) {
 	for range stackSize / 8 {
 		stack.push(uint64(rand.Intn(101) - 50))
 	}
+	code := make([]string, 0)
+	codeSize := (len(code) + stackSize/8) * vm.INSTRUCTION_SIZE
+	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
 	lines := make([]string, 0)
 	lines = append(lines,
 		"section '.code'",
 		"@entry",
+		fmt.Sprintf(";; code size should be %v (%v instructions)", codeSize, codeSize/12),
+		fmt.Sprintf(";; stack base should thus be %v (0x%x)", stackBase, stackBase),
+		fmt.Sprintf(";; fake stack size is %v", stackSize),
 	)
-	code := make([]string, 0)
-	code = append(code,
-		"push WORD 0",
-		"mov bp, sp",
-	)
-	codeSize := (len(code) + stackSize/8) * vm.INSTRUCTION_SIZE
-	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
 	for i := 0; i < stackSize; i += 8 {
 		v := binary.BigEndian.Uint64(stack[i : i+8])
 		code = append(code,
 			fmt.Sprintf(
-				"mov WORD [%v], %v",
-				stackBase + (i/8)*8,
+				"mov WORD [0x%x], %v",
+				stackBase+i+7,
 				int64(v),
 			),
 		)
