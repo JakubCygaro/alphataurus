@@ -78,7 +78,7 @@ func (state *VmState) popImpl(bytes int) ([]byte, error) {
 func (state *VmState) getStackSliceAt(realAddr int, bytes int) (VmStack, error) {
 	start := realAddr - bytes + 1
 	end := realAddr + 1
-	if start < 0 || end > len(state.stack) {
+	if start < 0 || end > len(state.stack) || start > end {
 		return nil, errors.SegmentationFault(
 			uint64(realAddr + state.stackSegBase),
 			state.byteCodePos,

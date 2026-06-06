@@ -220,11 +220,10 @@ func assertToOp(ty AssertTy) string {
 
 // assert equality of r and expect, exit with code equal to expect on failure
 func macroAssertEqRI(r assembler.RegisterData, expect uint64) string {
-	return fmt.Sprintf(`
-		cmp UNSIGNED %s, %v
-		je [ip+%v]
-		exit %v
-	`,
+	return fmt.Sprintf(
+		`cmp UNSIGNED %s, %v
+je [ip+%v]
+exit %v`,
 		regStr(byte(r.Reg), r.Size),
 		expect,
 		vm.INSTRUCTION_SIZE,

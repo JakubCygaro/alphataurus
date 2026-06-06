@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -187,6 +188,67 @@ func TestDeref6(t *testing.T) {
 				"mov WORD [0x%x], %v",
 				stackBase+i+7,
 				int64(v),
+			),
+		)
+	}
+	lines = append(lines, code...)
+	asm := strings.Join(lines, "\n")
+	b, err := assembleAndLink(asm)
+	if err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+		return
+	}
+	if mach, err := executeStackSize(b, uint64(stackSize)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err.Error())
+	}
+}
+func TestDeref7(t *testing.T) {
+	stackSize := (rand.Intn(32-5) + 5) * 8
+	stack := makeTestingStack(stackSize)
+	for range stackSize / 8 {
+		stack.push(uint64(rand.Intn(101) - 50))
+	}
+	code := make([]string, 0)
+	pushCount := stackSize / 8
+	movCount := pushCount
+	assertMacroCount := movCount * 3
+	codeSize := (len(code) + pushCount + movCount + assertMacroCount) *
+		vm.INSTRUCTION_SIZE
+	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		fmt.Sprintf(";; code size should be %v (%v instructions)", codeSize, codeSize/12),
+		fmt.Sprintf(";; stack base should thus be %v (0x%x)", stackBase, stackBase),
+		fmt.Sprintf(";; fake stack size is %v", stackSize),
+	)
+	for i := 0; i < stackSize; i += 8 {
+		v := binary.BigEndian.Uint64(stack[i : i+8])
+		code = append(code,
+			fmt.Sprintf(
+				"push WORD %v",
+				int64(v),
+			),
+		)
+	}
+	for i := 0; i < stackSize; i += 8 {
+		r := randomGpRegisterWord()
+		v := binary.BigEndian.Uint64(stack[i : i+8])
+		code = append(code,
+			fmt.Sprintf(
+				"mov %s, [0x%x]",
+				regStr(r, vm.SZ_64),
+				stackBase+i+7,
+			),
+			macroAssertEqRI(
+				assembler.RegisterData{Reg: int(r), Size: vm.SZ_64},
+				v,
 			),
 		)
 	}
