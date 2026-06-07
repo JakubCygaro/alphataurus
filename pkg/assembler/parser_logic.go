@@ -58,7 +58,7 @@ func (p *Parser) parseLogical(logTy int) error {
 	}
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
-		if !vm.IsGpReg(byte(op2.Val)) {
+		if !vm.IsMovFromRAllowed(byte(op2.Val)) {
 			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
 				"Disallowed second operand register",
 				p.lexer.line, p.lexer.col)
