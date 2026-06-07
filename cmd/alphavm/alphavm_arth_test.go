@@ -531,6 +531,144 @@ func TestArthIR1(t *testing.T) {
 		t.Error(expectedExitCode(0, exitCode))
 	}
 }
+func TestArthIR2(t *testing.T) {
+	into := makeIntoRegistersList()
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		"_start:",
+	)
+	for _, ir := range into {
+		if !vm.IsArthRAllowed(byte(ir.Reg)) {
+			continue
+		}
+		var a, b int64
+		switch ir.Size {
+		case vm.SZ_8:
+			a, b = int64(byte(rand.Int63())), int64(byte(rand.Int63()))
+		case vm.SZ_16:
+			a, b = int64(uint16(rand.Int63())), int64(uint16(rand.Int63()))
+		case vm.SZ_32:
+			a, b = int64(uint32(rand.Int63())), int64(uint32(rand.Int63()))
+		case vm.SZ_64:
+			a, b = int64(rand.Int63()), int64(rand.Int63())
+		}
+		lines = append(lines,
+			fmt.Sprintf(
+				"mov %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				a,
+			),
+			fmt.Sprintf(
+				"add SIGNED %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				b,
+			),
+			macroAssertEqRI(
+				assembler.RegisterData(ir),
+				a+b,
+				SIGNED,
+			),
+			fmt.Sprintf(
+				"mov %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				a,
+			),
+			fmt.Sprintf(
+				"sub SIGNED %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				b,
+			),
+			macroAssertEqRI(
+				assembler.RegisterData(ir),
+				a-b,
+				SIGNED,
+			),
+		)
+	}
+	lines = append(lines,
+		"exit 0")
+	asm := strings.Join(lines, "\n")
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitCode))
+	}
+}
+func TestArthIR3(t *testing.T) {
+	into := makeIntoRegistersList()
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		"_start:",
+	)
+	for _, ir := range into {
+		if !vm.IsArthRAllowed(byte(ir.Reg)) || ir.Size != vm.SZ_64 {
+			continue
+		}
+		var a, b float64
+		switch ir.Size {
+		case vm.SZ_8:
+			a, b = math.Float64frombits(uint64(byte(rand.Int63()))),
+				math.Float64frombits(uint64(byte(rand.Int63())))
+		case vm.SZ_16:
+			a, b = math.Float64frombits(uint64(uint16(rand.Int63()))),
+				math.Float64frombits(uint64(uint16(rand.Int63())))
+		case vm.SZ_32:
+			a, b = math.Float64frombits(uint64(uint32(rand.Int63()))),
+				math.Float64frombits(uint64(uint32(rand.Int63())))
+		case vm.SZ_64:
+			a, b = math.Float64frombits(uint64(rand.Int63())),
+				math.Float64frombits(uint64(rand.Int63()))
+		}
+		lines = append(lines,
+			fmt.Sprintf(
+				"mov %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				a,
+			),
+			fmt.Sprintf(
+				"add FLOAT %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				b,
+			),
+			macroAssertEqRI(
+				assembler.RegisterData(ir),
+				a+b,
+				FLOAT,
+			),
+			fmt.Sprintf(
+				"mov %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				a,
+			),
+			fmt.Sprintf(
+				"sub FLOAT %s, %v",
+				regStr(byte(ir.Reg), ir.Size),
+				b,
+			),
+			macroAssertEqRI(
+				assembler.RegisterData(ir),
+				a-b,
+				FLOAT,
+			),
+		)
+	}
+	lines = append(lines,
+		"exit 0")
+	asm := strings.Join(lines, "\n")
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitCode))
+	}
+}
 func TestArthRR1(t *testing.T) {
 	into := makeIntoRegistersList()
 	lines := make([]string, 0)
@@ -620,16 +758,16 @@ func TestArthRR2(t *testing.T) {
 				ar.Reg == br.Reg {
 				continue
 			}
-			var a, b uint64
+			var a, b int64
 			switch ar.Size {
 			case vm.SZ_8:
-				a, b = uint64(byte(rand.Int63())), uint64(byte(rand.Int63()))
+				a, b = int64(byte(rand.Int63())), int64(byte(rand.Int63()))
 			case vm.SZ_16:
-				a, b = uint64(uint16(rand.Int63())), uint64(uint16(rand.Int63()))
+				a, b = int64(uint16(rand.Int63())), int64(uint16(rand.Int63()))
 			case vm.SZ_32:
-				a, b = uint64(uint32(rand.Int63())), uint64(uint32(rand.Int63()))
+				a, b = int64(uint32(rand.Int63())), int64(uint32(rand.Int63()))
 			case vm.SZ_64:
-				a, b = uint64(rand.Int63()), uint64(rand.Int63())
+				a, b = int64(rand.Int63()), int64(rand.Int63())
 			}
 			lines = append(lines,
 				fmt.Sprintf(
