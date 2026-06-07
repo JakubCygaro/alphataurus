@@ -249,6 +249,7 @@ func TestDeref7(t *testing.T) {
 			macroAssertEqRI(
 				assembler.RegisterData{Reg: int(r), Size: vm.SZ_64},
 				v,
+				UNSIGNED,
 			),
 		)
 	}

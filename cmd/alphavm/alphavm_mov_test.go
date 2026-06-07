@@ -233,6 +233,7 @@ func TestAllIRMoves1(t *testing.T) {
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
 				uint64(val),
+				UNSIGNED,
 			),
 		)
 	}
@@ -289,6 +290,7 @@ func TestMovDRI1(t *testing.T) {
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
 				val,
+				UNSIGNED,
 			),
 		)
 	}

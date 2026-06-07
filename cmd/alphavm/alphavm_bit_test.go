@@ -383,6 +383,7 @@ func TestLogIR1(t *testing.T) {
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
 				a&b,
+				UNSIGNED,
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
@@ -397,6 +398,7 @@ func TestLogIR1(t *testing.T) {
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
 				a|b,
+				UNSIGNED,
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
@@ -411,6 +413,7 @@ func TestLogIR1(t *testing.T) {
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
 				a^b,
+				UNSIGNED,
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
@@ -425,6 +428,7 @@ func TestLogIR1(t *testing.T) {
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
 				a<<b,
+				UNSIGNED,
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
@@ -439,6 +443,7 @@ func TestLogIR1(t *testing.T) {
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
 				a>>b,
+				UNSIGNED,
 			),
 		)
 	}

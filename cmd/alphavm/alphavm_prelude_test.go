@@ -218,16 +218,32 @@ func assertToOp(ty AssertTy) string {
 	}
 }
 
+type assertTypeKwd string
+
+const (
+	UNSIGNED assertTypeKwd = "UNSIGNED"
+	SIGNED   assertTypeKwd = "SIGNED"
+	FLOAT    assertTypeKwd = "FLOAT"
+)
+
 // assert equality of r and expect, exit with code equal to expect on failure
-func macroAssertEqRI(r assembler.RegisterData, expect uint64) string {
+func macroAssertEqRI(r assembler.RegisterData,
+	expect any, cmpType assertTypeKwd) string {
+	var exitV string
+	if cmpType == FLOAT {
+		exitV = fmt.Sprintf("%d", int64(expect.(float64)))
+	} else {
+		exitV = fmt.Sprintf("%v", expect)
+	}
 	return fmt.Sprintf(
-		`cmp UNSIGNED %s, %v
+		`cmp %s %s, %v
 je [ip+%v]
 exit %v`,
+		cmpType,
 		regStr(byte(r.Reg), r.Size),
 		expect,
 		vm.INSTRUCTION_SIZE,
-		expect,
+		exitV,
 	)
 }
 

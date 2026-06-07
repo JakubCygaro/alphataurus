@@ -17,3 +17,7 @@
 - label deref [start]
 - add more tests
 - add movzz
+- add remaining jump instructions
+- add test instruction
+- possible reimplementation of the opcode decoder by writing a custom codegen tool
+ that inspects the codebase for OP_CODE declarations and writes a fast decoder
