@@ -82,7 +82,7 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 
 func (state *VmState) movDRI(lastByte byte, param []byte) error {
 	dest := (lastByte & 0b0000_1111)
-	dataSz := (lastByte & 0b0011_0000)
+	dataSz := (lastByte & 0b0011_0000) >> 4
 	if !IsMovIntoRAllowed(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
