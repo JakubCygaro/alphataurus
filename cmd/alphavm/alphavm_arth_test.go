@@ -500,7 +500,7 @@ func TestArthIR1(t *testing.T) {
 			),
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
-				a + b,
+				a+b,
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
@@ -514,7 +514,7 @@ func TestArthIR1(t *testing.T) {
 			),
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
-				a - b,
+				a-b,
 			),
 		)
 	}
@@ -527,5 +527,78 @@ func TestArthIR1(t *testing.T) {
 	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
 		t.Error(compilationOfErr(asm))
 		t.Error(expectedExitCode(0, exitCode))
+	}
+}
+func TestArthRR1(t *testing.T) {
+	into := makeIntoRegistersList()
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		"_start:",
+	)
+	for _, ar := range into {
+		for _, br := range into {
+			if !vm.IsArthRAllowed(byte(ar.Reg)) ||
+				ar.Reg == br.Reg {
+				continue
+			}
+			var a, b uint64
+			switch ar.Size {
+			case vm.SZ_8:
+				a, b = uint64(byte(rand.Int63())), uint64(byte(rand.Int63()))
+			case vm.SZ_16:
+				a, b = uint64(uint16(rand.Int63())), uint64(uint16(rand.Int63()))
+			case vm.SZ_32:
+				a, b = uint64(uint32(rand.Int63())), uint64(uint32(rand.Int63()))
+			case vm.SZ_64:
+				a, b = uint64(rand.Int63()), uint64(rand.Int63())
+			}
+			lines = append(lines,
+				fmt.Sprintf(
+					"mov %s, %v",
+					regStr(byte(ar.Reg), ar.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"mov %s, %v",
+					regStr(byte(br.Reg), br.Size),
+					b,
+				),
+				fmt.Sprintf(
+					"add UNSIGNED %s, %s",
+					regStr(byte(ar.Reg), ar.Size),
+					regStr(byte(br.Reg), br.Size),
+				),
+				macroAssertEqRI(
+					assembler.RegisterData(ar),
+					a+b,
+				),
+				fmt.Sprintf(
+					"mov %s, %v",
+					regStr(byte(ar.Reg), ar.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"sub UNSIGNED %s, %s",
+					regStr(byte(ar.Reg), ar.Size),
+					regStr(byte(br.Reg), br.Size),
+				),
+				macroAssertEqRI(
+					assembler.RegisterData(ar),
+					a-b,
+				),
+			)
+		}
+		lines = append(lines,
+			"exit 0")
+		asm := strings.Join(lines, "\n")
+		if mach, err := assembleAndExecute(asm); err != nil {
+			t.Error(compilationOfErr(asm))
+			t.Error(err)
+		} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+			t.Error(compilationOfErr(asm))
+			t.Error(expectedExitCode(0, exitCode))
+		}
 	}
 }

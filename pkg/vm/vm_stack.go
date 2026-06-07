@@ -84,9 +84,6 @@ func (state *VmState) getStackSliceAt(realAddr int, bytes int) (VmStack, error) 
 			state.byteCodePos,
 		)
 	}
-	// if realAddr < 0 || realAddr >= len(state.stack) {
-	// 	return nil, errors.SegmentationFault(uint64(realAddr), state.byteCodePos)
-	// }
 	s := state.stack[start:end]
 	return s, nil
 }
