@@ -263,6 +263,19 @@ func macroAssertUGenericRR(r, expect assembler.RegisterData, aT AssertTy) string
 		regStr(byte(expect.Reg), expect.Size),
 	)
 }
+func macroAssertUGenericIR(r assembler.RegisterData, expect uint64, aT AssertTy) string {
+	return fmt.Sprintf(`
+		cmp UNSIGNED %s, %v
+		%s [ip+%v]
+		exit %v
+	`,
+		regStr(byte(r.Reg), r.Size),
+		expect,
+		assertToOp(aT),
+		vm.INSTRUCTION_SIZE,
+		expect,
+	)
+}
 
 func getComparison(a, b uint64) AssertTy {
 	switch {
