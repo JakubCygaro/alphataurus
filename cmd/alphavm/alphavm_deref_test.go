@@ -309,3 +309,168 @@ func TestDeref2F(t *testing.T) {
 		t.Error(err)
 	}
 }
+func TestMovDRI1(t *testing.T) {
+	into := makeIntoRegistersList()
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		"_start:",
+	)
+	for _, ir := range into {
+		if !vm.IsArthRAllowed(byte(ir.Reg)) ||
+			ir.Reg == vm.SP_IDX {
+			continue
+		}
+		var val uint64
+		switch ir.Size {
+		case vm.SZ_8:
+			val = uint64(byte(rand.Int63()))
+		case vm.SZ_16:
+			val = uint64(uint16(rand.Int63()))
+		case vm.SZ_32:
+			val = uint64(uint32(rand.Int63()))
+		case vm.SZ_64:
+			val = uint64(rand.Int63())
+		}
+		sz, _ := assembler.GetSizeKeyword(ir.Size)
+		// bytes := vm.DataSizeToByteCount(ir.Size)
+		lines = append(lines,
+			fmt.Sprintf(
+				"push %s %v",
+				sz, val,
+			),
+			fmt.Sprintf(
+				"mov %s, [sp]",
+				regStr(byte(ir.Reg), ir.Size),
+			),
+			fmt.Sprintf(
+				"pop %s",
+				sz,
+			),
+			macroAssertEqRI(
+				assembler.RegisterData(ir),
+				val,
+				UNSIGNED,
+			),
+		)
+	}
+	lines = append(lines,
+		"exit 0")
+	asm := strings.Join(lines, "\n")
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitCode))
+	}
+}
+func TestMovRDO1_1(t *testing.T) {
+	stackSize := (rand.Intn(32-5) + 5) * 8
+	stack := makeTestingStack(stackSize)
+	for range stackSize / 8 {
+		stack.push(uint64(rand.Intn(101) - 50))
+	}
+	code := make([]string, 0)
+	codeSize := (len(code) + (stackSize/8)*2) * vm.INSTRUCTION_SIZE
+	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		fmt.Sprintf(";; code size should be %v (%v instructions)", codeSize, codeSize/12),
+		fmt.Sprintf(";; stack base should thus be %v (0x%x)", stackBase, stackBase),
+		fmt.Sprintf(";; fake stack size is %v", stackSize),
+	)
+	for i := 0; i < stackSize; i += 8 {
+		v := binary.BigEndian.Uint64(stack[i : i+8])
+		randomOffsetReg := randomGpRegisterWord()
+		code = append(code,
+			fmt.Sprintf(
+				"mov %s, 0x%x",
+				regStr(randomOffsetReg, vm.SZ_64),
+				stackBase+i+7,
+			),
+			fmt.Sprintf(
+				"mov WORD [0x0+%s], %v",
+				regStr(randomOffsetReg, vm.SZ_64),
+				int64(v),
+			),
+		)
+	}
+	lines = append(lines, code...)
+	asm := strings.Join(lines, "\n")
+	b, err := assembleAndLink(asm)
+	if err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+		return
+	}
+	if mach, err := executeStackSize(b, uint64(stackSize)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err.Error())
+	}
+}
+func TestMovRDO2_1(t *testing.T) {
+	stackSize := (rand.Intn(32-5) + 5) * 8
+	stack := makeTestingStack(stackSize)
+	for range stackSize / 8 {
+		stack.push(uint64(rand.Intn(101) - 50))
+	}
+	code := make([]string, 0)
+	codeSize := (len(code) + (stackSize/8)*3) * vm.INSTRUCTION_SIZE
+	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
+	lines := make([]string, 0)
+	lines = append(lines,
+		"section '.code'",
+		"@entry",
+		fmt.Sprintf(";; code size should be %v (%v instructions)", codeSize, codeSize/12),
+		fmt.Sprintf(";; stack base should thus be %v (0x%x)", stackBase, stackBase),
+		fmt.Sprintf(";; fake stack size is %v", stackSize),
+	)
+	for i := 0; i < stackSize; i += 8 {
+		v := binary.BigEndian.Uint64(stack[i : i+8])
+		randomOffsetRegA := randomGpRegisterWord()
+		randomOffsetRegB := nextRandomGpRegister(randomOffsetRegA)
+		off := stackBase + i + 7
+		offHalf1 := off / 2
+		offHalf2 := off - offHalf1
+		code = append(code,
+			fmt.Sprintf(
+				"mov %s, 0x%x",
+				regStr(randomOffsetRegA, vm.SZ_64),
+				offHalf1,
+			),
+			fmt.Sprintf(
+				"mov %s, 0x%x",
+				regStr(randomOffsetRegB, vm.SZ_64),
+				offHalf2,
+			),
+			fmt.Sprintf(
+				"mov WORD [0x0+%s+%s], %v",
+				regStr(randomOffsetRegA, vm.SZ_64),
+				regStr(randomOffsetRegB, vm.SZ_64),
+				int64(v),
+			),
+		)
+	}
+	lines = append(lines, code...)
+	asm := strings.Join(lines, "\n")
+	b, err := assembleAndLink(asm)
+	if err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+		return
+	}
+	if mach, err := executeStackSize(b, uint64(stackSize)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if err := expectStack(&mach, vm.VmStack(stack)); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err.Error())
+	}
+}
