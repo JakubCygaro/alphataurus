@@ -471,7 +471,8 @@ func TestLogIRR(t *testing.T) {
 			if !vm.IsLogRAllowed(byte(ar.Reg)) ||
 				ar.Reg == vm.SP_IDX ||
 				br.Reg == vm.SP_IDX ||
-				ar.Size < br.Size {
+				ar.Size != br.Size ||
+				ar.Reg == br.Reg {
 				continue
 			}
 			var a, b uint64

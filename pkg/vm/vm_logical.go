@@ -22,7 +22,7 @@ func (state *VmState) logRR(opType int, param []byte) error {
 	if err != nil {
 		return err
 	}
-	if data.r1sz < data.r2sz {
+	if data.r1sz != data.r2sz {
 		return errors.BadOperandSizes(data.r1sz, data.r2sz, state.byteCodePos)
 	}
 	fVal, sVal :=

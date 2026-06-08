@@ -431,15 +431,10 @@ func (a *Assembler) emitArthRR(op InstTy, data InstArthData, out *[]byte) error 
 		0,
 	}
 	*out = append(*out, param[:]...)
-	// *out = append(*out, byte(data.Source))
-	// *out = append(*out, byte(data.Dest))
-	// *out = append(*out, byte(0))
-	// *out = append(*out, byte(data.Ty))
-	// *out = append(*out, 0, 0, 0, 0)
 	return nil
 }
 func (a *Assembler) emitLogRR(op InstTy, data InstLogicalData, out *[]byte) error {
-	if data.First.Size < data.Second.Size {
+	if data.First.Size != data.Second.Size {
 		return errors.MismatchedRegisterSizes(
 			a.parser.currentInst.Line,
 			a.parser.currentInst.Col,
