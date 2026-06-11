@@ -415,6 +415,98 @@ func TestMovRDO1_1(t *testing.T) {
 		t.Error(err.Error())
 	}
 }
+func TestMovRDO1_2(t *testing.T) {
+	// fStack := makeTestingStack(0)
+	val := rand.Int63n(10_000) - 5_000
+	r := randomGpRegisterWord()
+	off := nextRandomGpRegister(r)
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		push WORD %v
+		mov %s, 8
+		mov %s, [bp+%s]
+		%s
+		mov %s, [bp+%s]
+		%s
+		mov %s, [bp+%s]
+		%s
+		mov %s, [bp+%s]
+		%s
+		exit 0
+	`,
+		val,
+		regStr(off, vm.SZ_64),
+		regStr(r, vm.SZ_64), regStr(off, vm.SZ_64),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		regStr(r, vm.SZ_64), regStr(off, vm.SZ_32),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		regStr(r, vm.SZ_64), regStr(off, vm.SZ_16),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		regStr(r, vm.SZ_64), regStr(off, vm.SZ_8),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+	)
+	b, err := assembleAndLink(asm)
+	if err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+		return
+	}
+	if mach, err := executeStackSize(b, 8); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitV := mach.GetExitCode(); exitV != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitV))
+	}
+}
+func TestMovRDO1_3(t *testing.T) {
+	val := rand.Int63n(10_000) - 5_000
+	r := randomGpRegisterWord()
+	off := nextRandomGpRegister(r)
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		push WORD %v
+		push WORD %v+1
+		mov bp, sp
+		mov %s, -8
+		mov %s, [bp+%s]
+		%s
+		mov %s, [bp+%s]
+		%s
+		mov %s, [bp+%s]
+		%s
+		mov %s, [bp+%s]
+		%s
+		exit 0
+	`,
+		val,
+		val,
+		regStr(off, vm.SZ_64),
+		regStr(r, vm.SZ_64), regStr(off, vm.SZ_64),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		regStr(r, vm.SZ_64), regStr(off, vm.SZ_32),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		regStr(r, vm.SZ_64), regStr(off, vm.SZ_16),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		regStr(r, vm.SZ_64), regStr(off, vm.SZ_8),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+	)
+	b, err := assembleAndLink(asm)
+	if err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+		return
+	}
+	if mach, err := executeStackSize(b, 8*2); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitV := mach.GetExitCode(); exitV != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitV))
+	}
+}
 func TestMovRDO2_1(t *testing.T) {
 	stackSize := (rand.Intn(32-5) + 5) * 8
 	stack := makeTestingStack(stackSize)

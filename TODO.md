@@ -21,3 +21,21 @@
 - add test instruction
 - possible reimplementation of the opcode decoder by writing a custom codegen tool
  that inspects the codebase for OP_CODE declarations and writes a fast decoder
+- future decoder idea:
+```Go
+// radix tree for opcode lookup
+type opcodeTrie struct {  }
+// array of radix trees that is indexed by the first opcode byte
+var prefixArray [256]opcodeTrie
+
+func Lookup(opcode [4]byte)  {
+    pref := prefixArray[opcode[3]]
+    if pref.none {
+        return nil
+    }
+    rem := opcode[:4]
+    return pref.find(rem)
+}
+
+
+```

@@ -226,6 +226,13 @@ const (
 	FLOAT    assertTypeKwd = "FLOAT"
 )
 
+func toReg(r int, sz byte) assembler.RegisterData {
+	return assembler.RegisterData{
+		Reg:  r,
+		Size: sz,
+	}
+}
+
 // assert equality of r and expect, exit with code equal to expect on failure
 func macroAssertEqRI(r assembler.RegisterData,
 	expect any, cmpType assertTypeKwd) string {

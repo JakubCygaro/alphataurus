@@ -87,15 +87,6 @@ func (state *VmState) movDRI(lastByte byte, param []byte) error {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
 	addr := binary.BigEndian.Uint64(param)
-	// bytes := DataSizeToByteCount(dataSz)
-	// if inStack, e := state.isWithinStack(addr); e != nil {
-	// 	return e
-	// } else {
-	// 	copy(
-	// 		state.regs.r[dest][8-bytes:],
-	// 		state.stack[inStack:inStack+bytes],
-	// 	)
-	// }
 	return state.copyFromAddressToRegister(&state.regs.r[dest], addr, dataSz)
 }
 
