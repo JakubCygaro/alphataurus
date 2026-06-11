@@ -508,6 +508,61 @@ func TestMovRDO1_3(t *testing.T) {
 		t.Error(expectedExitCode(0, exitV))
 	}
 }
+func TestMovRDO1_4(t *testing.T) {
+	val := rand.Int63n(10_000) - 5_000
+	r := randomGpRegisterWord()
+	// off := nextRandomGpRegister(r)
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		push WORD %v
+		;; align the stack on a multiple of 2
+		rsh sp, 1
+		lsh sp, 1
+		push WORD %v
+		push WORD %v+1
+		mov bp, sp
+		mov r0, bp
+		sub UNSIGNED r0, 8
+		mov r1, 2
+		div UNSIGNED WORD
+		mov r0, r2
+		mov %s, [r0*2]
+		%s
+		mov %s, [r0*2]
+		%s
+		mov %s, [r0*2]
+		%s
+		mov %s, [r0*2]
+		%s
+		exit 0
+	`,
+		val,
+		val,
+		val,
+		regStr(r, vm.SZ_64),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		regStr(r, vm.SZ_64),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		regStr(r, vm.SZ_64),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		regStr(r, vm.SZ_64),
+		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+	)
+	b, err := assembleAndLink(asm)
+	if err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+		return
+	}
+	if mach, err := executeStackSize(b, 8*3); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitV := mach.GetExitCode(); exitV != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitV))
+	}
+}
 func TestMovRDO2_1(t *testing.T) {
 	stackSize := (rand.Intn(32-5) + 5) * 8
 	stack := makeTestingStack(stackSize)
