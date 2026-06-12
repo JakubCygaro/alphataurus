@@ -543,11 +543,11 @@ func TestMovRDO1_4(t *testing.T) {
 		regStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
 		regStr(r, vm.SZ_64),
-		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		macroAssertEqRI(toReg(int(r), vm.SZ_32), val, SIGNED),
 		regStr(r, vm.SZ_64),
-		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		macroAssertEqRI(toReg(int(r), vm.SZ_16), val, SIGNED),
 		regStr(r, vm.SZ_64),
-		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		macroAssertEqRI(toReg(int(r), vm.SZ_8), val, SIGNED),
 	)
 	b, err := assembleAndLink(asm)
 	if err != nil {
