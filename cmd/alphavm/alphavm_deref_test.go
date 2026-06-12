@@ -422,9 +422,10 @@ func TestMovRDO1_2(t *testing.T) {
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
-		push WORD %v
+		push WORD %v+1
 		push WORD %v+1
 		mov bp, sp
+		mov WORD [bp-8], %v
 		mov %s, [bp-8]
 		%s
 		mov %s, [bp-8]
@@ -437,14 +438,15 @@ func TestMovRDO1_2(t *testing.T) {
 	`,
 		val,
 		val,
+		val,
 		regStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
 		regStr(r, vm.SZ_64),
-		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		macroAssertEqRI(toReg(int(r), vm.SZ_32), val, SIGNED),
 		regStr(r, vm.SZ_64),
-		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		macroAssertEqRI(toReg(int(r), vm.SZ_16), val, SIGNED),
 		regStr(r, vm.SZ_64),
-		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		macroAssertEqRI(toReg(int(r), vm.SZ_8), val, SIGNED),
 	)
 	b, err := assembleAndLink(asm)
 	if err != nil {
@@ -467,12 +469,13 @@ func TestMovRDO1_3(t *testing.T) {
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
-		push WORD %v
+		push WORD %v+1
 		push WORD %v+1
 		mov bp, sp
 		mov r0, bp
 		sub UNSIGNED r0, 8
 		add r0, r0
+		mov WORD [r0/2], %v
 		mov %s, [r0/2]
 		%s
 		mov %s, [r0/2]
@@ -485,14 +488,15 @@ func TestMovRDO1_3(t *testing.T) {
 	`,
 		val,
 		val,
+		val,
 		regStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
 		regStr(r, vm.SZ_64),
-		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		macroAssertEqRI(toReg(int(r), vm.SZ_32), val, SIGNED),
 		regStr(r, vm.SZ_64),
-		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		macroAssertEqRI(toReg(int(r), vm.SZ_16), val, SIGNED),
 		regStr(r, vm.SZ_64),
-		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
+		macroAssertEqRI(toReg(int(r), vm.SZ_8), val, SIGNED),
 	)
 	b, err := assembleAndLink(asm)
 	if err != nil {
@@ -519,7 +523,7 @@ func TestMovRDO1_4(t *testing.T) {
 		;; align the stack on a multiple of 2
 		rsh sp, 1
 		lsh sp, 1
-		push WORD %v
+		push WORD %v+1
 		push WORD %v+1
 		mov bp, sp
 		mov r0, bp
@@ -527,6 +531,7 @@ func TestMovRDO1_4(t *testing.T) {
 		mov r1, 2
 		div UNSIGNED WORD
 		mov r0, r2
+		mov WORD [r0*2], %v
 		mov %s, [r0*2]
 		%s
 		mov %s, [r0*2]
@@ -537,6 +542,7 @@ func TestMovRDO1_4(t *testing.T) {
 		%s
 		exit 0
 	`,
+		val,
 		val,
 		val,
 		val,

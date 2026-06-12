@@ -37,14 +37,22 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	push WORD -1802
-	push WORD -1802+1
+	push WORD 0
+	;; align the stack on a multiple of 2
+	rsh sp, 1
+	lsh sp, 1
+	push WORD -4862
+	push WORD -4862+1
 	mov bp, sp
-	mov r6, -8
-	mov r4, [bp+r6]
-	cmp SIGNED r4, -1802
+	mov r0, bp
+	sub UNSIGNED r0, 8
+	mov r1, 2
+	div UNSIGNED WORD
+	mov r0, r2
+	mov r3, [r0*2]
+	cmp SIGNED r3, -4862
 	je [ip+12]
-	exit -1802
+	exit -4862
 	exit 0
 `
 
