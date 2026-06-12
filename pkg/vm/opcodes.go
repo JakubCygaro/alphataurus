@@ -71,6 +71,12 @@ var (
 		6: handle(OP_JMPGE),
 		7: handle(OP_JMPL),
 		8: handle(OP_JMPLE),
+		9: handle(OP_JMPS),
+		10: handle(OP_JMPNS),
+		11: handle(OP_JMPC),
+		12: handle(OP_JMPNC),
+		13: handle(OP_JMPO),
+		14: handle(OP_JMPNO),
 	})
 	p03XX = nested(opCodeMap{
 		0: p030X,
@@ -84,7 +90,13 @@ var (
 		7:  handle(OP_JMPGEIP),
 		8:  handle(OP_JMPLIP),
 		9:  handle(OP_JMPLEIP),
-		10: handle(OP_CALLIP),
+		10: handle(OP_JMPS),
+		11: handle(OP_JMPNS),
+		12: handle(OP_JMPC),
+		13: handle(OP_JMPNC),
+		14: handle(OP_JMPO),
+		15: handle(OP_JMPNO),
+		16: handle(OP_CALLIP),
 	})
 	p00XX = nested(opCodeMap{
 		0:  handle(OP_MOVRR),
@@ -195,15 +207,21 @@ const (
 	OP_PUSHI
 	OP_POP
 
-	OP_JMP     // jump to instruction
-	OP_JMPE    // jump if equal
-	OP_JMPZ    // jump if zero
-	OP_JMPNE   // jump if not equal
-	OP_JMPNZ   // jump of not zero
-	OP_JMPG    // jump if greater
-	OP_JMPGE   // jump if greater or equal
-	OP_JMPL    // jump if less
-	OP_JMPLE   // jump if less or equal
+	OP_JMP   // jump to instruction
+	OP_JMPE  // jump if equal
+	OP_JMPZ  // jump if zero
+	OP_JMPNE // jump if not equal
+	OP_JMPNZ // jump of not zero
+	OP_JMPG  // jump if greater
+	OP_JMPGE // jump if greater or equal
+	OP_JMPL  // jump if less
+	OP_JMPLE // jump if less or equal
+	OP_JMPS
+	OP_JMPNS
+	OP_JMPC
+	OP_JMPNC
+	OP_JMPO
+	OP_JMPNO
 	OP_JMPIP   // jump to instruction
 	OP_JMPEIP  // jump if equal
 	OP_JMPZIP  // jump if zero
@@ -213,13 +231,19 @@ const (
 	OP_JMPGEIP // jump if greater or equal
 	OP_JMPLIP  // jump if less
 	OP_JMPLEIP // jump if less or equal
-	OP_CMPRR   // compare values in two registers
-	OP_CMPIR   // compare value in register and immediate value
-	OP_CLR     // clear all flags (set them to false)
-	OP_CALL    // call a procedure
-	OP_CALLIP  // IP relative call
-	OP_RET     // return from a procedure
-	OP_EXITI   // exit with code
+	OP_JMPSIP
+	OP_JMPNSIP
+	OP_JMPCIP
+	OP_JMPNCIP
+	OP_JMPOIP
+	OP_JMPNOIP
+	OP_CMPRR  // compare values in two registers
+	OP_CMPIR  // compare value in register and immediate value
+	OP_CLR    // clear all flags (set them to false)
+	OP_CALL   // call a procedure
+	OP_CALLIP // IP relative call
+	OP_RET    // return from a procedure
+	OP_EXITI  // exit with code
 	OP_EXITR
 	OP_NOP // NOP
 )

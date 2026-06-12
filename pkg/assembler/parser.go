@@ -58,6 +58,12 @@ const (
 	INST_TJMPGE
 	INST_TJMPL
 	INST_TJMPLE
+	INST_TJMPS
+	INST_TJMPNS
+	INST_TJMPC
+	INST_TJMPNC
+	INST_TJMPO
+	INST_TJMPNO
 	INST_TJMPIP0R
 	INST_TJMPIP1R
 	INST_TCALLIP0R
@@ -325,6 +331,18 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parseJmp(INST_TJMPL)
 	case "jle":
 		return p.parseJmp(INST_TJMPLE)
+	case "js":
+		return p.parseJmp(INST_TJMPS)
+	case "jns":
+		return p.parseJmp(INST_TJMPNS)
+	case "jc":
+		return p.parseJmp(INST_TJMPC)
+	case "jnc":
+		return p.parseJmp(INST_TJMPNC)
+	case "jo":
+		return p.parseJmp(INST_TJMPO)
+	case "jno":
+		return p.parseJmp(INST_TJMPNO)
 	case "push":
 		return p.parsePush()
 	case "pop":

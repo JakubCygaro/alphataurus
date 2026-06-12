@@ -148,6 +148,18 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 		err = state.jmpL(opCodeBytes[0], param)
 	case OP_JMPLE:
 		err = state.jmpLE(opCodeBytes[0], param)
+	case OP_JMPS:
+		err = state.jmpS(opCodeBytes[0], param)
+	case OP_JMPNS:
+		err = state.jmpNS(opCodeBytes[0], param)
+	case OP_JMPC:
+		err = state.jmpC(opCodeBytes[0], param)
+	case OP_JMPNC:
+		err = state.jmpNC(opCodeBytes[0], param)
+	case OP_JMPO:
+		err = state.jmpO(opCodeBytes[0], param)
+	case OP_JMPNO:
+		err = state.jmpNO(opCodeBytes[0], param)
 	case OP_JMPIP:
 		err = state.jmpIP(opCodeBytes[0], param)
 	case OP_JMPEIP:
@@ -166,6 +178,18 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 		err = state.jmpLIP(opCodeBytes[0], param)
 	case OP_JMPLEIP:
 		err = state.jmpLEIP(opCodeBytes[0], param)
+	case OP_JMPSIP:
+		err = state.jmpSIP(opCodeBytes[0], param)
+	case OP_JMPNSIP:
+		err = state.jmpNSIP(opCodeBytes[0], param)
+	case OP_JMPCIP:
+		err = state.jmpCIP(opCodeBytes[0], param)
+	case OP_JMPNCIP:
+		err = state.jmpNCIP(opCodeBytes[0], param)
+	case OP_JMPOIP:
+		err = state.jmpOIP(opCodeBytes[0], param)
+	case OP_JMPNOIP:
+		err = state.jmpNOIP(opCodeBytes[0], param)
 	case OP_PUSHI:
 		err = state.push(int(opcode), opCodeBytes[0], param)
 	case OP_PUSHR:

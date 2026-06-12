@@ -59,6 +59,42 @@ func (state *VmState) jmpLE(lastByte byte, param []byte) error {
 	}
 	return nil
 }
+func (state *VmState) jmpS(lastByte byte, param []byte) error {
+	if state.flags.Sf {
+		return state.jmp(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpNS(lastByte byte, param []byte) error {
+	if !state.flags.Sf {
+		return state.jmp(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpC(lastByte byte, param []byte) error {
+	if state.flags.Cf {
+		return state.jmp(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpNC(lastByte byte, param []byte) error {
+	if !state.flags.Cf {
+		return state.jmp(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpO(lastByte byte, param []byte) error {
+	if state.flags.Of {
+		return state.jmp(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpNO(lastByte byte, param []byte) error {
+	if !state.flags.Of {
+		return state.jmp(lastByte, param)
+	}
+	return nil
+}
 func (state *VmState) jmpIP(lastByte byte, param []byte) error {
 	offset := int64(binary.BigEndian.Uint64(param))
 	ip := int64(binary.BigEndian.Uint64(state.regs.r[IP_IDX][:]))
@@ -123,6 +159,42 @@ func (state *VmState) jmpLIP(lastByte byte, param []byte) error {
 }
 func (state *VmState) jmpLEIP(lastByte byte, param []byte) error {
 	if state.flags.Zf || state.flags.Sf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpSIP(lastByte byte, param []byte) error {
+	if state.flags.Sf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpNSIP(lastByte byte, param []byte) error {
+	if !state.flags.Sf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpCIP(lastByte byte, param []byte) error {
+	if state.flags.Cf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpNCIP(lastByte byte, param []byte) error {
+	if !state.flags.Cf {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpOIP(lastByte byte, param []byte) error {
+	if state.flags.Of {
+		return state.jmpIP(lastByte, param)
+	}
+	return nil
+}
+func (state *VmState) jmpNOIP(lastByte byte, param []byte) error {
+	if !state.flags.Of {
 		return state.jmpIP(lastByte, param)
 	}
 	return nil

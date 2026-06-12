@@ -202,6 +202,32 @@ func TestJumps1(t *testing.T) {
 			return a <= b
 		},
 	})
+	conds = append(conds, opToTest{
+		opcode: "js",
+		testFunc: func(a, b int32) bool {
+			return a < b
+		},
+	})
+	conds = append(conds, opToTest{
+		opcode: "jns",
+		testFunc: func(a, b int32) bool {
+			return a > b
+		},
+	})
+	conds = append(conds, opToTest{
+		opcode: "jo",
+		testFunc: func(a, b int32) bool {
+			return (a < 0 && b > 0 && a + b <= 0) ||
+				(a < 0 && b < 0 && a + b >= 0)
+		},
+	})
+	// conds = append(conds, opToTest{
+	// 	opcode: "jno",
+	// 	testFunc: func(a, b int32) bool {
+	// 		return !((a > 0 && b > 0 && a + b <= 0) ||
+	// 			(a < 0 && b < 0 && a + b <= 0))
+	// 	},
+	// })
 	// first test implicit IP relative jumps
 	for _, c := range conds {
 		a := rand.Int31n(10_000) - 5000

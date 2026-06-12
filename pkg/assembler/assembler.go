@@ -149,6 +149,18 @@ func (a *Assembler) EmitBytecode() (int, error) {
 			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPLE:
 			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
+		case INST_TJMPS:
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
+		case INST_TJMPNS:
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
+		case INST_TJMPC:
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
+		case INST_TJMPNC:
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
+		case INST_TJMPO:
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
+		case INST_TJMPNO:
+			err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
 		case INST_TJMPIP0R:
 			err = a.emitJmpIP(inst.Ty, inst.Data.(InstJmpIPData), &(a.bytecode))
 		case INST_TJMPIP1R:
@@ -592,6 +604,18 @@ func (a *Assembler) jmpInstToOpCode(ty InstTy) uint32 {
 		opcode = a.opCodes.GetBytes(vm.OP_JMPL)
 	case INST_TJMPLE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPLE)
+	case INST_TJMPS:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPS)
+	case INST_TJMPNS:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPNS)
+	case INST_TJMPC:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPC)
+	case INST_TJMPNC:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPNC)
+	case INST_TJMPO:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPO)
+	case INST_TJMPNO:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPNO)
 	}
 	return opcode
 }
@@ -633,6 +657,18 @@ func (a *Assembler) absoluteJmpToIPJmp(instTy InstTy) (opcode uint32) {
 		opcode = a.opCodes.GetBytes(vm.OP_JMPLIP)
 	case INST_TJMPLE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPLEIP)
+	case INST_TJMPS:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPSIP)
+	case INST_TJMPNS:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPNSIP)
+	case INST_TJMPC:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPCIP)
+	case INST_TJMPNC:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPNCIP)
+	case INST_TJMPO:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPOIP)
+	case INST_TJMPNO:
+		opcode = a.opCodes.GetBytes(vm.OP_JMPNOIP)
 	}
 	return opcode
 }
