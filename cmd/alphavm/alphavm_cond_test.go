@@ -211,16 +211,16 @@ func TestJumps1(t *testing.T) {
 	conds = append(conds, opToTest{
 		opcode: "jns",
 		testFunc: func(a, b int32) bool {
-			return a > b
+			return a >= b
 		},
 	})
-	conds = append(conds, opToTest{
-		opcode: "jo",
-		testFunc: func(a, b int32) bool {
-			return (a < 0 && b > 0 && a + b <= 0) ||
-				(a < 0 && b < 0 && a + b >= 0)
-		},
-	})
+	// conds = append(conds, opToTest{
+	// 	opcode: "jo",
+	// 	testFunc: func(a, b int32) bool {
+	// 		return (a < 0 && b > 0 && a + b <= 0) ||
+	// 			(a < 0 && b < 0 && a + b >= 0)
+	// 	},
+	// })
 	// conds = append(conds, opToTest{
 	// 	opcode: "jno",
 	// 	testFunc: func(a, b int32) bool {

@@ -124,15 +124,16 @@ func (state *VmState) addValues(a, b uint64, ty, dataSz byte, out []byte) error 
 }
 func subUint(a, b uint64, dataSz byte, out []byte) {
 	offset := DataSizeToByteCount(dataSz)
+	res := a - b
 	switch dataSz {
 	case SZ_8:
-		out[8-offset] = byte(a) - byte(b)
+		out[8-offset] = byte(res)
 	case SZ_16:
-		binary.BigEndian.PutUint16(out[8-offset:], uint16(a)-uint16(b))
+		binary.BigEndian.PutUint16(out[8-offset:], uint16(res))
 	case SZ_32:
-		binary.BigEndian.PutUint32(out[8-offset:], uint32(a)-uint32(b))
+		binary.BigEndian.PutUint32(out[8-offset:], uint32(res))
 	case SZ_64:
-		binary.BigEndian.PutUint64(out[8-offset:], uint64(a)-uint64(b))
+		binary.BigEndian.PutUint64(out[8-offset:], uint64(res))
 	}
 }
 func subSint(a, b uint64, dataSz byte, out []byte) {
@@ -163,6 +164,7 @@ func (state *VmState) subValues(a, b uint64, ty, dataSz byte, out []byte) error 
 			math.Float64bits(math.Float64frombits(a)-math.Float64frombits(b)),
 		)
 	}
+	state.flags.Pf = (out[7] & 1) == 1
 	return nil
 }
 func mulUint(a, b uint64, dataSz byte, out []byte) {
