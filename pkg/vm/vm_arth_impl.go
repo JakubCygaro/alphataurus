@@ -78,20 +78,35 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 	return nil
 }
 
-func addUint(a, b uint64, dataSz byte, out []byte) (res uint64) {
+func addUint(a, b uint64, dataSz byte, out []byte) (res uint64, of bool) {
 	offset := DataSizeToByteCount(dataSz)
-	res = a + b
 	switch dataSz {
 	case SZ_8:
+		high := (a >> 4) + (b >> 4)
+		low := (a & 0x0000_0000_0000_000f) + (b & 0x0000_0000_0000_000f)
+		res = (high << 4) + low
+		of = (high>>4) > 0 || (low>>4) > 0
 		out[8-offset] = byte(res)
 	case SZ_16:
+		high := (a >> 8) + (b >> 8)
+		low := (a & 0x0000_0000_0000_00ff) + (b & 0x0000_0000_0000_00ff)
+		res = (high << 8) + low
+		of = (high>>8) > 0 || (low>>8) > 0
 		binary.BigEndian.PutUint16(out[8-offset:], uint16(res))
 	case SZ_32:
+		high := (a >> 16) + (b >> 16)
+		low := (a & 0x0000_0000_0000_ffff) + (b & 0x0000_0000_0000_ffff)
+		res = (high << 16) + low
+		of = (high>>16) > 0 || (low>>16) > 0
 		binary.BigEndian.PutUint32(out[8-offset:], uint32(res))
 	case SZ_64:
+		high := (a >> 32) + (b >> 32)
+		low := (a & 0x0000_0000_ffff_ffff) + (b & 0x0000_0000_ffff_ffff)
+		res = (high << 32) + low
+		of = (high>>32) > 0 || (low>>32) > 0
 		binary.BigEndian.PutUint64(out[8-offset:], uint64(res))
 	}
-	return res
+	return res, of
 }
 func addSint(a, b uint64, dataSz byte, out []byte) (res int64) {
 	offset := DataSizeToByteCount(dataSz)
@@ -113,7 +128,7 @@ func (state *VmState) addValues(a, b uint64, ty, dataSz byte, out []byte) error 
 	var res uint64
 	switch ty {
 	case TY_UINT:
-		res = addUint(a, b, dataSz, out)
+		res, state.flags.Of = addUint(a, b, dataSz, out)
 	case TY_SINT:
 		res = uint64(addSint(a, b, dataSz, out))
 	case TY_FLOAT:
@@ -171,7 +186,7 @@ func (state *VmState) postArthSetFlags(a, res uint64, dataSz byte, isFloat bool)
 		state.flags.Sf = int16(res) < 0
 		state.flags.Zf = int16(res) == 0
 	case SZ_32:
-		state.flags.Cf = a&0xffff_ffff_ffff_0000 != res&0xffff_ffff_ffff_0000
+		state.flags.Cf = a&0xffff_ffff_0000_0000 != res&0xffff_ffff_0000_0000
 		state.flags.Sf = int32(res) < 0
 		state.flags.Zf = int32(res) == 0
 	case SZ_64:

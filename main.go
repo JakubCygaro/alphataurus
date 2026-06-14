@@ -37,8 +37,10 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	mov r0q, 0xff
-	add r0b, 0xff
+	mov r0, 0xffffffffffffffff
+	add UNSIGNED r0, 0x1
+	mov r0b, 0xff
+	add UNSIGNED r0b, 0x1
 	exit 0
 `
 
