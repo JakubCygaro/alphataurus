@@ -64,7 +64,7 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 		return err
 	}
 	immV := binary.BigEndian.Uint64(param)
-	regV := state.GetRegVAsU64(int(data.reg), data.r1sz)
+	regV := state.GetRegVAsU64(int(data.reg), SZ_64)
 	switch OpCodeVal(opType) {
 	case OP_ADDIR:
 		err = state.addValues(regV, immV,
@@ -78,53 +78,9 @@ func (state *VmState) arthIR(opType int, lastByte byte, param []byte) error {
 	return nil
 }
 
-func addUint(a, b uint64, dataSz byte, out []byte) {
+func addUint(a, b uint64, dataSz byte, out []byte) (res uint64) {
 	offset := DataSizeToByteCount(dataSz)
-	switch dataSz {
-	case SZ_8:
-		out[8-offset] = byte(a) + byte(b)
-	case SZ_16:
-		binary.BigEndian.PutUint16(out[8-offset:], uint16(a)+uint16(b))
-	case SZ_32:
-		binary.BigEndian.PutUint32(out[8-offset:], uint32(a)+uint32(b))
-	case SZ_64:
-		binary.BigEndian.PutUint64(out[8-offset:], uint64(a)+uint64(b))
-	}
-}
-func addSint(a, b uint64, dataSz byte, out []byte) {
-	offset := DataSizeToByteCount(dataSz)
-	switch dataSz {
-	case SZ_8:
-		out[8-offset] = byte(a) + byte(b)
-	case SZ_16:
-		binary.BigEndian.PutUint16(out[8-offset:], uint16(int16(a)+int16(b)))
-	case SZ_32:
-		binary.BigEndian.PutUint32(out[8-offset:], uint32(int32(a)+int32(b)))
-	case SZ_64:
-		binary.BigEndian.PutUint64(out[8-offset:], uint64(int64(a)+int64(b)))
-	}
-}
-
-func (state *VmState) addValues(a, b uint64, ty, dataSz byte, out []byte) error {
-	switch ty {
-	case TY_UINT:
-		addUint(a, b, dataSz, out)
-	case TY_SINT:
-		addSint(a, b, dataSz, out)
-	case TY_FLOAT:
-		if dataSz != SZ_64 {
-			return errors.BadArthmeticOperation(state.byteCodePos)
-		}
-		binary.BigEndian.PutUint64(
-			out[:],
-			math.Float64bits(math.Float64frombits(a)+math.Float64frombits(b)),
-		)
-	}
-	return nil
-}
-func subUint(a, b uint64, dataSz byte, out []byte) {
-	offset := DataSizeToByteCount(dataSz)
-	res := a - b
+	res = a + b
 	switch dataSz {
 	case SZ_8:
 		out[8-offset] = byte(res)
@@ -135,45 +91,118 @@ func subUint(a, b uint64, dataSz byte, out []byte) {
 	case SZ_64:
 		binary.BigEndian.PutUint64(out[8-offset:], uint64(res))
 	}
+	return res
 }
-func subSint(a, b uint64, dataSz byte, out []byte) {
+func addSint(a, b uint64, dataSz byte, out []byte) (res int64) {
 	offset := DataSizeToByteCount(dataSz)
+	res = int64(a) + int64(b)
 	switch dataSz {
 	case SZ_8:
-		out[8-offset] = byte(int8(a) - int8(b))
+		out[8-offset] = byte(res)
 	case SZ_16:
-		binary.BigEndian.PutUint16(out[8-offset:], uint16(int16(a)-int16(b)))
+		binary.BigEndian.PutUint16(out[8-offset:], uint16(res))
 	case SZ_32:
-		binary.BigEndian.PutUint32(out[8-offset:], uint32(int32(a)-int32(b)))
+		binary.BigEndian.PutUint32(out[8-offset:], uint32(res))
 	case SZ_64:
-		binary.BigEndian.PutUint64(out[8-offset:], uint64(int64(a)-int64(b)))
+		binary.BigEndian.PutUint64(out[8-offset:], uint64(res))
 	}
+	return res
 }
-func (state *VmState) subValues(a, b uint64, ty, dataSz byte, out []byte) error {
+
+func (state *VmState) addValues(a, b uint64, ty, dataSz byte, out []byte) error {
+	var res uint64
 	switch ty {
 	case TY_UINT:
-		subUint(a, b, dataSz, out)
+		res = addUint(a, b, dataSz, out)
 	case TY_SINT:
-		subSint(a, b, dataSz, out)
+		res = uint64(addSint(a, b, dataSz, out))
 	case TY_FLOAT:
 		if dataSz != SZ_64 {
 			return errors.BadArthmeticOperation(state.byteCodePos)
 		}
+		res = math.Float64bits(math.Float64frombits(a) + math.Float64frombits(b))
 		binary.BigEndian.PutUint64(
 			out[:],
-			math.Float64bits(math.Float64frombits(a)-math.Float64frombits(b)),
+			res,
 		)
 	}
-	state.flags.Pf = (out[7] & 1) == 1
-	o := binary.BigEndian.Uint64(out)
+	state.postArthSetFlags(a, res, dataSz, ty == TY_FLOAT)
+	return nil
+}
+func subUint(a, b uint64, dataSz byte, out []byte) (res uint64) {
+	offset := DataSizeToByteCount(dataSz)
+	res = a - b
 	switch dataSz {
 	case SZ_8:
-		state.flags.Cf = a&0xffff_ffff_ffff_ff00 != o&0xffff_ffff_ffff_ff00
+		out[8-offset] = byte(res)
 	case SZ_16:
-		state.flags.Cf = a&0xffff_ffff_ffff_0000 != o&0xffff_ffff_ffff_0000
+		binary.BigEndian.PutUint16(out[8-offset:], uint16(res))
 	case SZ_32:
-		state.flags.Cf = a&0xffff_ffff_0000_0000 != o&0xffff_ffff_0000_0000
+		binary.BigEndian.PutUint32(out[8-offset:], uint32(res))
+	case SZ_64:
+		binary.BigEndian.PutUint64(out[8-offset:], uint64(res))
 	}
+	return res
+}
+func subSint(a, b uint64, dataSz byte, out []byte) (res int64) {
+	offset := DataSizeToByteCount(dataSz)
+	res = int64(a) - int64(b)
+	switch dataSz {
+	case SZ_8:
+		out[8-offset] = byte(res)
+	case SZ_16:
+		binary.BigEndian.PutUint16(out[8-offset:], uint16(res))
+	case SZ_32:
+		binary.BigEndian.PutUint32(out[8-offset:], uint32(res))
+	case SZ_64:
+		binary.BigEndian.PutUint64(out[8-offset:], uint64(res))
+	}
+	return res
+}
+func (state *VmState) postArthSetFlags(a, res uint64, dataSz byte, isFloat bool) {
+	state.flags.Pf = (res & 1) == 0
+	switch dataSz {
+	case SZ_8:
+		state.flags.Cf = a&0xffff_ffff_ffff_ff00 != res&0xffff_ffff_ffff_ff00
+		state.flags.Sf = int8(res) < 0
+		state.flags.Zf = int8(res) == 0
+	case SZ_16:
+		state.flags.Cf = a&0xffff_ffff_ffff_0000 != res&0xffff_ffff_ffff_0000
+		state.flags.Sf = int16(res) < 0
+		state.flags.Zf = int16(res) == 0
+	case SZ_32:
+		state.flags.Cf = a&0xffff_ffff_ffff_0000 != res&0xffff_ffff_ffff_0000
+		state.flags.Sf = int32(res) < 0
+		state.flags.Zf = int32(res) == 0
+	case SZ_64:
+		if isFloat {
+			f := math.Float64frombits(res)
+			state.flags.Sf = f < 0.0
+			state.flags.Zf = f == 0.0
+		} else {
+			state.flags.Sf = int64(res) < 0
+			state.flags.Zf = int64(res) == 0
+		}
+	}
+}
+func (state *VmState) subValues(a, b uint64, ty, dataSz byte, out []byte) error {
+	var res uint64
+	switch ty {
+	case TY_UINT:
+		res = subUint(a, b, dataSz, out)
+	case TY_SINT:
+		res = uint64(subSint(a, b, dataSz, out))
+	case TY_FLOAT:
+		if dataSz != SZ_64 {
+			return errors.BadArthmeticOperation(state.byteCodePos)
+		}
+		res = math.Float64bits(math.Float64frombits(a) - math.Float64frombits(b))
+		binary.BigEndian.PutUint64(
+			out[:],
+			res,
+		)
+	}
+	state.postArthSetFlags(a, res, dataSz, ty == TY_FLOAT)
 	return nil
 }
 func mulUint(a, b uint64, dataSz byte, out []byte) {

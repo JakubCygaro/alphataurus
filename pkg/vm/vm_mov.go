@@ -50,33 +50,18 @@ func (state *VmState) movRR(lastByte byte, param []byte) error {
 			&state.regs.r[src],
 			dataSz,
 		)
-		// bytes := DataSizeToByteCount(dataSz)
-		// copy(
-		// 	state.regs.r[dest][8-bytes:],
-		// )
 	}
 	return nil
 }
 func (state *VmState) movIR(lastByte byte, param []byte) error {
 	var dest, dataSz byte
-	// type of value
 	dataSz |= (lastByte & 0b1100_0000) >> 6
-	// ty |= (lastByte & 0b0011_0000) >> 4
 	dest |= (lastByte & 0b0000_1111)
 	if !IsMovIntoRAllowed(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
 	bits := binary.BigEndian.Uint64(param)
 	state.putValInRegWithSize(int(dest), dataSz, bits)
-	// switch ty {
-	// case TY_SINT:
-	// 	i64 := binary.BigEndian.Uint64(param)
-	// 	state.putValInRegWithSize(int(dest), dataSz, i64)
-	// case TY_FLOAT:
-	// default:
-	// 	u64 := binary.BigEndian.Uint64(param)
-	// 	state.putValInRegWithSize(int(dest), dataSz, u64)
-	// }
 	return nil
 }
 

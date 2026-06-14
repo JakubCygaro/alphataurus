@@ -68,8 +68,8 @@ func (state *VmState) cmpRR(lastByte byte, param []byte) error {
 	ty = param[0]
 	dataSz = param[1]
 	var subV, minV uint64
-	minV = state.GetRegVAsU64(int(minuend), dataSz)
-	subV = state.GetRegVAsU64(int(subtrahend), dataSz)
+	minV = state.GetRegVAsU64(int(minuend), SZ_64)
+	subV = state.GetRegVAsU64(int(subtrahend), SZ_64)
 
 	if dataSz != SZ_64 && ty == TY_FLOAT {
 		return errors.BadArthmeticOperation(state.byteCodePos)
