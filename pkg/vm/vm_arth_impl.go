@@ -165,6 +165,15 @@ func (state *VmState) subValues(a, b uint64, ty, dataSz byte, out []byte) error 
 		)
 	}
 	state.flags.Pf = (out[7] & 1) == 1
+	o := binary.BigEndian.Uint64(out)
+	switch dataSz {
+	case SZ_8:
+		state.flags.Cf = a&0xffff_ffff_ffff_ff00 != o&0xffff_ffff_ffff_ff00
+	case SZ_16:
+		state.flags.Cf = a&0xffff_ffff_ffff_0000 != o&0xffff_ffff_ffff_0000
+	case SZ_32:
+		state.flags.Cf = a&0xffff_ffff_0000_0000 != o&0xffff_ffff_0000_0000
+	}
 	return nil
 }
 func mulUint(a, b uint64, dataSz byte, out []byte) {

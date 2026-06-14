@@ -90,12 +90,12 @@ var (
 		7:  handle(OP_JMPGEIP),
 		8:  handle(OP_JMPLIP),
 		9:  handle(OP_JMPLEIP),
-		10: handle(OP_JMPS),
-		11: handle(OP_JMPNS),
-		12: handle(OP_JMPC),
-		13: handle(OP_JMPNC),
-		14: handle(OP_JMPO),
-		15: handle(OP_JMPNO),
+		10: handle(OP_JMPSIP),
+		11: handle(OP_JMPNSIP),
+		12: handle(OP_JMPCIP),
+		13: handle(OP_JMPNCIP),
+		14: handle(OP_JMPOIP),
+		15: handle(OP_JMPNOIP),
 		16: handle(OP_CALLIP),
 	})
 	p00XX = nested(opCodeMap{

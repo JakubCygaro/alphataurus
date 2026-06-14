@@ -37,23 +37,11 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	push WORD 0
-	;; align the stack on a multiple of 2
-	rsh sp, 1
-	lsh sp, 1
-	push WORD -4862
-	push WORD -4862+1
-	mov bp, sp
-	mov r0, bp
-	sub UNSIGNED r0, 8
-	mov r1, 2
-	div UNSIGNED WORD
-	mov r0, r2
-	mov r3, [r0*2]
-	cmp SIGNED r3, -4862
-	je [ip+12]
-	exit -4862
+	mov r0, -42
+	cmp r0, 2356
+	js [ip+12]
 	exit 0
+	exit 1
 `
 
 func main() {
