@@ -2,7 +2,7 @@ package vm
 
 import (
 	"encoding/binary"
-	"math"
+	// "math"
 
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
@@ -89,31 +89,31 @@ func (state *VmState) cmpIR(lastByte byte, param []byte) error {
 }
 func (state *VmState) cmpImpl(minV, subV uint64, ty, dataSz byte) error {
 	diff := [8]byte{}
+	state.flags = Flags{}
 	err := state.subValues(minV, subV,
 		ty, dataSz,
 		diff[:])
-	state.flags = Flags{}
 
-	if ty == TY_FLOAT {
-		f := math.Float64frombits(binary.BigEndian.Uint64(diff[:]))
-		state.flags.Sf = f < 0.0
-		state.flags.Zf = f == 0.0
-	} else {
-		i := binary.BigEndian.Uint64(diff[:])
-		switch dataSz {
-		case SZ_8:
-			state.flags.Sf = int8(i) < 0
-			state.flags.Zf = int8(i) == 0
-		case SZ_16:
-			state.flags.Sf = int16(i) < 0
-			state.flags.Zf = int16(i) == 0
-		case SZ_32:
-			state.flags.Sf = int32(i) < 0
-			state.flags.Zf = int32(i) == 0
-		case SZ_64:
-			state.flags.Sf = int64(i) < 0
-			state.flags.Zf = int64(i) == 0
-		}
-	}
+	// if ty == TY_FLOAT {
+	// 	f := math.Float64frombits(binary.BigEndian.Uint64(diff[:]))
+	// 	state.flags.Sf = f < 0.0
+	// 	state.flags.Zf = f == 0.0
+	// } else {
+	// 	i := binary.BigEndian.Uint64(diff[:])
+	// 	switch dataSz {
+	// 	case SZ_8:
+	// 		state.flags.Sf = int8(i) < 0
+	// 		state.flags.Zf = int8(i) == 0
+	// 	case SZ_16:
+	// 		state.flags.Sf = int16(i) < 0
+	// 		state.flags.Zf = int16(i) == 0
+	// 	case SZ_32:
+	// 		state.flags.Sf = int32(i) < 0
+	// 		state.flags.Zf = int32(i) == 0
+	// 	case SZ_64:
+	// 		state.flags.Sf = int64(i) < 0
+	// 		state.flags.Zf = int64(i) == 0
+	// 	}
+	// }
 	return err
 }
