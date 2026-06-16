@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -59,15 +60,15 @@ func TestMov2(t *testing.T) {
 	}
 }
 func TestMov3(t *testing.T) {
-	rA, rAsz := randomGpRegisterWord(), byte(vm.SZ_64)
+	rA, rAsz := tc.RandomGpRegisterWord(), byte(vm.SZ_64)
 	rAv := rand.Int63n(int64(math.MaxUint32))
-	rB, rBsz := randomGpRegisterWord(), byte(vm.SZ_32)
+	rB, rBsz := tc.RandomGpRegisterWord(), byte(vm.SZ_32)
 	rBv := rand.Int63n(int64(math.MaxUint16))
-	rC, rCsz := randomGpRegisterWord(), byte(vm.SZ_16)
+	rC, rCsz := tc.RandomGpRegisterWord(), byte(vm.SZ_16)
 	rCv := rand.Int63n(int64(math.MaxUint8))
-	rD, rDsz := randomGpRegisterWord(), byte(vm.SZ_8)
+	rD, rDsz := tc.RandomGpRegisterWord(), byte(vm.SZ_8)
 	rDv := rand.Int63n(int64(math.MaxUint8))
-	rE := randomGpRegisterWord()
+	rE := tc.RandomGpRegisterWord()
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -88,10 +89,10 @@ func TestMov3(t *testing.T) {
 		sub %s, %s
 		exit %s
 	`, rAv, rBv, rCv, rDv,
-		regStr(rA, rAsz), regStr(rB, rBsz), regStr(rB, rBsz),
-		regStr(rC, rCsz), regStr(rC, rCsz), regStr(rD, rDsz), regStr(rD, rDsz),
-		regStr(rE, vm.SZ_8), regStr(rD, rDsz), regStr(rE, vm.SZ_8),
-		regStr(rD, rDsz),
+		tc.RegStr(rA, rAsz), tc.RegStr(rB, rBsz), tc.RegStr(rB, rBsz),
+		tc.RegStr(rC, rCsz), tc.RegStr(rC, rCsz), tc.RegStr(rD, rDsz), tc.RegStr(rD, rDsz),
+		tc.RegStr(rE, vm.SZ_8), tc.RegStr(rD, rDsz), tc.RegStr(rE, vm.SZ_8),
+		tc.RegStr(rD, rDsz),
 	)
 	if mach, err := assembleAndExecute(asm); err != nil {
 		t.Error(compilationOfErr(asm))
@@ -102,13 +103,13 @@ func TestMov3(t *testing.T) {
 	}
 }
 func TestMov1F(t *testing.T) {
-	rA, rAsz := randomGpRegisterWord(), byte(vm.SZ_8)
-	rB, rBsz := nextRandomGpRegister(rA), byte(vm.SZ_64)
+	rA, rAsz := tc.RandomGpRegisterWord(), byte(vm.SZ_8)
+	rB, rBsz := tc.NextRandomGpRegister(rA), byte(vm.SZ_64)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
 		mov %s, %s
-	`, regStr(rA, rAsz), regStr(rB, rBsz))
+	`, tc.RegStr(rA, rAsz), tc.RegStr(rB, rBsz))
 	if _, err := assemble(asm); err != nil {
 		if ok, _ := regexp.MatchString("Mismatched register sizes", err.Error()); !ok {
 			t.Error(compilationOfErr(asm))
@@ -122,12 +123,12 @@ func TestMov1F(t *testing.T) {
 }
 func TestMov2F(t *testing.T) {
 	rA, rAsz := byte(vm.IP_IDX), byte(vm.SZ_64)
-	rB, rBsz := randomGpRegisterWord(), byte(vm.SZ_64)
+	rB, rBsz := tc.RandomGpRegisterWord(), byte(vm.SZ_64)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
 		mov %s, %s
-	`, regStr(rA, rAsz), regStr(rB, rBsz))
+	`, tc.RegStr(rA, rAsz), tc.RegStr(rB, rBsz))
 	if _, err := assemble(asm); err != nil {
 		if ok, _ := regexp.MatchString("Disallowed destination register", err.Error()); !ok {
 			t.Error(compilationOfErr(asm))
@@ -193,8 +194,8 @@ func TestAllRRMoves1(t *testing.T) {
 			lines = append(lines,
 				fmt.Sprintf(
 					"mov %s, %s",
-					regStr(byte(ir.Reg), ir.Size),
-					regStr(byte(fr.Reg), fr.Size),
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					tc.RegStr(byte(fr.Reg), fr.Size),
 				),
 			)
 		}
@@ -225,7 +226,7 @@ func TestAllIRMoves1(t *testing.T) {
 		lines = append(lines,
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				val,
 			),
 		)

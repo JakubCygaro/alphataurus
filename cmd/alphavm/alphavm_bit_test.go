@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -113,8 +114,8 @@ func TestNot1(t *testing.T) {
 	stack.push(^uint16(initV))
 	stack.push(^uint32(initV))
 	stack.push(^uint64(initV))
-	rA := randomGpRegisterWord()
-	rB := nextRandomGpRegister(rA)
+	rA := tc.RandomGpRegisterWord()
+	rB := tc.NextRandomGpRegister(rA)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -137,19 +138,19 @@ func TestNot1(t *testing.T) {
 		push %s
 		exit 0
 	`,
-		regStr(rA, vm.SZ_64), initV,
-		regStr(rB, vm.SZ_8), regStr(rA, vm.SZ_8),
-		regStr(rB, vm.SZ_8),
-		regStr(rB, vm.SZ_8),
-		regStr(rB, vm.SZ_16), regStr(rA, vm.SZ_16),
-		regStr(rB, vm.SZ_16),
-		regStr(rB, vm.SZ_16),
-		regStr(rB, vm.SZ_32), regStr(rA, vm.SZ_32),
-		regStr(rB, vm.SZ_32),
-		regStr(rB, vm.SZ_32),
-		regStr(rB, vm.SZ_64), regStr(rA, vm.SZ_64),
-		regStr(rB, vm.SZ_64),
-		regStr(rB, vm.SZ_64),
+		tc.RegStr(rA, vm.SZ_64), initV,
+		tc.RegStr(rB, vm.SZ_8), tc.RegStr(rA, vm.SZ_8),
+		tc.RegStr(rB, vm.SZ_8),
+		tc.RegStr(rB, vm.SZ_8),
+		tc.RegStr(rB, vm.SZ_16), tc.RegStr(rA, vm.SZ_16),
+		tc.RegStr(rB, vm.SZ_16),
+		tc.RegStr(rB, vm.SZ_16),
+		tc.RegStr(rB, vm.SZ_32), tc.RegStr(rA, vm.SZ_32),
+		tc.RegStr(rB, vm.SZ_32),
+		tc.RegStr(rB, vm.SZ_32),
+		tc.RegStr(rB, vm.SZ_64), tc.RegStr(rA, vm.SZ_64),
+		tc.RegStr(rB, vm.SZ_64),
+		tc.RegStr(rB, vm.SZ_64),
 	)
 	if elf, err := assembleAndLink(asm); err != nil {
 		t.Error(compilationOfErr(asm))
@@ -171,9 +172,9 @@ func TestAnd1(t *testing.T) {
 	stack.push(uint16(initV) & uint16(sV))
 	stack.push(uint32(initV) & uint32(sV))
 	stack.push(uint64(initV) & uint64(sV))
-	rA := randomGpRegisterWord()
-	rB := nextRandomGpRegister(rA)
-	rC := nextRandomGpRegister(rB)
+	rA := tc.RandomGpRegisterWord()
+	rB := tc.NextRandomGpRegister(rA)
+	rC := tc.NextRandomGpRegister(rB)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -197,20 +198,20 @@ func TestAnd1(t *testing.T) {
 		push %s
 		exit 0
 	`,
-		regStr(rA, vm.SZ_64), initV,
-		regStr(rB, vm.SZ_64), sV,
-		regStr(rC, vm.SZ_8), regStr(rA, vm.SZ_8),
-		regStr(rC, vm.SZ_8), regStr(rB, vm.SZ_8),
-		regStr(rC, vm.SZ_8),
-		regStr(rC, vm.SZ_16), regStr(rA, vm.SZ_16),
-		regStr(rC, vm.SZ_16), regStr(rB, vm.SZ_16),
-		regStr(rC, vm.SZ_16),
-		regStr(rC, vm.SZ_32), regStr(rA, vm.SZ_32),
-		regStr(rC, vm.SZ_32), regStr(rB, vm.SZ_32),
-		regStr(rC, vm.SZ_32),
-		regStr(rC, vm.SZ_64), regStr(rA, vm.SZ_64),
-		regStr(rC, vm.SZ_64), regStr(rB, vm.SZ_64),
-		regStr(rC, vm.SZ_64),
+		tc.RegStr(rA, vm.SZ_64), initV,
+		tc.RegStr(rB, vm.SZ_64), sV,
+		tc.RegStr(rC, vm.SZ_8), tc.RegStr(rA, vm.SZ_8),
+		tc.RegStr(rC, vm.SZ_8), tc.RegStr(rB, vm.SZ_8),
+		tc.RegStr(rC, vm.SZ_8),
+		tc.RegStr(rC, vm.SZ_16), tc.RegStr(rA, vm.SZ_16),
+		tc.RegStr(rC, vm.SZ_16), tc.RegStr(rB, vm.SZ_16),
+		tc.RegStr(rC, vm.SZ_16),
+		tc.RegStr(rC, vm.SZ_32), tc.RegStr(rA, vm.SZ_32),
+		tc.RegStr(rC, vm.SZ_32), tc.RegStr(rB, vm.SZ_32),
+		tc.RegStr(rC, vm.SZ_32),
+		tc.RegStr(rC, vm.SZ_64), tc.RegStr(rA, vm.SZ_64),
+		tc.RegStr(rC, vm.SZ_64), tc.RegStr(rB, vm.SZ_64),
+		tc.RegStr(rC, vm.SZ_64),
 	)
 	if elf, err := assembleAndLink(asm); err != nil {
 		t.Error(compilationOfErr(asm))
@@ -232,9 +233,9 @@ func TestOr1(t *testing.T) {
 	stack.push(uint16(initV) | uint16(sV))
 	stack.push(uint32(initV) | uint32(sV))
 	stack.push(uint64(initV) | uint64(sV))
-	rA := randomGpRegisterWord()
-	rB := nextRandomGpRegister(rA)
-	rC := nextRandomGpRegister(rB)
+	rA := tc.RandomGpRegisterWord()
+	rB := tc.NextRandomGpRegister(rA)
+	rC := tc.NextRandomGpRegister(rB)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -258,20 +259,20 @@ func TestOr1(t *testing.T) {
 		push %s
 		exit 0
 	`,
-		regStr(rA, vm.SZ_64), initV,
-		regStr(rB, vm.SZ_64), sV,
-		regStr(rC, vm.SZ_8), regStr(rA, vm.SZ_8),
-		regStr(rC, vm.SZ_8), regStr(rB, vm.SZ_8),
-		regStr(rC, vm.SZ_8),
-		regStr(rC, vm.SZ_16), regStr(rA, vm.SZ_16),
-		regStr(rC, vm.SZ_16), regStr(rB, vm.SZ_16),
-		regStr(rC, vm.SZ_16),
-		regStr(rC, vm.SZ_32), regStr(rA, vm.SZ_32),
-		regStr(rC, vm.SZ_32), regStr(rB, vm.SZ_32),
-		regStr(rC, vm.SZ_32),
-		regStr(rC, vm.SZ_64), regStr(rA, vm.SZ_64),
-		regStr(rC, vm.SZ_64), regStr(rB, vm.SZ_64),
-		regStr(rC, vm.SZ_64),
+		tc.RegStr(rA, vm.SZ_64), initV,
+		tc.RegStr(rB, vm.SZ_64), sV,
+		tc.RegStr(rC, vm.SZ_8), tc.RegStr(rA, vm.SZ_8),
+		tc.RegStr(rC, vm.SZ_8), tc.RegStr(rB, vm.SZ_8),
+		tc.RegStr(rC, vm.SZ_8),
+		tc.RegStr(rC, vm.SZ_16), tc.RegStr(rA, vm.SZ_16),
+		tc.RegStr(rC, vm.SZ_16), tc.RegStr(rB, vm.SZ_16),
+		tc.RegStr(rC, vm.SZ_16),
+		tc.RegStr(rC, vm.SZ_32), tc.RegStr(rA, vm.SZ_32),
+		tc.RegStr(rC, vm.SZ_32), tc.RegStr(rB, vm.SZ_32),
+		tc.RegStr(rC, vm.SZ_32),
+		tc.RegStr(rC, vm.SZ_64), tc.RegStr(rA, vm.SZ_64),
+		tc.RegStr(rC, vm.SZ_64), tc.RegStr(rB, vm.SZ_64),
+		tc.RegStr(rC, vm.SZ_64),
 	)
 	if elf, err := assembleAndLink(asm); err != nil {
 		t.Error(compilationOfErr(asm))
@@ -293,9 +294,9 @@ func TestXor1(t *testing.T) {
 	stack.push(uint16(initV) ^ uint16(sV))
 	stack.push(uint32(initV) ^ uint32(sV))
 	stack.push(uint64(initV) ^ uint64(sV))
-	rA := randomGpRegisterWord()
-	rB := nextRandomGpRegister(rA)
-	rC := nextRandomGpRegister(rB)
+	rA := tc.RandomGpRegisterWord()
+	rB := tc.NextRandomGpRegister(rA)
+	rC := tc.NextRandomGpRegister(rB)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -319,20 +320,20 @@ func TestXor1(t *testing.T) {
 		push %s
 		exit 0
 	`,
-		regStr(rA, vm.SZ_64), initV,
-		regStr(rB, vm.SZ_64), sV,
-		regStr(rC, vm.SZ_8), regStr(rA, vm.SZ_8),
-		regStr(rC, vm.SZ_8), regStr(rB, vm.SZ_8),
-		regStr(rC, vm.SZ_8),
-		regStr(rC, vm.SZ_16), regStr(rA, vm.SZ_16),
-		regStr(rC, vm.SZ_16), regStr(rB, vm.SZ_16),
-		regStr(rC, vm.SZ_16),
-		regStr(rC, vm.SZ_32), regStr(rA, vm.SZ_32),
-		regStr(rC, vm.SZ_32), regStr(rB, vm.SZ_32),
-		regStr(rC, vm.SZ_32),
-		regStr(rC, vm.SZ_64), regStr(rA, vm.SZ_64),
-		regStr(rC, vm.SZ_64), regStr(rB, vm.SZ_64),
-		regStr(rC, vm.SZ_64),
+		tc.RegStr(rA, vm.SZ_64), initV,
+		tc.RegStr(rB, vm.SZ_64), sV,
+		tc.RegStr(rC, vm.SZ_8), tc.RegStr(rA, vm.SZ_8),
+		tc.RegStr(rC, vm.SZ_8), tc.RegStr(rB, vm.SZ_8),
+		tc.RegStr(rC, vm.SZ_8),
+		tc.RegStr(rC, vm.SZ_16), tc.RegStr(rA, vm.SZ_16),
+		tc.RegStr(rC, vm.SZ_16), tc.RegStr(rB, vm.SZ_16),
+		tc.RegStr(rC, vm.SZ_16),
+		tc.RegStr(rC, vm.SZ_32), tc.RegStr(rA, vm.SZ_32),
+		tc.RegStr(rC, vm.SZ_32), tc.RegStr(rB, vm.SZ_32),
+		tc.RegStr(rC, vm.SZ_32),
+		tc.RegStr(rC, vm.SZ_64), tc.RegStr(rA, vm.SZ_64),
+		tc.RegStr(rC, vm.SZ_64), tc.RegStr(rB, vm.SZ_64),
+		tc.RegStr(rC, vm.SZ_64),
 	)
 	if elf, err := assembleAndLink(asm); err != nil {
 		t.Error(compilationOfErr(asm))
@@ -372,12 +373,12 @@ func TestLogIR1(t *testing.T) {
 		lines = append(lines,
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"and %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -387,12 +388,12 @@ func TestLogIR1(t *testing.T) {
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"or %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -402,12 +403,12 @@ func TestLogIR1(t *testing.T) {
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"xor %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -417,12 +418,12 @@ func TestLogIR1(t *testing.T) {
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"lsh %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -432,12 +433,12 @@ func TestLogIR1(t *testing.T) {
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"rsh %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -489,18 +490,18 @@ func TestLogIRR(t *testing.T) {
 			lines = append(lines,
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 					b,
 				),
 				fmt.Sprintf(
 					"and %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
@@ -509,13 +510,13 @@ func TestLogIRR(t *testing.T) {
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"or %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
@@ -524,13 +525,13 @@ func TestLogIRR(t *testing.T) {
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"xor %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
@@ -539,13 +540,13 @@ func TestLogIRR(t *testing.T) {
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"lsh %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
@@ -554,13 +555,13 @@ func TestLogIRR(t *testing.T) {
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"rsh %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),

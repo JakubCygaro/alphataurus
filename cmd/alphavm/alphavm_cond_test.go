@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
@@ -382,12 +383,12 @@ func TestCmpRR1(t *testing.T) {
 			lines = append(lines,
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ir.Reg), ir.Size),
+					tc.RegStr(byte(ir.Reg), ir.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(fr.Reg), fr.Size),
+					tc.RegStr(byte(fr.Reg), fr.Size),
 					b,
 				),
 				macroAssertUGenericRR(
@@ -435,7 +436,7 @@ func TestCmpIR1(t *testing.T) {
 		lines = append(lines,
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			macroAssertUGenericIR(

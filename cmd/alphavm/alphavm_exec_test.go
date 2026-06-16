@@ -10,6 +10,7 @@ import (
 	// "strings"
 	"testing"
 
+	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	// "github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -31,14 +32,14 @@ func TestExitI1(t *testing.T) {
 }
 func TestExitR1(t *testing.T) {
 	exitV := uint64(rand.Int())
-	r, rsz := randomGpRegisterWithSize()
+	r, rsz := tc.RandomGpRegisterWithSize()
 	lines := fmt.Sprintf(`
 		section '.code'
 		@entry
 			mov %s, %v
 			exit %s
-	`, regStr(r, rsz), exitV,
-		regStr(r, rsz))
+	`, tc.RegStr(r, rsz), exitV,
+		tc.RegStr(r, rsz))
 	switch rsz {
 	case vm.SZ_8:
 		exitV = uint64(byte(exitV))

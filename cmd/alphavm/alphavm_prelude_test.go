@@ -8,7 +8,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"math"
-	"math/rand"
+	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"strings"
 )
 
@@ -25,36 +25,6 @@ func compilationOfErr(asm ...string) error {
 func assemblingErrorExpected() error {
 	return fmt.Errorf("An assembling error was expected")
 }
-func randomGpRegisterWord() byte {
-	return byte(rand.Int()%vm.GP_REG_MAX + 1)
-}
-func randomGpRegisterWithSize() (byte, byte) {
-	return randomGpRegisterWord(), byte(rand.Int()%vm.SZ_64 + 1)
-}
-func regStr(reg, sz byte) string {
-	switch reg {
-	case vm.BP_IDX:
-		return "bp"
-	case vm.IP_IDX:
-		return "ip"
-	case vm.SP_IDX:
-		return "sp"
-	default:
-		var suf string = ""
-		switch sz {
-		case vm.SZ_8:
-			suf = "b"
-		case vm.SZ_16:
-			suf = "q"
-		case vm.SZ_32:
-			suf = "h"
-		}
-		return fmt.Sprintf("r%v%s", reg, suf)
-	}
-}
-func nextRandomGpRegister(reg byte) byte {
-	return byte((reg+1)%vm.GP_REG_MAX + 1)
-}
 func execute(elf vm.AlphaELFFile) (vm.VmState, error) {
 	return executeStackSize(elf, DEFAULT_STACK_SIZE)
 }
@@ -66,7 +36,7 @@ func executeStackSize(elf vm.AlphaELFFile, stacksz uint64) (vm.VmState, error) {
 	return mach, nil
 }
 func assemble(source string) ([]byte, error) {
-	asmblr := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(source)))
+	asmblr := assembler.NewAssembler(bufio.NewReader(strings.NewReader(source)))
 	code, err := asmblr.Assemble()
 	return code, err
 }
@@ -247,7 +217,7 @@ func macroAssertEqRI(r assembler.RegisterData,
 je [ip+%v]
 exit %v`,
 		cmpType,
-		regStr(byte(r.Reg), r.Size),
+		tc.RegStr(byte(r.Reg), r.Size),
 		expect,
 		vm.INSTRUCTION_SIZE,
 		exitV,
@@ -263,11 +233,11 @@ func macroAssertUGenericRR(r, expect assembler.RegisterData, aT AssertTy) string
 		%s [ip+%v]
 		exit %v
 	`,
-		regStr(byte(r.Reg), r.Size),
-		regStr(byte(expect.Reg), expect.Size),
+		tc.RegStr(byte(r.Reg), r.Size),
+		tc.RegStr(byte(expect.Reg), expect.Size),
 		assertToOp(aT),
 		vm.INSTRUCTION_SIZE,
-		regStr(byte(expect.Reg), expect.Size),
+		tc.RegStr(byte(expect.Reg), expect.Size),
 	)
 }
 func macroAssertUGenericIR(r assembler.RegisterData, expect uint64, aT AssertTy) string {
@@ -276,7 +246,7 @@ func macroAssertUGenericIR(r assembler.RegisterData, expect uint64, aT AssertTy)
 		%s [ip+%v]
 		exit %v
 	`,
-		regStr(byte(r.Reg), r.Size),
+		tc.RegStr(byte(r.Reg), r.Size),
 		expect,
 		assertToOp(aT),
 		vm.INSTRUCTION_SIZE,

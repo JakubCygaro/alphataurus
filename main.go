@@ -52,7 +52,7 @@ func main() {
 	sources := []string{assembly, assembly2, assembly3}
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
-		asm := assembler.NewAssembler(*bufio.NewReader(strings.NewReader(s)))
+		asm := assembler.NewAssembler(bufio.NewReader(strings.NewReader(s)))
 		bytecode, err := asm.Assemble()
 		if err != nil {
 			os.Stderr.WriteString("assembling error\n")
@@ -100,7 +100,7 @@ func main() {
 	fmt.Printf("%+v\n", mach.GetFlags())
 	fmt.Printf("stack:\n%+v\n", mach.GetStack())
 	const in = "(-3 + 8)"
-	p := assembler.NewParser(*bufio.NewReader(strings.NewReader(in)))
+	p := assembler.NewParser(bufio.NewReader(strings.NewReader(in)))
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())

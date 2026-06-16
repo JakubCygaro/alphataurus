@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -113,9 +114,9 @@ func TestDeref3(t *testing.T) {
 	}
 }
 func TestDeref4(t *testing.T) {
-	rA := randomGpRegisterWord()
-	rB := nextRandomGpRegister(rA)
-	rC := nextRandomGpRegister(rB)
+	rA := tc.RandomGpRegisterWord()
+	rB := tc.NextRandomGpRegister(rA)
+	rC := tc.NextRandomGpRegister(rB)
 	asm := fmt.Sprintf(`
 		section '.code'
 		@entry
@@ -238,12 +239,12 @@ func TestDeref7(t *testing.T) {
 		)
 	}
 	for i := 0; i < stackSize; i += 8 {
-		r := randomGpRegisterWord()
+		r := tc.RandomGpRegisterWord()
 		v := binary.BigEndian.Uint64(stack[i : i+8])
 		code = append(code,
 			fmt.Sprintf(
 				"mov %s, [0x%x]",
-				regStr(r, vm.SZ_64),
+				tc.RegStr(r, vm.SZ_64),
 				stackBase+i+7,
 			),
 			macroAssertEqRI(
@@ -342,7 +343,7 @@ func TestMovDRI1(t *testing.T) {
 			),
 			fmt.Sprintf(
 				"mov %s, [sp]",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 			),
 			fmt.Sprintf(
 				"pop %s",
@@ -385,16 +386,16 @@ func TestMovRDO1_1(t *testing.T) {
 	)
 	for i := 0; i < stackSize; i += 8 {
 		v := binary.BigEndian.Uint64(stack[i : i+8])
-		randomOffsetReg := randomGpRegisterWord()
+		randomOffsetReg := tc.RandomGpRegisterWord()
 		code = append(code,
 			fmt.Sprintf(
 				"mov %s, 0x%x",
-				regStr(randomOffsetReg, vm.SZ_64),
+				tc.RegStr(randomOffsetReg, vm.SZ_64),
 				stackBase+i+7,
 			),
 			fmt.Sprintf(
 				"mov WORD [0x0+%s], %v",
-				regStr(randomOffsetReg, vm.SZ_64),
+				tc.RegStr(randomOffsetReg, vm.SZ_64),
 				int64(v),
 			),
 		)
@@ -417,8 +418,8 @@ func TestMovRDO1_1(t *testing.T) {
 }
 func TestMovRDO1_2(t *testing.T) {
 	val := rand.Int63n(10_000) - 5_000
-	r := randomGpRegisterWord()
-	// off := nextRandomGpRegister(r)
+	r := tc.RandomGpRegisterWord()
+	// off := tc.NextRandomGpRegister(r)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -439,13 +440,13 @@ func TestMovRDO1_2(t *testing.T) {
 		val,
 		val,
 		val,
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_32), val, SIGNED),
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_16), val, SIGNED),
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_8), val, SIGNED),
 	)
 	b, err := assembleAndLink(asm)
@@ -464,8 +465,8 @@ func TestMovRDO1_2(t *testing.T) {
 }
 func TestMovRDO1_3(t *testing.T) {
 	val := rand.Int63n(10_000) - 5_000
-	r := randomGpRegisterWord()
-	// off := nextRandomGpRegister(r)
+	r := tc.RandomGpRegisterWord()
+	// off := tc.NextRandomGpRegister(r)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -489,13 +490,13 @@ func TestMovRDO1_3(t *testing.T) {
 		val,
 		val,
 		val,
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_32), val, SIGNED),
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_16), val, SIGNED),
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_8), val, SIGNED),
 	)
 	b, err := assembleAndLink(asm)
@@ -514,8 +515,8 @@ func TestMovRDO1_3(t *testing.T) {
 }
 func TestMovRDO1_4(t *testing.T) {
 	val := rand.Int63n(10_000) - 5_000
-	r := randomGpRegisterWord()
-	// off := nextRandomGpRegister(r)
+	r := tc.RandomGpRegisterWord()
+	// off := tc.NextRandomGpRegister(r)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -546,13 +547,13 @@ func TestMovRDO1_4(t *testing.T) {
 		val,
 		val,
 		val,
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_32), val, SIGNED),
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_16), val, SIGNED),
-		regStr(r, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_8), val, SIGNED),
 	)
 	b, err := assembleAndLink(asm)
@@ -588,26 +589,26 @@ func TestMovRDO2_1(t *testing.T) {
 	)
 	for i := 0; i < stackSize; i += 8 {
 		v := binary.BigEndian.Uint64(stack[i : i+8])
-		randomOffsetRegA := randomGpRegisterWord()
-		randomOffsetRegB := nextRandomGpRegister(randomOffsetRegA)
+		randomOffsetRegA := tc.RandomGpRegisterWord()
+		randomOffsetRegB := tc.NextRandomGpRegister(randomOffsetRegA)
 		off := stackBase + i + 7
 		offHalf1 := off / 2
 		offHalf2 := off - offHalf1
 		code = append(code,
 			fmt.Sprintf(
 				"mov %s, 0x%x",
-				regStr(randomOffsetRegA, vm.SZ_64),
+				tc.RegStr(randomOffsetRegA, vm.SZ_64),
 				offHalf1,
 			),
 			fmt.Sprintf(
 				"mov %s, 0x%x",
-				regStr(randomOffsetRegB, vm.SZ_64),
+				tc.RegStr(randomOffsetRegB, vm.SZ_64),
 				offHalf2,
 			),
 			fmt.Sprintf(
 				"mov WORD [0x0+%s+%s], %v",
-				regStr(randomOffsetRegA, vm.SZ_64),
-				regStr(randomOffsetRegB, vm.SZ_64),
+				tc.RegStr(randomOffsetRegA, vm.SZ_64),
+				tc.RegStr(randomOffsetRegB, vm.SZ_64),
 				int64(v),
 			),
 		)
@@ -631,8 +632,8 @@ func TestMovRDO2_1(t *testing.T) {
 func TestMovRDO2_2(t *testing.T) {
 	// fStack := makeTestingStack(0)
 	val := rand.Int63n(10_000) - 5_000
-	r := randomGpRegisterWord()
-	off := nextRandomGpRegister(r)
+	r := tc.RandomGpRegisterWord()
+	off := tc.NextRandomGpRegister(r)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -649,14 +650,14 @@ func TestMovRDO2_2(t *testing.T) {
 		exit 0
 	`,
 		val,
-		regStr(off, vm.SZ_64),
-		regStr(r, vm.SZ_64), regStr(off, vm.SZ_64),
+		tc.RegStr(off, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64), tc.RegStr(off, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
-		regStr(r, vm.SZ_64), regStr(off, vm.SZ_32),
+		tc.RegStr(r, vm.SZ_64), tc.RegStr(off, vm.SZ_32),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
-		regStr(r, vm.SZ_64), regStr(off, vm.SZ_16),
+		tc.RegStr(r, vm.SZ_64), tc.RegStr(off, vm.SZ_16),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
-		regStr(r, vm.SZ_64), regStr(off, vm.SZ_8),
+		tc.RegStr(r, vm.SZ_64), tc.RegStr(off, vm.SZ_8),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
 	)
 	b, err := assembleAndLink(asm)
@@ -675,8 +676,8 @@ func TestMovRDO2_2(t *testing.T) {
 }
 func TestMovRDO2_3(t *testing.T) {
 	val := rand.Int63n(10_000) - 5_000
-	r := randomGpRegisterWord()
-	off := nextRandomGpRegister(r)
+	r := tc.RandomGpRegisterWord()
+	off := tc.NextRandomGpRegister(r)
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
@@ -696,14 +697,14 @@ func TestMovRDO2_3(t *testing.T) {
 	`,
 		val,
 		val,
-		regStr(off, vm.SZ_64),
-		regStr(r, vm.SZ_64), regStr(off, vm.SZ_64),
+		tc.RegStr(off, vm.SZ_64),
+		tc.RegStr(r, vm.SZ_64), tc.RegStr(off, vm.SZ_64),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
-		regStr(r, vm.SZ_64), regStr(off, vm.SZ_32),
+		tc.RegStr(r, vm.SZ_64), tc.RegStr(off, vm.SZ_32),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
-		regStr(r, vm.SZ_64), regStr(off, vm.SZ_16),
+		tc.RegStr(r, vm.SZ_64), tc.RegStr(off, vm.SZ_16),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
-		regStr(r, vm.SZ_64), regStr(off, vm.SZ_8),
+		tc.RegStr(r, vm.SZ_64), tc.RegStr(off, vm.SZ_8),
 		macroAssertEqRI(toReg(int(r), vm.SZ_64), val, SIGNED),
 	)
 	b, err := assembleAndLink(asm)

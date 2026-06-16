@@ -6,7 +6,7 @@ import (
 
 type ParserError struct {
 	ParsingWhat string
-	Line, Col   uint64
+	Line, Col   int
 	construct   constructMessage
 }
 
@@ -18,7 +18,7 @@ func (e ParserError) Error() string {
 	}
 }
 
-func ExtraTokensOnLine(line, col uint64) ParserError {
+func ExtraTokensOnLine(line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
@@ -29,7 +29,7 @@ func ExtraTokensOnLine(line, col uint64) ParserError {
 	return err
 }
 
-func UnknownIdentifier(ident string, line, col uint64) ParserError {
+func UnknownIdentifier(ident string, line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
@@ -40,7 +40,7 @@ func UnknownIdentifier(ident string, line, col uint64) ParserError {
 	return err
 }
 
-func FailedToParse(instruction, reason string, line, col uint64) ParserError {
+func FailedToParse(instruction, reason string, line, col int) ParserError {
 	err := ParserError{
 		ParsingWhat: instruction,
 		Line:        line,
@@ -52,7 +52,7 @@ func FailedToParse(instruction, reason string, line, col uint64) ParserError {
 	return err
 }
 
-func PrematureEndOfInput(line, col uint64) ParserError {
+func PrematureEndOfInput(line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
@@ -62,7 +62,7 @@ func PrematureEndOfInput(line, col uint64) ParserError {
 	}
 	return err
 }
-func UnclosedSingleQuote(line, col uint64) ParserError {
+func UnclosedSingleQuote(line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
@@ -72,7 +72,7 @@ func UnclosedSingleQuote(line, col uint64) ParserError {
 	}
 	return err
 }
-func UnclosedParen(line, col uint64) ParserError {
+func UnclosedParen(line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
@@ -82,7 +82,7 @@ func UnclosedParen(line, col uint64) ParserError {
 	}
 	return err
 }
-func BadSizeArgument(given, needed string, line, col uint64) ParserError {
+func BadSizeArgument(given, needed string, line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
@@ -93,7 +93,7 @@ func BadSizeArgument(given, needed string, line, col uint64) ParserError {
 	}
 	return err
 }
-func MismatchedRegisterSizes(line, col uint64) ParserError {
+func MismatchedRegisterSizes(line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
@@ -103,7 +103,7 @@ func MismatchedRegisterSizes(line, col uint64) ParserError {
 	}
 	return err
 }
-func BadRegisterSize(line, col uint64) ParserError {
+func BadRegisterSize(line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
@@ -113,7 +113,7 @@ func BadRegisterSize(line, col uint64) ParserError {
 	}
 	return err
 }
-func MissingDataSize(line, col uint64) ParserError {
+func MissingDataSize(line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
@@ -123,7 +123,7 @@ func MissingDataSize(line, col uint64) ParserError {
 	}
 	return err
 }
-func UnnecessarySizeParameter(param string, line, col uint64) ParserError {
+func UnnecessarySizeParameter(param string, line, col int) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,

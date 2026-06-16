@@ -44,7 +44,7 @@ var associativeOperators = map[int]void{
 type Expr struct {
 	Ty        int
 	Val       any
-	Line, Col uint64
+	Line, Col int
 }
 
 type ConstExpr struct {

@@ -9,7 +9,8 @@ import (
 
 func (a *Assembler) handleExport(data InstImportExportData) error {
 	if _, ok := a.symbols.ByName[data.Name]; ok {
-		return errors.MultipleSymbolDefinitions(data.Name, a.parser.lexer.line, a.parser.lexer.col)
+		return errors.MultipleSymbolDefinitions(data.Name, a.parser.lexer.line,
+			a.parser.lexer.col)
 	}
 	sym := vm.SymbolData{
 		Ty:   vm.SYM_TFUNC,

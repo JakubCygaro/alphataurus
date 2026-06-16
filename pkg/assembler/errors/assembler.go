@@ -5,7 +5,8 @@ import (
 )
 
 type AssemblerError struct {
-	Line, Col uint64
+	Line      int
+	Col       int
 	construct constructMessage
 }
 
@@ -13,7 +14,7 @@ func (e AssemblerError) Error() string {
 	return fmt.Sprintf("Assembling error (%v:%v): %s", e.Line, e.Col, e.construct())
 }
 
-func RedeclaredLabel(label, first string, line, col uint64) AssemblerError {
+func RedeclaredLabel(label, first string, line, col int) AssemblerError {
 	err := AssemblerError{
 		Line: line,
 		Col:  col,
@@ -23,7 +24,7 @@ func RedeclaredLabel(label, first string, line, col uint64) AssemblerError {
 	}
 	return err
 }
-func MultipleEntry(line, col uint64) AssemblerError {
+func MultipleEntry(line, col int) AssemblerError {
 	err := AssemblerError{
 		Line: line,
 		Col:  col,
@@ -33,7 +34,7 @@ func MultipleEntry(line, col uint64) AssemblerError {
 	}
 	return err
 }
-func ImportedSymbolDeclared(name string, line, col uint64) AssemblerError {
+func ImportedSymbolDeclared(name string, line, col int) AssemblerError {
 	err := AssemblerError{
 		Line: line,
 		Col:  col,
@@ -65,7 +66,7 @@ func UnresolvedSymbol(label string) AssemblerError {
 	return err
 }
 
-func MultipleSymbolDefinitions(name string, line, col uint64) AssemblerError {
+func MultipleSymbolDefinitions(name string, line, col int) AssemblerError {
 	err := AssemblerError{
 		Line: line,
 		Col:  col,
@@ -75,7 +76,7 @@ func MultipleSymbolDefinitions(name string, line, col uint64) AssemblerError {
 	}
 	return err
 }
-func DisallowedTopLevelInstruction(line, col uint64) AssemblerError {
+func DisallowedTopLevelInstruction(line, col int) AssemblerError {
 	err := AssemblerError{
 		Line: line,
 		Col:  col,
@@ -85,7 +86,7 @@ func DisallowedTopLevelInstruction(line, col uint64) AssemblerError {
 	}
 	return err
 }
-func DisallowedDestinationRegister(line, col uint64) AssemblerError {
+func DisallowedDestinationRegister(line, col int) AssemblerError {
 	err := AssemblerError{
 		Line: line,
 		Col:  col,
@@ -95,7 +96,7 @@ func DisallowedDestinationRegister(line, col uint64) AssemblerError {
 	}
 	return err
 }
-func DisallowedSourceRegister(line, col uint64) AssemblerError {
+func DisallowedSourceRegister(line, col int) AssemblerError {
 	err := AssemblerError{
 		Line: line,
 		Col:  col,

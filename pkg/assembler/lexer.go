@@ -104,17 +104,20 @@ func (r RegisterData) IsInvalidRegister() bool {
 }
 
 type Token struct {
-	Ty        int
-	Val       any
-	Col, Line uint64
+	Ty   int
+	Val  any
+	Col  int
+	Line int
 }
 
 type Lexer struct {
-	head, col, line   uint64
-	currentToken      Token
-	unRead            bool
-	reader            bufio.Reader
-	lastCol, lastLine uint64
+	line         int
+	col          int
+	lastLine     int
+	lastCol      int
+	currentToken Token
+	unRead       bool
+	reader       *bufio.Reader
 }
 
 func nilToken() Token {
@@ -147,11 +150,13 @@ func TokenAsSize(t *Token) (byte, bool) {
 	}
 }
 
-func NewLexer(reader bufio.Reader) Lexer {
+func NewLexer(reader *bufio.Reader) Lexer {
 	return Lexer{
 		currentToken: nilToken(),
 		reader:       reader,
 		unRead:       false,
+		col:          0,
+		line:         1,
 	}
 }
 func (l *Lexer) CurrentPosition() string {
@@ -186,7 +191,7 @@ func (l *Lexer) readByte() (byte, bool) {
 	l.lastLine, l.lastCol = l.line, l.col
 	if b == '\n' {
 		l.line++
-		l.col = 0
+		l.col = 1
 	} else {
 		l.col++
 	}
@@ -215,7 +220,6 @@ func (l *Lexer) ReadNextToken() error {
 	for {
 		var ok bool
 		b, ok = l.readByte()
-		l.currentToken.Col, l.currentToken.Line = l.col, l.line
 		if !ok {
 			l.currentToken = Token{
 				Ty: TOKEN_TEOF,
@@ -229,6 +233,7 @@ func (l *Lexer) ReadNextToken() error {
 			break
 		}
 	}
+	sc, sl := l.col, l.line
 	switch {
 	case b == '\'':
 		if err := l.readSingleQuoted(); err != nil {
@@ -367,7 +372,7 @@ func (l *Lexer) ReadNextToken() error {
 	default:
 		return errors.UnrecognizedChar(rune(b), l.line, l.col)
 	}
-	l.currentToken.Col, l.currentToken.Line = l.col, l.line
+	l.currentToken.Line, l.currentToken.Col = sl, sc
 	return nil
 }
 func (l *Lexer) readSingleQuoted() error {
@@ -400,9 +405,6 @@ func (l *Lexer) readDigit(b byte) error {
 	binary := false
 	if startedWithZero {
 		next, ok := l.readByte()
-		// if !ok {
-		// 	return errors.PrematureEndOfInput(l.line, l.col)
-		// }
 		switch {
 		case next == 'x' && ok:
 			hex = true

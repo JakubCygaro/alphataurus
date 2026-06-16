@@ -5,7 +5,7 @@ import "github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 func (p *Parser) parseMov() error {
 	var op1 Token
 	var sized byte = 0xff
-	var sizedL, sizedC uint64
+	var sizedL, sizedC int
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}

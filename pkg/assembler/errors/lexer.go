@@ -7,14 +7,14 @@ import (
 type constructMessage func() string
 
 type LexerError struct {
-	Line, Col uint64
+	Line, Col int
 	construct constructMessage
 }
 
 func (e LexerError) Error() string {
 	return fmt.Sprintf("Lexer error at (%v:%v): %s", e.Line, e.Col, e.construct())
 }
-func UnrecognizedChar(char rune, line, col uint64) LexerError {
+func UnrecognizedChar(char rune, line, col int) LexerError {
 	err := LexerError{
 		Line: line,
 		Col:  col,
@@ -25,7 +25,7 @@ func UnrecognizedChar(char rune, line, col uint64) LexerError {
 	return err
 }
 
-func MalformedIntegerLit(line, col uint64) LexerError {
+func MalformedIntegerLit(line, col int) LexerError {
 	err := LexerError{
 		Line: line,
 		Col:  col,
@@ -35,7 +35,7 @@ func MalformedIntegerLit(line, col uint64) LexerError {
 	}
 	return err
 }
-func MalformedFloatLit(line, col uint64) LexerError {
+func MalformedFloatLit(line, col int) LexerError {
 	err := LexerError{
 		Line: line,
 		Col:  col,

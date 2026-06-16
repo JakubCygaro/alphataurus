@@ -192,10 +192,10 @@ type InstExitData struct {
 type Instruction struct {
 	Ty        InstTy
 	Data      any
-	Line, Col uint64
+	Line, Col int
 }
 
-func NewParser(reader bufio.Reader) Parser {
+func NewParser(reader *bufio.Reader) Parser {
 	return Parser{
 		lexer: NewLexer(reader),
 	}

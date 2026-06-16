@@ -21,7 +21,7 @@ type Assembler struct {
 	opCodes         vm.OpCodeMap
 	unresolvedJumps unresolvedJumpMap
 	//relating to the current instruction
-	line, col uint64
+	line, col int
 	// labels          labelMap
 	lastInst    Instruction
 	bytecode    []byte
@@ -36,7 +36,7 @@ func (a *Assembler) InstructionCount() int {
 	return a.instCount
 }
 
-func NewAssembler(reader bufio.Reader) Assembler {
+func NewAssembler(reader *bufio.Reader) Assembler {
 	return Assembler{
 		parser:          NewParser(reader),
 		opCodes:         vm.GenerateOpcodeMap(),

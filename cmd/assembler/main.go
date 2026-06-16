@@ -25,7 +25,7 @@ func main() {
 		os.Exit(-1)
 	}
 	defer file.Close()
-	asm := assembler.NewAssembler(*bufio.NewReader(file))
+	asm := assembler.NewAssembler(bufio.NewReader(file))
 	obj, err := asm.Assemble()
 	if err != nil {
 		os.Stderr.WriteString(err.Error())

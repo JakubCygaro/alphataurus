@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	// "github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -125,7 +126,7 @@ func TestCall4(t *testing.T) {
 		asm, fn string
 		incr    int
 	}
-	rA := randomGpRegisterWord()
+	rA := tc.RandomGpRegisterWord()
 	res := 0
 	functions := make([]asmFn, 0)
 	for i := range rand.Intn(10) {
@@ -140,7 +141,7 @@ func TestCall4(t *testing.T) {
 		`,
 			fn,
 			fn,
-			regStr(rA, vm.SZ_64), incr,
+			tc.RegStr(rA, vm.SZ_64), incr,
 		)
 		res += incr
 		functions = append(functions, asmFn{asm, fn, incr})
@@ -162,7 +163,7 @@ func TestCall4(t *testing.T) {
 			fmt.Sprintf("call %s", f.fn))
 	}
 	entryLines = append(entryLines,
-		fmt.Sprintf("exit %s", regStr(rA, vm.SZ_64)),
+		fmt.Sprintf("exit %s", tc.RegStr(rA, vm.SZ_64)),
 	)
 	entry := strings.Join(entryLines, "\n")
 	sources = append(sources, entry)

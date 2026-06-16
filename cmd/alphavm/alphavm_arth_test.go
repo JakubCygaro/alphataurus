@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -535,12 +536,12 @@ func TestArthIR1(t *testing.T) {
 		lines = append(lines,
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"add UNSIGNED %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -550,12 +551,12 @@ func TestArthIR1(t *testing.T) {
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"sub UNSIGNED %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -602,12 +603,12 @@ func TestArthIR2(t *testing.T) {
 		lines = append(lines,
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"add SIGNED %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -617,12 +618,12 @@ func TestArthIR2(t *testing.T) {
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"sub SIGNED %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -673,12 +674,12 @@ func TestArthIR3(t *testing.T) {
 		lines = append(lines,
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"add FLOAT %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -688,12 +689,12 @@ func TestArthIR3(t *testing.T) {
 			),
 			fmt.Sprintf(
 				"mov %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
 				"sub FLOAT %s, %v",
-				regStr(byte(ir.Reg), ir.Size),
+				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
@@ -742,18 +743,18 @@ func TestArthRR1(t *testing.T) {
 			lines = append(lines,
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 					b,
 				),
 				fmt.Sprintf(
 					"add UNSIGNED %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
@@ -762,13 +763,13 @@ func TestArthRR1(t *testing.T) {
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"sub UNSIGNED %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
@@ -817,18 +818,18 @@ func TestArthRR2(t *testing.T) {
 			lines = append(lines,
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 					b,
 				),
 				fmt.Sprintf(
 					"add SIGNED %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
@@ -837,13 +838,13 @@ func TestArthRR2(t *testing.T) {
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"sub SIGNED %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
@@ -898,18 +899,18 @@ func TestArthRR3(t *testing.T) {
 			lines = append(lines,
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 					b,
 				),
 				fmt.Sprintf(
 					"add FLOAT %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
@@ -918,13 +919,13 @@ func TestArthRR3(t *testing.T) {
 				),
 				fmt.Sprintf(
 					"mov %s, %v",
-					regStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
 					"sub FLOAT %s, %s",
-					regStr(byte(ar.Reg), ar.Size),
-					regStr(byte(br.Reg), br.Size),
+					tc.RegStr(byte(ar.Reg), ar.Size),
+					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
