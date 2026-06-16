@@ -191,7 +191,7 @@ func (l *Lexer) readByte() (byte, bool) {
 	l.lastLine, l.lastCol = l.line, l.col
 	if b == '\n' {
 		l.line++
-		l.col = 1
+		l.col = 0
 	} else {
 		l.col++
 	}
@@ -256,7 +256,9 @@ func (l *Lexer) ReadNextToken() error {
 				Val: rune(b),
 			}
 		} else {
-			l.unreadByte()
+			if ok {
+				l.unreadByte()
+			}
 			l.currentToken = Token{
 				Ty:  TOKEN_TSEMICOLON,
 				Val: rune(b),
@@ -314,10 +316,7 @@ func (l *Lexer) ReadNextToken() error {
 		}
 	case b == '.':
 		next, ok := l.readByte()
-		if !ok {
-			return errors.PrematureEndOfInput(l.line, l.col)
-		}
-		if numberCheck(next) {
+		if ok && numberCheck(next) {
 			l.unreadByte()
 			err := l.readDigit(b)
 			if err != nil {

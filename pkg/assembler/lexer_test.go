@@ -125,6 +125,7 @@ func TestTokensLineAndCol(t *testing.T) {
 	var tok Token
 	var e error
 	outputTokens := make([]Token, 0)
+	t.Logf("\n%s", sB.String())
 	tok, e = l.ReadNextTokenReturn()
 	for ; tok.Ty != TOKEN_TEOF && e == nil; tok, e = l.ReadNextTokenReturn() {
 		if tok.Ty != TOKEN_TNEWLINE {
@@ -134,7 +135,7 @@ func TestTokensLineAndCol(t *testing.T) {
 	if e != nil {
 		t.Errorf("Tokenizer error")
 		t.Error(e)
-		t.Error(sB.String())
+		t.Errorf("\n%s", sB.String())
 		return
 	}
 	if len(inputTokens) != len(outputTokens) {
