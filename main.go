@@ -37,9 +37,17 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	mov r0b, 0x0
-	sub UNSIGNED r0b, 0x2
-	exit 0
+		;;mov r0, 9223372036854775807
+		;;add UNSIGNED r0, 711672744463815127
+		;;jno failed
+		mov r0h, 2147483647
+		add UNSIGNED r0h, 2
+		jno failed
+		jnc failed
+passed:
+		exit 0
+failed:
+		exit r0h
 `
 
 func main() {

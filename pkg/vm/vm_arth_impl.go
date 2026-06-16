@@ -132,6 +132,9 @@ func (state *VmState) addValues(a, b uint64, ty, dataSz byte, out []byte) error 
 	switch ty {
 	case TY_UINT:
 		res, state.flags.Of = addUint(a, b, dataSz, out)
+		if dataSz != SZ_64 {
+			state.flags.Cf = state.flags.Of
+		}
 	case TY_SINT:
 		res = uint64(addSint(a, b, dataSz, out))
 	case TY_FLOAT:
@@ -197,15 +200,12 @@ func (state *VmState) postArthSetFlags(a, res uint64, dataSz byte, isFloat bool)
 	state.flags.Pf = (res & 1) == 0
 	switch dataSz {
 	case SZ_8:
-		state.flags.Cf = a&0xffff_ffff_ffff_ff00 != res&0xffff_ffff_ffff_ff00
 		state.flags.Sf = int8(res) < 0
 		state.flags.Zf = int8(res) == 0
 	case SZ_16:
-		state.flags.Cf = a&0xffff_ffff_ffff_0000 != res&0xffff_ffff_ffff_0000
 		state.flags.Sf = int16(res) < 0
 		state.flags.Zf = int16(res) == 0
 	case SZ_32:
-		state.flags.Cf = a&0xffff_ffff_0000_0000 != res&0xffff_ffff_0000_0000
 		state.flags.Sf = int32(res) < 0
 		state.flags.Zf = int32(res) == 0
 	case SZ_64:
@@ -224,6 +224,9 @@ func (state *VmState) subValues(a, b uint64, ty, dataSz byte, out []byte) error 
 	switch ty {
 	case TY_UINT:
 		res, state.flags.Of = subUint(a, b, dataSz, out)
+		if dataSz != SZ_64 {
+			state.flags.Cf = state.flags.Of
+		}
 	case TY_SINT:
 		res = uint64(subSint(a, b, dataSz, out))
 	case TY_FLOAT:

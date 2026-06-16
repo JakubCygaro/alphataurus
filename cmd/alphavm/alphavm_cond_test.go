@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"math"
 	"math/rand"
 	"strings"
 	"testing"
@@ -447,6 +448,89 @@ func TestCmpIR1(t *testing.T) {
 	lines = append(lines,
 		"exit 0")
 	asm := strings.Join(lines, "\n")
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitCode))
+	}
+}
+
+func TestOverflowAndCarryAdd1(t *testing.T) {
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		mov r0, %v
+		add UNSIGNED r0, %v
+		jno failed
+		mov r0h, %v
+		add UNSIGNED r0h, %v
+		jno failed
+		jnc failed
+		mov r0q, %v
+		add UNSIGNED r0q, %v
+		jno failed
+		jnc failed
+		mov r0b, %v
+		add UNSIGNED r0b, %v
+		jno failed
+		jnc failed
+	passed:
+		exit 0
+	failed:
+		exit 1
+	`,
+		math.MaxInt64,
+		rand.Int63n(math.MaxInt64/2),
+		math.MaxInt32,
+		rand.Int31n(math.MaxInt32/2),
+		math.MaxInt16,
+		rand.Int31n(math.MaxInt16/2),
+		math.MaxInt8,
+		rand.Int31n(math.MaxInt8/2),
+	)
+	if mach, err := assembleAndExecute(asm); err != nil {
+		t.Error(compilationOfErr(asm))
+		t.Error(err)
+	} else if exitCode := mach.GetExitCode(); exitCode != 0 {
+		t.Error(compilationOfErr(asm))
+		t.Error(expectedExitCode(0, exitCode))
+	}
+}
+func TestOverflowAndCarrySub1(t *testing.T) {
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		mov r0, %v
+		sub UNSIGNED r0, %v
+		jno failed
+		mov r0h, %v
+		sub UNSIGNED r0h, %v
+		jno failed
+		jnc failed
+		mov r0q, %v
+		sub UNSIGNED r0q, %v
+		jno failed
+		jnc failed
+		mov r0b, %v
+		sub UNSIGNED r0b, %v
+		jno failed
+		jnc failed
+	passed:
+		exit 0
+	failed:
+		exit 1
+	`,
+		rand.Int63n(math.MaxInt64/2),
+		math.MaxInt64,
+		rand.Int31n(math.MaxInt32/2),
+		math.MaxInt32,
+		rand.Int31n(math.MaxInt16/2),
+		math.MaxInt16,
+		rand.Int31n(math.MaxInt8/2),
+		math.MaxInt8,
+	)
 	if mach, err := assembleAndExecute(asm); err != nil {
 		t.Error(compilationOfErr(asm))
 		t.Error(err)
