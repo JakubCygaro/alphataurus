@@ -37,13 +37,11 @@ foo:
 const assembly = `
 section '.code'
 @entry
-		;;mov r0, 9223372036854775807
-		;;add UNSIGNED r0, 711672744463815127
-		;;jno failed
-		mov r0h, 2147483647
-		add UNSIGNED r0h, 2
+		mov r0b, 4
+		mov r1b, -2
+		div SIGNED BYTE
+		mov r0b, r2b
 		jno failed
-		jnc failed
 passed:
 		exit 0
 failed:
@@ -87,7 +85,7 @@ func main() {
 		os.Exit(-1)
 	}
 	if rx, err := mach.GetGpRXAsS64(vm.R0_IDX); err == nil {
-		fmt.Printf("r0 = %+v\n", rx)
+		fmt.Printf("r0 = %+v\n", int8(rx))
 	}
 	if rx, err := mach.GetGpRXAsU64(vm.R1_IDX); err == nil {
 		fmt.Printf("r1 = %+v\n", rx)

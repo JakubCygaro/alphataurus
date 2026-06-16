@@ -140,14 +140,9 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 		valTy = ARTH_TUNSIGNED
 	case TOKEN_TFLOAT:
 		valTy = ARTH_TFLOAT
-	case TOKEN_TNEWLINE:
-		p.lexer.UnreadToken()
-	case TOKEN_TEOF:
-		p.lexer.UnreadToken()
 	default:
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Invalid instruction",
-			p.lexer.line, p.lexer.col)
+		valTy = -1
+		p.lexer.UnreadToken()
 	}
 	err = p.lexer.ReadNextToken()
 	if err != nil {
@@ -167,6 +162,13 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 		ty = INST_TDIVRR
 	case ARTH_TMUL:
 		ty = INST_TMULRR
+		if valTy == -1 {
+			valTy = ARTH_TUNSIGNED
+		} else if valTy != ARTH_TFLOAT {
+			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
+				"Invalid data type specifier",
+				p.lexer.line, p.lexer.col)
+		}
 	}
 	p.currentInst = Instruction{
 		Ty: ty,

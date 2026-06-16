@@ -371,6 +371,29 @@ func TestDivRR3(t *testing.T) {
 		t.Error(err)
 	}
 }
+func TestDivRR4(t *testing.T) {
+	rAV, rBV := -int64(rand.Uint64()/1000), int64(rand.Uint64()/1000)
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		mov r0, %v
+		mov r1, %v
+		div SIGNED WORD
+	`, rAV, rBV)
+
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+	}
+	if err := expectGpRegisters(asm, &mach, ExpMap{
+		vm.R0_IDX: vm.RegisterWithValue(uint64(rAV)),
+		vm.R1_IDX: vm.RegisterWithValue(uint64(rBV)),
+		vm.R2_IDX: vm.RegisterWithValue(uint64(rAV / rBV)),
+		vm.R3_IDX: vm.RegisterWithValue(uint64(rAV % rBV)),
+	}); err != nil {
+		t.Error(err)
+	}
+}
 func TestMulRR1(t *testing.T) {
 	rAV, rBV := rand.Uint64()/1000, rand.Uint64()/1000
 	asm := fmt.Sprintf(`
@@ -378,7 +401,7 @@ func TestMulRR1(t *testing.T) {
 	@entry
 		mov r0, %v
 		mov r1, %v
-		mul UNSIGNED WORD
+		mul WORD
 	`, rAV, rBV)
 
 	mach, err := assembleAndExecute(asm)
@@ -400,7 +423,7 @@ func TestMulRR2(t *testing.T) {
 	@entry
 		mov r0, %v
 		mov r1, %v
-		mul SIGNED WORD
+		mul WORD
 	`, rAV, rBV)
 
 	mach, err := assembleAndExecute(asm)
@@ -433,6 +456,28 @@ func TestMulRR3(t *testing.T) {
 		vm.R0_IDX: vm.RegisterWithValue(math.Float64bits(rAV)),
 		vm.R1_IDX: vm.RegisterWithValue(math.Float64bits(rBV)),
 		vm.R2_IDX: vm.RegisterWithValue(math.Float64bits(rAV * rBV)),
+	}); err != nil {
+		t.Error(err)
+	}
+}
+func TestMulRR4(t *testing.T) {
+	rAV, rBV := rand.Uint64()/1000, -rand.Uint64()/1000
+	asm := fmt.Sprintf(`
+	section '.code'
+	@entry
+		mov r0, %v
+		mov r1, %v
+		mul WORD
+	`, rAV, rBV)
+
+	mach, err := assembleAndExecute(asm)
+	if err != nil {
+		t.Error(err)
+	}
+	if err := expectGpRegisters(asm, &mach, ExpMap{
+		vm.R0_IDX: vm.RegisterWithValue(rAV),
+		vm.R1_IDX: vm.RegisterWithValue(rBV),
+		vm.R2_IDX: vm.RegisterWithValue(rAV * rBV),
 	}); err != nil {
 		t.Error(err)
 	}
