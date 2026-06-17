@@ -303,14 +303,14 @@ func TestFloatLiterals(t *testing.T) {
 		return
 	}
 	for len(input) > 0 {
-		var sign = 1.0
+		sign := false
 		next := output[0]
 		if next.Ty == TOKEN_TEOF {
 			break
 		}
 		output = output[1:]
 		if next.Ty == TOKEN_TMINUS {
-			sign = -1.0
+			sign = true
 			next = output[0]
 			output = output[1:]
 			if next.Ty == TOKEN_TEOF {
@@ -325,7 +325,10 @@ func TestFloatLiterals(t *testing.T) {
 		f := input[0]
 		input = input[1:]
 		v := math.Float64frombits(next.Val.(uint64))
-		if f != v*sign {
+		if sign {
+			v = -v
+		}
+		if f != v {
 			t.Errorf("wanted %v, got %v", f, v)
 			t.Errorf("len is %v", len(input))
 			t.Error(sB.String())
