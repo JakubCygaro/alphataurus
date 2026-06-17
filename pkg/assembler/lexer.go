@@ -426,6 +426,14 @@ func (l *Lexer) readSingleQuoted() error {
 		}
 		if next == '\'' {
 			break
+		} else if next == '\\' {
+			if next, ok := l.readByte(); !ok {
+				return errors.LPrematureEndOfInput(l.line, l.col)
+			} else if next == '\'' || next == '\\' {
+				buf = append(buf, next)
+			} else {
+				return errors.UnsupportedEscape(l.line, l.col, rune(next))
+			}
 		} else if next == '\n' {
 			return errors.LSingleQuoteNewline(l.line, l.col)
 		} else {
@@ -478,7 +486,7 @@ func (l *Lexer) readDigit(b byte) error {
 	for {
 		// 18446744073709551615 max uint, 20 digits
 		if len(buf) == 20 {
-
+			return errors.DigitLiteralTooLong(l.line, l.col)
 		}
 		next, ok := l.readByte()
 		if !ok {

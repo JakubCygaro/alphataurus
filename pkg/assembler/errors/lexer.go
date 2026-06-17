@@ -75,6 +75,16 @@ func LSingleQuoteNewline(line, col int) LexerError {
 	}
 	return err
 }
+func UnsupportedEscape(line, col int, ch rune) LexerError {
+	err := LexerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return fmt.Sprintf("Unsupported escape sequence `%c`", ch)
+		},
+	}
+	return err
+}
 func LPrematureEndOfInput(line, col int) LexerError {
 	err := LexerError{
 		Line: line,

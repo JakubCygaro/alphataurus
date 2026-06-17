@@ -34,18 +34,14 @@ foo:
 	pop bp
 	ret
 `
-const assembly = `
-section '.code'
+const assembly =
+`section '.code'
 @entry
-		mov r0b, 4
-		mov r1b, -2
-		div SIGNED BYTE
-		mov r0b, r2b
-		jno failed
+   mov r0b, 'asddasdasd'
 passed:
-		exit 0
+   exit 0
 failed:
-		exit r0h
+   exit r0h
 `
 
 func main() {

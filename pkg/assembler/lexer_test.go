@@ -68,7 +68,19 @@ var (
 		asPair(TOKEN_TCOLON, ":"),
 		asPair(TOKEN_TSEMICOLON, ";"),
 		asPair(TOKEN_TDOUBLESEMICOLON, ";;"),
-		// asPair(TOKEN_TSINGLEQ, "'"),
+		asPair(TOKEN_TSINGLEQ, func() string {
+			sB := strings.Builder{}
+			sB.WriteRune('\'')
+			for range rand.Intn(20) + 5 {
+				ch := rune(32 + (rand.Intn(126-32)))
+				if ch == '\'' || ch == '\\'{
+					sB.WriteRune('\\')
+				}
+				sB.WriteRune(ch)
+			}
+			sB.WriteRune('\'')
+			return sB.String()
+		}),
 		asPair(TOKEN_TAT, "@"),
 		asPair(TOKEN_TWEAK, "WEAK"),
 		asPair(TOKEN_TBYTE, "BYTE"),
