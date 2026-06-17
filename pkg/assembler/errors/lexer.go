@@ -45,3 +45,23 @@ func MalformedFloatLit(line, col int) LexerError {
 	}
 	return err
 }
+func DigitLiteralTooLong(line, col int) LexerError {
+	err := LexerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return "Digit literal is too big"
+		},
+	}
+	return err
+}
+func LPrematureEndOfInput(line, col int) LexerError {
+	err := LexerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return "Premature end of input"
+		},
+	}
+	return err
+}

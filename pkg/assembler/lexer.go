@@ -204,6 +204,45 @@ func (l *Lexer) unreadByte() error {
 func (l *Lexer) UnreadToken() {
 	l.unRead = true
 }
+
+// Reads tokens into an array untill an EOF is encountered, EOF is included at the end
+// of the array
+func (l *Lexer) ReadTokensTillEof() ([]Token, error) {
+	tokens := make([]Token, 0, 8)
+	var eof bool
+	var err error
+	for {
+		tokens, eof, err = l.ReadTokensInto(tokens)
+		if eof || err != nil {
+			return tokens, err
+		}
+		tmp := make([]Token, 0, cap(tokens)*2)
+		tmp = append(tmp, tokens...)
+		tokens = tmp
+	}
+}
+
+// Reads tokens into a slice, appends the tokens to the end of the slice and up to the
+// capacity of the slice.
+//
+// Returns the new slice, a boolean that indicates whether EOF has been reached and an
+// optional error
+func (l *Lexer) ReadTokensInto(out []Token) (ret []Token, eof bool, err error) {
+	var tok Token
+	for {
+		if len(out) == cap(out) {
+			return out, false, err
+		}
+		tok, err = l.ReadNextTokenReturn()
+		out = append(out, tok)
+		if tok.Ty == TOKEN_TEOF {
+			break
+		}
+	}
+	return out, tok.Ty == TOKEN_TEOF, err
+}
+
+// Reads the next token and returns it along with a possible error
 func (l *Lexer) ReadNextTokenReturn() (Token, error) {
 	if err := l.ReadNextToken(); err != nil {
 		return Token{}, err
@@ -211,6 +250,10 @@ func (l *Lexer) ReadNextTokenReturn() (Token, error) {
 		return l.currentToken, nil
 	}
 }
+
+// Reads the next token and returns a possible error
+//
+// The read token can be accessed with CurrentToken()
 func (l *Lexer) ReadNextToken() error {
 	if l.unRead {
 		l.unRead = false
@@ -349,7 +392,7 @@ func (l *Lexer) ReadNextToken() error {
 			}
 		}
 		val := string(buf)
-		if reg, sz, ok := recognizeRegister(val); ok {
+		if reg, sz, ok := RecognizeRegister(val); ok {
 			l.currentToken = Token{
 				Ty: TOKEN_TREG,
 				Val: RegisterData{
@@ -395,8 +438,23 @@ func (l *Lexer) readSingleQuoted() error {
 }
 
 func (l *Lexer) readDigit(b byte) error {
-	buf := make([]byte, 0, 16)
-	buf = append(buf, b)
+	const MAX_LIT_LEN int = 32
+	const EXP_BUF_SIZE int = 4
+	expBuf := [EXP_BUF_SIZE]byte{}
+	expBufC := 0
+	buf := [MAX_LIT_LEN]byte{0}
+	bufC := 0
+	appendToBuf := func(b byte) error {
+		if bufC >= MAX_LIT_LEN {
+			return errors.DigitLiteralTooLong(l.line, l.col)
+		}
+		buf[bufC] = b
+		bufC++
+		return nil
+	}
+	if err := appendToBuf(b); err != nil {
+		return err
+	}
 	dot := b == '.'
 	e := false
 	startedWithZero := b == '0'
@@ -416,37 +474,57 @@ func (l *Lexer) readDigit(b byte) error {
 		}
 	}
 	for {
+		// 18446744073709551615 max uint, 20 digits
+		if len(buf) == 20 {
+
+		}
 		next, ok := l.readByte()
 		if !ok {
 			break
 		}
 		if !hex && !binary && numberCheck(next) {
-			buf = append(buf, next)
+			if err := appendToBuf(next); err != nil {
+				return err
+			}
 		} else if hex && hexNumberCheck(next) {
-			buf = append(buf, next)
+			if err := appendToBuf(next); err != nil {
+				return err
+			}
 		} else if binary && binaryNumberCheck(next) {
-			buf = append(buf, next)
+			if err := appendToBuf(next); err != nil {
+				return err
+			}
 		} else if next == '.' && !dot {
-			buf = append(buf, next)
+			if err := appendToBuf(next); err != nil {
+				return err
+			}
 			dot = true
 		} else if (next == 'e' || next == 'E') && !e && !hex && !binary {
-			buf = append(buf, next)
 			e = true
 			next, ok := l.readByte()
 			if !ok {
-				return errors.PrematureEndOfInput(l.line, l.col)
+				return errors.LPrematureEndOfInput(l.line, l.col)
 			}
 			if next == '-' || next == '+' {
-				buf = append(buf, next)
+				expBuf[0] = next
+				expBufC = 1
 				next, ok = l.readByte()
 				if !ok {
-					return errors.PrematureEndOfInput(l.line, l.col)
+					return errors.LPrematureEndOfInput(l.line, l.col)
 				}
 			}
-			if numberCheck(next) {
-				l.unreadByte()
-			} else {
-				return errors.MalformedFloatLit(l.line, l.col)
+			for {
+				if numberCheck(next) {
+					if expBufC >= len(expBuf) {
+						return errors.MalformedFloatLit(l.line, l.col)
+					}
+					expBuf[expBufC] = next
+					expBufC++
+					next, _ = l.readByte()
+				} else {
+					l.unreadByte()
+					break
+				}
 			}
 		} else if unicode.IsSpace(rune(next)) || !IdentCheck(next) {
 			l.unreadByte()
@@ -456,7 +534,7 @@ func (l *Lexer) readDigit(b byte) error {
 		}
 	}
 	if !dot {
-		val, err := strconv.ParseUint(string(buf), 10, 64)
+		val, err := strconv.ParseUint(string(buf[:bufC]), 10, 64)
 		if err != nil {
 			return errors.MalformedIntegerLit(l.line, l.col)
 		}
@@ -465,7 +543,7 @@ func (l *Lexer) readDigit(b byte) error {
 			Val: uint64(val),
 		}
 	} else if hex {
-		val, err := strconv.ParseUint(string(buf), 16, 64)
+		val, err := strconv.ParseUint(string(buf[:bufC]), 16, 64)
 		if err != nil {
 			return errors.MalformedIntegerLit(l.line, l.col)
 		}
@@ -474,7 +552,7 @@ func (l *Lexer) readDigit(b byte) error {
 			Val: uint64(val),
 		}
 	} else if binary {
-		val, err := strconv.ParseUint(string(buf), 2, 64)
+		val, err := strconv.ParseUint(string(buf[:bufC]), 2, 64)
 		if err != nil {
 			return errors.MalformedIntegerLit(l.line, l.col)
 		}
@@ -483,9 +561,16 @@ func (l *Lexer) readDigit(b byte) error {
 			Val: uint64(val),
 		}
 	} else {
-		val, err := strconv.ParseFloat(string(buf), 64)
+		val, err := strconv.ParseFloat(string(buf[:bufC]), 64)
 		if err != nil {
 			return errors.MalformedFloatLit(l.line, l.col)
+		}
+		if e {
+			if i, err := strconv.ParseInt(string(expBuf[:expBufC]), 10, 64); err != nil {
+				return err
+			} else {
+				val = val * (math.Pow(10.0, float64(i)))
+			}
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TFLOAT_LIT,
@@ -495,7 +580,7 @@ func (l *Lexer) readDigit(b byte) error {
 	return nil
 }
 
-func recognizeRegister(s string) (int, byte, bool) {
+func RecognizeRegister(s string) (int, byte, bool) {
 	var sz byte = vm.SZ_64
 	if len(s) < 2 || len(s) > 3 {
 		return -1, sz, false
