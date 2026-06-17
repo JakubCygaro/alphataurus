@@ -579,7 +579,7 @@ func (l *Lexer) readDigit(b byte) error {
 			if i, err := strconv.ParseInt(string(expBuf[:expBufC]), 10, 64); err != nil {
 				return err
 			} else {
-				val = val * (math.Pow(10.0, float64(i)))
+				val = val * (math.Pow10(int(i)))
 			}
 		}
 		l.currentToken = Token{
