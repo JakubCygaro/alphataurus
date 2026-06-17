@@ -55,6 +55,26 @@ func DigitLiteralTooLong(line, col int) LexerError {
 	}
 	return err
 }
+func LUnclosedSingleQuote(line, col int) LexerError {
+	err := LexerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return "Unclosed single quote"
+		},
+	}
+	return err
+}
+func LSingleQuoteNewline(line, col int) LexerError {
+	err := LexerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return "Single quote broken by a newline"
+		},
+	}
+	return err
+}
 func LPrematureEndOfInput(line, col int) LexerError {
 	err := LexerError{
 		Line: line,

@@ -422,10 +422,12 @@ func (l *Lexer) readSingleQuoted() error {
 	for {
 		next, ok := l.readByte()
 		if !ok {
-			return errors.UnclosedSingleQuote(l.line, l.col)
+			return errors.LUnclosedSingleQuote(l.line, l.col)
 		}
 		if next == '\'' {
 			break
+		} else if next == '\n' {
+			return errors.LSingleQuoteNewline(l.line, l.col)
 		} else {
 			buf = append(buf, next)
 		}
