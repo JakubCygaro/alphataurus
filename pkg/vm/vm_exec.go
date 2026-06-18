@@ -3,15 +3,18 @@ package vm
 import (
 	"encoding/binary"
 	"fmt"
+	aelf "github.com/JakubCygaro/alphataurus/pkg/vm/aelf"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
 
-func (vm *VmState) load(elf AlphaELFFile) error {
+func (vm *VmState) load(elf aelf.AlphaELFFile) error {
 	if !elf.HasEntry {
 		return errors.NoEntry()
 	}
-	bytecode := elf.Data[uint64(elf.HeaderSize)+elf.CodeStart : uint64(elf.HeaderSize)+elf.CodeStart+elf.CodeSize]
-	if len(bytecode)%INSTRUCTION_SIZE != 0 {
+	// hSz := uint64(elf.HeaderSize)
+	bytecode := elf.PostHeaderData[elf.CodeStart : elf.CodeStart+elf.CodeSize]
+	if len(bytecode)%decls.INSTRUCTION_SIZE != 0 {
 		return errors.BadCodeSectionSize()
 	}
 	codeSize := len(bytecode)
@@ -32,7 +35,7 @@ func (vm *VmState) load(elf AlphaELFFile) error {
 	vm.codeSize = uint64(codeSize)
 	return nil
 }
-func (vm *VmState) Execute(elf AlphaELFFile) error {
+func (vm *VmState) Execute(elf aelf.AlphaELFFile) error {
 	if err := vm.load(elf); err != nil {
 		return err
 	}
@@ -50,8 +53,8 @@ func (vm *VmState) Execute(elf AlphaELFFile) error {
 func (state *VmState) fetch() (instAddr uint64, opCodeBytes, param []byte) {
 	instAddr = state.VirtToRealIp(state.GetIp())
 	state.byteCodePos = state.GetIp()
-	opCodeBytes = state.bytecode[instAddr : instAddr+OPCODE_SIZE]
-	param = state.bytecode[instAddr+OPCODE_SIZE : instAddr+INSTRUCTION_SIZE]
+	opCodeBytes = state.bytecode[instAddr : instAddr+decls.OPCODE_SIZE]
+	param = state.bytecode[instAddr+decls.OPCODE_SIZE : instAddr+decls.INSTRUCTION_SIZE]
 	return instAddr, opCodeBytes, param
 }
 func (state *VmState) decode(opCodeBytes []byte) error {

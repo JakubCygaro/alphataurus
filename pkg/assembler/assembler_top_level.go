@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
 func (a *Assembler) handleExport(data InstImportExportData) error {

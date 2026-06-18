@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
 func (a *Assembler) Assemble() ([]byte, error) {
@@ -52,17 +52,17 @@ func (a *Assembler) Assemble() ([]byte, error) {
 // header_size 2b (excluding version, magic and itself)
 func (a *Assembler) writeObjFile() ([]byte, error) {
 	var syms, rels []byte
-	if symbols, err := vm.WriteSymbols(&a.symbols); err != nil {
+	if symbols, err := aobj.WriteSymbols(&a.symbols); err != nil {
 		return nil, err
 	} else {
 		syms = symbols
 	}
-	if relocs, err := vm.WriteRelocs(a.relocations); err != nil {
+	if relocs, err := aobj.WriteRelocs(a.relocations); err != nil {
 		return nil, err
 	} else {
 		rels = relocs
 	}
-	head := vm.ObjFileHeader{}
+	head := aobj.ObjFileHeader{}
 	head.StaticDataSize = 0
 	head.SymbolsStart = 0
 	head.SymbolsSize = uint64(len(syms))
@@ -75,7 +75,7 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 	output := make([]byte, 0)
 
 	//mag
-	output = append(output, vm.OBJ_FILE_MAG...)
+	output = append(output, aobj.OBJ_FILE_MAG...)
 
 	//version
 	output = binary.BigEndian.AppendUint32(output, 0x00000001)
@@ -87,28 +87,28 @@ func (a *Assembler) writeObjFile() ([]byte, error) {
 
 	if a.hasEntry {
 		//entry point
-		output = append(output, vm.OBJ_FILE_ENTRY)
+		output = append(output, aobj.OBJ_FILE_ENTRY)
 		output = binary.BigEndian.AppendUint64(output, a.entry)
 	}
 
-	output = append(output, vm.OBJ_FILE_SECCODE)
+	output = append(output, aobj.OBJ_FILE_SECCODE)
 	//code start
 	output = binary.BigEndian.AppendUint64(output, head.CodeStart)
 	//code size
 	output = binary.BigEndian.AppendUint64(output, head.CodeSize)
 
 	//static data
-	output = append(output, vm.OBJ_FILE_SECSDATA)
+	output = append(output, aobj.OBJ_FILE_SECSDATA)
 	output = binary.BigEndian.AppendUint64(output, head.StaticDataStart)
 	output = binary.BigEndian.AppendUint64(output, head.StaticDataSize)
 
-	output = append(output, vm.OBJ_FILE_SECSYMS)
+	output = append(output, aobj.OBJ_FILE_SECSYMS)
 	//syms start
 	output = binary.BigEndian.AppendUint64(output, head.SymbolsStart)
 	//syms size
 	output = binary.BigEndian.AppendUint64(output, head.SymbolsSize)
 
-	output = append(output, vm.OBJ_FILE_SECRELS)
+	output = append(output, aobj.OBJ_FILE_SECRELS)
 	//reloc start
 	output = binary.BigEndian.AppendUint64(output, head.RelocsStart)
 	//reloc size

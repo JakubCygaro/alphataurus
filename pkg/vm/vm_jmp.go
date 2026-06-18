@@ -4,10 +4,11 @@ import (
 	"encoding/binary"
 
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 )
 
 func (state *VmState) jmpImpl(dest uint64) error {
-	if dest < state.exeSegBase-INSTRUCTION_SIZE || dest >= uint64(state.stackSegBase) {
+	if dest < state.exeSegBase-decls.INSTRUCTION_SIZE || dest >= uint64(state.stackSegBase) {
 		return errors.SegmentationFault(dest, uint64(state.byteCodePos))
 	}
 	state.setIp(dest)

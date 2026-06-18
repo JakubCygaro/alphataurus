@@ -3,6 +3,7 @@ package vm
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 )
 
 type VmState struct {
@@ -86,7 +87,7 @@ func (state *VmState) setIp(v uint64) {
 
 // increment IP so it points to the next instruction
 func (state *VmState) incIp() {
-	state.setIp(state.GetIp() + INSTRUCTION_SIZE)
+	state.setIp(state.GetIp() + decls.INSTRUCTION_SIZE)
 }
 func (vm *VmState) GetFlags() Flags {
 	return vm.flags

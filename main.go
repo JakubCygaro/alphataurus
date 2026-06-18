@@ -4,12 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	vm "github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 const assembly3 = `
@@ -37,11 +36,17 @@ foo:
 `
 const assembly =
 `section '.code'
+foo:
+    mov r0q, 0
+    add UNSIGNED r0q, r1q
+    add UNSIGNED r0q, r2q
+    ret
 @entry
-passed:
-   exit 0
-failed:
-   exit r0h
+_start:
+    mov r1q, 69
+    mov r2q, 420
+    call foo
+    exit r0q
 `
 
 func main() {
@@ -100,11 +105,5 @@ func main() {
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
-
-	f, _ := strconv.ParseFloat("2.4466963434755266e-06", 64)
-	fmt.Printf("%e\n", f)
-	fmt.Printf("%g\n", f)
-
-
 	os.Exit(int(mach.GetExitCode()))
 }

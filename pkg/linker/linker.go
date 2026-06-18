@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/obj"
+	aelf "github.com/JakubCygaro/alphataurus/pkg/vm/aelf"
 )
 
 type objFileData struct {
@@ -136,8 +137,8 @@ func (l *Linker) collect(b Bytes, meta inputMetadata) error {
 	})
 	return nil
 }
-func (l *Linker) link() (vm.AlphaELFFile, error) {
-	ret := vm.AlphaELFFile{}
+func (l *Linker) link() (aelf.AlphaELFFile, error) {
+	ret := aelf.AlphaELFFile{}
 	collectedCode := make([]byte, 0)
 	codeBaseOff := uint64(0)
 	for idx, obj := range l.objectFiles {
@@ -197,26 +198,14 @@ func (l *Linker) link() (vm.AlphaELFFile, error) {
 			}
 		}
 	}
-
 	ret.CodeStart = 0
 	ret.CodeSize = uint64(len(collectedCode))
-	ret.Data = collectedCode
-	// ret.CodeSize = l.objectFiles[0].Loaded.Header.CodeSize
-	// ret.StaticDataStart = l.objectFiles[0].Loaded.Header.StaticDataStart
-	// ret.StaticDataSize = l.objectFiles[0].Loaded.Header.StaticDataSize
-	// ret.SymbolsStart = l.objectFiles[0].Loaded.Header.SymbolsStart
-	// ret.SymbolsSize = l.objectFiles[0].Loaded.Header.SymbolsSize
-	// ret.RelocsStart = l.objectFiles[0].Loaded.Header.RelocsStart
-	// ret.RelocsSize = l.objectFiles[0].Loaded.Header.RelocsSize
-	// ret.HeaderSize = l.objectFiles[0].Loaded.Header.HeaderSize
-	// ret.Data = l.objectFiles[0].Raw
-	// ret.Entry = l.objectFiles[0].Loaded.Header.Entry
-	// ret.HasEntry = l.objectFiles[0].Loaded.Header.HasEntry
+	ret.PostHeaderData = collectedCode
 	return ret, nil
 }
 
-func (l *Linker) Link(sources []LinkerInput) (vm.AlphaELFFile, error) {
-	ret := vm.AlphaELFFile{}
+func (l *Linker) Link(sources []LinkerInput) (aelf.AlphaELFFile, error) {
+	ret := aelf.AlphaELFFile{}
 	if err := l.collectSources(sources); err != nil {
 		return ret, err
 	}

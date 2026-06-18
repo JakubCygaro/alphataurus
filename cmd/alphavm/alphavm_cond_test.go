@@ -13,6 +13,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
 func TestCmp1(t *testing.T) {
@@ -309,7 +310,7 @@ func TestJumps1(t *testing.T) {
 		if obj, err := assemble(asm); err != nil {
 			t.Error(compilationOfErr(asm))
 			t.Error(err)
-		} else if h, err := vm.LoadObjFileHeader(
+		} else if h, err := aobj.LoadObjFileHeader(
 			bufio.NewReader(bytes.NewReader(obj))); err != nil {
 			t.Error(compilationOfErr(asm))
 			t.Error(err)

@@ -7,8 +7,10 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	aelf "github.com/JakubCygaro/alphataurus/pkg/vm/aelf"
 	"math"
 	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 	"strings"
 )
 
@@ -25,10 +27,10 @@ func compilationOfErr(asm ...string) error {
 func assemblingErrorExpected() error {
 	return fmt.Errorf("An assembling error was expected")
 }
-func execute(elf vm.AlphaELFFile) (vm.VmState, error) {
+func execute(elf aelf.AlphaELFFile) (vm.VmState, error) {
 	return executeStackSize(elf, DEFAULT_STACK_SIZE)
 }
-func executeStackSize(elf vm.AlphaELFFile, stacksz uint64) (vm.VmState, error) {
+func executeStackSize(elf aelf.AlphaELFFile, stacksz uint64) (vm.VmState, error) {
 	mach := vm.CreateVmState(stacksz)
 	if err := mach.Execute(elf); err != nil {
 		return mach, err
@@ -40,11 +42,11 @@ func assemble(source string) ([]byte, error) {
 	code, err := asmblr.Assemble()
 	return code, err
 }
-func assembleAndLink(source ...string) (vm.AlphaELFFile, error) {
+func assembleAndLink(source ...string) (aelf.AlphaELFFile, error) {
 	assembled := make([]linker.LinkerInput, 0)
 	for _, s := range source {
 		if code, err := assemble(s); err != nil {
-			return vm.AlphaELFFile{}, fmt.Errorf("Assembling error: %v", err)
+			return aelf.AlphaELFFile{}, fmt.Errorf("Assembling error: %v", err)
 		} else {
 			assembled = append(assembled, linker.Bytes(code))
 		}
@@ -223,7 +225,7 @@ exit %v`,
 		cmpType,
 		tc.RegStr(byte(r.Reg), r.Size),
 		expect,
-		vm.INSTRUCTION_SIZE,
+		decls.INSTRUCTION_SIZE,
 		exitV,
 	)
 }
@@ -240,7 +242,7 @@ func macroAssertUGenericRR(r, expect assembler.RegisterData, aT AssertTy) string
 		tc.RegStr(byte(r.Reg), r.Size),
 		tc.RegStr(byte(expect.Reg), expect.Size),
 		assertToOp(aT),
-		vm.INSTRUCTION_SIZE,
+		decls.INSTRUCTION_SIZE,
 		tc.RegStr(byte(expect.Reg), expect.Size),
 	)
 }
@@ -253,7 +255,7 @@ func macroAssertUGenericIR(r assembler.RegisterData, expect uint64, aT AssertTy)
 		tc.RegStr(byte(r.Reg), r.Size),
 		expect,
 		assertToOp(aT),
-		vm.INSTRUCTION_SIZE,
+		decls.INSTRUCTION_SIZE,
 		expect,
 	)
 }

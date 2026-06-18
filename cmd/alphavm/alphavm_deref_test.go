@@ -11,6 +11,7 @@ import (
 	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 )
 
 func TestDeref1(t *testing.T) {
@@ -172,7 +173,7 @@ func TestDeref6(t *testing.T) {
 		stack.push(uint64(rand.Intn(101) - 50))
 	}
 	code := make([]string, 0)
-	codeSize := (len(code) + stackSize/8) * vm.INSTRUCTION_SIZE
+	codeSize := (len(code) + stackSize/8) * decls.INSTRUCTION_SIZE
 	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
 	lines := make([]string, 0)
 	lines = append(lines,
@@ -219,7 +220,7 @@ func TestDeref7(t *testing.T) {
 	movCount := pushCount
 	assertMacroCount := movCount * 3
 	codeSize := (len(code) + pushCount + movCount + assertMacroCount) *
-		vm.INSTRUCTION_SIZE
+		decls.INSTRUCTION_SIZE
 	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
 	lines := make([]string, 0)
 	lines = append(lines,
@@ -374,7 +375,7 @@ func TestMovRDO1_1(t *testing.T) {
 		stack.push(uint64(rand.Intn(101) - 50))
 	}
 	code := make([]string, 0)
-	codeSize := (len(code) + (stackSize/8)*2) * vm.INSTRUCTION_SIZE
+	codeSize := (len(code) + (stackSize/8)*2) * decls.INSTRUCTION_SIZE
 	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
 	lines := make([]string, 0)
 	lines = append(lines,
@@ -577,7 +578,7 @@ func TestMovRDO2_1(t *testing.T) {
 		stack.push(uint64(rand.Intn(101) - 50))
 	}
 	code := make([]string, 0)
-	codeSize := (len(code) + (stackSize/8)*3) * vm.INSTRUCTION_SIZE
+	codeSize := (len(code) + (stackSize/8)*3) * decls.INSTRUCTION_SIZE
 	stackBase := codeSize + vm.ADDRESSDEADZONE_SIZE
 	lines := make([]string, 0)
 	lines = append(lines,
