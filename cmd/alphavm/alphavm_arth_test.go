@@ -24,10 +24,10 @@ func TestAddIR1(t *testing.T) {
 		mov r0, %d
 		add SIGNED r0, %d
 		mov r2, r0
-		mov r3, %f
-		add FLOAT r3, %f
+		mov r3, 0x%x
+		add FLOAT r3, 0x%x
 		mov r5, r3
-	`, r0_v, r1_v, r3_v, r4_v)
+	`, r0_v, r1_v, math.Float64bits(r3_v), math.Float64bits(r4_v))
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
 		t.Error(err)
@@ -287,10 +287,10 @@ func TestSubRR3(t *testing.T) {
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
-		mov r%v, %v
-		mov r%v, %v
+		mov r%v, 0x%x
+		mov r%v, 0x%x
 		sub FLOAT r%v, r%v
-	`, rA, rAV, rB, rBV, rA, rB)
+	`, rA, math.Float64bits(rAV), rB, math.Float64bits(rBV), rA, rB)
 
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
@@ -354,10 +354,10 @@ func TestDivRR3(t *testing.T) {
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
-		mov r0, %v
-		mov r1, %v
+		mov r0, 0x%x
+		mov r1, 0x%x
 		div FLOAT WORD
-	`, rAV, rBV)
+	`, math.Float64bits(rAV), math.Float64bits(rBV))
 
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
@@ -444,10 +444,10 @@ func TestMulRR3(t *testing.T) {
 	asm := fmt.Sprintf(`
 	section '.code'
 	@entry
-		mov r0, %v
-		mov r1, %v
+		mov r0, 0x%x
+		mov r1, 0x%x
 		mul FLOAT WORD
-	`, rAV, rBV)
+	`, math.Float64bits(rAV), math.Float64bits(rBV))
 
 	mach, err := assembleAndExecute(asm)
 	if err != nil {
@@ -656,50 +656,50 @@ func TestArthIR3(t *testing.T) {
 		if !vm.IsArthRAllowed(byte(ir.Reg)) || ir.Size != vm.SZ_64 {
 			continue
 		}
-		var a, b float64
+		var a, b uint64
 		switch ir.Size {
 		case vm.SZ_8:
-			a, b = math.Float64frombits(uint64(byte(rand.Int63()))),
-				math.Float64frombits(uint64(byte(rand.Int63())))
+			a, b = math.Float64bits(rand.Float64()),
+				math.Float64bits(rand.Float64())
 		case vm.SZ_16:
-			a, b = math.Float64frombits(uint64(uint16(rand.Int63()))),
-				math.Float64frombits(uint64(uint16(rand.Int63())))
+			a, b = math.Float64bits(rand.Float64()),
+				math.Float64bits(rand.Float64())
 		case vm.SZ_32:
-			a, b = math.Float64frombits(uint64(uint32(rand.Int63()))),
-				math.Float64frombits(uint64(uint32(rand.Int63())))
+			a, b = math.Float64bits(rand.Float64()),
+				math.Float64bits(rand.Float64())
 		case vm.SZ_64:
-			a, b = math.Float64frombits(uint64(rand.Int63())),
-				math.Float64frombits(uint64(rand.Int63()))
+			a, b = math.Float64bits(rand.Float64()),
+				math.Float64bits(rand.Float64())
 		}
 		lines = append(lines,
 			fmt.Sprintf(
-				"mov %s, %v",
+				"mov %s, 0x%x",
 				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
-				"add FLOAT %s, %v",
+				"add FLOAT %s, 0x%x",
 				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
-				a+b,
+				math.Float64frombits(a)+math.Float64frombits(b),
 				FLOAT,
 			),
 			fmt.Sprintf(
-				"mov %s, %v",
+				"mov %s, 0x%x",
 				tc.RegStr(byte(ir.Reg), ir.Size),
 				a,
 			),
 			fmt.Sprintf(
-				"sub FLOAT %s, %v",
+				"sub FLOAT %s, 0x%x",
 				tc.RegStr(byte(ir.Reg), ir.Size),
 				b,
 			),
 			macroAssertEqRI(
 				assembler.RegisterData(ir),
-				a-b,
+				math.Float64frombits(a)-math.Float64frombits(b),
 				FLOAT,
 			),
 		)
@@ -881,29 +881,29 @@ func TestArthRR3(t *testing.T) {
 				br.Size != vm.SZ_64 {
 				continue
 			}
-			var a, b float64
+			var a, b uint64
 			switch ar.Size {
 			case vm.SZ_8:
-				a, b = math.Float64frombits(uint64(byte(rand.Int63()))),
-					math.Float64frombits(uint64(byte(rand.Int63())))
+				a, b = math.Float64bits(rand.Float64()),
+					math.Float64bits(rand.Float64())
 			case vm.SZ_16:
-				a, b = math.Float64frombits(uint64(uint16(rand.Int63()))),
-					math.Float64frombits(uint64(uint16(rand.Int63())))
+				a, b = math.Float64bits(rand.Float64()),
+					math.Float64bits(rand.Float64())
 			case vm.SZ_32:
-				a, b = math.Float64frombits(uint64(uint32(rand.Int63()))),
-					math.Float64frombits(uint64(uint32(rand.Int63())))
+				a, b = math.Float64bits(rand.Float64()),
+					math.Float64bits(rand.Float64())
 			case vm.SZ_64:
-				a, b = math.Float64frombits(uint64(rand.Int63())),
-					math.Float64frombits(uint64(rand.Int63()))
+				a, b = math.Float64bits(rand.Float64()),
+					math.Float64bits(rand.Float64())
 			}
 			lines = append(lines,
 				fmt.Sprintf(
-					"mov %s, %v",
+					"mov %s, 0x%x",
 					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
 				fmt.Sprintf(
-					"mov %s, %v",
+					"mov %s, 0x%x",
 					tc.RegStr(byte(br.Reg), br.Size),
 					b,
 				),
@@ -914,11 +914,11 @@ func TestArthRR3(t *testing.T) {
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
-					a+b,
+					math.Float64frombits(a)+math.Float64frombits(b),
 					FLOAT,
 				),
 				fmt.Sprintf(
-					"mov %s, %v",
+					"mov %s, 0x%x",
 					tc.RegStr(byte(ar.Reg), ar.Size),
 					a,
 				),
@@ -929,7 +929,7 @@ func TestArthRR3(t *testing.T) {
 				),
 				macroAssertEqRI(
 					assembler.RegisterData(ar),
-					a-b,
+					math.Float64frombits(a)-math.Float64frombits(b),
 					FLOAT,
 				),
 			)

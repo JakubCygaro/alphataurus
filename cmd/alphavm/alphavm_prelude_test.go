@@ -208,7 +208,11 @@ func macroAssertEqRI(r assembler.RegisterData,
 	expect any, cmpType assertTypeKwd) string {
 	var exitV string
 	if cmpType == FLOAT {
-		exitV = fmt.Sprintf("%d", int64(expect.(float64)))
+		if f, ok := expect.(float64); ok {
+			exitV = fmt.Sprintf("0x%x", math.Float64bits(f))
+		} else if x, ok := expect.(uint64); ok {
+			exitV = fmt.Sprintf("0x%x", x)
+		}
 	} else {
 		exitV = fmt.Sprintf("%v", expect)
 	}

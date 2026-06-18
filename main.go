@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
@@ -37,7 +38,6 @@ foo:
 const assembly =
 `section '.code'
 @entry
-   mov r0b, 'asddasdasd'
 passed:
    exit 0
 failed:
@@ -100,5 +100,11 @@ func main() {
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
+
+	f, _ := strconv.ParseFloat("2.4466963434755266e-06", 64)
+	fmt.Printf("%e\n", f)
+	fmt.Printf("%g\n", f)
+
+
 	os.Exit(int(mach.GetExitCode()))
 }

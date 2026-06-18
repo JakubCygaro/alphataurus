@@ -113,8 +113,10 @@ type Token struct {
 }
 
 type Lexer struct {
-	line         int
-	col          int
+	line int
+	col  int
+	// starting line and column for the current token
+	sline, scol  int
 	lastLine     int
 	lastCol      int
 	currentToken Token
@@ -236,6 +238,9 @@ func (l *Lexer) ReadTokensInto(out []Token) (ret []Token, eof bool, err error) {
 			return out, false, err
 		}
 		tok, err = l.ReadNextTokenReturn()
+		if err != nil {
+			break
+		}
 		out = append(out, tok)
 		if tok.Ty == TOKEN_TEOF {
 			break
@@ -278,7 +283,7 @@ func (l *Lexer) ReadNextToken() error {
 			break
 		}
 	}
-	sc, sl := l.col, l.line
+	l.scol, l.sline = l.col, l.line
 	switch {
 	case b == '\'':
 		if err := l.readSingleQuoted(); err != nil {
@@ -416,7 +421,7 @@ func (l *Lexer) ReadNextToken() error {
 	default:
 		return errors.UnrecognizedChar(rune(b), l.line, l.col)
 	}
-	l.currentToken.Line, l.currentToken.Col = sl, sc
+	l.currentToken.Line, l.currentToken.Col = l.sline, l.scol
 	return nil
 }
 func (l *Lexer) readSingleQuoted() error {
@@ -450,14 +455,16 @@ func (l *Lexer) readSingleQuoted() error {
 }
 
 func (l *Lexer) readDigit(b byte) error {
-	const MAX_LIT_LEN int = 24
-	const EXP_BUF_SIZE int = 4
-	expBuf := [EXP_BUF_SIZE]byte{}
+	const MAX_LIT_LEN int = 64
+	const MAX_EXP int = 4
 	expBufC := 0
 	buf := [MAX_LIT_LEN]byte{0}
 	bufC := 0
+	binary := false
+	dot := b == '.'
 	appendToBuf := func(b byte) error {
-		if bufC >= MAX_LIT_LEN {
+		if (bufC >= MAX_LIT_LEN) ||
+			(!binary && !dot && bufC > 20) {
 			return errors.DigitLiteralTooLong(l.line, l.col, string(buf[:bufC]))
 		}
 		buf[bufC] = b
@@ -467,11 +474,9 @@ func (l *Lexer) readDigit(b byte) error {
 	if err := appendToBuf(b); err != nil {
 		return err
 	}
-	dot := b == '.'
 	e := false
 	startedWithZero := b == '0'
 	hex := false
-	binary := false
 	if startedWithZero {
 		next, ok := l.readByte()
 		switch {
@@ -508,14 +513,17 @@ func (l *Lexer) readDigit(b byte) error {
 			}
 			dot = true
 		} else if (next == 'e' || next == 'E') && !e && !hex && !binary {
-			e = true
+			if err := appendToBuf(next); err != nil {
+				return err
+			}
 			next, ok := l.readByte()
 			if !ok {
 				return errors.LPrematureEndOfInput(l.line, l.col)
 			}
 			if next == '-' || next == '+' {
-				expBuf[0] = next
-				expBufC = 1
+				if err := appendToBuf(next); err != nil {
+					return err
+				}
 				next, ok = l.readByte()
 				if !ok {
 					return errors.LPrematureEndOfInput(l.line, l.col)
@@ -523,12 +531,12 @@ func (l *Lexer) readDigit(b byte) error {
 			}
 			for {
 				if numberCheck(next) {
-					if expBufC >= len(expBuf) {
+					if expBufC >= MAX_EXP {
 						return errors.
 							MalformedFloatLit(l.line, l.col, string(buf[:bufC]))
+					} else if err := appendToBuf(next); err != nil {
+						return err
 					}
-					expBuf[expBufC] = next
-					expBufC++
 					next, _ = l.readByte()
 				} else {
 					l.unreadByte()
@@ -575,14 +583,14 @@ func (l *Lexer) readDigit(b byte) error {
 		if err != nil {
 			return errors.MalformedFloatLit(l.line, l.col, string(buf[:bufC]))
 		}
-		if e {
-			if i, err := strconv.ParseInt(string(expBuf[:expBufC]), 10, 64); err != nil {
-				return err
-			} else {
-				exp := math.Pow10(int(i))
-				val = val * exp
-			}
-		}
+		// if e {
+		// 	if i, err := strconv.ParseInt(string(expBuf[:expBufC]), 10, 64); err != nil {
+		// 		return err
+		// 	} else {
+		// 		exp := math.Pow10(int(i))
+		// 		val = val * exp
+		// 	}
+		// }
 		l.currentToken = Token{
 			Ty:  TOKEN_TFLOAT_LIT,
 			Val: uint64(math.Float64bits(val)),

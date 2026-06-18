@@ -192,7 +192,14 @@ func TestUIntLiterals(t *testing.T) {
 	for range rand.Intn(1000) {
 		v := uint(rand.Int())
 		input = append(input, v)
-		s := fmt.Sprintf("%v ", v)
+		var s string
+		if roll := rand.Intn(100); roll < 33 {
+			s = fmt.Sprintf("%v ", v)
+		} else if roll < 66 {
+			s = fmt.Sprintf("0x%x ", v)
+		} else {
+			s = fmt.Sprintf("0b%b ", v)
+		}
 		sB.WriteString(s)
 	}
 	reader := bufio.NewReader(strings.NewReader(sB.String()))
@@ -340,7 +347,7 @@ func TestFloatLiterals(t *testing.T) {
 	}
 }
 func TestLitTooLongF(t *testing.T) {
-	const REGEX string = "(1:\\d+).*Digit literal is too big"
+	const REGEX string = "(1:\\d+).*Digit literal is too long"
 	input := make([]byte, 0, 24+rand.Intn(30))
 	for range cap(input) {
 		input = append(input, numChars[rand.Int()%len(numChars)])
@@ -349,6 +356,70 @@ func TestLitTooLongF(t *testing.T) {
 	l := NewLexer(reader)
 	if err := l.ReadNextToken(); err == nil {
 		t.Errorf("Expected a lexer error while parsing too long literal `%v`",
+			string(input))
+	} else if ok, _ := regexp.MatchString(REGEX,
+		err.Error()); !ok {
+		t.Errorf("Lexer error did not match regex `%s`\nINPUT: %s\nGot error: %s",
+			REGEX, string(input), err.Error())
+	}
+}
+func TestLitPrematureEndF(t *testing.T) {
+	const REGEX string = "(1:\\d+).*Premature end of input"
+	inputs := []string{
+		"0.0e",
+		"0.0e+",
+		"0.0e-",
+		"'\\",
+	}
+	for _, input := range inputs {
+		reader := bufio.NewReader(strings.NewReader(string(input)))
+		l := NewLexer(reader)
+		if err := l.ReadNextToken(); err == nil {
+			t.Errorf("Expected a lexer error while parsing too long literal `%v`",
+				string(input))
+		} else if ok, _ := regexp.MatchString(REGEX,
+			err.Error()); !ok {
+			t.Errorf("Lexer error did not match regex `%s`\nINPUT: %s\nGot error: %s",
+				REGEX, string(input), err.Error())
+		}
+	}
+}
+func TestUnclosedSingleQuoteF(t *testing.T) {
+	const REGEX string = "(1:\\d+).*Unclosed single quote"
+	input := "'This should fail"
+	reader := bufio.NewReader(strings.NewReader(string(input)))
+	l := NewLexer(reader)
+	if err := l.ReadNextToken(); err == nil {
+		t.Errorf("Expected a lexer error while parsing single quotes `%v`",
+			string(input))
+	} else if ok, _ := regexp.MatchString(REGEX,
+		err.Error()); !ok {
+		t.Errorf("Lexer error did not match regex `%s`\nINPUT: %s\nGot error: %s",
+			REGEX, string(input), err.Error())
+	}
+}
+func TestSingleQuoteNewLineF(t *testing.T) {
+	const REGEX string = "(2:\\d+).*Single quote broken by a newline"
+	input := `'This should fail
+	'`
+	reader := bufio.NewReader(strings.NewReader(string(input)))
+	l := NewLexer(reader)
+	if err := l.ReadNextToken(); err == nil {
+		t.Errorf("Expected a lexer error while parsing single quotes `%v`",
+			string(input))
+	} else if ok, _ := regexp.MatchString(REGEX,
+		err.Error()); !ok {
+		t.Errorf("Lexer error did not match regex `%s`\nINPUT: %s\nGot error: %s",
+			REGEX, string(input), err.Error())
+	}
+}
+func TestUnsopportedEscapeF(t *testing.T) {
+	const REGEX string = "(1:\\d+).*Unsupported escape sequence"
+	input := `'\This should fail'`
+	reader := bufio.NewReader(strings.NewReader(string(input)))
+	l := NewLexer(reader)
+	if err := l.ReadNextToken(); err == nil {
+		t.Errorf("Expected a lexer error while parsing single quotes `%v`",
 			string(input))
 	} else if ok, _ := regexp.MatchString(REGEX,
 		err.Error()); !ok {

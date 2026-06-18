@@ -50,7 +50,7 @@ func DigitLiteralTooLong(line, col int, lit string) LexerError {
 		Line: line,
 		Col:  col,
 		construct: func() string {
-			return fmt.Sprintf("Digit literal is too big `%s`", lit)
+			return fmt.Sprintf("Digit literal is too long `%s`", lit)
 		},
 	}
 	return err
