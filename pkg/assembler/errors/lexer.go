@@ -25,32 +25,32 @@ func UnrecognizedChar(char rune, line, col int) LexerError {
 	return err
 }
 
-func MalformedIntegerLit(line, col int) LexerError {
+func MalformedIntegerLit(line, col int, lit string) LexerError {
 	err := LexerError{
 		Line: line,
 		Col:  col,
 		construct: func() string {
-			return "Malformed integer number literal"
+			return fmt.Sprintf("Malformed integer number literal `%s`", lit)
 		},
 	}
 	return err
 }
-func MalformedFloatLit(line, col int) LexerError {
+func MalformedFloatLit(line, col int, lit string) LexerError {
 	err := LexerError{
 		Line: line,
 		Col:  col,
 		construct: func() string {
-			return "Malformed floating point number literal"
+			return fmt.Sprintf("Malformed floating point number literal `%s`", lit)
 		},
 	}
 	return err
 }
-func DigitLiteralTooLong(line, col int) LexerError {
+func DigitLiteralTooLong(line, col int, lit string) LexerError {
 	err := LexerError{
 		Line: line,
 		Col:  col,
 		construct: func() string {
-			return "Digit literal is too big"
+			return fmt.Sprintf("Digit literal is too big `%s`", lit)
 		},
 	}
 	return err

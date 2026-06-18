@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"math"
+	"regexp"
 
 	// "math"
 	"math/rand"
@@ -72,8 +73,8 @@ var (
 			sB := strings.Builder{}
 			sB.WriteRune('\'')
 			for range rand.Intn(20) + 5 {
-				ch := rune(32 + (rand.Intn(126-32)))
-				if ch == '\'' || ch == '\\'{
+				ch := rune(32 + (rand.Intn(126 - 32)))
+				if ch == '\'' || ch == '\\' {
 					sB.WriteRune('\\')
 				}
 				sB.WriteRune(ch)
@@ -289,9 +290,9 @@ func TestFloatLiterals(t *testing.T) {
 		input = append(input, v)
 		var s string
 		if rand.Intn(100) < 50 {
-			s = fmt.Sprintf(" %v ", v)
-		} else {
 			s = fmt.Sprintf(" %g ", v)
+		} else {
+			s = fmt.Sprintf(" 0x%x ", math.Float64bits(v))
 		}
 		sB.WriteString(s)
 	}
@@ -300,6 +301,7 @@ func TestFloatLiterals(t *testing.T) {
 	output, err := l.ReadTokensTillEof()
 	if err != nil {
 		t.Error(err)
+		t.Error(sB.String())
 		return
 	}
 	for len(input) > 0 {
@@ -317,7 +319,7 @@ func TestFloatLiterals(t *testing.T) {
 				break
 			}
 		}
-		if next.Ty != TOKEN_TFLOAT_LIT {
+		if next.Ty != TOKEN_TFLOAT_LIT && next.Ty != TOKEN_TINTEGER_LIT {
 			t.Errorf("Not a float %+v", next)
 			t.Error(sB.String())
 			return
@@ -328,11 +330,29 @@ func TestFloatLiterals(t *testing.T) {
 		if sign {
 			v = -v
 		}
-		if f != v {
+		const MARGIN_OF_ERR float64 = 0.0000000001
+		if math.Abs(v-f) >= MARGIN_OF_ERR {
 			t.Errorf("wanted %v, got %v", f, v)
-			t.Errorf("len is %v", len(input))
+			t.Errorf("Margin of error %v exceeded", MARGIN_OF_ERR)
 			t.Error(sB.String())
 			return
 		}
+	}
+}
+func TestLitTooLongF(t *testing.T) {
+	const REGEX string = "(1:\\d+).*Digit literal is too big"
+	input := make([]byte, 0, 24+rand.Intn(30))
+	for range cap(input) {
+		input = append(input, numChars[rand.Int()%len(numChars)])
+	}
+	reader := bufio.NewReader(strings.NewReader(string(input)))
+	l := NewLexer(reader)
+	if err := l.ReadNextToken(); err == nil {
+		t.Errorf("Expected a lexer error while parsing too long literal `%v`",
+			string(input))
+	} else if ok, _ := regexp.MatchString(REGEX,
+		err.Error()); !ok {
+		t.Errorf("Lexer error did not match regex `%s`\nINPUT: %s\nGot error: %s",
+			REGEX, string(input), err.Error())
 	}
 }

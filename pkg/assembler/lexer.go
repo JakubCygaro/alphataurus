@@ -3,6 +3,8 @@ package assembler
 import (
 	"bufio"
 	"fmt"
+	// "math/big"
+
 	// "io"
 	"math"
 	"strconv"
@@ -448,7 +450,7 @@ func (l *Lexer) readSingleQuoted() error {
 }
 
 func (l *Lexer) readDigit(b byte) error {
-	const MAX_LIT_LEN int = 32
+	const MAX_LIT_LEN int = 24
 	const EXP_BUF_SIZE int = 4
 	expBuf := [EXP_BUF_SIZE]byte{}
 	expBufC := 0
@@ -456,7 +458,7 @@ func (l *Lexer) readDigit(b byte) error {
 	bufC := 0
 	appendToBuf := func(b byte) error {
 		if bufC >= MAX_LIT_LEN {
-			return errors.DigitLiteralTooLong(l.line, l.col)
+			return errors.DigitLiteralTooLong(l.line, l.col, string(buf[:bufC]))
 		}
 		buf[bufC] = b
 		bufC++
@@ -484,10 +486,6 @@ func (l *Lexer) readDigit(b byte) error {
 		}
 	}
 	for {
-		// 18446744073709551615 max uint, 20 digits
-		if len(buf) == 20 {
-			return errors.DigitLiteralTooLong(l.line, l.col)
-		}
 		next, ok := l.readByte()
 		if !ok {
 			break
@@ -526,7 +524,8 @@ func (l *Lexer) readDigit(b byte) error {
 			for {
 				if numberCheck(next) {
 					if expBufC >= len(expBuf) {
-						return errors.MalformedFloatLit(l.line, l.col)
+						return errors.
+							MalformedFloatLit(l.line, l.col, string(buf[:bufC]))
 					}
 					expBuf[expBufC] = next
 					expBufC++
@@ -540,46 +539,48 @@ func (l *Lexer) readDigit(b byte) error {
 			l.unreadByte()
 			break
 		} else {
-			return errors.MalformedIntegerLit(l.line, l.col)
+			return errors.MalformedIntegerLit(l.line, l.col, string(buf[:bufC]))
 		}
 	}
+	lit := string(buf[:bufC])
 	if !dot {
-		val, err := strconv.ParseUint(string(buf[:bufC]), 10, 64)
+		val, err := strconv.ParseUint(lit, 10, 64)
 		if err != nil {
-			return errors.MalformedIntegerLit(l.line, l.col)
+			return errors.MalformedIntegerLit(l.line, l.col, lit)
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER_LIT,
 			Val: uint64(val),
 		}
 	} else if hex {
-		val, err := strconv.ParseUint(string(buf[:bufC]), 16, 64)
+		val, err := strconv.ParseUint(lit, 16, 64)
 		if err != nil {
-			return errors.MalformedIntegerLit(l.line, l.col)
+			return errors.MalformedIntegerLit(l.line, l.col, lit)
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER_LIT,
 			Val: uint64(val),
 		}
 	} else if binary {
-		val, err := strconv.ParseUint(string(buf[:bufC]), 2, 64)
+		val, err := strconv.ParseUint(lit, 2, 64)
 		if err != nil {
-			return errors.MalformedIntegerLit(l.line, l.col)
+			return errors.MalformedIntegerLit(l.line, l.col, lit)
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER_LIT,
 			Val: uint64(val),
 		}
 	} else {
-		val, err := strconv.ParseFloat(string(buf[:bufC]), 64)
+		val, err := strconv.ParseFloat(lit, 64)
 		if err != nil {
-			return errors.MalformedFloatLit(l.line, l.col)
+			return errors.MalformedFloatLit(l.line, l.col, string(buf[:bufC]))
 		}
 		if e {
 			if i, err := strconv.ParseInt(string(expBuf[:expBufC]), 10, 64); err != nil {
 				return err
 			} else {
-				val = val * (math.Pow10(int(i)))
+				exp := math.Pow10(int(i))
+				val = val * exp
 			}
 		}
 		l.currentToken = Token{
