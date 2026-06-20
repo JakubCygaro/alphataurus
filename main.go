@@ -105,5 +105,6 @@ func main() {
 	expr, _ := p.ParseExpression()
 	expr, _ = assembler.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
+	fmt.Println((((6594007686923535256 / (6948242974143 - 1987936890282)) / 3106268) / 1758))
 	os.Exit(int(mach.GetExitCode()))
 }
