@@ -378,7 +378,8 @@ func TryEvaluateExpression(e *Expr) (*Expr, bool) {
 			(IsConstexpr(evalB, CONSTEXPR_TILIT) || IsConstexpr(evalB, CONSTEXPR_TFLIT)) {
 			leftArth := evalA.Val.(ArthExpr)
 			rightConst := evalB.Val.(ConstExpr)
-			if IsConstexpr(leftArth.A, CONSTEXPR_TILIT) || IsConstexpr(leftArth.A, CONSTEXPR_TFLIT) {
+			if IsConstexpr(leftArth.A, CONSTEXPR_TILIT) ||
+				IsConstexpr(leftArth.A, CONSTEXPR_TFLIT) {
 				leftArthA := leftArth.A.Val.(ConstExpr)
 				res, ok := rightConst.Add(&leftArthA)
 				if !ok {
@@ -389,7 +390,8 @@ func TryEvaluateExpression(e *Expr) (*Expr, bool) {
 					MakeConstexpr(res),
 					ARTHEXPR_TADD,
 				), true
-			} else if IsConstexpr(leftArth.B, CONSTEXPR_TILIT) || IsConstexpr(leftArth.B, CONSTEXPR_TFLIT) {
+			} else if IsConstexpr(leftArth.B, CONSTEXPR_TILIT) ||
+				IsConstexpr(leftArth.B, CONSTEXPR_TFLIT) {
 				leftArthB := leftArth.B.Val.(ConstExpr)
 				res, ok := rightConst.Add(&leftArthB)
 				if !ok {
@@ -402,10 +404,12 @@ func TryEvaluateExpression(e *Expr) (*Expr, bool) {
 				), true
 			}
 		} else if okA && IsArthexpr(evalB, ARTHEXPR_TADD) &&
-			(IsConstexpr(evalA, CONSTEXPR_TILIT) || IsConstexpr(evalA, CONSTEXPR_TFLIT)) {
+			(IsConstexpr(evalA, CONSTEXPR_TILIT) ||
+				IsConstexpr(evalA, CONSTEXPR_TFLIT)) {
 			rightArth := evalB.Val.(ArthExpr)
 			leftConst := evalA.Val.(ConstExpr)
-			if IsConstexpr(rightArth.A, CONSTEXPR_TILIT) || IsConstexpr(rightArth.A, CONSTEXPR_TFLIT) {
+			if IsConstexpr(rightArth.A, CONSTEXPR_TILIT) ||
+				IsConstexpr(rightArth.A, CONSTEXPR_TFLIT) {
 				rightArthA := rightArth.A.Val.(ConstExpr)
 				res, ok := leftConst.Add(&rightArthA)
 				if !ok {
@@ -416,7 +420,8 @@ func TryEvaluateExpression(e *Expr) (*Expr, bool) {
 					rightArth.B,
 					ARTHEXPR_TADD,
 				), true
-			} else if IsConstexpr(rightArth.B, CONSTEXPR_TILIT) || IsConstexpr(rightArth.B, CONSTEXPR_TFLIT) {
+			} else if IsConstexpr(rightArth.B, CONSTEXPR_TILIT) ||
+				IsConstexpr(rightArth.B, CONSTEXPR_TFLIT) {
 				rightArthB := rightArth.B.Val.(ConstExpr)
 				res, ok := leftConst.Add(&rightArthB)
 				if !ok {
