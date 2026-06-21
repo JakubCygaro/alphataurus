@@ -24,8 +24,8 @@ func (p *Parser) parseLogical(logTy int) error {
 	if !vm.IsLogRAllowed(byte(op1.Val.(RegisterData).Reg)) {
 		return errors.FailedToParse(p.currentIdent,
 			p.currentStartToken.Line, p.currentStartToken.Col,
-			"Disallowed first operand register `%s`"+
-				op1.ForceValAsString(),
+			"Disallowed first operand register `%s`",
+			op1.ForceValAsString(),
 		)
 	}
 
@@ -47,8 +47,8 @@ func (p *Parser) parseLogical(logTy int) error {
 	if comma.Ty != TOKEN_TCOMMA {
 		return errors.FailedToParse(p.currentIdent,
 			comma.Line, comma.Col,
-			"Instruction missing a comma, got `%s`"+
-				comma.ForceValAsString(),
+			"Instruction missing a comma, got `%s`",
+			comma.ForceValAsString(),
 		)
 	}
 	var op2 ConstExpr
@@ -73,8 +73,8 @@ func (p *Parser) parseLogical(logTy int) error {
 		if !vm.IsMovFromRAllowed(byte(op2.Val)) {
 			return errors.FailedToParse(p.currentIdent,
 				p.currentStartToken.Line, p.currentStartToken.Col,
-				"Disallowed second operand register, got `%s`"+
-					op2.UnpackAsRegisterData().String(),
+				"Disallowed second operand register, got `%s`",
+				op2.UnpackAsRegisterData().String(),
 			)
 		}
 		var ty InstTy

@@ -1,7 +1,6 @@
 package assembler
 
 import (
-
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -79,8 +78,8 @@ func (p *Parser) parseCmp() error {
 		em, _ := expr.Emit()
 		return errors.FailedToParse(p.currentIdent,
 			p.currentStartToken.Line, p.currentStartToken.Col,
-			"Bad expression `%s`"+
-				em,
+			"Bad expression `%s`",
+			em,
 		)
 	}
 	switch op2.Ty {

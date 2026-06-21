@@ -427,8 +427,11 @@ func (p *Parser) parseImport() error {
 	}
 	name := op.Val.(string)
 	if strings.ContainsFunc(name, unicode.IsSpace) {
-		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
-			"`%s` is not a valid identifier")
+		return errors.FailedToParse(p.currentIdent,
+			op.Line, op.Col,
+			"`%s` is not a valid identifier",
+			name,
+		)
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TIMPORT,

@@ -48,8 +48,7 @@ func (p *Parser) parseMov() error {
 	if comma.Ty != TOKEN_TCOMMA {
 		return errors.FailedToParse(p.currentIdent,
 			comma.Line, comma.Col,
-			"Instruction missing a comma, got `%s`"+
-				"or dereference expression. In expression `%s`",
+			"Instruction missing a comma, got `%s`",
 			comma.ForceValAsString(),
 		)
 	}
