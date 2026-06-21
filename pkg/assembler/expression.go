@@ -547,17 +547,7 @@ func (e ArthExpr) Emit() (string, error) {
 func (e ConstExpr) Emit() (string, error) {
 	switch e.Ty {
 	case CONSTEXPR_TREG:
-		if e.Val <= vm.GP_REG_MAX {
-			return fmt.Sprintf("r%d", e.Val), nil
-		} else if e.Val == vm.SP_IDX {
-			return "sp", nil
-		} else if e.Val == vm.BP_IDX {
-			return "bp", nil
-		} else if e.Val == vm.IP_IDX {
-			return "ip", nil
-		} else {
-			return "", fmt.Errorf("Invalid register type %v", e.Val)
-		}
+		return e.UnpackAsRegisterData().String(), nil
 	case CONSTEXPR_TILIT:
 		return fmt.Sprintf("%v", e.Val), nil
 	case CONSTEXPR_TFLIT:
@@ -580,10 +570,10 @@ func (e *Expr) Emit() (string, error) {
 	case EXPR_TARTH:
 		inner, err := e.Val.(ArthExpr).Emit()
 		if err != nil {
-			return "", nil
+			return "", err
 		}
 		return fmt.Sprintf("(%s)", inner), nil
 	default:
-		return "", fmt.Errorf("Invalid expression type")
+		return "", fmt.Errorf("<INVALID EXPRESSION TYPE>")
 	}
 }

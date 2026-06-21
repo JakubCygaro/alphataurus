@@ -205,7 +205,10 @@ func (p *Parser) parseJmpIP(ty InstTy, expr *Expr) error {
 		return err
 	}
 	if deref.Reg1.Reg != vm.IP_IDX && deref.Reg2.Reg != vm.IP_IDX {
-		em, _ := expr.Emit()
+		em, err := expr.Emit()
+		if err != nil {
+			return err
+		}
 		return errors.FailedToParse(p.currentIdent,
 			p.currentStartToken.Line, p.currentStartToken.Col,
 			"IP-relative jump instruction dereference "+

@@ -34,8 +34,7 @@ foo:
 	pop bp
 	ret
 `
-const assembly =
-`section '.code'
+const assembly = `section '.code'
 foo:
     mov r0q, 0
     add UNSIGNED r0q, r1q
@@ -45,25 +44,36 @@ foo:
 _start:
     mov r1q, 69
     mov r2q, 420
+	jmp ABSOLUTE 0x1000
     call foo
     exit r0q
 `
+
+func logWarnings(awd assembler.AssemblerWarningData) {
+	fmt.Fprintf(os.Stdout,
+		"Assembler warning: %s. at (%v:%v)",
+		awd.Message,
+		awd.Line,
+		awd.Col,
+	)
+}
 
 func main() {
 	sources := []string{assembly, assembly2, assembly3}
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(bufio.NewReader(strings.NewReader(s)))
+		asm.WarningSink = logWarnings
 		bytecode, err := asm.Assemble()
 		if err != nil {
-			os.Stderr.WriteString("assembling error\n")
+			os.Stderr.WriteString("Assembler error: ")
 			os.Stderr.WriteString(err.Error())
 			os.Stderr.WriteString("\n")
 			os.Exit(-1)
 		}
 		iCount := asm.InstructionCount()
-		fmt.Printf("emitted bytecode size: %d\n", len(bytecode))
-		fmt.Printf("emitted %d instructions\n", iCount)
+		fmt.Printf("Emitted bytecode size: %d\n", len(bytecode))
+		fmt.Printf("Emitted %d instructions\n", iCount)
 		objects = append(objects, linker.Bytes(bytecode))
 	}
 	ld := linker.NewLinker()

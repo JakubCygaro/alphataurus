@@ -2,7 +2,6 @@ package assembler
 
 import (
 	"bufio"
-	"fmt"
 	"strings"
 	"unicode"
 
@@ -173,7 +172,7 @@ type InstMovDerefData struct {
 }
 type ParserWarningData struct {
 	Col, Line int
-	Message string
+	Message   string
 }
 type Parser struct {
 	lexer             Lexer
@@ -256,8 +255,8 @@ func (p *Parser) ParseNext() (bool, error) {
 			return false, err
 		}
 	default:
-		return false, fmt.Errorf("Parser error: Unimplemented instruction %s",
-			p.lexer.CurrentPosition())
+		return false, errors.
+			ExtraTokensOnLine(p.currentStartToken.Line, p.currentStartToken.Col)
 	}
 	err = p.lexer.ReadNextToken()
 	if p.lexer.CurrentToken().Ty == TOKEN_TDOUBLESEMICOLON {
