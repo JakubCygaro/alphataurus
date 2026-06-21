@@ -70,8 +70,12 @@ func (p *Parser) parsePush() error {
 			},
 		}
 	default:
-		return errors.FailedToParse("push instruction",
-			"Unsupported operand expression type %s", arg.Line, arg.Col)
+		em, _ := arg.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			arg.Line, arg.Col,
+			"Unsupported operand expression type `%s`", 
+			em,
+		)
 	}
 	return nil
 }

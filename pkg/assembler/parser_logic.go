@@ -1,7 +1,6 @@
 package assembler
 
 import (
-	"fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
@@ -12,16 +11,22 @@ func (p *Parser) parseLogical(logTy int) error {
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else if eval, _ := TryEvaluateExpression(expr); eval.Ty != CONSTEXPR_TREG {
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"First operand to instruction must be a valid register",
-			p.lexer.line, p.lexer.col)
+		em, _ := expr.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			p.currentStartToken.Line, p.currentStartToken.Col,
+			"First operand to instruction must be a valid register.\n"+
+				"In expression `%s`",
+			em,
+		)
 	} else {
 		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
 	}
 	if !vm.IsLogRAllowed(byte(op1.Val.(RegisterData).Reg)) {
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Disallowed first operand register",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			p.currentStartToken.Line, p.currentStartToken.Col,
+			"Disallowed first operand register `%s`"+
+				op1.ForceValAsString(),
+		)
 	}
 
 	if logTy == LOG_TNOT {
@@ -40,9 +45,11 @@ func (p *Parser) parseLogical(logTy int) error {
 	comma := p.lexer.CurrentToken()
 
 	if comma.Ty != TOKEN_TCOMMA {
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Instruction missing a comma",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			comma.Line, comma.Col,
+			"Instruction missing a comma, got `%s`"+
+				comma.ForceValAsString(),
+		)
 	}
 	var op2 ConstExpr
 	if expr, err := p.parseExpression(0); err != nil {
@@ -50,18 +57,25 @@ func (p *Parser) parseLogical(logTy int) error {
 	} else {
 		eval, ok := TryConstEvaluateExpression(expr)
 		if eval.Ty != CONSTEXPR_TREG && !ok {
-			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-				"Second operand to instruction has to be a valid register or a compile time expression",
-				p.lexer.line, p.lexer.col)
+			em, _ := expr.Emit()
+			return errors.FailedToParse(p.currentIdent,
+				expr.Line, expr.Col,
+				"Second operand to instruction has to be a "+
+					"valid register or a compile time expression\n"+
+					"In expression `%s`",
+				em,
+			)
 		}
 		op2 = eval
 	}
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
 		if !vm.IsMovFromRAllowed(byte(op2.Val)) {
-			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-				"Disallowed second operand register",
-				p.lexer.line, p.lexer.col)
+			return errors.FailedToParse(p.currentIdent,
+				p.currentStartToken.Line, p.currentStartToken.Col,
+				"Disallowed second operand register, got `%s`"+
+					op2.UnpackAsRegisterData().String(),
+			)
 		}
 		var ty InstTy
 		switch logTy {
@@ -105,9 +119,14 @@ func (p *Parser) parseLogical(logTy int) error {
 			},
 		}
 	default:
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Second operand to instruction has to be a valid register or a compile time expression",
-			p.lexer.line, p.lexer.col)
+		em, _ := op2.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			p.currentStartToken.Line, p.currentStartToken.Col,
+			"Second operand to instruction has to be a valid "+
+			"register or a compile time expression."+
+			"In expression: `%s`",
+			em,
+		)
 	}
 	return nil
 }

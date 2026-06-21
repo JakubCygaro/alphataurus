@@ -26,9 +26,13 @@ func (p *Parser) parseMov() error {
 		return p.parseMovDeref(inner, sized)
 
 	} else if eval, _ := TryConstEvaluatePruneExpression(expr); eval.Ty != CONSTEXPR_TREG {
-		return errors.FailedToParse("mov instruction",
-			"First operand to instruction must be a valid register or dereference expression",
-			expr.Line, expr.Col)
+		em, _ := expr.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			expr.Line, expr.Col,
+			"First operand to instruction must be a valid register "+
+				"or dereference expression. In expression `%s`",
+			em,
+		)
 
 	} else {
 		op1.Val = eval.UnpackAsRegisterData()
@@ -42,9 +46,12 @@ func (p *Parser) parseMov() error {
 	}
 	comma := p.lexer.CurrentToken()
 	if comma.Ty != TOKEN_TCOMMA {
-		return errors.FailedToParse("mov instruction",
-			"Instruction missing a comma",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			comma.Line, comma.Col,
+			"Instruction missing a comma, got `%s`"+
+				"or dereference expression. In expression `%s`",
+			comma.ForceValAsString(),
+		)
 	}
 	var op2 ConstExpr
 	if expr, err := p.parseExpression(0); err != nil {
@@ -57,9 +64,12 @@ func (p *Parser) parseMov() error {
 		case EXPR_TDEREF:
 			return p.parseDerefMov(op1.Val.(RegisterData), eval.Val.(DerefExpr).Inner)
 		default:
-			return errors.FailedToParse("mov instruction",
-				"Second operand to instruction has to be a valid register, dereference, or a compile time expression",
-				p.lexer.line, p.lexer.col)
+			return errors.FailedToParse(p.currentIdent,
+				expr.Line, expr.Col,
+				"Second operand to instruction has to be a valid register,"+
+					" dereference, or a compile time expression. In expression `%s`",
+				comma.ForceValAsString(),
+			)
 		}
 	}
 
@@ -97,9 +107,13 @@ func (p *Parser) parseMov() error {
 			},
 		}
 	default:
-		return errors.FailedToParse("mov instruction",
-			"Second operand to instruction has to be a valid register, dereference or a compile time expression",
-			p.lexer.line, p.lexer.col)
+		em, _ := op2.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			p.currentInst.Line, p.currentInst.Col,
+			"Second operand to instruction has to be a valid register"+
+				", dereference or a compile time expression. In expression `%s`",
+			em,
+		)
 	}
 	return nil
 }
@@ -142,9 +156,12 @@ func (p *Parser) parseDerefMov(reg RegisterData, inner *Expr) error {
 			},
 		}
 	default:
-		return errors.FailedToParse("mov instruction",
-			"Invalid dereference expression",
-			p.lexer.line, p.lexer.col)
+		em, _ := inner.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			inner.Line, inner.Col,
+			"Invalid dereference expression `%s`",
+			em,
+		)
 	}
 	return nil
 }
@@ -161,9 +178,11 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 	}
 	comma := p.lexer.CurrentToken()
 	if comma.Ty != TOKEN_TCOMMA {
-		return errors.FailedToParse("mov instruction",
-			"Instruction missing a comma",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			comma.Line, comma.Col,
+			"Instruction missing a comma, got `%s`",
+			comma.ForceValAsString(),
+		)
 	}
 	var op2 ConstExpr
 	if expr, err := p.parseExpression(0); err != nil {
@@ -174,9 +193,13 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 		case EXPR_TCONST:
 			op2 = eval.Val.(ConstExpr)
 		default:
-			return errors.FailedToParse("mov instruction",
-				"Second operand to instruction has to be a valid register or a compile time expression",
-				p.lexer.line, p.lexer.col)
+			em, _ := expr.Emit()
+			return errors.FailedToParse(p.currentIdent,
+				expr.Line, expr.Col,
+				"Second operand to instruction has to be a valid"+
+				" register or a compile time expression. In expression `%s`",
+				em,
+			)
 		}
 	}
 	mddata := InstMovDerefData{}
@@ -188,9 +211,13 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 		mddata.Src = GetInvalidRegister()
 	//TODO: label support
 	default:
-		return errors.FailedToParse("mov instruction",
-			"Second operand to instruction has to be a valid register or a compile time expression",
-			p.lexer.line, p.lexer.col)
+		em, _ := op2.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			p.currentInst.Line, p.currentInst.Line,
+			"Second operand to instruction has to be a valid"+
+			" register or a compile time expression. In expression `%s`",
+			em,
+		)
 	}
 	switch dData.Ty {
 	case DEREF_T0RO:
@@ -260,9 +287,13 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 			Data: mddata,
 		}
 	default:
-		return errors.FailedToParse("mov instruction",
-			"Invalid dereference expression",
-			p.lexer.line, p.lexer.col)
+		em, _ := op2.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			p.currentInst.Line, p.currentInst.Line,
+			"Invalid dereference expression"+
+			". In expression `%s`",
+			em,
+		)
 	}
 	return nil
 }

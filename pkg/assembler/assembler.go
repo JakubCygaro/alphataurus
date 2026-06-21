@@ -6,8 +6,8 @@ import (
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
-	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 	decls "github.com/JakubCygaro/alphataurus/pkg/vm/decls"
+	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
 type unresolvedJump struct {
@@ -17,6 +17,11 @@ type unresolvedJump struct {
 	Absolute bool
 }
 type unresolvedJumpMap map[int]unresolvedJump
+
+type AssemblerWarningData struct {
+	Line, Col int
+	Message   string
+}
 
 type Assembler struct {
 	parser          Parser
@@ -32,6 +37,7 @@ type Assembler struct {
 	relocations aobj.RelocationTable
 	hasEntry    bool
 	entry       uint64
+	WarningSink func(AssemblerWarningData)
 }
 
 func (a *Assembler) InstructionCount() int {
@@ -39,7 +45,7 @@ func (a *Assembler) InstructionCount() int {
 }
 
 func NewAssembler(reader *bufio.Reader) Assembler {
-	return Assembler{
+	a := Assembler{
 		parser:          NewParser(reader),
 		opCodes:         vm.GenerateOpcodeMap(),
 		unresolvedJumps: make(unresolvedJumpMap),
@@ -48,6 +54,8 @@ func NewAssembler(reader *bufio.Reader) Assembler {
 		relocations:     make(aobj.RelocationTable, 0),
 		hasEntry:        false,
 	}
+	a.parser.WarningSink = a.parserWarningHandler
+	return a
 }
 
 func (a *Assembler) currentCodePos() (byte uint64, address uint64) {

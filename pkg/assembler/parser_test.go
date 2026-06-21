@@ -19,6 +19,7 @@ const (
 	// chance to split an expression while recursively expanding the result
 	SPLIT_EXPR_REC_CHANCE = 50
 	SPLIT_MAX_DEPTH       = 6
+	EXPR_PARSE_REPARSE_EVAL_TEST_COUNT = 10
 )
 
 func abs(in int64) int64 {
@@ -136,59 +137,62 @@ func buildExprRecurseFloat(result float64, depth uint, e *Expr) uint {
 
 }
 func TestExpressionsInt(t *testing.T) {
-	start := rand.Int63n(6000) - 3000
-	expr := MakeConstexprI64(start)
-	buildExprRecurseInt(start, 0, expr)
-	em, _ := expr.Emit()
-	if eval, ok := TryConstEvaluateExpression(expr); !ok {
-		t.Errorf("TryConstEvaluateExpression failed for expression:")
-		t.Error(em)
-	} else if evalV := int64(eval.Val); evalV != start {
-		t.Errorf("Wrong evaluation result wanted %v , got %v:", start, evalV)
-		t.Error(em)
-	}
-	p := NewParser(bufio.NewReader(strings.NewReader(em)))
-	if reparsed, err := p.ParseExpression(); err != nil {
-		t.Errorf("Failed to reparse emitted expression")
-		t.Error(err)
-		t.Error(em)
-	} else if eval, ok := TryConstEvaluateExpression(expr); !ok {
-		t.Errorf("TryConstEvaluateExpression failed for reparsed expression:")
-		em, _ := reparsed.Emit()
-		t.Error(em)
-	} else if evalV := int64(eval.Val); evalV != start {
-		t.Errorf("Wrong reparse evaluation result wanted %v , got %v:", start, evalV)
-		em, _ := reparsed.Emit()
-		t.Error(em)
+	for range EXPR_PARSE_REPARSE_EVAL_TEST_COUNT {
+		start := rand.Int63n(10_000) - 5_000
+		expr := MakeConstexprI64(start)
+		buildExprRecurseInt(start, 0, expr)
+		em, _ := expr.Emit()
+		if eval, ok := TryConstEvaluateExpression(expr); !ok {
+			t.Errorf("TryConstEvaluateExpression failed for expression:")
+			t.Error(em)
+		} else if evalV := int64(eval.Val); evalV != start {
+			t.Errorf("Wrong evaluation result wanted %v , got %v:", start, evalV)
+			t.Error(em)
+		}
+		p := NewParser(bufio.NewReader(strings.NewReader(em)))
+		if reparsed, err := p.ParseExpression(); err != nil {
+			t.Errorf("Failed to reparse emitted expression")
+			t.Error(err)
+			t.Error(em)
+		} else if eval, ok := TryConstEvaluateExpression(expr); !ok {
+			t.Errorf("TryConstEvaluateExpression failed for reparsed expression:")
+			em, _ := reparsed.Emit()
+			t.Error(em)
+		} else if evalV := int64(eval.Val); evalV != start {
+			t.Errorf("Wrong reparse evaluation result wanted %v , got %v:", start, evalV)
+			em, _ := reparsed.Emit()
+			t.Error(em)
+		}
 	}
 }
 func TestExpressionsFloat(t *testing.T) {
-	start := rand.Float64() * 10_000
-	expr := MakeConstexprF64(start)
-	buildExprRecurseFloat(start, 0, expr)
-	em, _ := expr.Emit()
-	if eval, ok := TryConstEvaluateExpression(expr); !ok {
-		t.Errorf("TryConstEvaluateExpression failed for expression:")
-		t.Error(em)
-	} else if evalV := math.Float64frombits(eval.Val); math.Abs(evalV-start) > 0.1 {
-		t.Errorf("Wrong evaluation result wanted %v , got %v:", start, evalV)
-		t.Errorf("Diff: %v", math.Abs(evalV-start))
-		t.Error(em)
+	for range EXPR_PARSE_REPARSE_EVAL_TEST_COUNT {
+		start := (rand.Float64() * 10_000) - 5_000
+		expr := MakeConstexprF64(start)
+		buildExprRecurseFloat(start, 0, expr)
+		em, _ := expr.Emit()
+		if eval, ok := TryConstEvaluateExpression(expr); !ok {
+			t.Errorf("TryConstEvaluateExpression failed for expression:")
+			t.Error(em)
+		} else if evalV := math.Float64frombits(eval.Val); math.Abs(evalV-start) > 0.1 {
+			t.Errorf("Wrong evaluation result wanted %v , got %v:", start, evalV)
+			t.Errorf("Diff: %v", math.Abs(evalV-start))
+			t.Error(em)
+		}
+		p := NewParser(bufio.NewReader(strings.NewReader(em)))
+		if reparsed, err := p.ParseExpression(); err != nil {
+			t.Errorf("Failed to reparse emitted expression")
+			t.Error(err)
+			t.Error(em)
+		} else if eval, ok := TryConstEvaluateExpression(expr); !ok {
+			t.Errorf("TryConstEvaluateExpression failed for reparsed expression:")
+			em, _ := reparsed.Emit()
+			t.Error(em)
+		} else if evalV := math.Float64frombits(eval.Val); math.Abs(evalV-start) > 0.1 {
+			t.Errorf("Wrong reparse evaluation result wanted %v , got %v:", start, evalV)
+			t.Errorf("Diff: %v", math.Abs(evalV-start))
+			em, _ := reparsed.Emit()
+			t.Error(em)
+		}
 	}
-	p := NewParser(bufio.NewReader(strings.NewReader(em)))
-	if reparsed, err := p.ParseExpression(); err != nil {
-		t.Errorf("Failed to reparse emitted expression")
-		t.Error(err)
-		t.Error(em)
-	} else if eval, ok := TryConstEvaluateExpression(expr); !ok {
-		t.Errorf("TryConstEvaluateExpression failed for reparsed expression:")
-		em, _ := reparsed.Emit()
-		t.Error(em)
-	} else if evalV := math.Float64frombits(eval.Val); math.Abs(evalV-start) > 0.1 {
-		t.Errorf("Wrong reparse evaluation result wanted %v , got %v:", start, evalV)
-		t.Errorf("Diff: %v", math.Abs(evalV-start))
-		em, _ := reparsed.Emit()
-		t.Error(em)
-	}
-
 }

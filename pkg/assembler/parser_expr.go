@@ -54,42 +54,22 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			return inner, err
 		}
 		if p.lexer.CurrentToken().Ty != TOKEN_TCLOSEDBRACKET {
+			t := p.lexer.CurrentToken()
 			return inner, errors.FailedToParse("dereference expression",
-				"Unclosed deref expression bracket",
-				p.lexer.line, p.lexer.col)
+				t.Line, t.Col,
+				"Unclosed bracket in dereference expression, got `%s` instead",
+				t.ForceValAsString(),
+			)
 		}
 		deref := MakeDeref(inner)
 		return deref, nil
 	case TOKEN_TREG:
 		regData := lhsToken.Val.(RegisterData)
 		lhs = MakeConstexprR(byte(regData.Reg), regData.Size)
-		// pack this data into the expression value
-		// packed := (uint64(regData.Size) << 8) | uint64(regData.Reg)
-		// lhs = &Expr{
-		// 	Ty: EXPR_TCONST,
-		// 	Val: ConstExpr{
-		// 		Ty:  CONSTEXPR_TREG,
-		// 		Val: packed,
-		// 	},
-		// }
 	case TOKEN_TINTEGER_LIT:
 		lhs = MakeConstexprU64(lhsToken.Val.(uint64))
-		// lhs = &Expr{
-		// 	Ty: EXPR_TCONST,
-		// 	Val: ConstExpr{
-		// 		Ty:  CONSTEXPR_TILIT,
-		// 		Val: lhsToken.Val.(uint64),
-		// 	},
-		// }
 	case TOKEN_TFLOAT_LIT:
 		lhs = MakeConstexprF64Bits(lhsToken.Val.(uint64))
-		// lhs = &Expr{
-		// 	Ty: EXPR_TCONST,
-		// 	Val: ConstExpr{
-		// 		Ty:  CONSTEXPR_TFLIT,
-		// 		Val: lhsToken.Val.(uint64),
-		// 	},
-		// }
 	case TOKEN_TIDENT:
 		lhs = MakeConstexprIdent(lhsToken.Val.(string))
 	default:
@@ -109,7 +89,12 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 				return lhs, fmt.Errorf("Prefix operator TODO %s", p.lexer.CurrentPosition())
 			}
 		} else {
-			return nil, errors.FailedToParse("expression", "Bad expression", p.lexer.line, p.lexer.col)
+			em, _ := lhs.Emit()
+			return nil, errors.FailedToParse("expression",
+				lhsToken.Line, lhsToken.Col,
+				"Bad expression `%s`",
+				em,
+			)
 		}
 	}
 	lhs.Line = lhsToken.Line

@@ -1,7 +1,6 @@
 package assembler
 
 import (
-	"fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
@@ -28,18 +27,22 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else if eval, _ := TryEvaluateExpression(expr); eval.Ty != CONSTEXPR_TREG {
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"First operand to instruction must be a valid register",
-			p.lexer.line, p.lexer.col)
+		em, _ := eval.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			p.currentStartToken.Line, p.currentInst.Col,
+			"First operand to instruction must be a valid register, got `%s`",
+			em)
 	} else {
 		op1.Ty = TOKEN_TREG
 		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
 	}
 	switch op1.Val.(RegisterData).Reg {
 	case vm.IP_IDX:
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Disallowed source register",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			p.currentStartToken.Line, p.currentStartToken.Col,
+			"Disallowed source register `%s`",
+			op1.Val.(RegisterData).String(),
+		)
 	}
 
 	if err := p.lexer.ReadNextToken(); err != nil {
@@ -48,9 +51,10 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	comma := p.lexer.CurrentToken()
 
 	if comma.Ty != TOKEN_TCOMMA {
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Instruction missing a comma",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			p.currentStartToken.Line, p.currentStartToken.Col,
+			"Instruction missing a comma, got `%s` instead",
+			comma.ForceValAsString())
 	}
 	var op2 ConstExpr
 	if expr, err := p.parseExpression(0); err != nil {
@@ -58,9 +62,11 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	} else {
 		eval, ok := TryConstEvaluateExpression(expr)
 		if eval.Ty != CONSTEXPR_TREG && !ok {
-			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-				"Second operand to instruction has to be a valid register or a compile time expression",
-				p.lexer.line, p.lexer.col)
+			em, _ := eval.Emit()
+			return errors.FailedToParse(p.currentIdent,
+				p.currentStartToken.Line, p.currentStartToken.Col,
+				"Second operand to instruction has to be a valid register "+
+					"or a compile time expression, got `%s`", em)
 		}
 		op2 = eval
 	}
@@ -68,9 +74,10 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	case CONSTEXPR_TREG:
 		switch int(op2.Val) {
 		case vm.IP_IDX:
-			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-				"Disallowed destination register",
-				p.lexer.line, p.lexer.col)
+			em, _ := op2.Emit()
+			return errors.FailedToParse(p.currentIdent,
+				p.currentStartToken.Line, p.currentStartToken.Col,
+				"Disallowed destination register `%s`", em)
 		}
 		var ty InstTy
 		switch arthTy {
@@ -120,9 +127,11 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			},
 		}
 	default:
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Second operand to instruction has to be a valid register or a compile time expression",
-			p.lexer.line, p.lexer.col)
+		em, _ := op2.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			p.currentStartToken.Line, p.currentStartToken.Col,
+			"Second operand to instruction has to be a valid register "+
+				"or a compile time expression got `%s`", em)
 	}
 	return nil
 }
@@ -151,8 +160,8 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 	sizeT := p.lexer.CurrentToken()
 	var size byte
 	if sz, ok := TokenAsSize(&sizeT); !ok {
-		return errors.FailedToParse("div instruction", "missing data size parameter",
-			op1.Line, op1.Col)
+		return errors.FailedToParse(p.currentIdent, op1.Line, op1.Col,
+			"Missing data size parameter, got `%s`", sizeT.ForceValAsString())
 	} else {
 		size = sz
 	}
@@ -165,9 +174,12 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 		if valTy == -1 {
 			valTy = ARTH_TUNSIGNED
 		} else if valTy != ARTH_TFLOAT {
-			return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-				"Invalid data type specifier",
-				p.lexer.line, p.lexer.col)
+			return errors.FailedToParse(p.currentIdent,
+				p.currentStartToken.Line, p.currentStartToken.Col,
+				"Invalid data type specifier `%s`. "+
+					"Either no specifier or FLOAT are allowed.",
+				op1.ForceValAsString(),
+			)
 		}
 	}
 	p.currentInst = Instruction{
@@ -189,15 +201,17 @@ func (p *Parser) parseInc() error {
 		return errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
 	}
 	if op1.Ty != TOKEN_TREG {
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"The instruction operand must be a valid register",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			op1.Line, op1.Col,
+			"The instruction operand must be a valid register, got `%s`",
+			op1.ForceValAsString())
 	}
 	switch op1.Val.(RegisterData).Reg {
 	case vm.IP_IDX:
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Disallowed operand register",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			op1.Line, op1.Col,
+			"Disallowed operand register `%s`",
+			op1.ForceValAsString())
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TINCR,
@@ -217,15 +231,17 @@ func (p *Parser) parseDec() error {
 		return errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
 	}
 	if op1.Ty != TOKEN_TREG {
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"The instruction operand must be a valid register",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			op1.Line, op1.Col,
+			"The instruction operand must be a valid register, got `%s`",
+			op1.ForceValAsString())
 	}
 	switch op1.Val.(RegisterData).Reg {
 	case vm.IP_IDX:
-		return errors.FailedToParse(fmt.Sprintf("%s instruction", p.currentIdent),
-			"Disallowed operand register",
-			p.lexer.line, p.lexer.col)
+		return errors.FailedToParse(p.currentIdent,
+			op1.Line, op1.Col,
+			"Disallowed operand register `%s`",
+			op1.ForceValAsString())
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TDECR,

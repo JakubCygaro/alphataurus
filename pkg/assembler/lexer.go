@@ -104,12 +104,57 @@ type RegisterData struct {
 func (r RegisterData) IsInvalidRegister() bool {
 	return r.Reg == math.MaxInt64 || r.Size == math.MaxInt8
 }
+func (r RegisterData) String() string {
+	return RegToString(byte(r.Reg), r.Size)
+}
+func RegToString(reg, sz byte) string {
+	switch reg {
+	case vm.BP_IDX:
+		return "bp"
+	case vm.IP_IDX:
+		return "ip"
+	case vm.SP_IDX:
+		return "sp"
+	default:
+		var suf string = ""
+		switch sz {
+		case vm.SZ_8:
+			suf = "b"
+		case vm.SZ_16:
+			suf = "q"
+		case vm.SZ_32:
+			suf = "h"
+		}
+		return fmt.Sprintf("r%v%s", reg, suf)
+	}
+}
 
 type Token struct {
 	Ty   int
 	Val  any
 	Col  int
 	Line int
+}
+
+// this is a helper funcion, it will attempt to present Token.Val as a string
+//
+// so for example if Val is of rune type it will be printed as a char
+func (t Token) ForceValAsString() string {
+	if s, ok := t.Val.(string); ok {
+		if t.Ty == TOKEN_TSINGLEQ {
+			return fmt.Sprintf("%q", s)
+		}
+		return s
+	} else if r, ok := t.Val.(rune); ok {
+		return string(r)
+	} else if f, ok := t.Val.(uint64); ok && t.Ty == TOKEN_TFLOAT_LIT {
+		return fmt.Sprintf("%v", math.Float64frombits(f))
+	} else if reg, ok := t.Val.(RegisterData); ok {
+		return reg.String()
+	}else {
+		return fmt.Sprint(t.Val)
+	}
+
 }
 
 type Lexer struct {

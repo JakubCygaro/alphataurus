@@ -63,8 +63,13 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 			return ret, err
 		}
 		if nestedD.OffsetOp != vm.OP_TADD && nestedD.OffsetOp != vm.OP_TSUB {
+			em, _ := arthExpr.B.Emit()
 			return ret, errors.FailedToParse("dereference expression",
-				"Disallowed operation", p.lexer.line, p.lexer.col)
+				p.currentStartToken.Line, p.currentStartToken.Col,
+				"Disallowed operation in expression, only addition or subtraction "+
+					"is allowed for this expression\n In expression: `%s`",
+				em,
+			)
 		}
 		ret.Ty = DEREF_T2RO
 		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
@@ -95,8 +100,14 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 			return ret, err
 		}
 		if nestedD.OffsetOp != vm.OP_TADD || nestedD.Ty != DEREF_T2RO {
+			em, _ := arthExpr.B.Emit()
 			return ret, errors.FailedToParse("dereference expression",
-				"Disallowed operation between registers", p.lexer.line, p.lexer.col)
+				p.currentStartToken.Line, p.currentStartToken.Col,
+				"Disallowed operation in expression, only addition "+
+					"is allowed between registers in"+
+					" this expression\n In expression: `%s`",
+				em,
+			)
 		}
 		ret.Ty = DEREF_T2RO
 		ret.Reg1 = nestedD.Reg1
@@ -112,8 +123,14 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 			return ret, err
 		}
 		if nestedD.OffsetOp != vm.OP_TADD || nestedD.Ty != DEREF_T2RO {
+			em, _ := arthExpr.B.Emit()
 			return ret, errors.FailedToParse("dereference expression",
-				"Disallowed operation between registers", p.lexer.line, p.lexer.col)
+				p.currentStartToken.Line, p.currentStartToken.Col,
+				"Disallowed operation in expression, only addition "+
+					"is allowed between registers in"+
+					" this expression\n In expression: `%s`",
+				em,
+			)
 		}
 		ret.Ty = DEREF_T2RO
 		ret.Reg1 = nestedD.Reg1
@@ -121,9 +138,13 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
 		ret.OffsetOp = nestedD.OffsetOp
 	default:
-		return ret, errors.FailedToParse("dereference expression",
-			"Invalid dereference expression parameter",
-			p.lexer.line, p.lexer.col)
+		em, _ := arthExpr.Emit()
+		return ret, errors.FailedToParse(
+			"dereference expression",
+			p.currentStartToken.Line, p.currentStartToken.Col,
+			"Invalid dereference expression `%s`",
+			em,
+		)
 		// TODO: label dereference support
 	}
 	return ret, nil
@@ -154,20 +175,25 @@ func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 			ret.OffsetOp = vm.OP_TADD
 		// TODO: label dereference support
 		default:
-
+			em, _ := inner.Emit()
 			return ret, errors.FailedToParse("dereference expression",
-				"Invalid single parameter dereference expression",
-				p.lexer.line, p.lexer.col)
+				p.currentStartToken.Line, p.currentStartToken.Col,
+				"Invalid single parameter dereference expression."+
+				"In Expression `%s`",
+				em,
+			)
 		}
 	case EXPR_TARTH:
-
 		arthExpr := inner.Val.(ArthExpr)
 		return p.processDerefNestedArth(arthExpr, 0)
 	default:
-
-		return ret, errors.FailedToParse("dereference instruction",
-			"Invalid dereference expression",
-			p.lexer.line, p.lexer.col)
+		em, _ := inner.Emit()
+		return ret, errors.FailedToParse("dereference expression",
+			p.currentStartToken.Line, p.currentStartToken.Col,
+			"Invalid dereference expression."+
+			"In Expression `%s`",
+			em,
+		)
 	}
 	return ret, nil
 }

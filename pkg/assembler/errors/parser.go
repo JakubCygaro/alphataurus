@@ -40,13 +40,14 @@ func UnknownIdentifier(ident string, line, col int) ParserError {
 	return err
 }
 
-func FailedToParse(instruction, reason string, line, col int) ParserError {
+func FailedToParse(
+	instruction string, line, col int, format string, a ...any) ParserError {
 	err := ParserError{
 		ParsingWhat: instruction,
 		Line:        line,
 		Col:         col,
 		construct: func() string {
-			return fmt.Sprintf("%s", reason)
+			return fmt.Sprintf(format, a...)
 		},
 	}
 	return err

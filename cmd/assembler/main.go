@@ -26,6 +26,15 @@ func main() {
 	}
 	defer file.Close()
 	asm := assembler.NewAssembler(bufio.NewReader(file))
+	asm.WarningSink = func(awd assembler.AssemblerWarningData) {
+		fmt.Fprintf(
+			os.Stdout,
+			"Warning: %s (%v:%v)",
+			awd.Message,
+			awd.Line,
+			awd.Col,
+		)
+	}
 	obj, err := asm.Assemble()
 	if err != nil {
 		os.Stderr.WriteString(err.Error())

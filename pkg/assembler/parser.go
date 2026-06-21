@@ -171,10 +171,16 @@ type InstMovDerefData struct {
 	Label    string
 	OpTy     int
 }
+type ParserWarningData struct {
+	Col, Line int
+	Message string
+}
 type Parser struct {
-	lexer        Lexer
-	currentInst  Instruction
-	currentIdent string
+	lexer             Lexer
+	currentInst       Instruction
+	currentIdent      string
+	currentStartToken Token
+	WarningSink       func(ParserWarningData)
 }
 type InstCallData struct {
 	Addr  uint64
@@ -223,36 +229,35 @@ func (p *Parser) SkipCommentLine() error {
 }
 func (p *Parser) ParseNext() (bool, error) {
 	var err error = nil
-	var start Token
 	for {
 		err = p.lexer.ReadNextToken()
 		if err != nil {
 			return false, err
 		}
-		start = p.lexer.CurrentToken()
-		if start.Ty == TOKEN_TEOF {
+		p.currentStartToken = p.lexer.CurrentToken()
+		if p.currentStartToken.Ty == TOKEN_TEOF {
 			return false, nil
 		}
-		if start.Ty == TOKEN_TDOUBLESEMICOLON {
+		if p.currentStartToken.Ty == TOKEN_TDOUBLESEMICOLON {
 			err = p.SkipCommentLine()
-		} else if start.Ty != TOKEN_TNEWLINE {
+		} else if p.currentStartToken.Ty != TOKEN_TNEWLINE {
 			break
 		}
 	}
-	p.currentInst.Col, p.currentInst.Line = start.Col, start.Line
-	switch start.Ty {
+	switch p.currentStartToken.Ty {
 	case TOKEN_TIDENT:
-		err = p.parseStartIdent(start)
+		err = p.parseStartIdent(p.currentStartToken)
 		if err != nil {
 			return false, err
 		}
 	case TOKEN_TAT:
-		err = p.parseAttribute()
+		err = p.ParseAttribute()
 		if err != nil {
 			return false, err
 		}
 	default:
-		return false, fmt.Errorf("Unimplemented instruction %s", p.lexer.CurrentPosition())
+		return false, fmt.Errorf("Parser error: Unimplemented instruction %s",
+			p.lexer.CurrentPosition())
 	}
 	err = p.lexer.ReadNextToken()
 	if p.lexer.CurrentToken().Ty == TOKEN_TDOUBLESEMICOLON {
@@ -264,6 +269,9 @@ func (p *Parser) ParseNext() (bool, error) {
 		t := p.lexer.CurrentToken()
 		return false, errors.ExtraTokensOnLine(t.Line, t.Col)
 	}
+	p.currentInst.Col, p.currentInst.Line =
+		p.currentStartToken.Col, p.currentStartToken.Line
+	p.currentStartToken = Token{}
 	return true, err
 }
 func (p *Parser) parseStartIdent(t Token) error {
@@ -390,12 +398,12 @@ func (p *Parser) parseSection() error {
 				Ty: INST_TSECCODE,
 			}
 		default:
-			return errors.FailedToParse("section",
-				fmt.Sprintf("Unknown section type '%s'", ty), op.Line, op.Col)
+			return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
+				"Unknown section name `%s`", ty)
 		}
 	default:
-		return errors.FailedToParse("section",
-			"Bad argument", op.Line, op.Col)
+		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
+			"Bad section type argument `%s`", op.ForceValAsString())
 	}
 	return nil
 }
@@ -413,13 +421,14 @@ func (p *Parser) parseImport() error {
 		op = p.lexer.CurrentToken()
 	}
 	if op.Ty != TOKEN_TSINGLEQ {
-		return errors.FailedToParse("import statement", "expected single quoted string parameter",
-			op.Line, op.Col)
+		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
+			"Expected a single quoted string parameter, got `%s`",
+			op.ForceValAsString())
 	}
 	name := op.Val.(string)
 	if strings.ContainsFunc(name, unicode.IsSpace) {
-		return errors.FailedToParse("import statement", "parameter not a valid identifier",
-			op.Line, op.Col)
+		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
+			"`%s` is not a valid identifier")
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TIMPORT,
@@ -438,13 +447,14 @@ func (p *Parser) parseExport() error {
 	}
 	op := p.lexer.CurrentToken()
 	if op.Ty != TOKEN_TSINGLEQ {
-		return errors.FailedToParse("export statement", "expected single quoted string parameter",
-			op.Line, op.Col)
+		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
+			"Expected a single quoted string parameter, got `%s`",
+			op.ForceValAsString())
 	}
 	name := op.Val.(string)
 	if strings.ContainsFunc(name, unicode.IsSpace) {
-		return errors.FailedToParse("export statement", "parameter not a valid identifier",
-			op.Line, op.Col)
+		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
+			"`%s` is not a valid identifier", name)
 	}
 	p.currentInst = Instruction{
 		Ty: INST_TEXPORT,
@@ -456,24 +466,25 @@ func (p *Parser) parseExport() error {
 	}
 	return nil
 }
-func (p *Parser) parseAttribute() error {
+func (p *Parser) ParseAttribute() error {
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
 	op := p.lexer.CurrentToken()
 	if op.Ty != TOKEN_TIDENT {
-		return errors.FailedToParse("attribute", "invalid parameter",
-			op.Line, op.Col)
+		return errors.FailedToParse("attribute", op.Line, op.Col,
+			"`%s` is not a valid parameter", op.ForceValAsString())
 	}
-	switch op.Val.(string) {
+	attr := op.Val.(string)
+	switch attr {
 	case "entry":
 		p.currentInst = Instruction{
 			Ty:   INST_TATTRENTRY,
 			Data: nil,
 		}
 	default:
-		return errors.FailedToParse("attribute", "unrecognized attribute type",
-			op.Line, op.Col)
+		return errors.FailedToParse("attribute", op.Line, op.Col,
+			"Unrecognized attribute type `%s`", attr)
 	}
 	return nil
 }
@@ -488,8 +499,11 @@ func (p *Parser) parseExit() error {
 		return err
 	}
 	if cexpr, ok := TryConstEvaluatePruneExpression(expr); !ok {
-		return errors.FailedToParse("exit instruction", "non comp-time expression parameter",
-			start.Line, start.Col)
+		em, _ := cexpr.Emit()
+		return errors.FailedToParse(p.currentIdent, start.Line, start.Col,
+			"Non comp-time expression as parameter `%s`."+
+				"\nThe argument to this instruction must be either a valid register "+
+				"or a compile time expression.", em)
 	} else if cexpr.Ty == CONSTEXPR_TILIT {
 		p.currentInst = Instruction{
 			Ty: INST_TEXITI,
@@ -505,8 +519,11 @@ func (p *Parser) parseExit() error {
 			},
 		}
 	} else {
-		return errors.FailedToParse("exit instruction", "invalid expression parameter",
-			start.Line, start.Col)
+		em, _ := cexpr.Emit()
+		return errors.FailedToParse(p.currentIdent, start.Line, start.Col,
+			"Invalid expression as parameter `%s`."+
+				"\nThe argument to this instruction must be either a valid register "+
+				"or a compile time expression.", em)
 	}
 	return nil
 }
