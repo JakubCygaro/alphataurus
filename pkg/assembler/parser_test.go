@@ -217,8 +217,10 @@ var instWithError = []instErrP{
 		".*Unknown section name `.nothing`", 9),
 	asInstErrP("section 123123",
 		".*Bad section type argument `123123`", 9),
-	asInstErrP("section 123123",
-		".*Bad section type argument `123123`", 9),
+	asInstErrP("import 123123",
+		".*Expected a single quoted string parameter, got `123123`", 8),
+	asInstErrP("import 'asdasd asdasd'",
+		".*`asdasd asdasd` is not a valid identifier", 8),
 }
 
 func TestParsingErrorsF(t *testing.T) {
