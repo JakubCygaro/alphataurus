@@ -20,6 +20,10 @@
 - possible reimplementation of the opcode decoder by writing a custom codegen tool
  that inspects the codebase for OP_CODE declarations and writes a fast decoder
 - future decoder idea:
+- add linker option for selecting entry point from a specific file:
+ald foo.ao bar.ao -e foo.ao -o baz.aelf
+ could also support picking a specific label from a file:
+ald ... -e foo.ao:_entry -o baz.aelf
 ```Go
 // radix tree for opcode lookup
 type opcodeTrie struct {  }
