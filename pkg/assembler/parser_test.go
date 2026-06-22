@@ -2,8 +2,10 @@ package assembler
 
 import (
 	"bufio"
+	"fmt"
 	"math"
 	"math/rand"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -17,8 +19,8 @@ var exprTypes = []int{
 
 const (
 	// chance to split an expression while recursively expanding the result
-	SPLIT_EXPR_REC_CHANCE = 50
-	SPLIT_MAX_DEPTH       = 6
+	SPLIT_EXPR_REC_CHANCE              = 50
+	SPLIT_MAX_DEPTH                    = 6
 	EXPR_PARSE_REPARSE_EVAL_TEST_COUNT = 10
 )
 
@@ -193,6 +195,81 @@ func TestExpressionsFloat(t *testing.T) {
 			t.Errorf("Diff: %v", math.Abs(evalV-start))
 			em, _ := reparsed.Emit()
 			t.Error(em)
+		}
+	}
+}
+
+type instErrP struct {
+	inst, err string
+	col       int
+}
+
+func asInstErrP(inst, err string, col int) instErrP {
+	return instErrP{inst: inst, err: err, col: col}
+}
+
+var instWithError = []instErrP{
+	asInstErrP("mov r0, 100 these are extra tokens",
+		".*Extra tokens the on line `these`", 13),
+	asInstErrP("zupaeaea",
+		".*Unknown identifier `zupaeaea`", 1),
+	asInstErrP("section '.nothing'",
+		".*Unknown section name `.nothing`", 9),
+	asInstErrP("section 123123",
+		".*Bad section type argument `123123`", 9),
+	asInstErrP("section 123123",
+		".*Bad section type argument `123123`", 9),
+}
+
+func TestParsingErrorsF(t *testing.T) {
+	for _, e := range instWithError {
+		linesCount := rand.Intn(20) + 5
+		errorLine := rand.Intn(linesCount)
+		lines := make([]string, 0)
+		lines = append(lines,
+			"section '.code'",
+			"@entry",
+		)
+		for i := range linesCount {
+			if i == errorLine {
+				lines = append(lines, e.inst)
+			} else {
+				lines = append(lines, "nop")
+			}
+		}
+		errorLine += 3
+		asm := strings.Join(lines, "\n")
+		p := NewParser(bufio.NewReader(strings.NewReader(asm)))
+		var err error
+		for {
+			var ok bool
+			ok, err = p.ParseNext()
+			if !ok || err != nil {
+				break
+			}
+		}
+		if err == nil {
+			t.Errorf("Expected parsing error, got no error")
+			t.Errorf("Expected: `%s`", e.err)
+			t.Errorf("Assembly:\n%s", asm)
+		} else if matched, rerr := regexp.MatchString(e.err, err.Error()); !matched {
+			t.Errorf("Parsing error does not match expected error")
+			t.Errorf("Expected: `%s`", e.err)
+			t.Errorf("Got: `%s`", err.Error())
+			t.Errorf("Assembly:\n%s", asm)
+		} else if rerr != nil {
+			t.Errorf("Regexp error:")
+			t.Error(rerr.Error())
+		} else if m, rerr := regexp.
+			MatchString(fmt.Sprintf("(%v:%v)", errorLine, e.col), err.Error()); !m {
+
+			t.Errorf("Parsing error line does not match")
+			t.Errorf("Expected line: %v", errorLine)
+			t.Errorf("Got: `%s`", err.Error())
+			t.Errorf("Assembly:\n%s", asm)
+		} else if rerr != nil {
+			t.Errorf("Regexp error:")
+			t.Error(rerr.Error())
 		}
 	}
 }

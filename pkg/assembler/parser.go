@@ -256,7 +256,8 @@ func (p *Parser) ParseNext() (bool, error) {
 		}
 	default:
 		return false, errors.
-			ExtraTokensOnLine(p.currentStartToken.Line, p.currentStartToken.Col)
+			ExtraTokensOnLine(p.currentStartToken.Line, p.currentStartToken.Col,
+				p.currentStartToken.ForceValAsString())
 	}
 	err = p.lexer.ReadNextToken()
 	if p.lexer.CurrentToken().Ty == TOKEN_TDOUBLESEMICOLON {
@@ -266,7 +267,7 @@ func (p *Parser) ParseNext() (bool, error) {
 		p.lexer.CurrentToken().Ty != TOKEN_TEOF {
 
 		t := p.lexer.CurrentToken()
-		return false, errors.ExtraTokensOnLine(t.Line, t.Col)
+		return false, errors.ExtraTokensOnLine(t.Line, t.Col, t.ForceValAsString())
 	}
 	p.currentInst.Col, p.currentInst.Line =
 		p.currentStartToken.Col, p.currentStartToken.Line

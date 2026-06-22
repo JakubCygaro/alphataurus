@@ -18,12 +18,12 @@ func (e ParserError) Error() string {
 	}
 }
 
-func ExtraTokensOnLine(line, col int) ParserError {
+func ExtraTokensOnLine(line, col int, t string) ParserError {
 	err := ParserError{
 		Line: line,
 		Col:  col,
 		construct: func() string {
-			return "Extra tokens on line"
+			return fmt.Sprintf("Extra tokens the on line `%s`", t)
 		},
 	}
 	return err
@@ -34,7 +34,7 @@ func UnknownIdentifier(ident string, line, col int) ParserError {
 		Line: line,
 		Col:  col,
 		construct: func() string {
-			return fmt.Sprintf("Unknown identifier '%s'", ident)
+			return fmt.Sprintf("Unknown identifier `%s`", ident)
 		},
 	}
 	return err
