@@ -180,7 +180,7 @@ type Parser struct {
 	currentIdent      string
 	currentStartToken Token
 	// pointer to a function that recieves warnings emitted by the parser
-	WarningSink       func(ParserWarningData)
+	WarningSink func(ParserWarningData)
 }
 type InstCallData struct {
 	Addr  uint64
@@ -201,10 +201,23 @@ type Instruction struct {
 	Line, Col int
 }
 
+func pInitialState() Parser {
+	return Parser{}
+}
+
 func NewParser(reader *bufio.Reader) *Parser {
-	return &Parser{
-		lexer: NewLexer(reader),
-	}
+	this := pInitialState()
+	this.lexer = NewLexer(reader)
+	return &this
+}
+// reset the state of the parser and load new reader input
+func (p *Parser) LoadNew(reader *bufio.Reader) {
+	ws := p.WarningSink
+	l := p.lexer
+	l.LoadNew(reader)
+	*p = pInitialState()
+	p.WarningSink = ws
+	p.lexer = l
 }
 
 func (p *Parser) CurrentInst() Instruction {

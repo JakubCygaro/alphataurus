@@ -151,7 +151,7 @@ func (t Token) ForceValAsString() string {
 		return fmt.Sprintf("%v", math.Float64frombits(f))
 	} else if reg, ok := t.Val.(RegisterData); ok {
 		return reg.String()
-	}else {
+	} else {
 		return fmt.Sprint(t.Val)
 	}
 
@@ -199,14 +199,24 @@ func TokenAsSize(t *Token) (byte, bool) {
 	}
 }
 
-func NewLexer(reader *bufio.Reader) *Lexer {
-	return &Lexer{
+func lInitialState() Lexer {
+	return Lexer{
 		currentToken: nilToken(),
-		reader:       reader,
 		unRead:       false,
 		col:          0,
 		line:         1,
 	}
+}
+
+func NewLexer(reader *bufio.Reader) *Lexer {
+	this := lInitialState()
+	this.reader = reader
+	return &this
+}
+// reset the state of the lexer and load new reader input
+func (l *Lexer) LoadNew(reader *bufio.Reader) {
+	*l = lInitialState()
+	l.reader = reader
 }
 func (l *Lexer) CurrentPosition() string {
 	return fmt.Sprintf("(line: %d, column: %d)", l.line, l.col)

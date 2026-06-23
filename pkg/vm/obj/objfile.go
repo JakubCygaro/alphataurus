@@ -80,6 +80,10 @@ func NewSymbolTable() SymbolTable {
 	return table
 }
 
+func (t *SymbolTable) Clear()  {
+	clear(t.InOrder)
+	clear(t.ByName)
+}
 func (t *SymbolTable) AddSymbol(def SymbolData) (*SymbolData, bool) {
 	if _, ok := t.ByName[def.Name]; ok {
 		return nil, false

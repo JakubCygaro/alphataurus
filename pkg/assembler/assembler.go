@@ -44,10 +44,8 @@ type Assembler struct {
 func (a *Assembler) InstructionCount() int {
 	return a.instCount
 }
-
-func NewAssembler(reader *bufio.Reader) *Assembler {
-	a := &Assembler{
-		parser:          NewParser(reader),
+func aInitialState() Assembler {
+	a := Assembler{
 		opCodes:         vm.GenerateOpcodeMap(),
 		unresolvedJumps: make(unresolvedJumpMap),
 		bytecode:        make([]byte, 0, 64),
@@ -55,12 +53,30 @@ func NewAssembler(reader *bufio.Reader) *Assembler {
 		relocations:     make(aobj.RelocationTable, 0),
 		hasEntry:        false,
 	}
-	a.parser.WarningSink = a.parserWarningHandler
-	// callBackFn := func(pwd ParserWarningData) {
-	// 	a.parserWarningHandler(pwd)
-	// }
-	// a.parser.WarningSink = callBackFn
 	return a
+}
+func (a *Assembler) clearState() {
+	clear(a.unresolvedJumps)
+	clear(a.bytecode)
+	clear(a.bytecode)
+	a.symbols.Clear()
+	clear(a.relocations)
+	a.hasEntry = false
+}
+func NewAssembler(reader *bufio.Reader) *Assembler {
+	a := aInitialState()
+	a.parser = NewParser(reader)
+	a.parser.WarningSink = a.parserWarningHandler
+	return &a
+}
+// reset the state of the assembler and load new reader input
+func (a *Assembler) LoadNew(reader *bufio.Reader) {
+	p := a.parser
+	p.LoadNew(reader)
+	ws := a.WarningSink
+	a.clearState()
+	a.parser = p
+	a.WarningSink = ws
 }
 
 func (a *Assembler) currentCodePos() (byte uint64, address uint64) {
