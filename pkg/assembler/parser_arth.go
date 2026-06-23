@@ -1,7 +1,6 @@
 package assembler
 
 import (
-
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -26,21 +25,24 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
-	} else if eval, _ := TryEvaluateExpression(expr); eval.Ty != CONSTEXPR_TREG {
+	} else if eval, ok :=
+		TryEvaluateExpression(expr); !IsConstexpr(eval, CONSTEXPR_TREG) || !ok {
 		em, _ := eval.Emit()
 		return errors.FailedToParse(p.currentIdent,
-			p.currentStartToken.Line, p.currentInst.Col,
+			eval.Line, eval.Col,
 			"First operand to instruction must be a valid register, got `%s`",
 			em)
 	} else {
 		op1.Ty = TOKEN_TREG
 		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
+		op1.Col = eval.Col
+		op1.Line = eval.Line
 	}
 	switch op1.Val.(RegisterData).Reg {
 	case vm.IP_IDX:
 		return errors.FailedToParse(p.currentIdent,
-			p.currentStartToken.Line, p.currentStartToken.Col,
-			"Disallowed source register `%s`",
+			op1.Line, op1.Col,
+			"Disallowed destination register `%s`",
 			op1.Val.(RegisterData).String(),
 		)
 	}
@@ -52,23 +54,27 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 
 	if comma.Ty != TOKEN_TCOMMA {
 		return errors.FailedToParse(p.currentIdent,
-			p.currentStartToken.Line, p.currentStartToken.Col,
+			comma.Line, comma.Col,
 			"Instruction missing a comma, got `%s` instead",
 			comma.ForceValAsString())
 	}
 	var op2 ConstExpr
+	var op2Line, op2Col int
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else {
 		eval, ok := TryConstEvaluateExpression(expr)
 		if eval.Ty != CONSTEXPR_TREG && !ok {
-			em, _ := eval.Emit()
+			t := p.lexer.CurrentToken()
+			// em, _ := expr.Emit()
 			return errors.FailedToParse(p.currentIdent,
-				p.currentStartToken.Line, p.currentStartToken.Col,
+				expr.Line, expr.Col,
 				"Second operand to instruction has to be a valid register "+
-					"or a compile time expression, got `%s`", em)
+					"or a compile time expression, got `%s`", t.ForceValAsString())
 		}
 		op2 = eval
+		op2Line = expr.Line
+		op2Col = expr.Col
 	}
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
@@ -76,8 +82,8 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		case vm.IP_IDX:
 			em, _ := op2.Emit()
 			return errors.FailedToParse(p.currentIdent,
-				p.currentStartToken.Line, p.currentStartToken.Col,
-				"Disallowed destination register `%s`", em)
+				op2Line, op2Col,
+				"Disallowed source register `%s`", em)
 		}
 		var ty InstTy
 		switch arthTy {
@@ -129,7 +135,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	default:
 		em, _ := op2.Emit()
 		return errors.FailedToParse(p.currentIdent,
-			p.currentStartToken.Line, p.currentStartToken.Col,
+			op2Line, op2Col,
 			"Second operand to instruction has to be a valid register "+
 				"or a compile time expression got `%s`", em)
 	}

@@ -142,11 +142,20 @@ type Token struct {
 func (t Token) ForceValAsString() string {
 	if s, ok := t.Val.(string); ok {
 		if t.Ty == TOKEN_TSINGLEQ {
-			return fmt.Sprintf("%q", s)
+			return fmt.Sprintf("'%s'", s)
 		}
 		return s
 	} else if r, ok := t.Val.(rune); ok {
-		return string(r)
+		switch t.Ty {
+		case TOKEN_TNEWLINE:
+			return "<NEWLINE>"
+		case TOKEN_TEOF:
+			return "<EOF>"
+		case TOKEN_TNIL:
+			return "<NIL>"
+		default:
+			return string(r)
+		}
 	} else if f, ok := t.Val.(uint64); ok && t.Ty == TOKEN_TFLOAT_LIT {
 		return fmt.Sprintf("%v", math.Float64frombits(f))
 	} else if reg, ok := t.Val.(RegisterData); ok {
@@ -213,6 +222,7 @@ func NewLexer(reader *bufio.Reader) *Lexer {
 	this.reader = reader
 	return &this
 }
+
 // reset the state of the lexer and load new reader input
 func (l *Lexer) LoadNew(reader *bufio.Reader) {
 	*l = lInitialState()

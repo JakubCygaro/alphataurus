@@ -221,6 +221,23 @@ var instWithError = []instErrP{
 		".*Expected a single quoted string parameter, got `123123`", 8),
 	asInstErrP("import 'asdasd asdasd'",
 		".*`asdasd asdasd` is not a valid identifier", 8),
+	asInstErrP("add 105",
+		".*First operand to instruction must be a valid register, got `105`", 5),
+	asInstErrP("add 'text'",
+		".*Disallowed token in expression `'text'`", 5),
+	asInstErrP("add ip, 100",
+		".*Disallowed destination register `ip`", 5),
+	asInstErrP("add r0 @ 100",
+		".*Instruction missing a comma, got `@` instead", 8),
+	asInstErrP("add r0, noncomptime",
+		".*Second operand to instruction has to be a valid register "+
+		"or a compile time expression, got `noncomptime`", 9),
+	asInstErrP("add r0, ip",
+		".*Disallowed source register `ip`", 9),
+	asInstErrP("add r0, noncomptime",
+		"Second operand to instruction has to be a valid register "+
+			"or a compile time expression got `noncomptime`", 9),
+
 }
 
 func TestParsingErrorsF(t *testing.T) {
@@ -265,8 +282,8 @@ func TestParsingErrorsF(t *testing.T) {
 		} else if m, rerr := regexp.
 			MatchString(fmt.Sprintf("(%v:%v)", errorLine, e.col), err.Error()); !m {
 
-			t.Errorf("Parsing error line does not match")
-			t.Errorf("Expected line: %v", errorLine)
+			t.Errorf("Parsing error line or column does not match")
+			t.Errorf("Expected (%v:%v)", errorLine, e.col)
 			t.Errorf("Got: `%s`", err.Error())
 			t.Errorf("Assembly:\n%s", asm)
 		} else if rerr != nil {

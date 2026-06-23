@@ -89,11 +89,10 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 				return lhs, fmt.Errorf("Prefix operator TODO %s", p.lexer.CurrentPosition())
 			}
 		} else {
-			em, _ := lhs.Emit()
 			return nil, errors.FailedToParse("expression",
 				lhsToken.Line, lhsToken.Col,
-				"Bad expression `%s`",
-				em,
+				"Disallowed token in expression `%s`",
+				lhsToken.ForceValAsString(),
 			)
 		}
 	}
