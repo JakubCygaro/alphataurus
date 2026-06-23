@@ -175,10 +175,11 @@ type ParserWarningData struct {
 	Message   string
 }
 type Parser struct {
-	lexer             Lexer
+	lexer             *Lexer
 	currentInst       Instruction
 	currentIdent      string
 	currentStartToken Token
+	// pointer to a function that recieves warnings emitted by the parser
 	WarningSink       func(ParserWarningData)
 }
 type InstCallData struct {
@@ -200,8 +201,8 @@ type Instruction struct {
 	Line, Col int
 }
 
-func NewParser(reader *bufio.Reader) Parser {
-	return Parser{
+func NewParser(reader *bufio.Reader) *Parser {
+	return &Parser{
 		lexer: NewLexer(reader),
 	}
 }

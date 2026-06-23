@@ -199,8 +199,8 @@ func TokenAsSize(t *Token) (byte, bool) {
 	}
 }
 
-func NewLexer(reader *bufio.Reader) Lexer {
-	return Lexer{
+func NewLexer(reader *bufio.Reader) *Lexer {
+	return &Lexer{
 		currentToken: nilToken(),
 		reader:       reader,
 		unRead:       false,

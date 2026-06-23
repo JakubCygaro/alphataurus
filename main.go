@@ -51,15 +51,15 @@ _start:
 
 func logWarnings(awd assembler.AssemblerWarningData) {
 	fmt.Fprintf(os.Stdout,
-		"Assembler warning: %s. at (%v:%v)",
-		awd.Message,
+		"Assembler warning at (%v:%v): %s.\n",
 		awd.Line,
 		awd.Col,
+		awd.Message,
 	)
 }
 
 func main() {
-	sources := []string{assembly, assembly2, assembly3}
+	sources := []string{assembly}
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(bufio.NewReader(strings.NewReader(s)))

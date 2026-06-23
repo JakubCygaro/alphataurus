@@ -24,7 +24,7 @@ type AssemblerWarningData struct {
 }
 
 type Assembler struct {
-	parser          Parser
+	parser          *Parser
 	opCodes         vm.OpCodeMap
 	unresolvedJumps unresolvedJumpMap
 	//relating to the current instruction
@@ -37,6 +37,7 @@ type Assembler struct {
 	relocations aobj.RelocationTable
 	hasEntry    bool
 	entry       uint64
+	// pointer to a function that recieves warnings emitted by the assembler
 	WarningSink func(AssemblerWarningData)
 }
 
@@ -44,8 +45,8 @@ func (a *Assembler) InstructionCount() int {
 	return a.instCount
 }
 
-func NewAssembler(reader *bufio.Reader) Assembler {
-	a := Assembler{
+func NewAssembler(reader *bufio.Reader) *Assembler {
+	a := &Assembler{
 		parser:          NewParser(reader),
 		opCodes:         vm.GenerateOpcodeMap(),
 		unresolvedJumps: make(unresolvedJumpMap),
@@ -55,6 +56,10 @@ func NewAssembler(reader *bufio.Reader) Assembler {
 		hasEntry:        false,
 	}
 	a.parser.WarningSink = a.parserWarningHandler
+	// callBackFn := func(pwd ParserWarningData) {
+	// 	a.parserWarningHandler(pwd)
+	// }
+	// a.parser.WarningSink = callBackFn
 	return a
 }
 
