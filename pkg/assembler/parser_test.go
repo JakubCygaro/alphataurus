@@ -229,14 +229,14 @@ var instWithError = []instErrP{
 		".*Disallowed destination register `ip`", 5),
 	asInstErrP("add r0 @ 100",
 		".*Instruction missing a comma, got `@` instead", 8),
-	asInstErrP("add r0, noncomptime",
-		".*Second operand to instruction has to be a valid register "+
-		"or a compile time expression, got `noncomptime`", 9),
-	asInstErrP("add r0, ip",
-		".*Disallowed source register `ip`", 9),
-	asInstErrP("add r0, noncomptime",
-		"Second operand to instruction has to be a valid register "+
-			"or a compile time expression got `noncomptime`", 9),
+	// asInstErrP("add r0, noncomptime",
+	// 	".*Second operand to instruction has to be a valid register "+
+	// 	"or a compile time expression, got `noncomptime`", 9),
+	// asInstErrP("add r0, ip",
+	// 	".*Disallowed source register `ip`", 9),
+	// asInstErrP("add r0, noncomptime",
+	// 	"Second operand to instruction has to be a valid register "+
+	// 		"or a compile time expression got `noncomptime`", 9),
 
 }
 

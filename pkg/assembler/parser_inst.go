@@ -101,7 +101,7 @@ const (
 )
 
 type Instruction struct {
-	// Ty        InstTy
+	// This is a Inst... struct type that contains the actual instruction specific data
 	Data      any
 	Line, Col int
 }
@@ -112,12 +112,6 @@ type InstMovIR struct {
 }
 type InstMovRR struct {
 	Src, Dest int
-	Imm       uint64
-	DataSize  byte
-}
-type InstMovData struct {
-	Src, Dest int
-	Imm       uint64
 	DataSize  byte
 }
 type InstInc struct {
@@ -126,61 +120,38 @@ type InstInc struct {
 type InstDec struct {
 	Reg RegisterData
 }
-type InstIncDecData struct {
-	Reg RegisterData
-}
 type InstArthRR struct {
 	Src, Dest RegisterData
-	Imm       uint64
 	Ty        int
 	DataSize  byte
 	ArthTy    InstTy
 }
 type InstArthIR struct {
-	Src, Dest RegisterData
-	Imm       uint64
-	Ty        int
-	DataSize  byte
-	ArthTy    InstTy
-}
-type InstArthData struct {
-	Src, Dest RegisterData
+	Dest RegisterData
 	Imm       uint64
 	Ty        int
 	DataSize  byte
 	ArthTy    InstTy
 }
 type InstNot struct {
-	First, Second RegisterData
-	Imm           uint64
+	First RegisterData
 }
 type InstLogicalRR struct {
 	First, Second RegisterData
-	Imm           uint64
 	LogTy         InstTy
 }
 type InstLogicalIR struct {
-	First, Second RegisterData
+	First RegisterData
 	Imm           uint64
 	LogTy         InstTy
-}
-type InstLogicalData struct {
-	First, Second RegisterData
-	Imm           uint64
 }
 type InstCmpRR struct {
 	Ty       int
 	Sub, Min RegisterData
-	Imm      uint64
 }
 type InstCmpIR struct {
 	Ty       int
-	Sub, Min RegisterData
-	Imm      uint64
-}
-type InstCmpData struct {
-	Ty       int
-	Sub, Min RegisterData
+	Min RegisterData
 	Imm      uint64
 }
 type InstJmp struct {
@@ -189,7 +160,6 @@ type InstJmp struct {
 	Variant  InstTy
 }
 type InstJmpIP0R struct {
-	Reg    RegisterData
 	Offset int64
 	JmpTy  InstTy
 	OpTy   int
@@ -200,14 +170,7 @@ type InstJmpIP1R struct {
 	JmpTy  InstTy
 	OpTy   int
 }
-type InstJmpIPData struct {
-	Reg    RegisterData
-	Offset int64
-	JmpTy  InstTy
-	OpTy   int
-}
 type InstCallIP0R struct {
-	Reg    RegisterData
 	Offset int64
 	OpTy   int
 }
@@ -241,26 +204,16 @@ type InstPop struct {
 	Imm    uint64
 	DataSz byte
 }
-type InstPushPopData struct {
-	Reg    uint64
-	Imm    uint64
-	DataSz byte
-}
 type InstNop struct{}
 type InstMovDRI struct {
 	Dest   RegisterData
 	Offset int64
-	OReg1  RegisterData
-	OReg2  RegisterData
-	Label  string
 	OpTy   int
 }
 type InstMovDRO1 struct {
 	Dest   RegisterData
 	Offset int64
 	OReg1  RegisterData
-	OReg2  RegisterData
-	Label  string
 	OpTy   int
 }
 type InstMovDRO2 struct {
@@ -268,83 +221,44 @@ type InstMovDRO2 struct {
 	Offset int64
 	OReg1  RegisterData
 	OReg2  RegisterData
-	Label  string
-	OpTy   int
-}
-type InstDerefMovData struct {
-	Dest   RegisterData
-	Offset int64
-	OReg1  RegisterData
-	OReg2  RegisterData
-	Label  string
 	OpTy   int
 }
 type InstMovID struct {
 	DataSize byte
-	Src      RegisterData
 	Imm      uint64
 	Offset   int64
-	OReg1    RegisterData
-	OReg2    RegisterData
-	Label    string
 	OpTy     int
 }
 type InstMovRD struct {
-	DataSize byte
 	Src      RegisterData
-	Imm      uint64
 	Offset   int64
-	OReg1    RegisterData
-	OReg2    RegisterData
-	Label    string
 	OpTy     int
 }
 type InstMovIDO1 struct {
 	DataSize byte
-	Src      RegisterData
 	Imm      uint64
 	Offset   int64
 	OReg1    RegisterData
-	OReg2    RegisterData
-	Label    string
 	OpTy     int
 	NoOff    bool
 }
 type InstMovRDO1 struct {
-	DataSize byte
 	Src      RegisterData
-	Imm      uint64
 	Offset   int64
 	OReg1    RegisterData
-	OReg2    RegisterData
-	Label    string
 	OpTy     int
 }
 type InstMovIDO2 struct {
 	DataSize byte
-	Src      RegisterData
 	Imm      uint64
 	Offset   int64
 	OReg1    RegisterData
 	OReg2    RegisterData
-	Label    string
 	OpTy     int
 	NoOff    bool
 }
 type InstMovRDO2 struct {
-	DataSize byte
 	Src      RegisterData
-	Imm      uint64
-	Offset   int64
-	OReg1    RegisterData
-	OReg2    RegisterData
-	Label    string
-	OpTy     int
-}
-type InstMovDerefData struct {
-	DataSize byte
-	Src      RegisterData
-	Imm      uint64
 	Offset   int64
 	OReg1    RegisterData
 	OReg2    RegisterData
@@ -364,19 +278,11 @@ type InstImport struct {
 	Name string
 	Weak bool
 }
-type InstImportExportData struct {
-	Name string
-	Weak bool
-}
 type InstExitI struct {
 	Val uint64
 	Reg RegisterData
 }
 type InstExitR struct {
-	Val uint64
-	Reg RegisterData
-}
-type InstExitData struct {
 	Val uint64
 	Reg RegisterData
 }
