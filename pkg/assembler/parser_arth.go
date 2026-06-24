@@ -93,11 +93,11 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			ty = INST_TSUBRR
 		}
 		p.currentInst = Instruction{
-			Ty: ty,
-			Data: InstArthData{
-				Src:  op2.UnpackAsRegisterData(),
-				Dest: op1.Val.(RegisterData),
-				Ty:   valTy,
+			Data: InstArthRR{
+				Src:    op2.UnpackAsRegisterData(),
+				Dest:   op1.Val.(RegisterData),
+				Ty:     valTy,
+				ArthTy: ty,
 			},
 		}
 	case CONSTEXPR_TILIT:
@@ -109,11 +109,11 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			ty = INST_TSUBIR
 		}
 		p.currentInst = Instruction{
-			Ty: ty,
-			Data: InstArthData{
-				Imm:  op2.Val,
-				Dest: op1.Val.(RegisterData),
-				Ty:   valTy,
+			Data: InstArthIR{
+				Imm:    op2.Val,
+				Dest:   op1.Val.(RegisterData),
+				Ty:     valTy,
+				ArthTy: ty,
 			},
 		}
 	case CONSTEXPR_TFLIT:
@@ -125,11 +125,11 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			ty = INST_TSUBIR
 		}
 		p.currentInst = Instruction{
-			Ty: ty,
-			Data: InstArthData{
-				Imm:  op2.Val,
-				Dest: op1.Val.(RegisterData),
-				Ty:   valTy,
+			Data: InstArthIR{
+				Imm:    op2.Val,
+				Dest:   op1.Val.(RegisterData),
+				Ty:     valTy,
+				ArthTy: ty,
 			},
 		}
 	default:
@@ -189,10 +189,10 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 		}
 	}
 	p.currentInst = Instruction{
-		Ty: ty,
-		Data: InstArthData{
+		Data: InstArthRR{
 			Ty:       valTy,
 			DataSize: size,
+			ArthTy:   ty,
 		},
 	}
 	return nil
@@ -220,8 +220,7 @@ func (p *Parser) parseInc() error {
 			op1.ForceValAsString())
 	}
 	p.currentInst = Instruction{
-		Ty: INST_TINCR,
-		Data: InstIncDecData{
+		Data: InstInc{
 			Reg: op1.Val.(RegisterData),
 		},
 	}
@@ -250,8 +249,7 @@ func (p *Parser) parseDec() error {
 			op1.ForceValAsString())
 	}
 	p.currentInst = Instruction{
-		Ty: INST_TDECR,
-		Data: InstIncDecData{
+		Data: InstDec{
 			Reg: op1.Val.(RegisterData),
 		},
 	}

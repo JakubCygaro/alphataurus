@@ -80,8 +80,7 @@ func (p *Parser) parseMov() error {
 			return errors.MismatchedRegisterSizes(op1.Line, op1.Col)
 		}
 		p.currentInst = Instruction{
-			Ty: INST_TMOVRR,
-			Data: InstMovData{
+			Data: InstMovRR{
 				Src:      srcData.Reg,
 				Dest:     destData.Reg,
 				DataSize: destData.Size,
@@ -89,8 +88,7 @@ func (p *Parser) parseMov() error {
 		}
 	case CONSTEXPR_TILIT:
 		p.currentInst = Instruction{
-			Ty: INST_TMOVIR,
-			Data: InstMovData{
+			Data: InstMovIR{
 				Imm:      op2.Val,
 				Dest:     destData.Reg,
 				DataSize: destData.Size,
@@ -98,8 +96,7 @@ func (p *Parser) parseMov() error {
 		}
 	case CONSTEXPR_TFLIT:
 		p.currentInst = Instruction{
-			Ty: INST_TMOVIR,
-			Data: InstMovData{
+			Data: InstMovIR{
 				Imm:      op2.Val,
 				Dest:     destData.Reg,
 				DataSize: destData.Size,
@@ -127,16 +124,14 @@ func (p *Parser) parseDerefMov(reg RegisterData, inner *Expr) error {
 	switch dData.Ty {
 	case DEREF_T0RO:
 		p.currentInst = Instruction{
-			Ty: INST_TMOVDRI,
-			Data: InstDerefMovData{
+			Data: InstMovDRI{
 				Dest:   reg,
 				Offset: dData.Offset,
 			},
 		}
 	case DEREF_T1RO:
 		p.currentInst = Instruction{
-			Ty: INST_TMOVDRO1,
-			Data: InstDerefMovData{
+			Data: InstMovDRO1{
 				Dest:   reg,
 				OReg1:  dData.Reg1,
 				Offset: dData.Offset,
@@ -145,8 +140,7 @@ func (p *Parser) parseDerefMov(reg RegisterData, inner *Expr) error {
 		}
 	case DEREF_T2RO:
 		p.currentInst = Instruction{
-			Ty: INST_TMOVDRO2,
-			Data: InstDerefMovData{
+			Data: InstMovDRO2{
 				Dest:   reg,
 				OReg1:  dData.Reg1,
 				OReg2:  dData.Reg2,
@@ -196,101 +190,181 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 			return errors.FailedToParse(p.currentIdent,
 				expr.Line, expr.Col,
 				"Second operand to instruction has to be a valid"+
-				" register or a compile time expression. In expression `%s`",
+					" register or a compile time expression. In expression `%s`",
 				em,
 			)
 		}
 	}
-	mddata := InstMovDerefData{}
+	var src RegisterData
+	var imm uint64
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
-		mddata.Src = op2.UnpackAsRegisterData()
+		src = op2.UnpackAsRegisterData()
 	case CONSTEXPR_TILIT:
-		mddata.Imm = uint64(op2.Val)
-		mddata.Src = GetInvalidRegister()
+		imm = uint64(op2.Val)
+		src = GetInvalidRegister()
 	//TODO: label support
 	default:
 		em, _ := op2.Emit()
 		return errors.FailedToParse(p.currentIdent,
 			p.currentInst.Line, p.currentInst.Line,
 			"Second operand to instruction has to be a valid"+
-			" register or a compile time expression. In expression `%s`",
+				" register or a compile time expression. In expression `%s`",
 			em,
 		)
 	}
 	switch dData.Ty {
 	case DEREF_T0RO:
-		mddata.Offset = dData.Offset
-		ty := INST_TMOVRD
-		if mddata.Src.IsInvalidRegister() {
-			ty = INST_TMOVID
+		if src.IsInvalidRegister() {
+			mddata := InstMovID{}
+			mddata.Offset = dData.Offset
+			mddata.Imm = imm
+			// if this is an immediate move into a deref we need a size parameter
+			// like mov WORD [bp], 100
+			if sized == 0xff {
+				return errors.MissingDataSize(inner.Line, inner.Col)
+			}
+			mddata.DataSize = sized
+			p.currentInst = Instruction{
+				Data: mddata,
+			}
+		} else {
+			mddata := InstMovRD{}
+			mddata.Offset = dData.Offset
+			mddata.Src = src
+			// we dont want a size parameter
+			if sized != 0xff {
+				s, _ := GetSizeKeyword(sized)
+				return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+			}
+			p.currentInst = Instruction{
+				Data: mddata,
+			}
 		}
+		// ty := INST_TMOVRD
+		// if mddata.Src.IsInvalidRegister() {
+		// 	ty = INST_TMOVID
+		// }
 		// if this is an immediate move into a deref we need a size parameter
 		// like mov WORD [bp], 100
-		if ty == INST_TMOVID && sized == 0xff {
-			return errors.MissingDataSize(inner.Line, inner.Col)
-		} else if ty != INST_TMOVID && sized != 0xff {
-			s, _ := GetSizeKeyword(sized)
-			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
-		}
-		mddata.DataSize = sized
-		p.currentInst = Instruction{
-			Ty:   ty,
-			Data: mddata,
-		}
+		// if ty == INST_TMOVID && sized == 0xff {
+		// 	return errors.MissingDataSize(inner.Line, inner.Col)
+		// } else if ty != INST_TMOVID && sized != 0xff {
+		// 	s, _ := GetSizeKeyword(sized)
+		// 	return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+		// }
+		// mddata.DataSize = sized
+		// p.currentInst = Instruction{
+		// 	Data: mddata,
+		// }
 	case DEREF_T1RO:
-		mddata.OReg1 = dData.Reg1
-		mddata.Offset = dData.Offset
-		mddata.OpTy = dData.OffsetOp
-		ty := INST_TMOVRDO1
-		if mddata.Src.IsInvalidRegister() {
-			ty = INST_TMOVIDO1
+		if src.IsInvalidRegister() {
+			mddata := InstMovIDO1{}
+			mddata.OReg1 = dData.Reg1
+			mddata.Offset = dData.Offset
+			mddata.OpTy = dData.OffsetOp
+			mddata.Imm = imm
+			if sized == 0xff {
+				return errors.MissingDataSize(inner.Line, inner.Col)
+			}
+			mddata.DataSize = sized
+			mddata.NoOff = mddata.Offset == 0
+			p.currentInst = Instruction{
+				Data: mddata,
+			}
+		} else {
+			mddata := InstMovRDO1{}
+			mddata.OReg1 = dData.Reg1
+			mddata.Offset = dData.Offset
+			mddata.OpTy = dData.OffsetOp
+			mddata.Src = src
+			if sized != 0xff {
+				s, _ := GetSizeKeyword(sized)
+				return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+			}
+			p.currentInst = Instruction{
+				Data: mddata,
+			}
 		}
-		// like mov WORD [bp+1], 100
-		if ty == INST_TMOVIDO1 && sized == 0xff {
-			return errors.MissingDataSize(inner.Line, inner.Col)
-		} else if ty != INST_TMOVIDO1 && sized != 0xff {
-			s, _ := GetSizeKeyword(sized)
-			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
-		}
-		if ty == INST_TMOVIDO1 && mddata.Offset == 0 {
-			ty = INST_TMOVIDO1_NO
-		}
-		mddata.DataSize = sized
-		p.currentInst = Instruction{
-			Ty:   ty,
-			Data: mddata,
-		}
+		// ty := INST_TMOVRDO1
+		// if mddata.Src.IsInvalidRegister() {
+		// 	ty = INST_TMOVIDO1
+		// }
+		// // like mov WORD [bp+1], 100
+		// if ty == INST_TMOVIDO1 && sized == 0xff {
+		// 	return errors.MissingDataSize(inner.Line, inner.Col)
+		// } else if ty != INST_TMOVIDO1 && sized != 0xff {
+		// 	s, _ := GetSizeKeyword(sized)
+		// 	return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+		// }
+		// if ty == INST_TMOVIDO1 && mddata.Offset == 0 {
+		// 	ty = INST_TMOVIDO1_NO
+		// }
+		// mddata.DataSize = sized
+		// p.currentInst = Instruction{
+		// 	Ty:   ty,
+		// 	Data: mddata,
+		// }
 	case DEREF_T2RO:
-		mddata.OReg1 = dData.Reg1
-		mddata.OReg2 = dData.Reg2
-		mddata.Offset = dData.Offset
-		mddata.OpTy = dData.OffsetOp
-		ty := INST_TMOVRDO2
-		if mddata.Src.IsInvalidRegister() {
-			ty = INST_TMOVIDO2
+		if src.IsInvalidRegister() {
+			mddata := InstMovIDO2{}
+			mddata.OReg1 = dData.Reg1
+			mddata.OReg2 = dData.Reg2
+			mddata.Offset = dData.Offset
+			mddata.OpTy = dData.OffsetOp
+			mddata.Imm = imm
+			if sized == 0xff {
+				return errors.MissingDataSize(inner.Line, inner.Col)
+			}
+			mddata.DataSize = sized
+			mddata.NoOff = mddata.Offset == 0
+			p.currentInst = Instruction{
+				Data: mddata,
+			}
+		} else {
+			mddata := InstMovRDO2{}
+			mddata.OReg1 = dData.Reg1
+			mddata.OReg2 = dData.Reg2
+			mddata.Offset = dData.Offset
+			mddata.OpTy = dData.OffsetOp
+			mddata.Src = src
+			if sized != 0xff {
+				s, _ := GetSizeKeyword(sized)
+				return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+			}
+			p.currentInst = Instruction{
+				Data: mddata,
+			}
 		}
-		// like mov WORD [bp+r0+1], 100
-		if ty == INST_TMOVIDO2 && sized == 0xff {
-			return errors.MissingDataSize(inner.Line, inner.Col)
-		} else if ty != INST_TMOVIDO2 && sized != 0xff {
-			s, _ := GetSizeKeyword(sized)
-			return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
-		}
-		if ty == INST_TMOVIDO2 && mddata.Offset == 0 {
-			ty = INST_TMOVIDO2_NO
-		}
-		mddata.DataSize = sized
-		p.currentInst = Instruction{
-			Ty:   ty,
-			Data: mddata,
-		}
+		// mddata.OReg1 = dData.Reg1
+		// mddata.OReg2 = dData.Reg2
+		// mddata.Offset = dData.Offset
+		// mddata.OpTy = dData.OffsetOp
+		// ty := INST_TMOVRDO2
+		// if mddata.Src.IsInvalidRegister() {
+		// 	ty = INST_TMOVIDO2
+		// }
+		// // like mov WORD [bp+r0+1], 100
+		// if ty == INST_TMOVIDO2 && sized == 0xff {
+		// 	return errors.MissingDataSize(inner.Line, inner.Col)
+		// } else if ty != INST_TMOVIDO2 && sized != 0xff {
+		// 	s, _ := GetSizeKeyword(sized)
+		// 	return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
+		// }
+		// if ty == INST_TMOVIDO2 && mddata.Offset == 0 {
+		// 	ty = INST_TMOVIDO2_NO
+		// }
+		// mddata.DataSize = sized
+		// p.currentInst = Instruction{
+		// 	Ty:   ty,
+		// 	Data: mddata,
+		// }
 	default:
 		em, _ := op2.Emit()
 		return errors.FailedToParse(p.currentIdent,
 			p.currentInst.Line, p.currentInst.Line,
 			"Invalid dereference expression"+
-			". In expression `%s`",
+				". In expression `%s`",
 			em,
 		)
 	}

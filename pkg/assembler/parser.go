@@ -30,6 +30,7 @@ func NewParser(reader *bufio.Reader) *Parser {
 	this.lexer = NewLexer(reader)
 	return &this
 }
+
 // reset the state of the parser and load new reader input
 func (p *Parser) LoadNew(reader *bufio.Reader) {
 	ws := p.WarningSink
@@ -121,8 +122,7 @@ func (p *Parser) parseStartIdent(t Token) error {
 		p.lexer.UnreadToken()
 	} else {
 		p.currentInst = Instruction{
-			Ty: INST_TLABEL,
-			Data: InstLabData{
+			Data: InstLab{
 				Label: ident,
 			},
 		}
@@ -194,19 +194,19 @@ func (p *Parser) parseStartIdent(t Token) error {
 		return p.parsePop()
 	case "nop":
 		p.currentInst = Instruction{
-			Ty: INST_TNOP,
+			Data: InstNop{},
 		}
 		return nil
 	case "clr":
 		p.currentInst = Instruction{
-			Ty: INST_TCLR,
+			Data: InstClr{},
 		}
 		return nil
 	case "call":
 		return p.parseCall()
 	case "ret":
 		p.currentInst = Instruction{
-			Ty: INST_TRET,
+			Data: InstRet{},
 		}
 		return nil
 	case "section":
@@ -233,7 +233,7 @@ func (p *Parser) parseSection() error {
 		switch ty {
 		case ".code":
 			p.currentInst = Instruction{
-				Ty: INST_TSECCODE,
+				Data: InstSecCode{},
 			}
 		default:
 			return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
@@ -272,8 +272,7 @@ func (p *Parser) parseImport() error {
 		)
 	}
 	p.currentInst = Instruction{
-		Ty: INST_TIMPORT,
-		Data: InstImportExportData{
+		Data: InstImport{
 			Name: name,
 			Weak: weak,
 		},
@@ -298,8 +297,7 @@ func (p *Parser) parseExport() error {
 			"`%s` is not a valid identifier", name)
 	}
 	p.currentInst = Instruction{
-		Ty: INST_TEXPORT,
-		Data: InstImportExportData{
+		Data: InstExport{
 			Name: name,
 		},
 		Line: op.Line,
@@ -320,8 +318,7 @@ func (p *Parser) ParseAttribute() error {
 	switch attr {
 	case "entry":
 		p.currentInst = Instruction{
-			Ty:   INST_TATTRENTRY,
-			Data: nil,
+			Data: InstEntry{},
 		}
 	default:
 		return errors.FailedToParse("attribute", op.Line, op.Col,
@@ -347,15 +344,13 @@ func (p *Parser) parseExit() error {
 				"or a compile time expression.", em)
 	} else if cexpr.Ty == CONSTEXPR_TILIT {
 		p.currentInst = Instruction{
-			Ty: INST_TEXITI,
-			Data: InstExitData{
+			Data: InstExitI{
 				Val: cexpr.Val,
 			},
 		}
 	} else if cexpr.Ty == CONSTEXPR_TREG {
 		p.currentInst = Instruction{
-			Ty: INST_TEXITR,
-			Data: InstExitData{
+			Data: InstExitR{
 				Reg: cexpr.UnpackAsRegisterData(),
 			},
 		}

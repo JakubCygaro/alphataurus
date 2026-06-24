@@ -88,8 +88,7 @@ func (p *Parser) parseCmp() error {
 			return errors.MismatchedRegisterSizes(op1.Line, op1.Col)
 		}
 		p.currentInst = Instruction{
-			Ty: INST_TCMPRR,
-			Data: InstCmpData{
+			Data: InstCmpRR{
 				Ty:  ty,
 				Min: op1.Val.(RegisterData),
 				Sub: op2.Val.(RegisterData),
@@ -97,8 +96,7 @@ func (p *Parser) parseCmp() error {
 		}
 	case TOKEN_TINTEGER_LIT:
 		p.currentInst = Instruction{
-			Ty: INST_TCMPIR,
-			Data: InstCmpData{
+			Data: InstCmpIR{
 				Ty:  ty,
 				Min: op1.Val.(RegisterData),
 				Imm: op2.Val.(uint64),
@@ -112,8 +110,7 @@ func (p *Parser) parseCmp() error {
 			)
 		}
 		p.currentInst = Instruction{
-			Ty: INST_TCMPIR,
-			Data: InstCmpData{
+			Data: InstCmpIR{
 				Ty:  ty,
 				Min: op1.Val.(RegisterData),
 				Imm: op2.Val.(uint64),
@@ -123,9 +120,7 @@ func (p *Parser) parseCmp() error {
 	return nil
 }
 func (p *Parser) parseJmp(ty InstTy) error {
-	inst := Instruction{
-		Ty: ty,
-	}
+	inst := Instruction{}
 	var absolute bool
 	addr := Token{Ty: INVALID}
 	if err := p.lexer.ReadNextToken(); err != nil {
@@ -179,14 +174,16 @@ func (p *Parser) parseJmp(ty InstTy) error {
 			)
 			absolute = false
 		}
-		inst.Data = InstJmpData{
+		inst.Data = InstJmp{
 			Address:  addr.Val.(uint64),
 			Absolute: absolute,
+			Variant:  ty,
 		}
 	case TOKEN_TIDENT:
-		inst.Data = InstJmpData{
+		inst.Data = InstJmp{
 			Address:  addr.Val.(string),
 			Absolute: absolute,
+			Variant:  ty,
 		}
 	default:
 		return errors.FailedToParse(p.currentIdent,
@@ -220,8 +217,7 @@ func (p *Parser) parseJmpIP(ty InstTy, expr *Expr) error {
 	switch deref.Ty {
 	case DEREF_T1RO:
 		p.currentInst = Instruction{
-			Ty: INST_TJMPIP0R,
-			Data: InstJmpIPData{
+			Data: InstJmpIP0R{
 				JmpTy:  ty,
 				Offset: deref.Offset,
 				OpTy:   deref.OffsetOp,
@@ -235,8 +231,7 @@ func (p *Parser) parseJmpIP(ty InstTy, expr *Expr) error {
 			reg = deref.Reg1
 		}
 		p.currentInst = Instruction{
-			Ty: INST_TJMPIP1R,
-			Data: InstJmpIPData{
+			Data: InstJmpIP1R{
 				JmpTy:  ty,
 				Offset: deref.Offset,
 				Reg:    reg,
@@ -265,16 +260,14 @@ func (p *Parser) parseCall() error {
 	switch pruned.Ty {
 	case CONSTEXPR_TILIT:
 		p.currentInst = Instruction{
-			Ty: INST_TCALL,
-			Data: InstCallData{
+			Data: InstCall{
 				Addr: pruned.Val,
 				Expr: nil,
 			},
 		}
 	case CONSTEXPR_TIDENT:
 		p.currentInst = Instruction{
-			Ty: INST_TCALL,
-			Data: InstCallData{
+			Data: InstCall{
 				Addr:  pruned.Val,
 				Ident: pruned.Ident,
 				Expr:  nil,
@@ -310,8 +303,7 @@ func (p *Parser) parseCallIP(expr *Expr) error {
 	switch deref.Ty {
 	case DEREF_T1RO:
 		p.currentInst = Instruction{
-			Ty: INST_TCALLIP0R,
-			Data: InstCallIPData{
+			Data: InstCallIP0R{
 				Offset: deref.Offset,
 				OpTy:   deref.OffsetOp,
 			},
@@ -324,8 +316,7 @@ func (p *Parser) parseCallIP(expr *Expr) error {
 			reg = deref.Reg1
 		}
 		p.currentInst = Instruction{
-			Ty: INST_TCALLIP1R,
-			Data: InstCallIPData{
+			Data: InstCallIP1R{
 				Offset: deref.Offset,
 				Reg:    reg,
 				OpTy:   deref.OffsetOp,

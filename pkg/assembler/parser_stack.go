@@ -37,16 +37,14 @@ func (p *Parser) parsePush() error {
 		}
 		regData := eval.UnpackAsRegisterData()
 		p.currentInst = Instruction{
-			Ty: INST_TPUSHR,
-			Data: InstPushPopData{
+			Data: InstPushR{
 				Reg:    uint64(regData.Reg),
 				DataSz: regData.Size,
 			},
 		}
 	case CONSTEXPR_TILIT:
 		p.currentInst = Instruction{
-			Ty: INST_TPUSHI,
-			Data: InstPushPopData{
+			Data: InstPushI{
 				Imm:    eval.Val,
 				DataSz: dataSz,
 			},
@@ -63,8 +61,7 @@ func (p *Parser) parsePush() error {
 			)
 		}
 		p.currentInst = Instruction{
-			Ty: INST_TPUSHI,
-			Data: InstPushPopData{
+			Data: InstPushI{
 				Imm:    eval.Val,
 				DataSz: dataSz,
 			},
@@ -73,7 +70,7 @@ func (p *Parser) parsePush() error {
 		em, _ := arg.Emit()
 		return errors.FailedToParse(p.currentIdent,
 			arg.Line, arg.Col,
-			"Unsupported operand expression type `%s`", 
+			"Unsupported operand expression type `%s`",
 			em,
 		)
 	}
@@ -87,8 +84,7 @@ func (p *Parser) parsePop() error {
 	// pop BYTE/QUARTER/HALF/WORD case
 	if sz, ok := TokenAsSize(&t); ok {
 		p.currentInst = Instruction{
-			Ty: INST_TPOP,
-			Data: InstPushPopData{
+			Data: InstPop{
 				Imm:    uint64(math.MaxUint64),
 				Reg:    uint64(math.MaxUint64),
 				DataSz: sz,
@@ -111,8 +107,7 @@ func (p *Parser) parsePop() error {
 	}
 	regData := eval.UnpackAsRegisterData()
 	p.currentInst = Instruction{
-		Ty: INST_TPOP,
-		Data: InstPushPopData{
+		Data: InstPop{
 			Reg:    uint64(regData.Reg),
 			DataSz: regData.Size,
 		},

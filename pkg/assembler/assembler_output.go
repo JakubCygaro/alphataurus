@@ -15,16 +15,16 @@ func (a *Assembler) Assemble() ([]byte, error) {
 		inst := a.parser.CurrentInst()
 		a.line = inst.Line
 		a.col = inst.Col
-		switch inst.Ty {
-		case INST_TEXPORT:
-			if err := a.handleExport(inst.Data.(InstImportExportData)); err != nil {
+		switch i := inst.Data.(type) {
+		case InstExport:
+			if err := a.handleExport(i); err != nil {
 				return nil, err
 			}
-		case INST_TIMPORT:
-			if err := a.handleImport(inst.Data.(InstImportExportData)); err != nil {
+		case InstImport:
+			if err := a.handleImport(i); err != nil {
 				return nil, err
 			}
-		case INST_TSECCODE:
+		case InstSecCode:
 			instCount, err := a.EmitBytecode()
 			if err != nil {
 				return nil, err

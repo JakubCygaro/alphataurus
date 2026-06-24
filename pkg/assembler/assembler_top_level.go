@@ -7,7 +7,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
-func (a *Assembler) handleExport(data InstImportExportData) error {
+func (a *Assembler) handleExport(data InstExport) error {
 	if _, ok := a.symbols.ByName[data.Name]; ok {
 		return errors.MultipleSymbolDefinitions(data.Name, a.parser.lexer.line,
 			a.parser.lexer.col)
@@ -23,7 +23,7 @@ func (a *Assembler) handleExport(data InstImportExportData) error {
 	}
 	return nil
 }
-func (a *Assembler) handleImport(data InstImportExportData) error {
+func (a *Assembler) handleImport(data InstImport) error {
 	if _, _, ok := a.symbols.GetByName(data.Name); ok {
 		return errors.MultipleSymbolDefinitions(data.Name, a.parser.lexer.line, a.parser.lexer.col)
 	}
