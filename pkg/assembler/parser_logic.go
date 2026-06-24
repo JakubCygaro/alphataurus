@@ -76,18 +76,18 @@ func (p *Parser) parseLogical(logTy int) error {
 				op2.UnpackAsRegisterData().String(),
 			)
 		}
-		var ty InstTy
+		var ty LogTy
 		switch logTy {
 		case LOG_TOR:
-			ty = INST_TORRR
+			ty = OR
 		case LOG_TAND:
-			ty = INST_TANDRR
+			ty = AND
 		case LOG_TXOR:
-			ty = INST_TXORRR
+			ty = XOR
 		case LOG_TLSH:
-			ty = INST_TLSHRR
+			ty = LSH
 		case LOG_TRSH:
-			ty = INST_TRSHRR
+			ty = RSH
 		}
 		p.currentInst = Instruction{
 			Data: InstLogicalRR{
@@ -97,18 +97,18 @@ func (p *Parser) parseLogical(logTy int) error {
 			},
 		}
 	case CONSTEXPR_TILIT:
-		var ty InstTy
+		var ty LogTy
 		switch logTy {
 		case LOG_TOR:
-			ty = INST_TORIR
+			ty = OR
 		case LOG_TAND:
-			ty = INST_TANDIR
+			ty = AND
 		case LOG_TXOR:
-			ty = INST_TXORIR
+			ty = XOR
 		case LOG_TLSH:
-			ty = INST_TLSHIR
+			ty = LSH
 		case LOG_TRSH:
-			ty = INST_TRSHIR
+			ty = RSH
 		}
 		p.currentInst = Instruction{
 			Data: InstLogicalIR{

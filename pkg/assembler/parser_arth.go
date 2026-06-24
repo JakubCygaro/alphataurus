@@ -85,12 +85,12 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 				op2Line, op2Col,
 				"Disallowed source register `%s`", em)
 		}
-		var ty InstTy
+		var ty ArthTy
 		switch arthTy {
 		case ARTH_TADD:
-			ty = INST_TADDRR
+			ty = ADD
 		case ARTH_TSUB:
-			ty = INST_TSUBRR
+			ty = SUB
 		}
 		p.currentInst = Instruction{
 			Data: InstArthRR{
@@ -101,12 +101,12 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			},
 		}
 	case CONSTEXPR_TILIT:
-		var ty InstTy
+		var ty ArthTy
 		switch arthTy {
 		case ARTH_TADD:
-			ty = INST_TADDIR
+			ty = ADD
 		case ARTH_TSUB:
-			ty = INST_TSUBIR
+			ty = SUB
 		}
 		p.currentInst = Instruction{
 			Data: InstArthIR{
@@ -117,12 +117,12 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			},
 		}
 	case CONSTEXPR_TFLIT:
-		var ty InstTy
+		var ty ArthTy
 		switch arthTy {
 		case ARTH_TADD:
-			ty = INST_TADDIR
+			ty = ADD
 		case ARTH_TSUB:
-			ty = INST_TSUBIR
+			ty = SUB
 		}
 		p.currentInst = Instruction{
 			Data: InstArthIR{
@@ -171,12 +171,12 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 	} else {
 		size = sz
 	}
-	var ty InstTy
+	var ty ArthTy
 	switch arthTy {
 	case ARTH_TDIV:
-		ty = INST_TDIVRR
+		ty = DIV
 	case ARTH_TMUL:
-		ty = INST_TMULRR
+		ty = MUL
 		if valTy == -1 {
 			valTy = ARTH_TUNSIGNED
 		} else if valTy != ARTH_TFLOAT {

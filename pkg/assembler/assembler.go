@@ -10,13 +10,6 @@ import (
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
-type PatchType int
-
-const (
-	PATCH_CALL PatchType = iota
-	PATCH_JMP
-)
-
 type PatchCall void
 type PatchJmp struct {
 	Variant JmpVariant
@@ -24,7 +17,7 @@ type PatchJmp struct {
 
 type unresolvedJump struct {
 	Ident string
-	// what instruction is gonna get patched
+	// what instruction is gonna get patched, type of Patch... struct
 	PatchTy  any
 	Absolute bool
 }
@@ -399,14 +392,14 @@ func (a *Assembler) emitArthRR(data InstArthRR, out *[]byte) error {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	switch data.ArthTy {
-	case INST_TADDRR:
+	case ADD:
 		opCode = a.opCodes.GetBytes(vm.OP_ADDRR)
-	case INST_TSUBRR:
+	case SUB:
 		opCode = a.opCodes.GetBytes(vm.OP_SUBRR)
-	case INST_TDIVRR:
+	case DIV:
 		opCode = a.opCodes.GetBytes(vm.OP_DIVRR)
 		sized = true
-	case INST_TMULRR:
+	case MUL:
 		opCode = a.opCodes.GetBytes(vm.OP_MULRR)
 		sized = true
 	}
@@ -448,15 +441,15 @@ func (a *Assembler) emitLogRR(data InstLogicalRR, out *[]byte) error {
 	}
 	var opCode uint32
 	switch data.LogTy {
-	case INST_TANDRR:
+	case AND:
 		opCode = a.opCodes.GetBytes(vm.OP_ANDRR)
-	case INST_TORRR:
+	case OR:
 		opCode = a.opCodes.GetBytes(vm.OP_ORRR)
-	case INST_TXORRR:
+	case XOR:
 		opCode = a.opCodes.GetBytes(vm.OP_XORRR)
-	case INST_TLSHRR:
+	case LSH:
 		opCode = a.opCodes.GetBytes(vm.OP_LSHRR)
-	case INST_TRSHRR:
+	case RSH:
 		opCode = a.opCodes.GetBytes(vm.OP_RSHRR)
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
@@ -481,15 +474,15 @@ func (a *Assembler) emitLogIR(data InstLogicalIR, out *[]byte) error {
 	}
 	var opCode uint32
 	switch data.LogTy {
-	case INST_TANDIR:
+	case AND:
 		opCode = a.opCodes.GetBytes(vm.OP_ANDIR)
-	case INST_TORIR:
+	case OR:
 		opCode = a.opCodes.GetBytes(vm.OP_ORIR)
-	case INST_TXORIR:
+	case XOR:
 		opCode = a.opCodes.GetBytes(vm.OP_XORIR)
-	case INST_TLSHIR:
+	case LSH:
 		opCode = a.opCodes.GetBytes(vm.OP_LSHIR)
-	case INST_TRSHIR:
+	case RSH:
 		opCode = a.opCodes.GetBytes(vm.OP_RSHIR)
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
@@ -506,9 +499,9 @@ func (a *Assembler) emitArthIR(data InstArthIR, out *[]byte) error {
 	}
 	var opCode uint32
 	switch data.ArthTy {
-	case INST_TADDIR:
+	case ADD:
 		opCode = a.opCodes.GetBytes(vm.OP_ADDIR)
-	case INST_TSUBIR:
+	case SUB:
 		opCode = a.opCodes.GetBytes(vm.OP_SUBIR)
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))

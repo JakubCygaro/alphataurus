@@ -4,6 +4,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
+//go:generate stringer -type=JmpVariant
 type JmpVariant int
 const (
 	JMP JmpVariant = iota
@@ -25,80 +26,24 @@ const (
 	JMPIP1R
 )
 
-//go:generate stringer -type=InstTy
-type InstTy int
-
+//go:generate stringer -type=ArthTy
+type ArthTy int
 const (
-	INST_TMOVRR InstTy = iota
-	INST_TMOVIR
-	INST_TMOVDRI
-	INST_TMOVDRO0
-	INST_TMOVDRO1
-	INST_TMOVDRO2
-	INST_TMOVID
-	INST_TMOVRD
-	INST_TMOVRDO1
-	INST_TMOVIDO1
-	INST_TMOVIDO1_NO
-	INST_TMOVRDO2
-	INST_TMOVIDO2
-	INST_TMOVIDO2_NO
-	INST_TADDRR
-	INST_TSUBRR
-	INST_TDIVRR
-	INST_TMULRR
-	INST_TADDIR
-	INST_TSUBIR
-	INST_TINCR
-	INST_TDECR
-	INST_TNOT
-	INST_TORIR
-	INST_TORRR
-	INST_TANDIR
-	INST_TANDRR
-	INST_TXORIR
-	INST_TXORRR
-	INST_TLSHRR
-	INST_TLSHIR
-	INST_TRSHRR
-	INST_TRSHIR
-	INST_TCMPRR
-	INST_TCMPIR
-	// INST_TJMP
-	// INST_TJMPE
-	// INST_TJMPZ
-	// INST_TJMPNE
-	// INST_TJMPNZ
-	// INST_TJMPG
-	// INST_TJMPGE
-	// INST_TJMPL
-	// INST_TJMPLE
-	// INST_TJMPS
-	// INST_TJMPNS
-	// INST_TJMPC
-	// INST_TJMPNC
-	// INST_TJMPO
-	// INST_TJMPNO
-	// INST_TJMPIP0R
-	// INST_TJMPIP1R
-	INST_TCALLIP0R
-	INST_TCALLIP1R
-	INST_TLABEL
-	INST_TPUSHR
-	INST_TPUSHI
-	INST_TPOP
-	INST_TCLR
-	INST_TNOP
-	INST_TCALL
-	INST_TRET
-	INST_TSECCODE
-	INST_TSECDATA
-	INST_TIMPORT
-	INST_TEXPORT
-	INST_TATTRENTRY
-	INST_TEXITI
-	INST_TEXITR
+	ADD ArthTy = iota
+	SUB
+	DIV
+	MUL
 )
+//go:generate stringer -type=LogTy
+type LogTy int
+const (
+	AND LogTy = iota
+	OR
+	XOR
+	LSH
+	RSH
+)
+
 
 const (
 	ARTH_TUNSIGNED = vm.TY_UINT
@@ -145,26 +90,26 @@ type InstArthRR struct {
 	Src, Dest RegisterData
 	Ty        int
 	DataSize  byte
-	ArthTy    InstTy
+	ArthTy    ArthTy
 }
 type InstArthIR struct {
 	Dest RegisterData
 	Imm       uint64
 	Ty        int
 	DataSize  byte
-	ArthTy    InstTy
+	ArthTy    ArthTy
 }
 type InstNot struct {
 	First RegisterData
 }
 type InstLogicalRR struct {
 	First, Second RegisterData
-	LogTy         InstTy
+	LogTy         LogTy
 }
 type InstLogicalIR struct {
 	First RegisterData
 	Imm           uint64
-	LogTy         InstTy
+	LogTy         LogTy
 }
 type InstCmpRR struct {
 	Ty       int
