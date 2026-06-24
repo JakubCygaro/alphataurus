@@ -4,6 +4,27 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
+type JmpVariant int
+const (
+	JMP JmpVariant = iota
+	JMPE
+	JMPZ
+	JMPNE
+	JMPNZ
+	JMPG
+	JMPGE
+	JMPL
+	JMPLE
+	JMPS
+	JMPNS
+	JMPC
+	JMPNC
+	JMPO
+	JMPNO
+	JMPIP0R
+	JMPIP1R
+)
+
 //go:generate stringer -type=InstTy
 type InstTy int
 
@@ -43,23 +64,23 @@ const (
 	INST_TRSHIR
 	INST_TCMPRR
 	INST_TCMPIR
-	INST_TJMP
-	INST_TJMPE
-	INST_TJMPZ
-	INST_TJMPNE
-	INST_TJMPNZ
-	INST_TJMPG
-	INST_TJMPGE
-	INST_TJMPL
-	INST_TJMPLE
-	INST_TJMPS
-	INST_TJMPNS
-	INST_TJMPC
-	INST_TJMPNC
-	INST_TJMPO
-	INST_TJMPNO
-	INST_TJMPIP0R
-	INST_TJMPIP1R
+	// INST_TJMP
+	// INST_TJMPE
+	// INST_TJMPZ
+	// INST_TJMPNE
+	// INST_TJMPNZ
+	// INST_TJMPG
+	// INST_TJMPGE
+	// INST_TJMPL
+	// INST_TJMPLE
+	// INST_TJMPS
+	// INST_TJMPNS
+	// INST_TJMPC
+	// INST_TJMPNC
+	// INST_TJMPO
+	// INST_TJMPNO
+	// INST_TJMPIP0R
+	// INST_TJMPIP1R
 	INST_TCALLIP0R
 	INST_TCALLIP1R
 	INST_TLABEL
@@ -157,18 +178,18 @@ type InstCmpIR struct {
 type InstJmp struct {
 	Address  any
 	Absolute bool
-	Variant  InstTy
+	Variant  JmpVariant
 }
 type InstJmpIP0R struct {
 	Offset int64
-	JmpTy  InstTy
 	OpTy   int
+	JmpTy  JmpVariant
 }
 type InstJmpIP1R struct {
 	Reg    RegisterData
 	Offset int64
-	JmpTy  InstTy
 	OpTy   int
+	JmpTy  JmpVariant
 }
 type InstCallIP0R struct {
 	Offset int64

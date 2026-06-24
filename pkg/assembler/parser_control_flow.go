@@ -119,7 +119,7 @@ func (p *Parser) parseCmp() error {
 	}
 	return nil
 }
-func (p *Parser) parseJmp(ty InstTy) error {
+func (p *Parser) parseJmp(ty JmpVariant) error {
 	inst := Instruction{}
 	var absolute bool
 	addr := Token{Ty: INVALID}
@@ -195,7 +195,7 @@ func (p *Parser) parseJmp(ty InstTy) error {
 	p.currentInst = inst
 	return nil
 }
-func (p *Parser) parseJmpIP(ty InstTy, expr *Expr) error {
+func (p *Parser) parseJmpIP(ty JmpVariant, expr *Expr) error {
 	derefExpr := expr.Val.(DerefExpr)
 	deref, err := p.processDeref(derefExpr.Inner)
 	if err != nil {

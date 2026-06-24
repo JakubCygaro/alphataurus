@@ -241,22 +241,6 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 				Data: mddata,
 			}
 		}
-		// ty := INST_TMOVRD
-		// if mddata.Src.IsInvalidRegister() {
-		// 	ty = INST_TMOVID
-		// }
-		// if this is an immediate move into a deref we need a size parameter
-		// like mov WORD [bp], 100
-		// if ty == INST_TMOVID && sized == 0xff {
-		// 	return errors.MissingDataSize(inner.Line, inner.Col)
-		// } else if ty != INST_TMOVID && sized != 0xff {
-		// 	s, _ := GetSizeKeyword(sized)
-		// 	return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
-		// }
-		// mddata.DataSize = sized
-		// p.currentInst = Instruction{
-		// 	Data: mddata,
-		// }
 	case DEREF_T1RO:
 		if src.IsInvalidRegister() {
 			mddata := InstMovIDO1{}
@@ -286,25 +270,6 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 				Data: mddata,
 			}
 		}
-		// ty := INST_TMOVRDO1
-		// if mddata.Src.IsInvalidRegister() {
-		// 	ty = INST_TMOVIDO1
-		// }
-		// // like mov WORD [bp+1], 100
-		// if ty == INST_TMOVIDO1 && sized == 0xff {
-		// 	return errors.MissingDataSize(inner.Line, inner.Col)
-		// } else if ty != INST_TMOVIDO1 && sized != 0xff {
-		// 	s, _ := GetSizeKeyword(sized)
-		// 	return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
-		// }
-		// if ty == INST_TMOVIDO1 && mddata.Offset == 0 {
-		// 	ty = INST_TMOVIDO1_NO
-		// }
-		// mddata.DataSize = sized
-		// p.currentInst = Instruction{
-		// 	Ty:   ty,
-		// 	Data: mddata,
-		// }
 	case DEREF_T2RO:
 		if src.IsInvalidRegister() {
 			mddata := InstMovIDO2{}
@@ -336,29 +301,6 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 				Data: mddata,
 			}
 		}
-		// mddata.OReg1 = dData.Reg1
-		// mddata.OReg2 = dData.Reg2
-		// mddata.Offset = dData.Offset
-		// mddata.OpTy = dData.OffsetOp
-		// ty := INST_TMOVRDO2
-		// if mddata.Src.IsInvalidRegister() {
-		// 	ty = INST_TMOVIDO2
-		// }
-		// // like mov WORD [bp+r0+1], 100
-		// if ty == INST_TMOVIDO2 && sized == 0xff {
-		// 	return errors.MissingDataSize(inner.Line, inner.Col)
-		// } else if ty != INST_TMOVIDO2 && sized != 0xff {
-		// 	s, _ := GetSizeKeyword(sized)
-		// 	return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
-		// }
-		// if ty == INST_TMOVIDO2 && mddata.Offset == 0 {
-		// 	ty = INST_TMOVIDO2_NO
-		// }
-		// mddata.DataSize = sized
-		// p.currentInst = Instruction{
-		// 	Ty:   ty,
-		// 	Data: mddata,
-		// }
 	default:
 		em, _ := op2.Emit()
 		return errors.FailedToParse(p.currentIdent,

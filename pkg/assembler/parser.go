@@ -159,35 +159,35 @@ func (p *Parser) parseStartIdent(t Token) error {
 	case "cmp":
 		return p.parseCmp()
 	case "jmp":
-		return p.parseJmp(INST_TJMP)
+		return p.parseJmp(JMP)
 	case "je":
-		return p.parseJmp(INST_TJMPE)
+		return p.parseJmp(JMPE)
 	case "jne":
-		return p.parseJmp(INST_TJMPNE)
+		return p.parseJmp(JMPNE)
 	case "jz":
-		return p.parseJmp(INST_TJMPZ)
+		return p.parseJmp(JMPZ)
 	case "jnz":
-		return p.parseJmp(INST_TJMPNZ)
+		return p.parseJmp(JMPNZ)
 	case "jg":
-		return p.parseJmp(INST_TJMPG)
+		return p.parseJmp(JMPG)
 	case "jge":
-		return p.parseJmp(INST_TJMPGE)
+		return p.parseJmp(JMPGE)
 	case "jl":
-		return p.parseJmp(INST_TJMPL)
+		return p.parseJmp(JMPL)
 	case "jle":
-		return p.parseJmp(INST_TJMPLE)
+		return p.parseJmp(JMPLE)
 	case "js":
-		return p.parseJmp(INST_TJMPS)
+		return p.parseJmp(JMPS)
 	case "jns":
-		return p.parseJmp(INST_TJMPNS)
+		return p.parseJmp(JMPNS)
 	case "jc":
-		return p.parseJmp(INST_TJMPC)
+		return p.parseJmp(JMPC)
 	case "jnc":
-		return p.parseJmp(INST_TJMPNC)
+		return p.parseJmp(JMPNC)
 	case "jo":
-		return p.parseJmp(INST_TJMPO)
+		return p.parseJmp(JMPO)
 	case "jno":
-		return p.parseJmp(INST_TJMPNO)
+		return p.parseJmp(JMPNO)
 	case "push":
 		return p.parsePush()
 	case "pop":

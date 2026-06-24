@@ -10,10 +10,22 @@ import (
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
+type PatchType int
+
+const (
+	PATCH_CALL PatchType = iota
+	PATCH_JMP
+)
+
+type PatchCall void
+type PatchJmp struct {
+	Variant JmpVariant
+}
+
 type unresolvedJump struct {
 	Ident string
 	// what instruction is gonna get patched
-	InstTy   InstTy
+	PatchTy  any
 	Absolute bool
 }
 type unresolvedJumpMap map[int]unresolvedJump
@@ -178,146 +190,6 @@ func (a *Assembler) EmitBytecode() (int, error) {
 			a.lastInst = inst
 			return instCount, err
 		}
-		// switch inst.Ty {
-		// case INST_TMOVIR:
-		// 	err = a.emitMovIR(inst.Data.(InstMovData), &(a.bytecode))
-		// case INST_TMOVRR:
-		// 	err = a.emitMovRR(inst.Data.(InstMovData), &(a.bytecode))
-		// case INST_TMOVDRI:
-		// 	err = a.emitMovDRI(inst.Data.(InstDerefMovData), &(a.bytecode))
-		// case INST_TMOVDRO1:
-		// 	err = a.emitMovDRO1(inst.Data.(InstDerefMovData), &(a.bytecode))
-		// case INST_TMOVDRO2:
-		// 	err = a.emitMovDRO2(inst.Data.(InstDerefMovData), &(a.bytecode))
-		// case INST_TMOVID:
-		// 	err = a.emitMovID(inst.Data.(InstMovDerefData), &(a.bytecode))
-		// case INST_TMOVRD:
-		// 	err = a.emitMovRD(inst.Data.(InstMovDerefData), &(a.bytecode))
-		// case INST_TMOVIDO1_NO:
-		// 	err = a.emitMovIDO1(inst.Ty, inst.Data.(InstMovDerefData), &(a.bytecode))
-		// case INST_TMOVIDO1:
-		// 	err = a.emitMovIDO1(inst.Ty, inst.Data.(InstMovDerefData), &(a.bytecode))
-		// case INST_TMOVRDO1:
-		// 	err = a.emitMovRDO1(inst.Data.(InstMovDerefData), &(a.bytecode))
-		// case INST_TMOVIDO2_NO:
-		// 	err = a.emitMovIDO2(inst.Ty, inst.Data.(InstMovDerefData), &(a.bytecode))
-		// case INST_TMOVIDO2:
-		// 	err = a.emitMovIDO2(inst.Ty, inst.Data.(InstMovDerefData), &(a.bytecode))
-		// case INST_TMOVRDO2:
-		// 	err = a.emitMovRDO2(inst.Data.(InstMovDerefData), &(a.bytecode))
-		// case INST_TADDRR:
-		// 	err = a.emitArthRR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
-		// case INST_TSUBRR:
-		// 	err = a.emitArthRR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
-		// case INST_TMULRR:
-		// 	err = a.emitArthRR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
-		// case INST_TDIVRR:
-		// 	err = a.emitArthRR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
-		// case INST_TADDIR:
-		// 	err = a.emitArthIR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
-		// case INST_TSUBIR:
-		// 	err = a.emitArthIR(inst.Ty, inst.Data.(InstArthData), &(a.bytecode))
-		// case INST_TNOT:
-		// 	err = a.emitNot(inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TANDRR:
-		// 	err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TORRR:
-		// 	err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TXORRR:
-		// 	err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TLSHRR:
-		// 	err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TRSHRR:
-		// 	err = a.emitLogRR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TANDIR:
-		// 	err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TORIR:
-		// 	err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TXORIR:
-		// 	err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TLSHIR:
-		// 	err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TRSHIR:
-		// 	err = a.emitLogIR(inst.Ty, inst.Data.(InstLogicalData), &(a.bytecode))
-		// case INST_TINCR:
-		// 	err = a.emitInc(inst.Data.(InstIncDecData), &(a.bytecode))
-		// case INST_TDECR:
-		// 	err = a.emitDec(inst.Data.(InstIncDecData), &(a.bytecode))
-		// case INST_TCMPRR:
-		// 	err = a.emitCmpRR(inst.Data.(InstCmpData), &(a.bytecode))
-		// case INST_TCMPIR:
-		// 	err = a.emitCmpIR(inst.Data.(InstCmpData), &(a.bytecode))
-		// case INST_TJMP:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPE:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPNE:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPZ:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPNZ:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPG:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPGE:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPL:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPLE:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPS:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPNS:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPC:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPNC:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPO:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPNO:
-		// 	err = a.emitJmp(inst.Ty, inst.Data.(InstJmpData), &(a.bytecode))
-		// case INST_TJMPIP0R:
-		// 	err = a.emitJmpIP(inst.Ty, inst.Data.(InstJmpIPData), &(a.bytecode))
-		// case INST_TJMPIP1R:
-		// 	err = a.emitJmpIP(inst.Ty, inst.Data.(InstJmpIPData), &(a.bytecode))
-		// case INST_TLABEL:
-		// 	err = a.declareLabel(inst.Data.(InstLabData))
-		// 	instCount--
-		// case INST_TPUSHR:
-		// 	err = a.emitPushR(inst.Data.(InstPushPopData), &(a.bytecode))
-		// case INST_TPUSHI:
-		// 	err = a.emitPushI(inst.Data.(InstPushPopData), &(a.bytecode))
-		// case INST_TPOP:
-		// 	err = a.emitPop(inst.Data.(InstPushPopData), &(a.bytecode))
-		// case INST_TNOP:
-		// 	err = a.emitNop(&(a.bytecode))
-		// case INST_TCALL:
-		// 	err = a.emitCall(inst.Data.(InstCallData), &(a.bytecode))
-		// case INST_TCALLIP0R:
-		// 	err = a.emitCallIP(inst.Ty, inst.Data.(InstCallIPData), &(a.bytecode))
-		// case INST_TCALLIP1R:
-		// 	err = a.emitCallIP(inst.Ty, inst.Data.(InstCallIPData), &(a.bytecode))
-		// case INST_TRET:
-		// 	err = a.emitRet(&(a.bytecode))
-		// case INST_TEXITI:
-		// 	err = a.emitExitI(inst.Data.(InstExitData), &(a.bytecode))
-		// case INST_TEXITR:
-		// 	err = a.emitExitR(inst.Data.(InstExitData), &(a.bytecode))
-		// case INST_TATTRENTRY:
-		// 	if a.hasEntry {
-		// 		err = errors.MultipleEntry(inst.Line, inst.Col)
-		// 	} else {
-		// 		a.hasEntry = true
-		// 		_, ent := a.currentCodePos()
-		// 		a.entry = ent
-		// 	}
-		// case INST_TCLR:
-		// 	err = a.emitClr(&(a.bytecode))
-		// default:
-		// 	a.lastInst = inst
-		// 	return instCount, err
-		// }
 		if err != nil {
 			return instCount, err
 		}
@@ -699,38 +571,38 @@ func (a *Assembler) emitCmpIR(data InstCmpIR, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) jmpInstToOpCode(ty InstTy) uint32 {
+func (a *Assembler) jmpInstToOpCode(ty JmpVariant) uint32 {
 	var opcode uint32
 	switch ty {
-	case INST_TJMP:
+	case JMP:
 		opcode = a.opCodes.GetBytes(vm.OP_JMP)
-	case INST_TJMPE:
+	case JMPE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPE)
-	case INST_TJMPNE:
+	case JMPNE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNE)
-	case INST_TJMPZ:
+	case JMPZ:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPZ)
-	case INST_TJMPNZ:
+	case JMPNZ:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNZ)
-	case INST_TJMPG:
+	case JMPG:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPG)
-	case INST_TJMPGE:
+	case JMPGE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPGE)
-	case INST_TJMPL:
+	case JMPL:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPL)
-	case INST_TJMPLE:
+	case JMPLE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPLE)
-	case INST_TJMPS:
+	case JMPS:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPS)
-	case INST_TJMPNS:
+	case JMPNS:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNS)
-	case INST_TJMPC:
+	case JMPC:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPC)
-	case INST_TJMPNC:
+	case JMPNC:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNC)
-	case INST_TJMPO:
+	case JMPO:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPO)
-	case INST_TJMPNO:
+	case JMPNO:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNO)
 	}
 	return opcode
@@ -743,8 +615,10 @@ func (a *Assembler) emitJmp(data InstJmp, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
 	} else {
 		a.unresolvedJumps[position] = unresolvedJump{
-			Ident:    data.Address.(string),
-			InstTy:   data.Variant,
+			Ident: data.Address.(string),
+			PatchTy: PatchJmp{
+				Variant: data.Variant,
+			},
 			Absolute: data.Absolute,
 		}
 		*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes.GetBytes(vm.OP_NOP)))
@@ -753,37 +627,37 @@ func (a *Assembler) emitJmp(data InstJmp, out *[]byte) error {
 	return nil
 }
 
-func (a *Assembler) absoluteJmpToIPJmp(instTy InstTy) (opcode uint32) {
+func (a *Assembler) absoluteJmpToIPJmp(instTy JmpVariant) (opcode uint32) {
 	switch instTy {
-	case INST_TJMP:
+	case JMP:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPIP)
-	case INST_TJMPE:
+	case JMPE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPEIP)
-	case INST_TJMPNE:
+	case JMPNE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNEIP)
-	case INST_TJMPZ:
+	case JMPZ:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPZIP)
-	case INST_TJMPNZ:
+	case JMPNZ:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNZIP)
-	case INST_TJMPG:
+	case JMPG:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPGIP)
-	case INST_TJMPGE:
+	case JMPGE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPGEIP)
-	case INST_TJMPL:
+	case JMPL:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPLIP)
-	case INST_TJMPLE:
+	case JMPLE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPLEIP)
-	case INST_TJMPS:
+	case JMPS:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPSIP)
-	case INST_TJMPNS:
+	case JMPNS:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNSIP)
-	case INST_TJMPC:
+	case JMPC:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPCIP)
-	case INST_TJMPNC:
+	case JMPNC:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNCIP)
-	case INST_TJMPO:
+	case JMPO:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPOIP)
-	case INST_TJMPNO:
+	case JMPNO:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNOIP)
 	}
 	return opcode
@@ -850,13 +724,13 @@ func (a *Assembler) patchCall(pos int, address uint64) error {
 	binary.BigEndian.PutUint64(a.bytecode[pos+decls.OPCODE_SIZE:], uint64(address))
 	return nil
 }
-func (a *Assembler) patchJmp(data unresolvedJump, pos int, address uint64) error {
-	opcode := a.jmpInstToOpCode(data.InstTy)
+func (a *Assembler) patchJmp(data PatchJmp, pos int, address uint64) error {
+	opcode := a.jmpInstToOpCode(data.Variant)
 	binary.BigEndian.PutUint32(a.bytecode[pos:], uint32(opcode))
 	binary.BigEndian.PutUint64(a.bytecode[pos+decls.OPCODE_SIZE:], address)
 	return nil
 }
-func (a *Assembler) patchCallIP(data unresolvedJump, sym *aobj.SymbolData, pos int) error {
+func (a *Assembler) patchCallIP(sym *aobj.SymbolData, pos int) error {
 	opcode := a.opCodes.GetBytes(vm.OP_CALLIP)
 	var reg byte
 	reg = vm.OP_TADD
@@ -870,8 +744,8 @@ func (a *Assembler) patchCallIP(data unresolvedJump, sym *aobj.SymbolData, pos i
 	binary.BigEndian.PutUint64(a.bytecode[pos+decls.OPCODE_SIZE:], uint64(diff))
 	return nil
 }
-func (a *Assembler) patchJmpIP(data unresolvedJump, sym *aobj.SymbolData, pos int) error {
-	opcode := a.absoluteJmpToIPJmp(data.InstTy)
+func (a *Assembler) patchJmpIP(data PatchJmp, sym *aobj.SymbolData, pos int) error {
+	opcode := a.absoluteJmpToIPJmp(data.Variant)
 	var reg byte
 	reg = vm.OP_TADD
 	reg <<= 4
@@ -890,32 +764,56 @@ func (a *Assembler) resolveJumpInsturctions() error {
 		if !ok {
 			return errors.UnresolvedSymbol(unresolved.Ident)
 		}
-		switch {
-		case sym.Vis == aobj.SYM_VPRIVATE || sym.Vis == aobj.SYM_VEXPORT:
+		switch sym.Vis {
+		case aobj.SYM_VPRIVATE:
+			fallthrough
+		case aobj.SYM_VEXPORT:
 			var err error
-			if unresolved.InstTy == INST_TCALL {
-				err = a.patchCallIP(unresolved, sym, codePos)
-			} else if unresolved.Absolute {
-				err = a.patchJmp(unresolved, codePos, sym.Loc)
-				reloc := aobj.RelocData{
-					Loc:       uint64(codePos) + decls.OPCODE_SIZE,
-					Ref:       uint64(symIdx),
-					PatchSize: 8,
+			switch p := unresolved.PatchTy.(type) {
+			case PatchCall:
+				err = a.patchCallIP(sym, codePos)
+			case PatchJmp:
+				if unresolved.Absolute {
+					err = a.patchJmp(p, codePos, sym.Loc)
+					reloc := aobj.RelocData{
+						Loc:       uint64(codePos) + decls.OPCODE_SIZE,
+						Ref:       uint64(symIdx),
+						PatchSize: 8,
+					}
+					a.relocations = append(a.relocations, reloc)
+				} else {
+					err = a.patchJmpIP(p, sym, codePos)
 				}
-				a.relocations = append(a.relocations, reloc)
-			} else {
-				err = a.patchJmpIP(unresolved, sym, codePos)
 			}
+			// if unresolved.PatchTy == PATCH_CALL {
+			// 	err = a.patchCallIP(sym, codePos)
+			// } else if unresolved.Absolute {
+			// 	err = a.patchJmp(unresolved, codePos, sym.Loc)
+			// 	reloc := aobj.RelocData{
+			// 		Loc:       uint64(codePos) + decls.OPCODE_SIZE,
+			// 		Ref:       uint64(symIdx),
+			// 		PatchSize: 8,
+			// 	}
+			// 	a.relocations = append(a.relocations, reloc)
+			// } else {
+			// 	err = a.patchJmpIP(unresolved, sym, codePos)
+			// }
 			if err != nil {
 				return err
 			}
 		default:
 			var err error
-			if unresolved.InstTy == INST_TCALL {
+			switch p := unresolved.PatchTy.(type) {
+			case PatchCall:
 				err = a.patchCall(codePos, 0)
-			} else {
-				err = a.patchJmp(unresolved, codePos, 0)
+			case PatchJmp:
+				err = a.patchJmp(p, codePos, 0)
 			}
+			// if unresolved.PatchTy == PATCH_CALL {
+			// 	err = a.patchCall(codePos, 0)
+			// } else {
+			// 	err = a.patchJmp(unresolved, codePos, 0)
+			// }
 			if err != nil {
 				return err
 			}
@@ -1011,7 +909,10 @@ func (a *Assembler) emitCall(data InstCall, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint64(*out, uint64(data.Addr))
 	} else {
 		position := len(*out)
-		a.unresolvedJumps[position] = unresolvedJump{Ident: data.Ident, InstTy: INST_TCALL}
+		a.unresolvedJumps[position] = unresolvedJump{
+			Ident:   data.Ident,
+			PatchTy: PatchCall{},
+		}
 		*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes.GetBytes(vm.OP_NOP)))
 		*out = binary.BigEndian.AppendUint64(*out, 0)
 	}
