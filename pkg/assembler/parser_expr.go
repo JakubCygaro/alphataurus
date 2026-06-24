@@ -20,7 +20,12 @@ var preBMap = precedenceMap{
 }
 
 func (p *Parser) ParseExpression() (*Expr, error) {
-	return p.parseExpression(0)
+	t, _ := p.lexer.ReadNextTokenReturn()
+	p.lexer.UnreadToken()
+	e, err := p.parseExpression(0)
+	e.Col = t.Col
+	e.Line = t.Line
+	return e, err
 }
 func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 	if err := p.lexer.ReadNextToken(); err != nil {
