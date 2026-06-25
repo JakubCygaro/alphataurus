@@ -1,22 +1,25 @@
 package assembler
 
-import "github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+import (
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+)
 
 func (p *Parser) parseMov() error {
-	var op1 Token
+	var op1 lx.Token
 	var sized byte = 0xff
 	var sizedL, sizedC int
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
 	op1 = p.lexer.CurrentToken()
-	if sz, ok := TokenAsSize(&op1); !ok {
+	if sz, ok := lx.TokenAsSize(&op1); !ok {
 		p.lexer.UnreadToken()
 	} else {
 		sized = sz
 		sizedL = p.lexer.CurrentToken().Line
 		sizedC = p.lexer.CurrentToken().Col
-		op1 = Token{}
+		op1 = lx.Token{}
 	}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
@@ -38,14 +41,14 @@ func (p *Parser) parseMov() error {
 		op1.Val = eval.UnpackAsRegisterData()
 	}
 	if sized != 0xff {
-		s, _ := GetSizeKeyword(sized)
+		s, _ := lx.GetSizeKeyword(sized)
 		return errors.UnnecessarySizeParameter(s, sizedL, sizedC)
 	}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
 	comma := p.lexer.CurrentToken()
-	if comma.Ty != TOKEN_TCOMMA {
+	if comma.Ty != lx.TOKEN_TCOMMA {
 		return errors.FailedToParse(p.currentIdent,
 			comma.Line, comma.Col,
 			"Instruction missing a comma, got `%s`",
@@ -61,7 +64,7 @@ func (p *Parser) parseMov() error {
 		case EXPR_TCONST:
 			op2 = eval.Val.(ConstExpr)
 		case EXPR_TDEREF:
-			return p.parseDerefMov(op1.Val.(RegisterData), eval.Val.(DerefExpr).Inner)
+			return p.parseDerefMov(op1.Val.(lx.RegisterData), eval.Val.(DerefExpr).Inner)
 		default:
 			return errors.FailedToParse(p.currentIdent,
 				expr.Line, expr.Col,
@@ -72,7 +75,7 @@ func (p *Parser) parseMov() error {
 		}
 	}
 
-	destData := op1.Val.(RegisterData)
+	destData := op1.Val.(lx.RegisterData)
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
 		srcData := op2.UnpackAsRegisterData()
@@ -116,7 +119,7 @@ func (p *Parser) parseMov() error {
 
 // move deref to somewhere
 // e.g: mov r0, [bp]
-func (p *Parser) parseDerefMov(reg RegisterData, inner *Expr) error {
+func (p *Parser) parseDerefMov(reg lx.RegisterData, inner *Expr) error {
 	dData, err := p.processDeref(inner)
 	if err != nil {
 		return err
@@ -170,7 +173,7 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 		return err
 	}
 	comma := p.lexer.CurrentToken()
-	if comma.Ty != TOKEN_TCOMMA {
+	if comma.Ty != lx.TOKEN_TCOMMA {
 		return errors.FailedToParse(p.currentIdent,
 			comma.Line, comma.Col,
 			"Instruction missing a comma, got `%s`",
@@ -195,14 +198,14 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 			)
 		}
 	}
-	var src RegisterData
+	var src lx.RegisterData
 	var imm uint64
 	switch op2.Ty {
 	case CONSTEXPR_TREG:
 		src = op2.UnpackAsRegisterData()
 	case CONSTEXPR_TILIT:
 		imm = uint64(op2.Val)
-		src = GetInvalidRegister()
+		src = lx.GetInvalidRegister()
 	//TODO: label support
 	default:
 		em, _ := op2.Emit()
@@ -234,7 +237,7 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 			mddata.Src = src
 			// we dont want a size parameter
 			if sized != 0xff {
-				s, _ := GetSizeKeyword(sized)
+				s, _ := lx.GetSizeKeyword(sized)
 				return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
 			}
 			p.currentInst = Instruction{
@@ -263,7 +266,7 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 			mddata.OpTy = dData.OffsetOp
 			mddata.Src = src
 			if sized != 0xff {
-				s, _ := GetSizeKeyword(sized)
+				s, _ := lx.GetSizeKeyword(sized)
 				return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
 			}
 			p.currentInst = Instruction{
@@ -294,7 +297,7 @@ func (p *Parser) parseMovDeref(inner *Expr, sized byte) error {
 			mddata.OpTy = dData.OffsetOp
 			mddata.Src = src
 			if sized != 0xff {
-				s, _ := GetSizeKeyword(sized)
+				s, _ := lx.GetSizeKeyword(sized)
 				return errors.UnnecessarySizeParameter(s, inner.Line, inner.Col)
 			}
 			p.currentInst = Instruction{

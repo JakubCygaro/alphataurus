@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
-	"github.com/JakubCygaro/alphataurus/pkg/assembler"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -382,7 +382,7 @@ func TestLogIR1(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				a&b,
 				UNSIGNED,
 			),
@@ -397,7 +397,7 @@ func TestLogIR1(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				a|b,
 				UNSIGNED,
 			),
@@ -412,7 +412,7 @@ func TestLogIR1(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				a^b,
 				UNSIGNED,
 			),
@@ -427,7 +427,7 @@ func TestLogIR1(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				a<<b,
 				UNSIGNED,
 			),
@@ -442,7 +442,7 @@ func TestLogIR1(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				a>>b,
 				UNSIGNED,
 			),
@@ -504,7 +504,7 @@ func TestLogIRR(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					a&b,
 					UNSIGNED,
 				),
@@ -519,7 +519,7 @@ func TestLogIRR(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					a|b,
 					UNSIGNED,
 				),
@@ -534,7 +534,7 @@ func TestLogIRR(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					a^b,
 					UNSIGNED,
 				),
@@ -549,7 +549,7 @@ func TestLogIRR(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					a<<b,
 					UNSIGNED,
 				),
@@ -564,7 +564,7 @@ func TestLogIRR(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					a>>b,
 					UNSIGNED,
 				),

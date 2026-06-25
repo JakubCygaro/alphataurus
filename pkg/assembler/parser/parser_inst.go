@@ -2,6 +2,7 @@ package assembler
 
 import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
 //go:generate stringer -type=JmpVariant
@@ -81,43 +82,43 @@ type InstMovRR struct {
 	DataSize  byte
 }
 type InstInc struct {
-	Reg RegisterData
+	Reg lx.RegisterData
 }
 type InstDec struct {
-	Reg RegisterData
+	Reg lx.RegisterData
 }
 type InstArthRR struct {
-	Src, Dest RegisterData
+	Src, Dest lx.RegisterData
 	Ty        int
 	DataSize  byte
 	ArthTy    ArthTy
 }
 type InstArthIR struct {
-	Dest RegisterData
+	Dest lx.RegisterData
 	Imm       uint64
 	Ty        int
 	DataSize  byte
 	ArthTy    ArthTy
 }
 type InstNot struct {
-	First RegisterData
+	First lx.RegisterData
 }
 type InstLogicalRR struct {
-	First, Second RegisterData
+	First, Second lx.RegisterData
 	LogTy         LogTy
 }
 type InstLogicalIR struct {
-	First RegisterData
+	First lx.RegisterData
 	Imm           uint64
 	LogTy         LogTy
 }
 type InstCmpRR struct {
 	Ty       int
-	Sub, Min RegisterData
+	Sub, Min lx.RegisterData
 }
 type InstCmpIR struct {
 	Ty       int
-	Min RegisterData
+	Min lx.RegisterData
 	Imm      uint64
 }
 type InstJmp struct {
@@ -131,7 +132,7 @@ type InstJmpIP0R struct {
 	JmpTy  JmpVariant
 }
 type InstJmpIP1R struct {
-	Reg    RegisterData
+	Reg    lx.RegisterData
 	Offset int64
 	OpTy   int
 	JmpTy  JmpVariant
@@ -141,12 +142,12 @@ type InstCallIP0R struct {
 	OpTy   int
 }
 type InstCallIP1R struct {
-	Reg    RegisterData
+	Reg    lx.RegisterData
 	Offset int64
 	OpTy   int
 }
 type InstCallIPData struct {
-	Reg    RegisterData
+	Reg    lx.RegisterData
 	Offset int64
 	OpTy   int
 }
@@ -172,21 +173,21 @@ type InstPop struct {
 }
 type InstNop struct{}
 type InstMovDRI struct {
-	Dest   RegisterData
+	Dest   lx.RegisterData
 	Offset int64
 	OpTy   int
 }
 type InstMovDRO1 struct {
-	Dest   RegisterData
+	Dest   lx.RegisterData
 	Offset int64
-	OReg1  RegisterData
+	OReg1  lx.RegisterData
 	OpTy   int
 }
 type InstMovDRO2 struct {
-	Dest   RegisterData
+	Dest   lx.RegisterData
 	Offset int64
-	OReg1  RegisterData
-	OReg2  RegisterData
+	OReg1  lx.RegisterData
+	OReg2  lx.RegisterData
 	OpTy   int
 }
 type InstMovID struct {
@@ -196,7 +197,7 @@ type InstMovID struct {
 	OpTy     int
 }
 type InstMovRD struct {
-	Src      RegisterData
+	Src      lx.RegisterData
 	Offset   int64
 	OpTy     int
 }
@@ -204,30 +205,30 @@ type InstMovIDO1 struct {
 	DataSize byte
 	Imm      uint64
 	Offset   int64
-	OReg1    RegisterData
+	OReg1    lx.RegisterData
 	OpTy     int
 	NoOff    bool
 }
 type InstMovRDO1 struct {
-	Src      RegisterData
+	Src      lx.RegisterData
 	Offset   int64
-	OReg1    RegisterData
+	OReg1    lx.RegisterData
 	OpTy     int
 }
 type InstMovIDO2 struct {
 	DataSize byte
 	Imm      uint64
 	Offset   int64
-	OReg1    RegisterData
-	OReg2    RegisterData
+	OReg1    lx.RegisterData
+	OReg2    lx.RegisterData
 	OpTy     int
 	NoOff    bool
 }
 type InstMovRDO2 struct {
-	Src      RegisterData
+	Src      lx.RegisterData
 	Offset   int64
-	OReg1    RegisterData
-	OReg2    RegisterData
+	OReg1    lx.RegisterData
+	OReg2    lx.RegisterData
 	Label    string
 	OpTy     int
 }
@@ -246,11 +247,11 @@ type InstImport struct {
 }
 type InstExitI struct {
 	Val uint64
-	Reg RegisterData
+	Reg lx.RegisterData
 }
 type InstExitR struct {
 	Val uint64
-	Reg RegisterData
+	Reg lx.RegisterData
 }
 type InstEntry struct{}
 type InstClr struct{}

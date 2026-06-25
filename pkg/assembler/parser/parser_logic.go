@@ -3,11 +3,12 @@ package assembler
 import (
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func (p *Parser) parseLogical(logTy int) error {
-	var op1 Token
+	var op1 lx.Token
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else if eval, _ := TryEvaluateExpression(expr); eval.Ty != CONSTEXPR_TREG {
@@ -21,7 +22,7 @@ func (p *Parser) parseLogical(logTy int) error {
 	} else {
 		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
 	}
-	if !vm.IsLogRAllowed(byte(op1.Val.(RegisterData).Reg)) {
+	if !vm.IsLogRAllowed(byte(op1.Val.(lx.RegisterData).Reg)) {
 		return errors.FailedToParse(p.currentIdent,
 			p.currentStartToken.Line, p.currentStartToken.Col,
 			"Disallowed first operand register `%s`",
@@ -32,7 +33,7 @@ func (p *Parser) parseLogical(logTy int) error {
 	if logTy == LOG_TNOT {
 		p.currentInst = Instruction{
 			Data: InstNot{
-				First: op1.Val.(RegisterData),
+				First: op1.Val.(lx.RegisterData),
 			},
 		}
 		return nil
@@ -43,7 +44,7 @@ func (p *Parser) parseLogical(logTy int) error {
 	}
 	comma := p.lexer.CurrentToken()
 
-	if comma.Ty != TOKEN_TCOMMA {
+	if comma.Ty != lx.TOKEN_TCOMMA {
 		return errors.FailedToParse(p.currentIdent,
 			comma.Line, comma.Col,
 			"Instruction missing a comma, got `%s`",
@@ -91,7 +92,7 @@ func (p *Parser) parseLogical(logTy int) error {
 		}
 		p.currentInst = Instruction{
 			Data: InstLogicalRR{
-				First:  op1.Val.(RegisterData),
+				First:  op1.Val.(lx.RegisterData),
 				Second: op2.UnpackAsRegisterData(),
 				LogTy: ty,
 			},
@@ -112,7 +113,7 @@ func (p *Parser) parseLogical(logTy int) error {
 		}
 		p.currentInst = Instruction{
 			Data: InstLogicalIR{
-				First: op1.Val.(RegisterData),
+				First: op1.Val.(lx.RegisterData),
 				Imm:   op2.Val,
 				LogTy: ty,
 			},

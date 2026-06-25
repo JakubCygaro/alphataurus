@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
-	"github.com/JakubCygaro/alphataurus/pkg/assembler"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -141,7 +141,7 @@ func TestMov2F(t *testing.T) {
 	}
 }
 
-type reg assembler.RegisterData
+type reg lx.RegisterData
 
 func makeFromRegistersList() []reg {
 	from := make([]reg, 0)
@@ -232,7 +232,7 @@ func TestAllIRMoves1(t *testing.T) {
 		)
 		lines = append(lines,
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				uint64(val),
 				UNSIGNED,
 			),

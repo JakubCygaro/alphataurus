@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
 const (
@@ -13,10 +14,10 @@ const (
 	EXPR_TDEREF
 )
 const (
-	ARTHEXPR_TADD = TOKEN_TPLUS
-	ARTHEXPR_TSUB = TOKEN_TMINUS
-	ARTHEXPR_TMUL = TOKEN_TASTERISK
-	ARTHEXPR_TDIV = TOKEN_TSLASH
+	ARTHEXPR_TADD = lx.TOKEN_TPLUS
+	ARTHEXPR_TSUB = lx.TOKEN_TMINUS
+	ARTHEXPR_TMUL = lx.TOKEN_TASTERISK
+	ARTHEXPR_TDIV = lx.TOKEN_TSLASH
 )
 const (
 	INVALID = -1
@@ -183,11 +184,11 @@ func (e *ConstExpr) AsFloat() float64 {
 // CONSTEXPR_TREG stores its register data in the bits of the uint64 Val field
 //
 // As such it needs to be extracted to be usable
-func (c ConstExpr) UnpackAsRegisterData() RegisterData {
+func (c ConstExpr) UnpackAsRegisterData() lx.RegisterData {
 	return UnpackRegisterData(c.Val)
 }
-func UnpackRegisterData(packed uint64) RegisterData {
-	return RegisterData{
+func UnpackRegisterData(packed uint64) lx.RegisterData {
+	return lx.RegisterData{
 		Reg:  int(byte(packed)),
 		Size: byte(packed >> 8),
 	}

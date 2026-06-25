@@ -178,6 +178,10 @@ type Lexer struct {
 	reader       *bufio.Reader
 }
 
+func (l *Lexer) GetPos() (line, col int) {
+	return l.line, l.col
+}
+
 func nilToken() Token {
 	return Token{
 		Ty: TOKEN_TNIL,

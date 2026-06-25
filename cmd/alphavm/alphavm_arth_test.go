@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
-	"github.com/JakubCygaro/alphataurus/pkg/assembler"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -545,7 +545,7 @@ func TestArthIR1(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				a+b,
 				UNSIGNED,
 			),
@@ -560,7 +560,7 @@ func TestArthIR1(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				a-b,
 				UNSIGNED,
 			),
@@ -612,7 +612,7 @@ func TestArthIR2(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				a+b,
 				SIGNED,
 			),
@@ -627,7 +627,7 @@ func TestArthIR2(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				a-b,
 				SIGNED,
 			),
@@ -683,7 +683,7 @@ func TestArthIR3(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				math.Float64frombits(a)+math.Float64frombits(b),
 				FLOAT,
 			),
@@ -698,7 +698,7 @@ func TestArthIR3(t *testing.T) {
 				b,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				math.Float64frombits(a)-math.Float64frombits(b),
 				FLOAT,
 			),
@@ -757,7 +757,7 @@ func TestArthRR1(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					a+b,
 					UNSIGNED,
 				),
@@ -772,7 +772,7 @@ func TestArthRR1(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					a-b,
 					UNSIGNED,
 				),
@@ -832,7 +832,7 @@ func TestArthRR2(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					a+b,
 					SIGNED,
 				),
@@ -847,7 +847,7 @@ func TestArthRR2(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					a-b,
 					SIGNED,
 				),
@@ -913,7 +913,7 @@ func TestArthRR3(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					math.Float64frombits(a)+math.Float64frombits(b),
 					FLOAT,
 				),
@@ -928,7 +928,7 @@ func TestArthRR3(t *testing.T) {
 					tc.RegStr(byte(br.Reg), br.Size),
 				),
 				macroAssertEqRI(
-					assembler.RegisterData(ar),
+					lx.RegisterData(ar),
 					math.Float64frombits(a)-math.Float64frombits(b),
 					FLOAT,
 				),

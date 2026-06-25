@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
-	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
@@ -393,8 +393,8 @@ func TestCmpRR1(t *testing.T) {
 					b,
 				),
 				macroAssertUGenericRR(
-					assembler.RegisterData(ir),
-					assembler.RegisterData(fr),
+					lx.RegisterData(ir),
+					lx.RegisterData(fr),
 					getComparison(a, b),
 				),
 			)
@@ -441,7 +441,7 @@ func TestCmpIR1(t *testing.T) {
 				a,
 			),
 			macroAssertUGenericIR(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				b,
 				getComparison(a, b),
 			),

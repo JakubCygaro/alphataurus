@@ -8,11 +8,13 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	decls "github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 )
+type void struct{}
 
 type PatchCall void
 type PatchJmp struct {
-	Variant JmpVariant
+	Variant pr.JmpVariant
 }
 
 type unresolvedJump struct {
@@ -29,13 +31,13 @@ type AssemblerWarningData struct {
 }
 
 type Assembler struct {
-	parser          *Parser
+	parser          *pr.Parser
 	opCodes         vm.OpCodeMap
 	unresolvedJumps unresolvedJumpMap
 	//relating to the current instruction
 	line, col int
 	// labels          labelMap
-	lastInst    Instruction
+	lastInst    pr.Instruction
 	bytecode    []byte
 	instCount   int
 	symbols     aobj.SymbolTable
@@ -70,7 +72,7 @@ func (a *Assembler) clearState() {
 }
 func NewAssembler(reader *bufio.Reader) *Assembler {
 	a := aInitialState()
-	a.parser = NewParser(reader)
+	a.parser = pr.NewParser(reader)
 	a.parser.WarningSink = a.parserWarningHandler
 	return &a
 }
@@ -100,76 +102,76 @@ func (a *Assembler) EmitBytecode() (int, error) {
 		inst := a.parser.CurrentInst()
 		a.col, a.line = inst.Col, inst.Line
 		switch i := inst.Data.(type) {
-		case InstMovIR:
+		case pr.InstMovIR:
 			err = a.emitMovIR(i, &(a.bytecode))
-		case InstMovRR:
+		case pr.InstMovRR:
 			err = a.emitMovRR(i, &(a.bytecode))
-		case InstMovDRI:
+		case pr.InstMovDRI:
 			err = a.emitMovDRI(i, &(a.bytecode))
-		case InstMovDRO1:
+		case pr.InstMovDRO1:
 			err = a.emitMovDRO1(i, &(a.bytecode))
-		case InstMovDRO2:
+		case pr.InstMovDRO2:
 			err = a.emitMovDRO2(i, &(a.bytecode))
-		case InstMovID:
+		case pr.InstMovID:
 			err = a.emitMovID(i, &(a.bytecode))
-		case InstMovRD:
+		case pr.InstMovRD:
 			err = a.emitMovRD(i, &(a.bytecode))
-		case InstMovIDO1:
+		case pr.InstMovIDO1:
 			err = a.emitMovIDO1(i, &(a.bytecode))
-		case InstMovRDO1:
+		case pr.InstMovRDO1:
 			err = a.emitMovRDO1(i, &(a.bytecode))
-		case InstMovIDO2:
+		case pr.InstMovIDO2:
 			err = a.emitMovIDO2(i, &(a.bytecode))
-		case InstMovRDO2:
+		case pr.InstMovRDO2:
 			err = a.emitMovRDO2(i, &(a.bytecode))
-		case InstArthRR:
+		case pr.InstArthRR:
 			err = a.emitArthRR(i, &(a.bytecode))
-		case InstArthIR:
+		case pr.InstArthIR:
 			err = a.emitArthIR(i, &(a.bytecode))
-		case InstNot:
+		case pr.InstNot:
 			err = a.emitNot(i, &(a.bytecode))
-		case InstLogicalRR:
+		case pr.InstLogicalRR:
 			err = a.emitLogRR(i, &(a.bytecode))
-		case InstLogicalIR:
+		case pr.InstLogicalIR:
 			err = a.emitLogIR(i, &(a.bytecode))
-		case InstInc:
+		case pr.InstInc:
 			err = a.emitInc(i, &(a.bytecode))
-		case InstDec:
+		case pr.InstDec:
 			err = a.emitDec(i, &(a.bytecode))
-		case InstCmpRR:
+		case pr.InstCmpRR:
 			err = a.emitCmpRR(i, &(a.bytecode))
-		case InstCmpIR:
+		case pr.InstCmpIR:
 			err = a.emitCmpIR(i, &(a.bytecode))
-		case InstJmp:
+		case pr.InstJmp:
 			err = a.emitJmp(i, &(a.bytecode))
-		case InstJmpIP0R:
+		case pr.InstJmpIP0R:
 			err = a.emitJmpIP0R(i, &(a.bytecode))
-		case InstJmpIP1R:
+		case pr.InstJmpIP1R:
 			err = a.emitJmpIP1R(i, &(a.bytecode))
-		case InstLab:
+		case pr.InstLab:
 			err = a.declareLabel(i)
 			instCount--
-		case InstPushR:
+		case pr.InstPushR:
 			err = a.emitPushR(i, &(a.bytecode))
-		case InstPushI:
+		case pr.InstPushI:
 			err = a.emitPushI(i, &(a.bytecode))
-		case InstPop:
+		case pr.InstPop:
 			err = a.emitPop(i, &(a.bytecode))
-		case InstNop:
+		case pr.InstNop:
 			err = a.emitNop(&(a.bytecode))
-		case InstCall:
+		case pr.InstCall:
 			err = a.emitCall(i, &(a.bytecode))
-		case InstCallIP0R:
+		case pr.InstCallIP0R:
 			err = a.emitCallIP0R(i, &(a.bytecode))
-		case InstCallIP1R:
+		case pr.InstCallIP1R:
 			err = a.emitCallIP1R(i, &(a.bytecode))
-		case InstRet:
+		case pr.InstRet:
 			err = a.emitRet(&(a.bytecode))
-		case InstExitI:
+		case pr.InstExitI:
 			err = a.emitExitI(i, &(a.bytecode))
-		case InstExitR:
+		case pr.InstExitR:
 			err = a.emitExitR(i, &(a.bytecode))
-		case InstEntry:
+		case pr.InstEntry:
 			if a.hasEntry {
 				err = errors.MultipleEntry(inst.Line, inst.Col)
 			} else {
@@ -177,7 +179,7 @@ func (a *Assembler) EmitBytecode() (int, error) {
 				_, ent := a.currentCodePos()
 				a.entry = ent
 			}
-		case InstClr:
+		case pr.InstClr:
 			err = a.emitClr(&(a.bytecode))
 		default:
 			a.lastInst = inst
@@ -191,7 +193,7 @@ func (a *Assembler) EmitBytecode() (int, error) {
 	return instCount, err
 }
 
-func (a *Assembler) emitMovIR(data InstMovIR, out *[]byte) error {
+func (a *Assembler) emitMovIR(data pr.InstMovIR, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVIR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	lastByte :=
@@ -203,7 +205,7 @@ func (a *Assembler) emitMovIR(data InstMovIR, out *[]byte) error {
 	return nil
 }
 
-func (a *Assembler) emitMovRR(data InstMovRR, out *[]byte) error {
+func (a *Assembler) emitMovRR(data pr.InstMovRR, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	if !vm.IsMovIntoRAllowed(byte(data.Dest)) {
@@ -221,7 +223,7 @@ func (a *Assembler) emitMovRR(data InstMovRR, out *[]byte) error {
 	return nil
 }
 
-func (a *Assembler) emitMovDRI(data InstMovDRI, out *[]byte) error {
+func (a *Assembler) emitMovDRI(data pr.InstMovDRI, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRI)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
@@ -233,7 +235,7 @@ func (a *Assembler) emitMovDRI(data InstMovDRI, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitMovDRO1(data InstMovDRO1, out *[]byte) error {
+func (a *Assembler) emitMovDRO1(data pr.InstMovDRO1, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRO1)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
@@ -249,7 +251,7 @@ func (a *Assembler) emitMovDRO1(data InstMovDRO1, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitMovDRO2(data InstMovDRO2, out *[]byte) error {
+func (a *Assembler) emitMovDRO2(data pr.InstMovDRO2, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRO2)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
@@ -268,7 +270,7 @@ func (a *Assembler) emitMovDRO2(data InstMovDRO2, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, param)
 	return nil
 }
-func (a *Assembler) emitMovID(data InstMovID, out *[]byte) error {
+func (a *Assembler) emitMovID(data pr.InstMovID, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVID)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	lastByte := 0b0000_0011 & data.DataSize
@@ -277,7 +279,7 @@ func (a *Assembler) emitMovID(data InstMovID, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint32(*out, uint32(data.Imm))
 	return nil
 }
-func (a *Assembler) emitMovRD(data InstMovRD, out *[]byte) error {
+func (a *Assembler) emitMovRD(data pr.InstMovRD, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRD)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
@@ -289,7 +291,7 @@ func (a *Assembler) emitMovRD(data InstMovRD, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitMovIDO1(data InstMovIDO1, out *[]byte) error {
+func (a *Assembler) emitMovIDO1(data pr.InstMovIDO1, out *[]byte) error {
 	lastByte := byte(0)
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
 	penultByte := (0b0000_0011 & byte(data.DataSize)) << 4
@@ -311,7 +313,7 @@ func (a *Assembler) emitMovIDO1(data InstMovIDO1, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, param)
 	return nil
 }
-func (a *Assembler) emitMovRDO1(data InstMovRDO1, out *[]byte) error {
+func (a *Assembler) emitMovRDO1(data pr.InstMovRDO1, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRDO1)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
@@ -327,11 +329,11 @@ func (a *Assembler) emitMovRDO1(data InstMovRDO1, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitMovIDO2(data InstMovIDO2, out *[]byte) error {
+func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, out *[]byte) error {
 	if data.OReg1.Size != data.OReg2.Size {
 		return errors.MismatchedRegisterSizes(
-			a.parser.currentInst.Line,
-			a.parser.currentInst.Col,
+			a.parser.CurrentInst().Line,
+			a.parser.CurrentInst().Col,
 		)
 	}
 	byte4 := (0b0000_1111 & byte(0)) << 4
@@ -357,12 +359,12 @@ func (a *Assembler) emitMovIDO2(data InstMovIDO2, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, param)
 	return nil
 }
-func (a *Assembler) emitMovRDO2(data InstMovRDO2, out *[]byte) error {
+func (a *Assembler) emitMovRDO2(data pr.InstMovRDO2, out *[]byte) error {
 	if data.OReg1.Size != data.OReg2.Size ||
 		data.Src.Size < data.OReg1.Size {
 		return errors.MismatchedRegisterSizes(
-			a.parser.currentInst.Line,
-			a.parser.currentInst.Col,
+			a.parser.CurrentInst().Line,
+			a.parser.CurrentInst().Col,
 		)
 	}
 	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
@@ -382,7 +384,7 @@ func (a *Assembler) emitMovRDO2(data InstMovRDO2, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitArthRR(data InstArthRR, out *[]byte) error {
+func (a *Assembler) emitArthRR(data pr.InstArthRR, out *[]byte) error {
 	var opCode uint32
 	sized := false
 	if !vm.IsArthRAllowed(byte(data.Src.Reg)) {
@@ -392,14 +394,14 @@ func (a *Assembler) emitArthRR(data InstArthRR, out *[]byte) error {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	switch data.ArthTy {
-	case ADD:
+	case pr.ADD:
 		opCode = a.opCodes.GetBytes(vm.OP_ADDRR)
-	case SUB:
+	case pr.SUB:
 		opCode = a.opCodes.GetBytes(vm.OP_SUBRR)
-	case DIV:
+	case pr.DIV:
 		opCode = a.opCodes.GetBytes(vm.OP_DIVRR)
 		sized = true
-	case MUL:
+	case pr.MUL:
 		opCode = a.opCodes.GetBytes(vm.OP_MULRR)
 		sized = true
 	}
@@ -426,11 +428,11 @@ func (a *Assembler) emitArthRR(data InstArthRR, out *[]byte) error {
 	*out = append(*out, param[:]...)
 	return nil
 }
-func (a *Assembler) emitLogRR(data InstLogicalRR, out *[]byte) error {
+func (a *Assembler) emitLogRR(data pr.InstLogicalRR, out *[]byte) error {
 	if data.First.Size != data.Second.Size {
 		return errors.MismatchedRegisterSizes(
-			a.parser.currentInst.Line,
-			a.parser.currentInst.Col,
+			a.parser.CurrentInst().Line,
+			a.parser.CurrentInst().Col,
 		)
 	}
 	if !vm.IsArthRAllowed(byte(data.First.Reg)) {
@@ -441,15 +443,15 @@ func (a *Assembler) emitLogRR(data InstLogicalRR, out *[]byte) error {
 	}
 	var opCode uint32
 	switch data.LogTy {
-	case AND:
+	case pr.AND:
 		opCode = a.opCodes.GetBytes(vm.OP_ANDRR)
-	case OR:
+	case pr.OR:
 		opCode = a.opCodes.GetBytes(vm.OP_ORRR)
-	case XOR:
+	case pr.XOR:
 		opCode = a.opCodes.GetBytes(vm.OP_XORRR)
-	case LSH:
+	case pr.LSH:
 		opCode = a.opCodes.GetBytes(vm.OP_LSHRR)
-	case RSH:
+	case pr.RSH:
 		opCode = a.opCodes.GetBytes(vm.OP_RSHRR)
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
@@ -468,21 +470,21 @@ func (a *Assembler) emitLogRR(data InstLogicalRR, out *[]byte) error {
 	*out = append(*out, param[:]...)
 	return nil
 }
-func (a *Assembler) emitLogIR(data InstLogicalIR, out *[]byte) error {
+func (a *Assembler) emitLogIR(data pr.InstLogicalIR, out *[]byte) error {
 	if !vm.IsArthRAllowed(byte(data.First.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	var opCode uint32
 	switch data.LogTy {
-	case AND:
+	case pr.AND:
 		opCode = a.opCodes.GetBytes(vm.OP_ANDIR)
-	case OR:
+	case pr.OR:
 		opCode = a.opCodes.GetBytes(vm.OP_ORIR)
-	case XOR:
+	case pr.XOR:
 		opCode = a.opCodes.GetBytes(vm.OP_XORIR)
-	case LSH:
+	case pr.LSH:
 		opCode = a.opCodes.GetBytes(vm.OP_LSHIR)
-	case RSH:
+	case pr.RSH:
 		opCode = a.opCodes.GetBytes(vm.OP_RSHIR)
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
@@ -493,15 +495,15 @@ func (a *Assembler) emitLogIR(data InstLogicalIR, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitArthIR(data InstArthIR, out *[]byte) error {
+func (a *Assembler) emitArthIR(data pr.InstArthIR, out *[]byte) error {
 	if !vm.IsArthRAllowed(byte(data.Dest.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
 	var opCode uint32
 	switch data.ArthTy {
-	case ADD:
+	case pr.ADD:
 		opCode = a.opCodes.GetBytes(vm.OP_ADDIR)
-	case SUB:
+	case pr.SUB:
 		opCode = a.opCodes.GetBytes(vm.OP_SUBIR)
 	}
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
@@ -513,7 +515,7 @@ func (a *Assembler) emitArthIR(data InstArthIR, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitNot(data InstNot, out *[]byte) error {
+func (a *Assembler) emitNot(data pr.InstNot, out *[]byte) error {
 	opCode := a.opCodes.GetBytes(vm.OP_NOT)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(opCode))
 	param := [8]byte{
@@ -524,7 +526,7 @@ func (a *Assembler) emitNot(data InstNot, out *[]byte) error {
 	*out = append(*out, param[:]...)
 	return nil
 }
-func (a *Assembler) emitInc(data InstInc, out *[]byte) error {
+func (a *Assembler) emitInc(data pr.InstInc, out *[]byte) error {
 	if !vm.IsArthRAllowed(byte(data.Reg.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
@@ -533,7 +535,7 @@ func (a *Assembler) emitInc(data InstInc, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg.Reg))
 	return nil
 }
-func (a *Assembler) emitDec(data InstDec, out *[]byte) error {
+func (a *Assembler) emitDec(data pr.InstDec, out *[]byte) error {
 	if !vm.IsArthRAllowed(byte(data.Reg.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
@@ -542,7 +544,7 @@ func (a *Assembler) emitDec(data InstDec, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg.Reg))
 	return nil
 }
-func (a *Assembler) emitCmpRR(data InstCmpRR, out *[]byte) error {
+func (a *Assembler) emitCmpRR(data pr.InstCmpRR, out *[]byte) error {
 	cmp := a.opCodes.GetBytes(vm.OP_CMPRR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
 	regs := (0b0000_1111 & byte(data.Sub.Reg)) << 4
@@ -552,7 +554,7 @@ func (a *Assembler) emitCmpRR(data InstCmpRR, out *[]byte) error {
 	*out = append(*out, byte(data.Ty), byte(data.Min.Size), 0, 0, 0, 0, 0, 0)
 	return nil
 }
-func (a *Assembler) emitCmpIR(data InstCmpIR, out *[]byte) error {
+func (a *Assembler) emitCmpIR(data pr.InstCmpIR, out *[]byte) error {
 	cmp := a.opCodes.GetBytes(vm.OP_CMPIR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(cmp))
 	// subtrahend |= (lastByte & 0xf0) >> 4
@@ -564,43 +566,43 @@ func (a *Assembler) emitCmpIR(data InstCmpIR, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) jmpInstToOpCode(ty JmpVariant) uint32 {
+func (a *Assembler) jmpInstToOpCode(ty pr.JmpVariant) uint32 {
 	var opcode uint32
 	switch ty {
-	case JMP:
+	case pr.JMP:
 		opcode = a.opCodes.GetBytes(vm.OP_JMP)
-	case JMPE:
+	case pr.JMPE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPE)
-	case JMPNE:
+	case pr.JMPNE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNE)
-	case JMPZ:
+	case pr.JMPZ:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPZ)
-	case JMPNZ:
+	case pr.JMPNZ:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNZ)
-	case JMPG:
+	case pr.JMPG:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPG)
-	case JMPGE:
+	case pr.JMPGE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPGE)
-	case JMPL:
+	case pr.JMPL:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPL)
-	case JMPLE:
+	case pr.JMPLE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPLE)
-	case JMPS:
+	case pr.JMPS:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPS)
-	case JMPNS:
+	case pr.JMPNS:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNS)
-	case JMPC:
+	case pr.JMPC:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPC)
-	case JMPNC:
+	case pr.JMPNC:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNC)
-	case JMPO:
+	case pr.JMPO:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPO)
-	case JMPNO:
+	case pr.JMPNO:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNO)
 	}
 	return opcode
 }
-func (a *Assembler) emitJmp(data InstJmp, out *[]byte) error {
+func (a *Assembler) emitJmp(data pr.InstJmp, out *[]byte) error {
 	opcode := a.jmpInstToOpCode(data.Variant)
 	position := len(*out)
 	if addr, ok := data.Address.(uint64); ok {
@@ -620,43 +622,43 @@ func (a *Assembler) emitJmp(data InstJmp, out *[]byte) error {
 	return nil
 }
 
-func (a *Assembler) absoluteJmpToIPJmp(instTy JmpVariant) (opcode uint32) {
+func (a *Assembler) absoluteJmpToIPJmp(instTy pr.JmpVariant) (opcode uint32) {
 	switch instTy {
-	case JMP:
+	case pr.JMP:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPIP)
-	case JMPE:
+	case pr.JMPE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPEIP)
-	case JMPNE:
+	case pr.JMPNE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNEIP)
-	case JMPZ:
+	case pr.JMPZ:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPZIP)
-	case JMPNZ:
+	case pr.JMPNZ:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNZIP)
-	case JMPG:
+	case pr.JMPG:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPGIP)
-	case JMPGE:
+	case pr.JMPGE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPGEIP)
-	case JMPL:
+	case pr.JMPL:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPLIP)
-	case JMPLE:
+	case pr.JMPLE:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPLEIP)
-	case JMPS:
+	case pr.JMPS:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPSIP)
-	case JMPNS:
+	case pr.JMPNS:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNSIP)
-	case JMPC:
+	case pr.JMPC:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPCIP)
-	case JMPNC:
+	case pr.JMPNC:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNCIP)
-	case JMPO:
+	case pr.JMPO:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPOIP)
-	case JMPNO:
+	case pr.JMPNO:
 		opcode = a.opCodes.GetBytes(vm.OP_JMPNOIP)
 	}
 	return opcode
 }
 
-func (a *Assembler) emitJmpIP0R(data InstJmpIP0R, out *[]byte) error {
+func (a *Assembler) emitJmpIP0R(data pr.InstJmpIP0R, out *[]byte) error {
 	opcode := a.absoluteJmpToIPJmp(data.JmpTy)
 	var reg byte
 	reg = byte(data.OpTy)
@@ -668,7 +670,7 @@ func (a *Assembler) emitJmpIP0R(data InstJmpIP0R, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitJmpIP1R(data InstJmpIP1R, out *[]byte) error {
+func (a *Assembler) emitJmpIP1R(data pr.InstJmpIP1R, out *[]byte) error {
 	opcode := a.absoluteJmpToIPJmp(data.JmpTy)
 	var reg byte
 	reg = byte(data.OpTy)
@@ -681,7 +683,7 @@ func (a *Assembler) emitJmpIP1R(data InstJmpIP1R, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) declareLabel(data InstLab) error {
+func (a *Assembler) declareLabel(data pr.InstLab) error {
 	// this needs to be the address of the function in the virtual address space
 	_, posAsInstAddr := a.currentCodePos()
 	posAsInstAddr -= decls.INSTRUCTION_SIZE
@@ -836,21 +838,21 @@ func (a *Assembler) resolveSymbols() error {
 	}
 	return nil
 }
-func (a *Assembler) emitPushR(data InstPushR, out *[]byte) error {
+func (a *Assembler) emitPushR(data pr.InstPushR, out *[]byte) error {
 	push := a.opCodes.GetBytes(vm.OP_PUSHR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(push))
 	(*out)[len(*out)-4] = 0b0000_0011 & data.DataSz
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
 	return nil
 }
-func (a *Assembler) emitPushI(data InstPushI, out *[]byte) error {
+func (a *Assembler) emitPushI(data pr.InstPushI, out *[]byte) error {
 	push := a.opCodes.GetBytes(vm.OP_PUSHI)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(push))
 	(*out)[len(*out)-4] = 0b0000_0011 & data.DataSz
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitPop(data InstPop, out *[]byte) error {
+func (a *Assembler) emitPop(data pr.InstPop, out *[]byte) error {
 	pop := a.opCodes.GetBytes(vm.OP_POP)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(pop))
 	(*out)[len(*out)-4] = 0b0000_0011 & data.DataSz
@@ -869,7 +871,7 @@ func (a *Assembler) emitClr(out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	return nil
 }
-func (a *Assembler) emitCallIP0R(data InstCallIP0R, out *[]byte) error {
+func (a *Assembler) emitCallIP0R(data pr.InstCallIP0R, out *[]byte) error {
 	call := a.opCodes.GetBytes(vm.OP_CALLIP)
 	var reg byte
 	reg = byte(data.OpTy)
@@ -880,7 +882,7 @@ func (a *Assembler) emitCallIP0R(data InstCallIP0R, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitCallIP1R(data InstCallIP1R, out *[]byte) error {
+func (a *Assembler) emitCallIP1R(data pr.InstCallIP1R, out *[]byte) error {
 	call := a.opCodes.GetBytes(vm.OP_CALLIP)
 	var reg byte
 	reg = byte(data.OpTy)
@@ -894,7 +896,7 @@ func (a *Assembler) emitCallIP1R(data InstCallIP1R, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitCall(data InstCall, out *[]byte) error {
+func (a *Assembler) emitCall(data pr.InstCall, out *[]byte) error {
 	call := a.opCodes.GetBytes(vm.OP_CALL)
 	//direct call case
 	if data.Addr != 0 {
@@ -918,13 +920,13 @@ func (a *Assembler) emitRet(out *[]byte) error {
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	return nil
 }
-func (a *Assembler) emitExitI(data InstExitI, out *[]byte) error {
+func (a *Assembler) emitExitI(data pr.InstExitI, out *[]byte) error {
 	exit := a.opCodes.GetBytes(vm.OP_EXITI)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(exit))
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Val))
 	return nil
 }
-func (a *Assembler) emitExitR(data InstExitR, out *[]byte) error {
+func (a *Assembler) emitExitR(data pr.InstExitR, out *[]byte) error {
 	exit := a.opCodes.GetBytes(vm.OP_EXITR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(exit))
 	param := [8]byte{

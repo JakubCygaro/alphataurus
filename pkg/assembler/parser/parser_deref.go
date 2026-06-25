@@ -2,6 +2,7 @@ package assembler
 
 import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -13,7 +14,7 @@ const (
 
 type DerefData struct {
 	Ty         int
-	Reg1, Reg2 RegisterData
+	Reg1, Reg2 lx.RegisterData
 	// plus or minus
 	OffsetOp int
 	Offset   int64
@@ -23,8 +24,8 @@ type DerefData struct {
 
 func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefData, error) {
 	ret := DerefData{
-		Reg1:       GetInvalidRegister(),
-		Reg2:       GetInvalidRegister(),
+		Reg1:       lx.GetInvalidRegister(),
+		Reg2:       lx.GetInvalidRegister(),
 		OffsetOp:   INVALID,
 		Offset:     INVALID,
 		OffsetExpr: nil,
@@ -152,8 +153,8 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 
 func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 	ret := DerefData{
-		Reg1:       GetInvalidRegister(),
-		Reg2:       GetInvalidRegister(),
+		Reg1:       lx.GetInvalidRegister(),
+		Reg2:       lx.GetInvalidRegister(),
 		OffsetOp:   INVALID,
 		Offset:     INVALID,
 		OffsetExpr: nil,

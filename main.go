@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	vm "github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -111,9 +112,9 @@ func main() {
 	fmt.Printf("%+v\n", mach.GetFlags())
 	fmt.Printf("stack:\n%+v\n", mach.GetStack())
 	const in = "(-3 + 8)"
-	p := assembler.NewParser(bufio.NewReader(strings.NewReader(in)))
+	p := pr.NewParser(bufio.NewReader(strings.NewReader(in)))
 	expr, _ := p.ParseExpression()
-	expr, _ = assembler.TryEvaluatePruneExpression(expr)
+	expr, _ = pr.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
 	fmt.Println((((6594007686923535256 / (6948242974143 - 1987936890282)) / 3106268) / 1758))
 	os.Exit(int(mach.GetExitCode()))

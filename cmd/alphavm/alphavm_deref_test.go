@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
-	"github.com/JakubCygaro/alphataurus/pkg/assembler"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 )
@@ -249,7 +249,7 @@ func TestDeref7(t *testing.T) {
 				stackBase+i+7,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData{Reg: int(r), Size: vm.SZ_64},
+				lx.RegisterData{Reg: int(r), Size: vm.SZ_64},
 				v,
 				UNSIGNED,
 			),
@@ -335,7 +335,7 @@ func TestMovDRI1(t *testing.T) {
 		case vm.SZ_64:
 			val = uint64(rand.Int63())
 		}
-		sz, _ := assembler.GetSizeKeyword(ir.Size)
+		sz, _ := lx.GetSizeKeyword(ir.Size)
 		// bytes := vm.DataSizeToByteCount(ir.Size)
 		lines = append(lines,
 			fmt.Sprintf(
@@ -351,7 +351,7 @@ func TestMovDRI1(t *testing.T) {
 				sz,
 			),
 			macroAssertEqRI(
-				assembler.RegisterData(ir),
+				lx.RegisterData(ir),
 				val,
 				UNSIGNED,
 			),

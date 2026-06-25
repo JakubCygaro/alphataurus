@@ -8,6 +8,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	aelf "github.com/JakubCygaro/alphataurus/pkg/vm/aelf"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"math"
 	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
@@ -198,15 +199,15 @@ const (
 	FLOAT    assertTypeKwd = "FLOAT"
 )
 
-func toReg(r int, sz byte) assembler.RegisterData {
-	return assembler.RegisterData{
+func toReg(r int, sz byte) lx.RegisterData {
+	return lx.RegisterData{
 		Reg:  r,
 		Size: sz,
 	}
 }
 
 // assert equality of r and expect, exit with code equal to expect on failure
-func macroAssertEqRI(r assembler.RegisterData,
+func macroAssertEqRI(r lx.RegisterData,
 	expect any, cmpType assertTypeKwd) string {
 	var exitV string
 	if cmpType == FLOAT {
@@ -233,7 +234,7 @@ exit %v`,
 // assert comparison of r and expect, exit with code equal to expect on failure
 //
 // comparison is r (AssertTy) expect
-func macroAssertUGenericRR(r, expect assembler.RegisterData, aT AssertTy) string {
+func macroAssertUGenericRR(r, expect lx.RegisterData, aT AssertTy) string {
 	return fmt.Sprintf(`
 		cmp UNSIGNED %s, %s
 		%s [ip+%v]
@@ -246,7 +247,7 @@ func macroAssertUGenericRR(r, expect assembler.RegisterData, aT AssertTy) string
 		tc.RegStr(byte(expect.Reg), expect.Size),
 	)
 }
-func macroAssertUGenericIR(r assembler.RegisterData, expect uint64, aT AssertTy) string {
+func macroAssertUGenericIR(r lx.RegisterData, expect uint64, aT AssertTy) string {
 	return fmt.Sprintf(`
 		cmp UNSIGNED %s, %v
 		%s [ip+%v]

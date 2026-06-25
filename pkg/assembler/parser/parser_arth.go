@@ -2,6 +2,7 @@ package assembler
 
 import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -11,13 +12,13 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	}
 	op1 := p.lexer.CurrentToken()
 	valTy := ARTH_TUNSIGNED
-	if op1.Ty == TOKEN_TSIGNED || op1.Ty == TOKEN_TFLOAT || op1.Ty == TOKEN_TUNSIGNED {
+	if op1.Ty == lx.TOKEN_TSIGNED || op1.Ty == lx.TOKEN_TFLOAT || op1.Ty == lx.TOKEN_TUNSIGNED {
 		switch op1.Ty {
-		case TOKEN_TSIGNED:
+		case lx.TOKEN_TSIGNED:
 			valTy = ARTH_TSIGNED
-		case TOKEN_TUNSIGNED:
+		case lx.TOKEN_TUNSIGNED:
 			valTy = ARTH_TUNSIGNED
-		case TOKEN_TFLOAT:
+		case lx.TOKEN_TFLOAT:
 			valTy = ARTH_TFLOAT
 		}
 	} else {
@@ -33,17 +34,17 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			"First operand to instruction must be a valid register, got `%s`",
 			em)
 	} else {
-		op1.Ty = TOKEN_TREG
+		op1.Ty = lx.TOKEN_TREG
 		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
 		op1.Col = eval.Col
 		op1.Line = eval.Line
 	}
-	switch op1.Val.(RegisterData).Reg {
+	switch op1.Val.(lx.RegisterData).Reg {
 	case vm.IP_IDX:
 		return errors.FailedToParse(p.currentIdent,
 			op1.Line, op1.Col,
 			"Disallowed destination register `%s`",
-			op1.Val.(RegisterData).String(),
+			op1.Val.(lx.RegisterData).String(),
 		)
 	}
 
@@ -52,7 +53,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	}
 	comma := p.lexer.CurrentToken()
 
-	if comma.Ty != TOKEN_TCOMMA {
+	if comma.Ty != lx.TOKEN_TCOMMA {
 		return errors.FailedToParse(p.currentIdent,
 			comma.Line, comma.Col,
 			"Instruction missing a comma, got `%s` instead",
@@ -95,7 +96,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Data: InstArthRR{
 				Src:    op2.UnpackAsRegisterData(),
-				Dest:   op1.Val.(RegisterData),
+				Dest:   op1.Val.(lx.RegisterData),
 				Ty:     valTy,
 				ArthTy: ty,
 			},
@@ -111,7 +112,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Data: InstArthIR{
 				Imm:    op2.Val,
-				Dest:   op1.Val.(RegisterData),
+				Dest:   op1.Val.(lx.RegisterData),
 				Ty:     valTy,
 				ArthTy: ty,
 			},
@@ -127,7 +128,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Data: InstArthIR{
 				Imm:    op2.Val,
-				Dest:   op1.Val.(RegisterData),
+				Dest:   op1.Val.(lx.RegisterData),
 				Ty:     valTy,
 				ArthTy: ty,
 			},
@@ -149,11 +150,11 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 	op1 := p.lexer.CurrentToken()
 	valTy := ARTH_TUNSIGNED
 	switch op1.Ty {
-	case TOKEN_TSIGNED:
+	case lx.TOKEN_TSIGNED:
 		valTy = ARTH_TSIGNED
-	case TOKEN_TUNSIGNED:
+	case lx.TOKEN_TUNSIGNED:
 		valTy = ARTH_TUNSIGNED
-	case TOKEN_TFLOAT:
+	case lx.TOKEN_TFLOAT:
 		valTy = ARTH_TFLOAT
 	default:
 		valTy = -1
@@ -165,7 +166,7 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 	}
 	sizeT := p.lexer.CurrentToken()
 	var size byte
-	if sz, ok := TokenAsSize(&sizeT); !ok {
+	if sz, ok := lx.TokenAsSize(&sizeT); !ok {
 		return errors.FailedToParse(p.currentIdent, op1.Line, op1.Col,
 			"Missing data size parameter, got `%s`", sizeT.ForceValAsString())
 	} else {
@@ -203,16 +204,17 @@ func (p *Parser) parseInc() error {
 		return err
 	}
 	op1 := p.lexer.CurrentToken()
-	if op1.Ty == TOKEN_TEOF {
-		return errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
+	if op1.Ty == lx.TOKEN_TEOF {
+		return errors.PrematureEndOfInput(p.lexer.CurrentToken().Line,
+			p.lexer.CurrentToken().Col)
 	}
-	if op1.Ty != TOKEN_TREG {
+	if op1.Ty != lx.TOKEN_TREG {
 		return errors.FailedToParse(p.currentIdent,
 			op1.Line, op1.Col,
 			"The instruction operand must be a valid register, got `%s`",
 			op1.ForceValAsString())
 	}
-	switch op1.Val.(RegisterData).Reg {
+	switch op1.Val.(lx.RegisterData).Reg {
 	case vm.IP_IDX:
 		return errors.FailedToParse(p.currentIdent,
 			op1.Line, op1.Col,
@@ -221,7 +223,7 @@ func (p *Parser) parseInc() error {
 	}
 	p.currentInst = Instruction{
 		Data: InstInc{
-			Reg: op1.Val.(RegisterData),
+			Reg: op1.Val.(lx.RegisterData),
 		},
 	}
 	return nil
@@ -232,16 +234,16 @@ func (p *Parser) parseDec() error {
 		return err
 	}
 	op1 := p.lexer.CurrentToken()
-	if op1.Ty == TOKEN_TEOF {
-		return errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
+	if op1.Ty == lx.TOKEN_TEOF {
+		return errors.PrematureEndOfInput(op1.Line, op1.Col)
 	}
-	if op1.Ty != TOKEN_TREG {
+	if op1.Ty != lx.TOKEN_TREG {
 		return errors.FailedToParse(p.currentIdent,
 			op1.Line, op1.Col,
 			"The instruction operand must be a valid register, got `%s`",
 			op1.ForceValAsString())
 	}
-	switch op1.Val.(RegisterData).Reg {
+	switch op1.Val.(lx.RegisterData).Reg {
 	case vm.IP_IDX:
 		return errors.FailedToParse(p.currentIdent,
 			op1.Line, op1.Col,
@@ -250,7 +252,7 @@ func (p *Parser) parseDec() error {
 	}
 	p.currentInst = Instruction{
 		Data: InstDec{
-			Reg: op1.Val.(RegisterData),
+			Reg: op1.Val.(lx.RegisterData),
 		},
 	}
 	return nil

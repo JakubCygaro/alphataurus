@@ -6,6 +6,7 @@ import (
 	"unicode"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
 type ParserWarningData struct {
@@ -13,10 +14,10 @@ type ParserWarningData struct {
 	Message   string
 }
 type Parser struct {
-	lexer             *Lexer
+	lexer             *lx.Lexer
 	currentInst       Instruction
 	currentIdent      string
-	currentStartToken Token
+	currentStartToken lx.Token
 	// pointer to a function that recieves warnings emitted by the parser
 	WarningSink func(ParserWarningData)
 }
@@ -27,7 +28,7 @@ func pInitialState() Parser {
 
 func NewParser(reader *bufio.Reader) *Parser {
 	this := pInitialState()
-	this.lexer = NewLexer(reader)
+	this.lexer = lx.NewLexer(reader)
 	return &this
 }
 
@@ -51,9 +52,9 @@ func (p *Parser) SkipCommentLine() error {
 			return err
 		}
 		switch p.lexer.CurrentToken().Ty {
-		case TOKEN_TNEWLINE:
+		case lx.TOKEN_TNEWLINE:
 			p.lexer.UnreadToken()
-		case TOKEN_TEOF:
+		case lx.TOKEN_TEOF:
 			p.lexer.UnreadToken()
 		default:
 			continue
@@ -71,22 +72,22 @@ func (p *Parser) ParseNext() (bool, error) {
 			return false, err
 		}
 		p.currentStartToken = p.lexer.CurrentToken()
-		if p.currentStartToken.Ty == TOKEN_TEOF {
+		if p.currentStartToken.Ty == lx.TOKEN_TEOF {
 			return false, nil
 		}
-		if p.currentStartToken.Ty == TOKEN_TDOUBLESEMICOLON {
+		if p.currentStartToken.Ty == lx.TOKEN_TDOUBLESEMICOLON {
 			err = p.SkipCommentLine()
-		} else if p.currentStartToken.Ty != TOKEN_TNEWLINE {
+		} else if p.currentStartToken.Ty != lx.TOKEN_TNEWLINE {
 			break
 		}
 	}
 	switch p.currentStartToken.Ty {
-	case TOKEN_TIDENT:
+	case lx.TOKEN_TIDENT:
 		err = p.parseStartIdent(p.currentStartToken)
 		if err != nil {
 			return false, err
 		}
-	case TOKEN_TAT:
+	case lx.TOKEN_TAT:
 		err = p.ParseAttribute()
 		if err != nil {
 			return false, err
@@ -97,28 +98,28 @@ func (p *Parser) ParseNext() (bool, error) {
 				p.currentStartToken.ForceValAsString())
 	}
 	err = p.lexer.ReadNextToken()
-	if p.lexer.CurrentToken().Ty == TOKEN_TDOUBLESEMICOLON {
+	if p.lexer.CurrentToken().Ty == lx.TOKEN_TDOUBLESEMICOLON {
 		err = p.SkipCommentLine()
 	}
-	if p.lexer.CurrentToken().Ty != TOKEN_TNEWLINE &&
-		p.lexer.CurrentToken().Ty != TOKEN_TEOF {
+	if p.lexer.CurrentToken().Ty != lx.TOKEN_TNEWLINE &&
+		p.lexer.CurrentToken().Ty != lx.TOKEN_TEOF {
 
 		t := p.lexer.CurrentToken()
 		return false, errors.ExtraTokensOnLine(t.Line, t.Col, t.ForceValAsString())
 	}
 	p.currentInst.Col, p.currentInst.Line =
 		p.currentStartToken.Col, p.currentStartToken.Line
-	p.currentStartToken = Token{}
+	p.currentStartToken = lx.Token{}
 	return true, err
 }
 
-func (p *Parser) parseStartIdent(t Token) error {
+func (p *Parser) parseStartIdent(t lx.Token) error {
 	ident := t.Val.(string)
 	p.currentIdent = ident
 
 	if err := p.lexer.ReadNextToken(); err != nil {
 		p.lexer.UnreadToken()
-	} else if next := p.lexer.CurrentToken(); next.Ty != TOKEN_TCOLON {
+	} else if next := p.lexer.CurrentToken(); next.Ty != lx.TOKEN_TCOLON {
 		p.lexer.UnreadToken()
 	} else {
 		p.currentInst = Instruction{
@@ -228,7 +229,7 @@ func (p *Parser) parseSection() error {
 	}
 	op := p.lexer.CurrentToken()
 	switch op.Ty {
-	case TOKEN_TSINGLEQ:
+	case lx.TOKEN_TSINGLEQ:
 		ty := op.Val.(string)
 		switch ty {
 		case ".code":
@@ -251,14 +252,14 @@ func (p *Parser) parseImport() error {
 	}
 	weak := false
 	op := p.lexer.CurrentToken()
-	if op.Ty == TOKEN_TWEAK {
+	if op.Ty == lx.TOKEN_TWEAK {
 		weak = true
 		if err := p.lexer.ReadNextToken(); err != nil {
 			return err
 		}
 		op = p.lexer.CurrentToken()
 	}
-	if op.Ty != TOKEN_TSINGLEQ {
+	if op.Ty != lx.TOKEN_TSINGLEQ {
 		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
 			"Expected a single quoted string parameter, got `%s`",
 			op.ForceValAsString())
@@ -286,7 +287,7 @@ func (p *Parser) parseExport() error {
 		return err
 	}
 	op := p.lexer.CurrentToken()
-	if op.Ty != TOKEN_TSINGLEQ {
+	if op.Ty != lx.TOKEN_TSINGLEQ {
 		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
 			"Expected a single quoted string parameter, got `%s`",
 			op.ForceValAsString())
@@ -310,7 +311,7 @@ func (p *Parser) ParseAttribute() error {
 		return err
 	}
 	op := p.lexer.CurrentToken()
-	if op.Ty != TOKEN_TIDENT {
+	if op.Ty != lx.TOKEN_TIDENT {
 		return errors.FailedToParse("attribute", op.Line, op.Col,
 			"`%s` is not a valid parameter", op.ForceValAsString())
 	}

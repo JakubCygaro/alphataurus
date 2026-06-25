@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -15,7 +16,7 @@ func (p *Parser) parsePush() error {
 	nextT := p.lexer.CurrentToken()
 	// WORD by default
 	dataSz := byte(0xff)
-	if sz, ok := TokenAsSize(&nextT); ok {
+	if sz, ok := lx.TokenAsSize(&nextT); ok {
 		dataSz = sz
 	} else {
 		p.lexer.UnreadToken()
@@ -32,7 +33,7 @@ func (p *Parser) parsePush() error {
 	switch eval.Ty {
 	case CONSTEXPR_TREG:
 		if dataSz != 0xff {
-			p, _ := GetSizeKeyword(dataSz)
+			p, _ := lx.GetSizeKeyword(dataSz)
 			return errors.UnnecessarySizeParameter(p, nextT.Line, nextT.Col)
 		}
 		regData := eval.UnpackAsRegisterData()
@@ -51,8 +52,8 @@ func (p *Parser) parsePush() error {
 		}
 	case CONSTEXPR_TFLIT:
 		if dataSz != vm.SZ_64 {
-			g, _ := GetSizeKeyword(dataSz)
-			n, _ := GetSizeKeyword(vm.SZ_64)
+			g, _ := lx.GetSizeKeyword(dataSz)
+			n, _ := lx.GetSizeKeyword(vm.SZ_64)
 			return errors.BadSizeArgument(
 				g,
 				n,
@@ -82,7 +83,7 @@ func (p *Parser) parsePop() error {
 	}
 	t := p.lexer.CurrentToken()
 	// pop BYTE/QUARTER/HALF/WORD case
-	if sz, ok := TokenAsSize(&t); ok {
+	if sz, ok := lx.TokenAsSize(&t); ok {
 		p.currentInst = Instruction{
 			Data: InstPop{
 				Imm:    uint64(math.MaxUint64),

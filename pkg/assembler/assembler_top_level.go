@@ -4,13 +4,14 @@ import (
 	"fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
-func (a *Assembler) handleExport(data InstExport) error {
+func (a *Assembler) handleExport(data pr.InstExport) error {
 	if _, ok := a.symbols.ByName[data.Name]; ok {
-		return errors.MultipleSymbolDefinitions(data.Name, a.parser.lexer.line,
-			a.parser.lexer.col)
+		return errors.MultipleSymbolDefinitions(data.Name, a.line,
+			a.col)
 	}
 	sym := vm.SymbolData{
 		Ty:   vm.SYM_TFUNC,
@@ -23,9 +24,9 @@ func (a *Assembler) handleExport(data InstExport) error {
 	}
 	return nil
 }
-func (a *Assembler) handleImport(data InstImport) error {
+func (a *Assembler) handleImport(data pr.InstImport) error {
 	if _, _, ok := a.symbols.GetByName(data.Name); ok {
-		return errors.MultipleSymbolDefinitions(data.Name, a.parser.lexer.line, a.parser.lexer.col)
+		return errors.MultipleSymbolDefinitions(data.Name, a.line, a.col)
 	}
 	sym := vm.SymbolData{
 		Ty:   vm.SYM_TFUNC,

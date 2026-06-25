@@ -5,6 +5,7 @@ import (
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 )
 
 func (a *Assembler) Assemble() ([]byte, error) {
@@ -16,15 +17,15 @@ func (a *Assembler) Assemble() ([]byte, error) {
 		a.line = inst.Line
 		a.col = inst.Col
 		switch i := inst.Data.(type) {
-		case InstExport:
+		case pr.InstExport:
 			if err := a.handleExport(i); err != nil {
 				return nil, err
 			}
-		case InstImport:
+		case pr.InstImport:
 			if err := a.handleImport(i); err != nil {
 				return nil, err
 			}
-		case InstSecCode:
+		case pr.InstSecCode:
 			instCount, err := a.EmitBytecode()
 			if err != nil {
 				return nil, err

@@ -4,19 +4,20 @@ import (
 	"fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	lx"github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
 type pair [2]int
 type precedenceMap map[int]pair
 
 var inBMap = precedenceMap{
-	TOKEN_TPLUS:     pair{1, 2},
-	TOKEN_TMINUS:    pair{1, 2},
-	TOKEN_TASTERISK: pair{3, 4},
-	TOKEN_TSLASH:    pair{3, 4},
+	lx.TOKEN_TPLUS:     pair{1, 2},
+	lx.TOKEN_TMINUS:    pair{1, 2},
+	lx.TOKEN_TASTERISK: pair{3, 4},
+	lx.TOKEN_TSLASH:    pair{3, 4},
 }
 var preBMap = precedenceMap{
-	TOKEN_TMINUS: pair{0, 5},
+	lx.TOKEN_TMINUS: pair{0, 5},
 }
 
 func (p *Parser) ParseExpression() (*Expr, error) {
@@ -34,11 +35,11 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 	lhsToken := p.lexer.CurrentToken()
 	var lhs *Expr
 	switch lhsToken.Ty {
-	case TOKEN_TEOF:
-		return nil, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
-	case TOKEN_TNEWLINE:
-		return nil, errors.PrematureEndOfInput(p.lexer.line, p.lexer.col)
-	case TOKEN_TOPENPAREN:
+	case lx.TOKEN_TEOF:
+		return nil, errors.PrematureEndOfInput(p.lexer.GetPos())
+	case lx.TOKEN_TNEWLINE:
+		return nil, errors.PrematureEndOfInput(p.lexer.GetPos())
+	case lx.TOKEN_TOPENPAREN:
 		inner, err := p.parseExpression(0)
 		if err != nil {
 			return inner, err
@@ -46,11 +47,12 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		if err := p.lexer.ReadNextToken(); err != nil {
 			return inner, err
 		}
-		if p.lexer.CurrentToken().Ty != TOKEN_TCLOSEDPAREN {
-			return inner, errors.UnclosedParen(p.lexer.line, p.lexer.col)
+		if p.lexer.CurrentToken().Ty != lx.TOKEN_TCLOSEDPAREN {
+			t := p.lexer.CurrentToken()
+			return inner, errors.UnclosedParen(t.Line, t.Col)
 		}
 		lhs = inner
-	case TOKEN_TOPENBRACKET:
+	case lx.TOKEN_TOPENBRACKET:
 		inner, err := p.parseExpression(0)
 		if err != nil {
 			return inner, err
@@ -58,7 +60,7 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		if err := p.lexer.ReadNextToken(); err != nil {
 			return inner, err
 		}
-		if p.lexer.CurrentToken().Ty != TOKEN_TCLOSEDBRACKET {
+		if p.lexer.CurrentToken().Ty != lx.TOKEN_TCLOSEDBRACKET {
 			t := p.lexer.CurrentToken()
 			return inner, errors.FailedToParse("dereference expression",
 				t.Line, t.Col,
@@ -68,14 +70,14 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		}
 		deref := MakeDeref(inner)
 		return deref, nil
-	case TOKEN_TREG:
-		regData := lhsToken.Val.(RegisterData)
+	case lx.TOKEN_TREG:
+		regData := lhsToken.Val.(lx.RegisterData)
 		lhs = MakeConstexprR(byte(regData.Reg), regData.Size)
-	case TOKEN_TINTEGER_LIT:
+	case lx.TOKEN_TINTEGER_LIT:
 		lhs = MakeConstexprU64(lhsToken.Val.(uint64))
-	case TOKEN_TFLOAT_LIT:
+	case lx.TOKEN_TFLOAT_LIT:
 		lhs = MakeConstexprF64Bits(lhsToken.Val.(uint64))
-	case TOKEN_TIDENT:
+	case lx.TOKEN_TIDENT:
 		lhs = MakeConstexprIdent(lhsToken.Val.(string))
 	default:
 		if binding, ok := preBMap[lhsToken.Ty]; ok {
@@ -84,7 +86,7 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 				return lhs, err
 			}
 			switch lhsToken.Ty {
-			case TOKEN_TMINUS:
+			case lx.TOKEN_TMINUS:
 				lhs = MakeArth(
 					MakeConstexprU64(0),
 					rhs,
@@ -108,11 +110,11 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			return nil, err
 		}
 		op := p.lexer.CurrentToken()
-		if op.Ty == TOKEN_TCLOSEDBRACKET ||
-			op.Ty == TOKEN_TEOF ||
-			op.Ty == TOKEN_TNEWLINE ||
-			op.Ty == TOKEN_TCLOSEDPAREN ||
-			op.Ty == TOKEN_TDOUBLESEMICOLON {
+		if op.Ty == lx.TOKEN_TCLOSEDBRACKET ||
+			op.Ty == lx.TOKEN_TEOF ||
+			op.Ty == lx.TOKEN_TNEWLINE ||
+			op.Ty == lx.TOKEN_TCLOSEDPAREN ||
+			op.Ty == lx.TOKEN_TDOUBLESEMICOLON {
 			p.lexer.UnreadToken()
 			break
 		}
