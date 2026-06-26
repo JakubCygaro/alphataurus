@@ -1,8 +1,9 @@
 package assembler
 
 import (
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 //go:generate stringer -type=JmpVariant
@@ -87,6 +88,12 @@ type InstInc struct {
 type InstDec struct {
 	Reg lx.RegisterData
 }
+type InstArth struct {
+	Src, Dest *pr.Expr
+	Ty        int
+	DataSize  byte
+	ArthTy    ArthTy
+}
 type InstArthRR struct {
 	Src, Dest lx.RegisterData
 	Ty        int
@@ -111,6 +118,10 @@ type InstLogicalIR struct {
 	First lx.RegisterData
 	Imm           uint64
 	LogTy         LogTy
+}
+type InstCmp struct {
+	Ty       int
+	Sub, Min *pr.Expr
 }
 type InstCmpRR struct {
 	Ty       int
@@ -245,12 +256,13 @@ type InstImport struct {
 	Name string
 	Weak bool
 }
+type InstExit struct {
+	Expr *pr.Expr
+}
 type InstExitI struct {
 	Val uint64
-	Reg lx.RegisterData
 }
 type InstExitR struct {
-	Val uint64
 	Reg lx.RegisterData
 }
 type InstEntry struct{}

@@ -331,36 +331,44 @@ func (p *Parser) parseExit() error {
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
-	start := p.lexer.CurrentToken()
+	// start := p.lexer.CurrentToken()
 	p.lexer.UnreadToken()
-	expr, err := p.parseExpression(0)
+	expr, err := p.ParseExpression()
 	if err != nil {
 		return err
 	}
-	if cexpr, ok := TryConstEvaluatePruneExpression(expr); !ok {
-		em, _ := cexpr.Emit()
-		return errors.FailedToParse(p.currentIdent, start.Line, start.Col,
-			"Non comp-time expression as parameter `%s`."+
-				"\nThe argument to this instruction must be either a valid register "+
-				"or a compile time expression.", em)
-	} else if cexpr.Ty == CONSTEXPR_TILIT {
+	// if cexpr, ok := pr.TryParseExpression(expr); !ok {
+	// 	em, _ := cexpr.Emit()
+	// 	return errors.FailedToParse(p.currentIdent, start.Line, start.Col,
+	// 		"Non comp-time expression as parameter `%s`."+
+	// 			"\nThe argument to this instruction must be either a valid register "+
+	// 			"or a compile time expression.", em)
+	// } else
+	if IsConstexprType[ConstExprILit](expr) {
 		p.currentInst = Instruction{
 			Data: InstExitI{
-				Val: cexpr.Val,
+				Val: expr.Val.(ConstExpr).Val.(ConstExprILit).Integer,
 			},
 		}
-	} else if cexpr.Ty == CONSTEXPR_TREG {
+	} else if IsConstexprType[ConstExprReg](expr) {
 		p.currentInst = Instruction{
 			Data: InstExitR{
-				Reg: cexpr.UnpackAsRegisterData(),
+				Reg: expr.Val.(ConstExpr).Val.(ConstExprReg).Reg,
 			},
 		}
 	} else {
-		em, _ := cexpr.Emit()
-		return errors.FailedToParse(p.currentIdent, start.Line, start.Col,
-			"Invalid expression as parameter `%s`."+
-				"\nThe argument to this instruction must be either a valid register "+
-				"or a compile time expression.", em)
+		p.currentInst = Instruction{
+			Data: InstExit{
+				Expr: expr,
+			},
+		}
 	}
+	// else {
+	// 	em, _ := cexpr.Emit()
+	// 	return errors.FailedToParse(p.currentIdent, start.Line, start.Col,
+	// 		"Invalid expression as parameter `%s`."+
+	// 			"\nThe argument to this instruction must be either a valid register "+
+	// 			"or a compile time expression.", em)
+	// }
 	return nil
 }

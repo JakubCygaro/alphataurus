@@ -31,23 +31,23 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		OffsetExpr: nil,
 	}
 	switch {
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) &&
-		IsConstexpr(arthExpr.B, CONSTEXPR_TILIT):
+	case IsConstexprType(arthExpr.A, CONSTEXPR_TREG) &&
+		IsConstexprType(arthExpr.B, CONSTEXPR_TILIT):
 
 		ret.Ty = DEREF_T1RO
 		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
 		ret.OffsetOp = arthExpr.GetVMOpType()
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) &&
-		IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
+	case IsConstexprType(arthExpr.A, CONSTEXPR_TILIT) &&
+		IsConstexprType(arthExpr.B, CONSTEXPR_TREG) &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
 
 		ret.Ty = DEREF_T1RO
 		ret.Reg1 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Offset = int64(arthExpr.A.Val.(ConstExpr).Val)
 		ret.OffsetOp = vm.OP_TADD
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) &&
-		IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
+	case IsConstexprType(arthExpr.A, CONSTEXPR_TREG) &&
+		IsConstexprType(arthExpr.B, CONSTEXPR_TREG) &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
 
 		ret.Ty = DEREF_T2RO
@@ -55,8 +55,8 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		ret.Reg2 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
 		ret.Offset = int64(0)
 		ret.OffsetOp = vm.OP_TADD
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TREG) &&
-		IsArthexpr(arthExpr.B, ARTHEXPR_TADD) &&
+	case IsConstexprType(arthExpr.A, CONSTEXPR_TREG) &&
+		IsArthexprType(arthExpr.B, ARTHEXPR_TADD) &&
 		nestLvl == 0:
 
 		nestedD, err := p.processDerefNestedArth(arthExpr.B.Val.(ArthExpr), nestLvl+1)
@@ -77,8 +77,8 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		ret.Reg2 = nestedD.Reg1
 		ret.Offset = nestedD.Offset
 		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexpr(arthExpr.B, CONSTEXPR_TREG) &&
-		IsArthexpr(arthExpr.A, ARTHEXPR_TADD) &&
+	case IsConstexprType(arthExpr.B, CONSTEXPR_TREG) &&
+		IsArthexprType(arthExpr.A, ARTHEXPR_TADD) &&
 		nestLvl == 0 &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
 
@@ -91,8 +91,8 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		ret.Reg2 = nestedD.Reg1
 		ret.Offset = nestedD.Offset
 		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexpr(arthExpr.A, CONSTEXPR_TILIT) &&
-		IsArthexpr(arthExpr.B, ARTHEXPR_TADD) &&
+	case IsConstexprType(arthExpr.A, CONSTEXPR_TILIT) &&
+		IsArthexprType(arthExpr.B, ARTHEXPR_TADD) &&
 		nestLvl == 0 &&
 		(arthExpr.Ty == ARTHEXPR_TADD):
 
@@ -115,8 +115,8 @@ func (p *Parser) processDerefNestedArth(arthExpr ArthExpr, nestLvl int) (DerefDa
 		ret.Reg2 = nestedD.Reg2
 		ret.Offset = int64(arthExpr.A.Val.(ConstExpr).Val)
 		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexpr(arthExpr.B, CONSTEXPR_TILIT) &&
-		IsArthexpr(arthExpr.A, ARTHEXPR_TADD) &&
+	case IsConstexprType(arthExpr.B, CONSTEXPR_TILIT) &&
+		IsArthexprType(arthExpr.A, ARTHEXPR_TADD) &&
 		nestLvl == 0:
 
 		nestedD, err := p.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)

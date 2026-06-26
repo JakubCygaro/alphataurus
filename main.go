@@ -114,7 +114,7 @@ func main() {
 	const in = "(-3 + 8)"
 	p := pr.NewParser(bufio.NewReader(strings.NewReader(in)))
 	expr, _ := p.ParseExpression()
-	expr, _ = pr.TryEvaluatePruneExpression(expr)
+	// expr, _ = pr.TryEvaluatePruneExpression(expr)
 	fmt.Println(expr.Emit())
 	fmt.Println((((6594007686923535256 / (6948242974143 - 1987936890282)) / 3106268) / 1758))
 	os.Exit(int(mach.GetExitCode()))

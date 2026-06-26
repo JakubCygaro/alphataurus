@@ -7,6 +7,7 @@ import (
 )
 
 func (p *Parser) parseAddOrSub(arthTy int) error {
+	genericArth := InstArth{}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
@@ -24,29 +25,32 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	} else {
 		p.lexer.UnreadToken()
 	}
-	if expr, err := p.parseExpression(0); err != nil {
+	if expr, err := p.ParseExpression(); err != nil {
 		return err
-	} else if eval, ok :=
-		TryEvaluateExpression(expr); !IsConstexpr(eval, CONSTEXPR_TREG) || !ok {
-		em, _ := eval.Emit()
-		return errors.FailedToParse(p.currentIdent,
-			eval.Line, eval.Col,
-			"First operand to instruction must be a valid register, got `%s`",
-			em)
 	} else {
-		op1.Ty = lx.TOKEN_TREG
-		op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
-		op1.Col = eval.Col
-		op1.Line = eval.Line
+		genericArth.Src = expr
 	}
-	switch op1.Val.(lx.RegisterData).Reg {
-	case vm.IP_IDX:
-		return errors.FailedToParse(p.currentIdent,
-			op1.Line, op1.Col,
-			"Disallowed destination register `%s`",
-			op1.Val.(lx.RegisterData).String(),
-		)
-	}
+	// else if eval, ok :=
+	// 	TryEvaluateExpression(expr); !IsConstexprType(eval, CONSTEXPR_TREG) || !ok {
+	// 	em, _ := eval.Emit()
+	// 	return errors.FailedToParse(p.currentIdent,
+	// 		eval.Line, eval.Col,
+	// 		"First operand to instruction must be a valid register, got `%s`",
+	// 		em)
+	// } else {
+	// 	op1.Ty = lx.TOKEN_TREG
+	// 	op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
+	// 	op1.Col = eval.Col
+	// 	op1.Line = eval.Line
+	// }
+	// switch op1.Val.(lx.RegisterData).Reg {
+	// case vm.IP_IDX:
+	// 	return errors.FailedToParse(p.currentIdent,
+	// 		op1.Line, op1.Col,
+	// 		"Disallowed destination register `%s`",
+	// 		op1.Val.(lx.RegisterData).String(),
+	// 	)
+	// }
 
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
@@ -59,87 +63,131 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			"Instruction missing a comma, got `%s` instead",
 			comma.ForceValAsString())
 	}
-	var op2 ConstExpr
-	var op2Line, op2Col int
+	// var op2 ConstExpr
+	// var op2Line, op2Col int
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
 	} else {
-		eval, ok := TryConstEvaluateExpression(expr)
-		if eval.Ty != CONSTEXPR_TREG && !ok {
-			t := p.lexer.CurrentToken()
-			// em, _ := expr.Emit()
-			return errors.FailedToParse(p.currentIdent,
-				expr.Line, expr.Col,
-				"Second operand to instruction has to be a valid register "+
-					"or a compile time expression, got `%s`", t.ForceValAsString())
-		}
-		op2 = eval
-		op2Line = expr.Line
-		op2Col = expr.Col
+		genericArth.Dest = expr
 	}
-	switch op2.Ty {
-	case CONSTEXPR_TREG:
-		switch int(op2.Val) {
-		case vm.IP_IDX:
-			em, _ := op2.Emit()
-			return errors.FailedToParse(p.currentIdent,
-				op2Line, op2Col,
-				"Disallowed source register `%s`", em)
-		}
-		var ty ArthTy
-		switch arthTy {
-		case ARTH_TADD:
-			ty = ADD
-		case ARTH_TSUB:
-			ty = SUB
-		}
-		p.currentInst = Instruction{
-			Data: InstArthRR{
-				Src:    op2.UnpackAsRegisterData(),
-				Dest:   op1.Val.(lx.RegisterData),
-				Ty:     valTy,
-				ArthTy: ty,
-			},
-		}
-	case CONSTEXPR_TILIT:
-		var ty ArthTy
-		switch arthTy {
-		case ARTH_TADD:
-			ty = ADD
-		case ARTH_TSUB:
-			ty = SUB
-		}
-		p.currentInst = Instruction{
-			Data: InstArthIR{
-				Imm:    op2.Val,
-				Dest:   op1.Val.(lx.RegisterData),
-				Ty:     valTy,
-				ArthTy: ty,
-			},
-		}
-	case CONSTEXPR_TFLIT:
-		var ty ArthTy
-		switch arthTy {
-		case ARTH_TADD:
-			ty = ADD
-		case ARTH_TSUB:
-			ty = SUB
-		}
-		p.currentInst = Instruction{
-			Data: InstArthIR{
-				Imm:    op2.Val,
-				Dest:   op1.Val.(lx.RegisterData),
-				Ty:     valTy,
-				ArthTy: ty,
-			},
-		}
-	default:
-		em, _ := op2.Emit()
-		return errors.FailedToParse(p.currentIdent,
-			op2Line, op2Col,
-			"Second operand to instruction has to be a valid register "+
-				"or a compile time expression got `%s`", em)
+	// else {
+	// 	eval, ok := TryConstEvaluateExpression(expr)
+	// 	if eval.Ty != CONSTEXPR_TREG && !ok {
+	// 		t := p.lexer.CurrentToken()
+	// 		// em, _ := expr.Emit()
+	// 		return errors.FailedToParse(p.currentIdent,
+	// 			expr.Line, expr.Col,
+	// 			"Second operand to instruction has to be a valid register "+
+	// 				"or a compile time expression, got `%s`", t.ForceValAsString())
+	// 	}
+	// 	op2 = eval
+	// 	op2Line = expr.Line
+	// 	op2Col = expr.Col
+	// }
+	var ty ArthTy
+	switch arthTy {
+	case ARTH_TADD:
+		ty = ADD
+	case ARTH_TSUB:
+		ty = SUB
 	}
+	if IsConstexprType[ConstExprReg](genericArth.Dest) {
+		if IsConstexprType[ConstExprReg](genericArth.Src) {
+			p.currentInst = Instruction{
+				Data: InstArthRR{
+					Src:    genericArth.Src.Val(ConstExpr).Val(ConstExprReg).Reg,
+					Dest:   genericArth.Dest.Val(ConstExpr).Val(ConstExprReg).Reg,
+					Ty:     valTy,
+					ArthTy: ty,
+				},
+			}
+		} else if IsConstexprType[ConstExprILit](genericArth.Src) {
+			p.currentInst = Instruction{
+				Data: InstArthIR{
+					Imm:    genericArth.Src.Val(ConstExpr).Val(ConstExprILit).Integer,
+					Dest:   genericArth.Dest.Val(ConstExpr).Val(ConstExprReg).Reg,
+					Ty:     valTy,
+					ArthTy: ty,
+				},
+			}
+		} else if IsConstexprType[ConstExprFLit](genericArth.Src) {
+			p.currentInst = Instruction{
+				Data: InstArthIR{
+					Imm:    genericArth.Src.Val(ConstExpr).Val(ConstExprFLit).Float,
+					Dest:   genericArth.Dest.Val(ConstExpr).Val(ConstExprReg).Reg,
+					Ty:     valTy,
+					ArthTy: ty,
+				},
+			}
+		}
+	} else {
+		p.currentInst = Instruction{
+			Data: genericArth,
+		}
+	}
+	// switch op2.Ty {
+	// case CONSTEXPR_TREG:
+	// 	switch int(op2.Val) {
+	// 	case vm.IP_IDX:
+	// 		em, _ := op2.Emit()
+	// 		return errors.FailedToParse(p.currentIdent,
+	// 			op2Line, op2Col,
+	// 			"Disallowed source register `%s`", em)
+	// 	}
+	// 	var ty ArthTy
+	// 	switch arthTy {
+	// 	case ARTH_TADD:
+	// 		ty = ADD
+	// 	case ARTH_TSUB:
+	// 		ty = SUB
+	// 	}
+	// 	p.currentInst = Instruction{
+	// 		Data: InstArthRR{
+	// 			Src:    op2.UnpackAsRegisterData(),
+	// 			Dest:   op1.Val.(lx.RegisterData),
+	// 			Ty:     valTy,
+	// 			ArthTy: ty,
+	// 		},
+	// 	}
+	// case CONSTEXPR_TILIT:
+	// 	var ty ArthTy
+	// 	switch arthTy {
+	// 	case ARTH_TADD:
+	// 		ty = ADD
+	// 	case ARTH_TSUB:
+	// 		ty = SUB
+	// 	}
+	// 	p.currentInst = Instruction{
+	// 		Data: InstArthIR{
+	// 			Imm:    op2.Val,
+	// 			Dest:   op1.Val.(lx.RegisterData),
+	// 			Ty:     valTy,
+	// 			ArthTy: ty,
+	// 		},
+	// 	}
+	// case CONSTEXPR_TFLIT:
+	// 	var ty ArthTy
+	// 	switch arthTy {
+	// 	case ARTH_TADD:
+	// 		ty = ADD
+	// 	case ARTH_TSUB:
+	// 		ty = SUB
+	// 	}
+	// 	p.currentInst = Instruction{
+	// 		Data: InstArthIR{
+	// 			Imm:    op2.Val,
+	// 			Dest:   op1.Val.(lx.RegisterData),
+	// 			Ty:     valTy,
+	// 			ArthTy: ty,
+	// 		},
+	// 	}
+	// default:
+	// 	em, _ := op2.Emit()
+	// 	return errors.FailedToParse(p.currentIdent,
+	// 		op2Line, op2Col,
+	// 		"Second operand to instruction has to be a valid register "+
+	// 			"or a compile time expression got `%s`", em)
+	// }
 	return nil
 }
 func (p *Parser) parseDivOrMul(arthTy int) error {
