@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
-	lx"github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
 type pair [2]int
@@ -88,9 +88,10 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			switch lhsToken.Ty {
 			case lx.TOKEN_TMINUS:
 				lhs = MakeArth(
-					MakeConstexprU64(0),
-					rhs,
-					lhsToken.Ty,
+					ArthExprSub{
+						A: MakeConstexprU64(0),
+						B: rhs,
+					},
 				)
 			default:
 				return lhs, fmt.Errorf("Prefix operator TODO %s", p.lexer.CurrentPosition())
@@ -132,13 +133,36 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			return lhs, err
 		}
 		lhs = &Expr{
-			Ty: EXPR_TARTH,
 			Val: ArthExpr{
-				Ty: op.Ty,
-				A:  lhs,
-				B:  rhs,
+				Val: opTyToArthExpr(lhs, rhs, op.Ty),
 			},
 		}
 	}
 	return lhs, nil
+}
+
+func opTyToArthExpr(lhs, rhs *Expr, ty int) any {
+	switch ty {
+	case lx.TOKEN_TPLUS:
+		return ArthExprAdd{
+			A: lhs,
+			B: rhs,
+		}
+	case lx.TOKEN_TMINUS:
+		return ArthExprSub{
+			A: lhs,
+			B: rhs,
+		}
+	case lx.TOKEN_TASTERISK:
+		return ArthExprMul{
+			A: lhs,
+			B: rhs,
+		}
+	case lx.TOKEN_TSLASH:
+		return ArthExprDiv{
+			A: lhs,
+			B: rhs,
+		}
+	}
+	return nil
 }

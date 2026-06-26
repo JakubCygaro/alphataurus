@@ -5,7 +5,6 @@ import (
 	"math"
 
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 const (
@@ -88,20 +87,20 @@ type DerefExpr struct {
 }
 
 // op type as used by the vm
-func (e ArthExpr) GetVMOpType() int {
-	switch e.Val.(type) {
-	case ArthExprAdd:
-		return vm.OP_TADD
-	case ArthExprSub:
-		return vm.OP_TSUB
-	case ArthExprMul:
-		return vm.OP_TMUL
-	case ArthExprDiv:
-		return vm.OP_TDIV
-	default:
-		return INVALID
-	}
-}
+// func (e ArthExpr) GetVMOpType() int {
+// 	switch e.Val.(type) {
+// 	case ArthExprAdd:
+// 		return vm.OP_TADD
+// 	case ArthExprSub:
+// 		return vm.OP_TSUB
+// 	case ArthExprMul:
+// 		return vm.OP_TMUL
+// 	case ArthExprDiv:
+// 		return vm.OP_TDIV
+// 	default:
+// 		return INVALID
+// 	}
+// }
 
 func (e *Expr) IsConstexpr() bool {
 	_, ok := e.Val.(ConstExpr)

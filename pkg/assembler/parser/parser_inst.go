@@ -2,12 +2,12 @@ package assembler
 
 import (
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
-	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 //go:generate stringer -type=JmpVariant
 type JmpVariant int
+
 const (
 	JMP JmpVariant = iota
 	JMPE
@@ -30,14 +30,17 @@ const (
 
 //go:generate stringer -type=ArthTy
 type ArthTy int
+
 const (
 	ADD ArthTy = iota
 	SUB
 	DIV
 	MUL
 )
+
 //go:generate stringer -type=LogTy
 type LogTy int
+
 const (
 	AND LogTy = iota
 	OR
@@ -45,7 +48,6 @@ const (
 	LSH
 	RSH
 )
-
 
 const (
 	ARTH_TUNSIGNED = vm.TY_UINT
@@ -73,13 +75,17 @@ type Instruction struct {
 	Data      any
 	Line, Col int
 }
+type InstMov struct {
+	Dest, Src *Expr
+	DataSize  byte
+}
 type InstMovIR struct {
-	Dest     int
+	Dest     lx.RegisterData
 	Imm      uint64
 	DataSize byte
 }
 type InstMovRR struct {
-	Src, Dest int
+	Src, Dest lx.RegisterData
 	DataSize  byte
 }
 type InstInc struct {
@@ -89,7 +95,7 @@ type InstDec struct {
 	Reg lx.RegisterData
 }
 type InstArth struct {
-	Src, Dest *pr.Expr
+	Src, Dest *Expr
 	Ty        int
 	DataSize  byte
 	ArthTy    ArthTy
@@ -101,14 +107,18 @@ type InstArthRR struct {
 	ArthTy    ArthTy
 }
 type InstArthIR struct {
-	Dest lx.RegisterData
-	Imm       uint64
-	Ty        int
-	DataSize  byte
-	ArthTy    ArthTy
+	Dest     lx.RegisterData
+	Imm      uint64
+	Ty       int
+	DataSize byte
+	ArthTy   ArthTy
 }
 type InstNot struct {
 	First lx.RegisterData
+}
+type InstLogical struct {
+	First, Second *Expr
+	LogTy         LogTy
 }
 type InstLogicalRR struct {
 	First, Second lx.RegisterData
@@ -116,24 +126,24 @@ type InstLogicalRR struct {
 }
 type InstLogicalIR struct {
 	First lx.RegisterData
-	Imm           uint64
-	LogTy         LogTy
+	Imm   uint64
+	LogTy LogTy
 }
 type InstCmp struct {
 	Ty       int
-	Sub, Min *pr.Expr
+	Sub, Min *Expr
 }
 type InstCmpRR struct {
 	Ty       int
 	Sub, Min lx.RegisterData
 }
 type InstCmpIR struct {
-	Ty       int
+	Ty  int
 	Min lx.RegisterData
-	Imm      uint64
+	Imm uint64
 }
 type InstJmp struct {
-	Address  any
+	Address  *Expr
 	Absolute bool
 	Variant  JmpVariant
 }
@@ -167,19 +177,23 @@ type InstLab struct {
 	Label      string
 	DeclaredAt string
 }
+type InstPush struct {
+	Val *Expr
+	DataSz   byte
+}
 type InstPushR struct {
 	Reg    uint64
-	Imm    uint64
 	DataSz byte
 }
 type InstPushI struct {
-	Reg    uint64
 	Imm    uint64
 	DataSz byte
 }
 type InstPop struct {
+	DataSz byte
+}
+type InstPopR struct {
 	Reg    uint64
-	Imm    uint64
 	DataSz byte
 }
 type InstNop struct{}
@@ -208,9 +222,9 @@ type InstMovID struct {
 	OpTy     int
 }
 type InstMovRD struct {
-	Src      lx.RegisterData
-	Offset   int64
-	OpTy     int
+	Src    lx.RegisterData
+	Offset int64
+	OpTy   int
 }
 type InstMovIDO1 struct {
 	DataSize byte
@@ -221,10 +235,10 @@ type InstMovIDO1 struct {
 	NoOff    bool
 }
 type InstMovRDO1 struct {
-	Src      lx.RegisterData
-	Offset   int64
-	OReg1    lx.RegisterData
-	OpTy     int
+	Src    lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	OpTy   int
 }
 type InstMovIDO2 struct {
 	DataSize byte
@@ -236,17 +250,15 @@ type InstMovIDO2 struct {
 	NoOff    bool
 }
 type InstMovRDO2 struct {
-	Src      lx.RegisterData
-	Offset   int64
-	OReg1    lx.RegisterData
-	OReg2    lx.RegisterData
-	Label    string
-	OpTy     int
+	Src    lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	OReg2  lx.RegisterData
+	Label  string
+	OpTy   int
 }
 type InstCall struct {
-	Addr  uint64
-	Ident string
-	Expr  *Expr
+	Expr *Expr
 }
 type InstExport struct {
 	Name string
@@ -257,7 +269,7 @@ type InstImport struct {
 	Weak bool
 }
 type InstExit struct {
-	Expr *pr.Expr
+	Expr *Expr
 }
 type InstExitI struct {
 	Val uint64

@@ -1,15 +1,13 @@
 package assembler
 
 import (
-	"fmt"
-	"math"
-
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func (p *Parser) parsePush() error {
+	genericPush := InstPush{}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
@@ -21,36 +19,36 @@ func (p *Parser) parsePush() error {
 	} else {
 		p.lexer.UnreadToken()
 	}
-	arg, err := p.parseExpression(0)
-	if err != nil {
+	if arg, err := p.ParseExpression(); err != nil {
 		return err
+	} else {
+		genericPush.Val = arg
 	}
-	eval, ok := TryConstEvaluateExpression(arg)
-	if !ok {
-		return fmt.Errorf("Operand to push instruction must be a constant expression or a register name %s",
-			p.lexer.CurrentPosition())
-	}
-	switch eval.Ty {
-	case CONSTEXPR_TREG:
+	// eval, ok := TryConstEvaluateExpression(arg)
+	// if !ok {
+	// 	return fmt.Errorf("Operand to push instruction must be a constant expression or a register name %s",
+	// 		p.lexer.CurrentPosition())
+	// }
+	if IsConstexprType[ConstExprReg](genericPush.Val) {
 		if dataSz != 0xff {
 			p, _ := lx.GetSizeKeyword(dataSz)
 			return errors.UnnecessarySizeParameter(p, nextT.Line, nextT.Col)
 		}
-		regData := eval.UnpackAsRegisterData()
+		regData := genericPush.Val.Val.(ConstExpr).Val.(ConstExprReg).Reg
 		p.currentInst = Instruction{
 			Data: InstPushR{
 				Reg:    uint64(regData.Reg),
 				DataSz: regData.Size,
 			},
 		}
-	case CONSTEXPR_TILIT:
+	} else if IsConstexprType[ConstExprILit](genericPush.Val) {
 		p.currentInst = Instruction{
 			Data: InstPushI{
-				Imm:    eval.Val,
+				Imm:    genericPush.Val.Val.(ConstExpr).Val.(ConstExprILit).Integer,
 				DataSz: dataSz,
 			},
 		}
-	case CONSTEXPR_TFLIT:
+	} else if IsConstexprType[ConstExprFLit](genericPush.Val) {
 		if dataSz != vm.SZ_64 {
 			g, _ := lx.GetSizeKeyword(dataSz)
 			n, _ := lx.GetSizeKeyword(vm.SZ_64)
@@ -63,18 +61,60 @@ func (p *Parser) parsePush() error {
 		}
 		p.currentInst = Instruction{
 			Data: InstPushI{
-				Imm:    eval.Val,
+				Imm:    genericPush.Val.Val.(ConstExpr).Val.(ConstExprFLit).Float,
 				DataSz: dataSz,
 			},
 		}
-	default:
-		em, _ := arg.Emit()
-		return errors.FailedToParse(p.currentIdent,
-			arg.Line, arg.Col,
-			"Unsupported operand expression type `%s`",
-			em,
-		)
+	} else {
+		p.currentInst = Instruction{
+			Data: genericPush,
+		}
 	}
+	// switch eval.Ty {
+	// case CONSTEXPR_TREG:
+	// 	if dataSz != 0xff {
+	// 		p, _ := lx.GetSizeKeyword(dataSz)
+	// 		return errors.UnnecessarySizeParameter(p, nextT.Line, nextT.Col)
+	// 	}
+	// 	regData := eval.UnpackAsRegisterData()
+	// 	p.currentInst = Instruction{
+	// 		Data: InstPushR{
+	// 			Reg:    uint64(regData.Reg),
+	// 			DataSz: regData.Size,
+	// 		},
+	// 	}
+	// case CONSTEXPR_TILIT:
+	// 	p.currentInst = Instruction{
+	// 		Data: InstPushI{
+	// 			Imm:    eval.Val,
+	// 			DataSz: dataSz,
+	// 		},
+	// 	}
+	// case CONSTEXPR_TFLIT:
+	// 	if dataSz != vm.SZ_64 {
+	// 		g, _ := lx.GetSizeKeyword(dataSz)
+	// 		n, _ := lx.GetSizeKeyword(vm.SZ_64)
+	// 		return errors.BadSizeArgument(
+	// 			g,
+	// 			n,
+	// 			nextT.Line,
+	// 			nextT.Col,
+	// 		)
+	// 	}
+	// 	p.currentInst = Instruction{
+	// 		Data: InstPushI{
+	// 			Imm:    eval.Val,
+	// 			DataSz: dataSz,
+	// 		},
+	// 	}
+	// default:
+	// 	em, _ := arg.Emit()
+	// 	return errors.FailedToParse(p.currentIdent,
+	// 		arg.Line, arg.Col,
+	// 		"Unsupported operand expression type `%s`",
+	// 		em,
+	// 	)
+	// }
 	return nil
 }
 func (p *Parser) parsePop() error {
@@ -86,8 +126,6 @@ func (p *Parser) parsePop() error {
 	if sz, ok := lx.TokenAsSize(&t); ok {
 		p.currentInst = Instruction{
 			Data: InstPop{
-				Imm:    uint64(math.MaxUint64),
-				Reg:    uint64(math.MaxUint64),
 				DataSz: sz,
 			},
 		}
@@ -100,15 +138,16 @@ func (p *Parser) parsePop() error {
 	if err != nil {
 		return err
 	}
-	eval, ok := TryConstEvaluateExpression(arg)
-	if !ok || eval.Ty != CONSTEXPR_TREG {
-		return fmt.Errorf(
-			"Operand to pop instruction can only be a register name or none %s",
-			p.lexer.CurrentPosition())
+	if !IsConstexprType[ConstExprReg](arg) {
+		em, _ := arg.Emit()
+		return errors.FailedToParse(p.currentIdent,
+			arg.Line, arg.Col,
+			"Operand to pop instruction can only be a register name or none, got `%s`",
+			em)
 	}
-	regData := eval.UnpackAsRegisterData()
+	regData := arg.Val.(ConstExpr).Val.(ConstExprReg).Reg
 	p.currentInst = Instruction{
-		Data: InstPop{
+		Data: InstPopR{
 			Reg:    uint64(regData.Reg),
 			DataSz: regData.Size,
 		},
