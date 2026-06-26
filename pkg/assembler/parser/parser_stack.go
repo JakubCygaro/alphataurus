@@ -29,12 +29,12 @@ func (p *Parser) parsePush() error {
 	// 	return fmt.Errorf("Operand to push instruction must be a constant expression or a register name %s",
 	// 		p.lexer.CurrentPosition())
 	// }
-	if IsConstexprType[ConstExprReg](genericPush.Val) {
+	if genericPush.Val.IsRegexpr() {
 		if dataSz != 0xff {
 			p, _ := lx.GetSizeKeyword(dataSz)
 			return errors.UnnecessarySizeParameter(p, nextT.Line, nextT.Col)
 		}
-		regData := genericPush.Val.Val.(ConstExpr).Val.(ConstExprReg).Reg
+		regData := genericPush.Val.Val.(RegExpr).Reg
 		p.currentInst = Instruction{
 			Data: InstPushR{
 				Reg:    uint64(regData.Reg),
@@ -138,14 +138,14 @@ func (p *Parser) parsePop() error {
 	if err != nil {
 		return err
 	}
-	if !IsConstexprType[ConstExprReg](arg) {
+	if !arg.IsRegexpr() {
 		em, _ := arg.Emit()
 		return errors.FailedToParse(p.currentIdent,
 			arg.Line, arg.Col,
 			"Operand to pop instruction can only be a register name or none, got `%s`",
 			em)
 	}
-	regData := arg.Val.(ConstExpr).Val.(ConstExprReg).Reg
+	regData := arg.Val.(RegExpr).Reg
 	p.currentInst = Instruction{
 		Data: InstPopR{
 			Reg:    uint64(regData.Reg),

@@ -33,7 +33,7 @@ func (p *Parser) parseLogical(logTy int) error {
 	// }
 
 	if logTy == LOG_TNOT {
-		if !IsConstexprType[ConstExprReg](genericLogical.First) {
+		if !genericLogical.First.IsRegexpr() {
 			em, _ := genericLogical.First.Emit()
 			return errors.FailedToParse(p.currentIdent,
 				genericLogical.First.Line, genericLogical.First.Col,
@@ -44,7 +44,7 @@ func (p *Parser) parseLogical(logTy int) error {
 		}
 		p.currentInst = Instruction{
 			Data: InstNot{
-				First: genericLogical.First.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+				First: genericLogical.First.Val.(RegExpr).Reg,
 			},
 		}
 		return nil
@@ -81,12 +81,12 @@ func (p *Parser) parseLogical(logTy int) error {
 	case LOG_TRSH:
 		ty = RSH
 	}
-	if IsConstexprType[ConstExprReg](genericLogical.First) {
-		if IsConstexprType[ConstExprReg](genericLogical.Second) {
+	if genericLogical.First.IsRegexpr() {
+		if genericLogical.Second.IsRegexpr() {
 			p.currentInst = Instruction{
 				Data: InstLogicalRR{
-					Second:    genericLogical.Second.Val.(ConstExpr).Val.(ConstExprReg).Reg,
-					First:   genericLogical.First.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Second:    genericLogical.Second.Val.(RegExpr).Reg,
+					First:   genericLogical.First.Val.(RegExpr).Reg,
 					LogTy: ty,
 				},
 			}
@@ -94,7 +94,7 @@ func (p *Parser) parseLogical(logTy int) error {
 			p.currentInst = Instruction{
 				Data: InstLogicalIR{
 					Imm:    genericLogical.Second.Val.(ConstExpr).Val.(ConstExprILit).Integer,
-					First:   genericLogical.First.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					First:   genericLogical.First.Val.(RegExpr).Reg,
 					LogTy: ty,
 				},
 			}
@@ -102,7 +102,7 @@ func (p *Parser) parseLogical(logTy int) error {
 			p.currentInst = Instruction{
 				Data: InstLogicalIR{
 					Imm:    genericLogical.Second.Val.(ConstExpr).Val.(ConstExprFLit).Float,
-					First:   genericLogical.First.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					First:   genericLogical.First.Val.(RegExpr).Reg,
 					LogTy: ty,
 				},
 			}

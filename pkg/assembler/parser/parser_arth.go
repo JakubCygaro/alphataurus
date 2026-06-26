@@ -91,12 +91,12 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	case ARTH_TSUB:
 		ty = SUB
 	}
-	if IsConstexprType[ConstExprReg](genericArth.Dest) {
-		if IsConstexprType[ConstExprReg](genericArth.Src) {
+	if genericArth.Dest.IsRegexpr() {
+		if genericArth.Src.IsRegexpr() {
 			p.currentInst = Instruction{
 				Data: InstArthRR{
-					Src:    genericArth.Src.Val.(ConstExpr).Val.(ConstExprReg).Reg,
-					Dest:   genericArth.Dest.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Src:    genericArth.Src.Val.(RegExpr).Reg,
+					Dest:   genericArth.Dest.Val.(RegExpr).Reg,
 					Ty:     valTy,
 					ArthTy: ty,
 				},
@@ -105,7 +105,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			p.currentInst = Instruction{
 				Data: InstArthIR{
 					Imm:    genericArth.Src.Val.(ConstExpr).Val.(ConstExprILit).Integer,
-					Dest:   genericArth.Dest.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Dest:   genericArth.Dest.Val.(RegExpr).Reg,
 					Ty:     valTy,
 					ArthTy: ty,
 				},
@@ -114,7 +114,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			p.currentInst = Instruction{
 				Data: InstArthIR{
 					Imm:    genericArth.Src.Val.(ConstExpr).Val.(ConstExprFLit).Float,
-					Dest:   genericArth.Dest.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Dest:   genericArth.Dest.Val.(RegExpr).Reg,
 					Ty:     valTy,
 					ArthTy: ty,
 				},

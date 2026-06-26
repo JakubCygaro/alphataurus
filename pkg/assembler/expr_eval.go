@@ -1,10 +1,12 @@
 package assembler
 
 import (
+	"fmt"
 	"math"
 
-	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 type EvaluationContext struct {
@@ -19,8 +21,6 @@ type ExpressionEvaluator struct {
 // if the value cannot be extracted it is returned as nil
 func (ev *ExpressionEvaluator) extractValue(cexpr pr.ConstExpr) any {
 	switch v := cexpr.Val.(type) {
-	case pr.ConstExprReg:
-		return nil
 	case pr.ConstExprIden:
 		f, _ := ev.ctx.Variables[v.Ident]
 		return f
@@ -489,7 +489,7 @@ func (ev *ExpressionEvaluator) processDerefNestedArth(
 		OffsetExpr: nil,
 	}
 	switch {
-	case pr.IsConstexprType[ConstExprReg](arthExpr.A) &&
+	case pr.IsConstexprType[pr.RegExpr](arthExpr.A) &&
 		IsConstexprType(arthExpr.B, CONSTEXPR_TILIT):
 
 		ret.Ty = DEREF_T1RO
@@ -609,7 +609,7 @@ func (ev *ExpressionEvaluator) processDerefNestedArth(
 	return ret, nil
 }
 
-func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
+func (ev *ExpressionEvaluator) processDeref(inner *pr.Expr) (DerefData, error) {
 	ret := DerefData{
 		Reg1:       lx.GetInvalidRegister(),
 		Reg2:       lx.GetInvalidRegister(),
@@ -617,41 +617,47 @@ func (p *Parser) processDeref(inner *Expr) (DerefData, error) {
 		Offset:     INVALID,
 		OffsetExpr: nil,
 	}
-	switch inner.Ty {
-	case EXPR_TCONST:
-		innerConst := inner.Val.(ConstExpr)
-		switch innerConst.Ty {
-		case CONSTEXPR_TILIT:
-
+	switch expr := inner.Val.(type) {
+	case pr.ConstExpr:
+		switch v := expr.Val.(type) {
+		case pr.ConstExprILit:
 			ret.Ty = DEREF_T0RO
-			ret.Offset = int64(innerConst.Val)
-		case CONSTEXPR_TREG:
-
-			ret.Ty = DEREF_T1RO
-			regD := innerConst.UnpackAsRegisterData()
-			ret.Reg1 = regD
-			ret.Offset = int64(0)
-			ret.OffsetOp = vm.OP_TADD
-		// TODO: label dereference support
+			ret.Offset = int64(v.Integer)
 		default:
 			em, _ := inner.Emit()
-			return ret, errors.FailedToParse("dereference expression",
-				p.currentStartToken.Line, p.currentStartToken.Col,
-				"Invalid single parameter dereference expression."+
-					"In Expression `%s`",
-				em,
+			return ret, fmt.Errorf(
+				"Invalid single parameter dereference expression. "+
+					"In expression : `%s` at (%v:%v)",
+				em, inner.Line, inner.Col,
 			)
+			// return ret, errors.FailedToParse("dereference expression",
+			// 	p.currentStartToken.Line, p.currentStartToken.Col,
+			// 	"Invalid single parameter dereference expression."+
+			// 		"In Expression `%s`",
+			// 	em,
+			// )
 		}
-	case EXPR_TARTH:
-		arthExpr := inner.Val.(ArthExpr)
-		return p.processDerefNestedArth(arthExpr, 0)
+	case pr.RegExpr:
+		ret.Ty = DEREF_T1RO
+		regD := expr.Reg
+		ret.Reg1 = regD
+		ret.Offset = int64(0)
+		ret.OffsetOp = vm.OP_TADD
+	case pr.ArthExpr:
+		return ev.processDerefNestedArth(expr, 0)
 	default:
+		// em, _ := inner.Emit()
+		// return ret, errors.FailedToParse("dereference expression",
+		// 	p.currentStartToken.Line, p.currentStartToken.Col,
+		// 	"Invalid dereference expression."+
+		// 		"In Expression `%s`",
+		// 	em,
+		// )
 		em, _ := inner.Emit()
-		return ret, errors.FailedToParse("dereference expression",
-			p.currentStartToken.Line, p.currentStartToken.Col,
-			"Invalid dereference expression."+
-				"In Expression `%s`",
-			em,
+		return ret, fmt.Errorf(
+			"Invalid dereference expression. "+
+				"In expression : `%s` at (%v:%v)",
+			em, inner.Line, inner.Col,
 		)
 	}
 	return ret, nil

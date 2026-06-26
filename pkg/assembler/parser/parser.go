@@ -350,10 +350,10 @@ func (p *Parser) parseExit() error {
 				Val: expr.Val.(ConstExpr).Val.(ConstExprILit).Integer,
 			},
 		}
-	} else if IsConstexprType[ConstExprReg](expr) {
+	} else if expr.IsRegexpr() {
 		p.currentInst = Instruction{
 			Data: InstExitR{
-				Reg: expr.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+				Reg: expr.Val.(RegExpr).Reg,
 			},
 		}
 	} else {

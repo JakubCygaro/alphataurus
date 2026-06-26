@@ -66,12 +66,12 @@ func (p *Parser) parseMov() error {
 		genericMov.Src = expr
 	}
 	genericMov.DataSize = sized
-	if IsConstexprType[ConstExprReg](genericMov.Dest) {
-		if IsConstexprType[ConstExprReg](genericMov.Src) {
+	if genericMov.Dest.IsRegexpr() {
+		if genericMov.Src.IsRegexpr() {
 			p.currentInst = Instruction{
 				Data: InstMovRR{
-					Src:    genericMov.Src.Val.(ConstExpr).Val.(ConstExprReg).Reg,
-					Dest:   genericMov.Dest.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Src:    genericMov.Src.Val.(RegExpr).Reg,
+					Dest:   genericMov.Dest.Val.(RegExpr).Reg,
 					DataSize: sized,
 				},
 			}
@@ -79,7 +79,7 @@ func (p *Parser) parseMov() error {
 			p.currentInst = Instruction{
 				Data: InstMovIR{
 					Imm:    genericMov.Src.Val.(ConstExpr).Val.(ConstExprILit).Integer,
-					Dest:   genericMov.Dest.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Dest:   genericMov.Dest.Val.(RegExpr).Reg,
 					DataSize: sized,
 				},
 			}
@@ -87,7 +87,7 @@ func (p *Parser) parseMov() error {
 			p.currentInst = Instruction{
 				Data: InstMovIR{
 					Imm:    genericMov.Src.Val.(ConstExpr).Val.(ConstExprFLit).Float,
-					Dest:   genericMov.Dest.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Dest:   genericMov.Dest.Val.(RegExpr).Reg,
 					DataSize: sized,
 				},
 			}

@@ -89,12 +89,12 @@ func (p *Parser) parseCmp() error {
 	// 		em,
 	// 	)
 	// }
-	if IsConstexprType[ConstExprReg](genericCmp.Min) {
-		if IsConstexprType[ConstExprReg](genericCmp.Sub) {
+	if genericCmp.Min.IsRegexpr() {
+		if genericCmp.Sub.IsRegexpr() {
 			p.currentInst = Instruction{
 				Data: InstCmpRR{
-					Min: genericCmp.Min.Val.(ConstExpr).Val.(ConstExprReg).Reg,
-					Sub: genericCmp.Sub.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Min: genericCmp.Min.Val.(RegExpr).Reg,
+					Sub: genericCmp.Sub.Val.(RegExpr).Reg,
 					Ty:  ty,
 				},
 			}
@@ -102,7 +102,7 @@ func (p *Parser) parseCmp() error {
 			p.currentInst = Instruction{
 				Data: InstCmpIR{
 					Imm: genericCmp.Sub.Val.(ConstExpr).Val.(ConstExprILit).Integer,
-					Min: genericCmp.Min.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Min: genericCmp.Min.Val.(RegExpr).Reg,
 					Ty:  ty,
 				},
 			}
@@ -110,7 +110,7 @@ func (p *Parser) parseCmp() error {
 			p.currentInst = Instruction{
 				Data: InstCmpIR{
 					Imm: genericCmp.Sub.Val.(ConstExpr).Val.(ConstExprFLit).Float,
-					Min: genericCmp.Min.Val.(ConstExpr).Val.(ConstExprReg).Reg,
+					Min: genericCmp.Min.Val.(RegExpr).Reg,
 					Ty:  ty,
 				},
 			}

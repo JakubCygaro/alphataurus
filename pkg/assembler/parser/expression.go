@@ -49,7 +49,7 @@ type Expr struct {
 type ConstExpr struct {
 	Val any
 }
-type ConstExprReg struct {
+type RegExpr struct {
 	Reg lx.RegisterData
 }
 type ConstExprILit struct {
@@ -110,9 +110,13 @@ func (e *Expr) IsArthexpr() bool {
 	_, ok := e.Val.(ArthExpr)
 	return ok
 }
+func (e *Expr) IsRegexpr() bool {
+	_, ok := e.Val.(RegExpr)
+	return ok
+}
 
 func IsConstexprType[
-	CT ConstExprILit | ConstExprFLit | ConstExprReg | ConstExprIden](e *Expr) bool {
+	CT ConstExprILit | ConstExprFLit | ConstExprIden](e *Expr) bool {
 	if c, ok := e.Val.(ConstExpr); !ok {
 		return false
 	} else {
@@ -189,12 +193,10 @@ func MakeConstexprIdent(v string) *Expr {
 		},
 	}
 }
-func MakeConstexprR(r, size byte) *Expr {
+func MakeRegexpr(r, size byte) *Expr {
 	return &Expr{
-		Val: ConstExpr{
-			Val: ConstExprReg{
-				Reg: lx.RegisterData{Reg: int(r), Size: size},
-			},
+		Val: RegExpr{
+			Reg: lx.RegisterData{Reg: int(r), Size: size},
 		},
 	}
 }
@@ -229,7 +231,7 @@ func (e *ConstExpr) AsFloat() float64 {
 //
 // As such it needs to be extracted to be usable
 func (c ConstExpr) UnpackAsRegisterData() (lx.RegisterData, bool) {
-	if r, ok := c.Val.(ConstExprReg); ok {
+	if r, ok := c.Val.(RegExpr); ok {
 		return r.Reg, true
 	} else {
 		return lx.RegisterData{}, false
@@ -282,8 +284,6 @@ func (e *ArthExpr) Emit() (string, error) {
 }
 func (e *ConstExpr) Emit() string {
 	switch c := e.Val.(type) {
-	case ConstExprReg:
-		return c.Reg.String()
 	case ConstExprILit:
 		return fmt.Sprintf("%v", c.Integer)
 	case ConstExprFLit:
@@ -295,6 +295,8 @@ func (e *ConstExpr) Emit() string {
 }
 func (e *Expr) Emit() (string, error) {
 	switch v := e.Val.(type) {
+	case RegExpr:
+		return v.Reg.String(), nil
 	case ConstExpr:
 		return v.Emit(), nil
 	case DerefExpr:

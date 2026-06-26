@@ -72,7 +72,7 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		return deref, nil
 	case lx.TOKEN_TREG:
 		regData := lhsToken.Val.(lx.RegisterData)
-		lhs = MakeConstexprR(byte(regData.Reg), regData.Size)
+		lhs = MakeRegexpr(byte(regData.Reg), regData.Size)
 	case lx.TOKEN_TINTEGER_LIT:
 		lhs = MakeConstexprU64(lhsToken.Val.(uint64))
 	case lx.TOKEN_TFLOAT_LIT:
