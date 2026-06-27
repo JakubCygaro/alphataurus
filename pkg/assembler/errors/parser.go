@@ -47,7 +47,10 @@ func FailedToParse(
 		Line:        line,
 		Col:         col,
 		construct: func() string {
-			return fmt.Sprintf(format, a...)
+			return fmt.Sprintf(
+				"Invalid dereference expression. %s",
+				fmt.Sprintf(format, a...),
+			)
 		},
 	}
 	return err

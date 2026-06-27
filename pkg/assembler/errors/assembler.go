@@ -106,3 +106,13 @@ func DisallowedSourceRegister(line, col int) AssemblerError {
 	}
 	return err
 }
+func InvalidDerefExpr(line, col int, format string, a ...any) AssemblerError {
+	err := AssemblerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return fmt.Sprintf(format)
+		},
+	}
+	return err
+}

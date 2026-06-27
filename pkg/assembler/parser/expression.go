@@ -55,6 +55,9 @@ type RegExpr struct {
 type ConstExprILit struct {
 	Integer uint64
 }
+func(c ConstExprILit) Signed() int64 {
+	return int64(c.Integer)
+}
 type ConstExprFLit struct {
 	Float uint64
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
@@ -479,7 +480,9 @@ type DerefData struct {
 	OffsetExpr *pr.Expr
 }
 
-func (ev *ExpressionEvaluator) processDerefNestedArth(
+// TODO: make this work with the current paradigm
+// maybe first do the fat tree stuff?
+func processDerefNestedArth(
 	arthExpr pr.ArthExpr, nestLvl int) (DerefData, error) {
 	ret := DerefData{
 		Reg1:       lx.GetInvalidRegister(),
@@ -488,53 +491,99 @@ func (ev *ExpressionEvaluator) processDerefNestedArth(
 		Offset:     INVALID,
 		OffsetExpr: nil,
 	}
-	switch {
-	case pr.IsConstexprType[pr.RegExpr](arthExpr.A) &&
-		IsConstexprType(arthExpr.B, CONSTEXPR_TILIT):
-
-		ret.Ty = DEREF_T1RO
-		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
-		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
-		ret.OffsetOp = arthExpr.GetVMOpType()
-	case IsConstexprType(arthExpr.A, CONSTEXPR_TILIT) &&
-		IsConstexprType(arthExpr.B, CONSTEXPR_TREG) &&
-		(arthExpr.Ty == ARTHEXPR_TADD):
-
-		ret.Ty = DEREF_T1RO
-		ret.Reg1 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
-		ret.Offset = int64(arthExpr.A.Val.(ConstExpr).Val)
-		ret.OffsetOp = vm.OP_TADD
-	case IsConstexprType(arthExpr.A, CONSTEXPR_TREG) &&
-		IsConstexprType(arthExpr.B, CONSTEXPR_TREG) &&
-		(arthExpr.Ty == ARTHEXPR_TADD):
-
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
-		ret.Reg2 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
-		ret.Offset = int64(0)
-		ret.OffsetOp = vm.OP_TADD
-	case IsConstexprType(arthExpr.A, CONSTEXPR_TREG) &&
-		IsArthexprType(arthExpr.B, ARTHEXPR_TADD) &&
-		nestLvl == 0:
-
-		nestedD, err := ev.processDerefNestedArth(arthExpr.B.Val.(ArthExpr), nestLvl+1)
-		if err != nil {
-			return ret, err
-		}
-		if nestedD.OffsetOp != vm.OP_TADD && nestedD.OffsetOp != vm.OP_TSUB {
-			em, _ := arthExpr.B.Emit()
-			return ret, errors.FailedToParse("dereference expression",
-				ev.currentStartToken.Line, ev.currentStartToken.Col,
-				"Disallowed operation in expression, only addition or subtraction "+
-					"is allowed for this expression\n In expression: `%s`",
-				em,
+	extract1RO := func(a, b *pr.Expr, op int) error {
+		var reg, off *pr.Expr
+		if a.IsRegexpr() && pr.IsConstexprType[pr.ConstExprILit](b) {
+			reg = a
+			off = b
+		} else if b.IsRegexpr() && pr.IsConstexprType[pr.ConstExprILit](a) &&
+			(op == vm.OP_TADD || op == vm.OP_TMUL) {
+			reg = b
+			off = a
+		} else {
+			return errors.InvalidDerefExpr(
+				a.Line, a.Col,
+				"In expression `%s`",
 			)
 		}
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = arthExpr.A.Val.(ConstExpr).UnpackAsRegisterData()
-		ret.Reg2 = nestedD.Reg1
-		ret.Offset = nestedD.Offset
-		ret.OffsetOp = nestedD.OffsetOp
+		ret.Ty = DEREF_T1RO
+		ret.Reg1 = reg.Val.(pr.RegExpr).Reg
+		ret.Offset = off.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Signed()
+		ret.OffsetOp = op
+		return nil
+	}
+	extract2RO := func(a, b *pr.Expr, op int) error {
+		// r0 <op> r0
+		if a.IsRegexpr() && b.IsRegexpr() {
+			ret.Ty = DEREF_T2RO
+			ret.Reg1 = a.Val.(pr.RegExpr).Reg
+			ret.Reg2 = b.Val.(pr.RegExpr).Reg
+			ret.Offset = int64(0)
+			ret.OffsetOp = op
+			// r0 <op> ( + )
+		} else if a.IsRegexpr() && pr.IsArthexprType[pr.ArthExprAdd](b) &&
+			nestLvl == 0 {
+			if nestedD, err := processDerefNestedArth(
+				b.Val.(pr.ArthExpr), nestLvl+1); err != nil {
+				return err
+			} else if nestedD.OffsetOp != vm.OP_TADD && nestedD.OffsetOp != vm.OP_TSUB {
+				return errors.InvalidDerefExpr(
+					b.Line, b.Col,
+					"In expression `%s`",
+				)
+			} else {
+				ret.Ty = DEREF_T2RO
+				ret.Reg1 = a.Val.(pr.RegExpr).Reg
+				ret.Reg2 = nestedD.Reg1
+				ret.Offset = nestedD.Offset
+				ret.OffsetOp = nestedD.OffsetOp
+			}
+			// ( + ) <op> r0
+		} else if b.IsRegexpr() && pr.IsArthexprType[pr.ArthExprAdd](a) &&
+			nestLvl == 0 &&
+			op == vm.OP_TADD {
+			if nestedD, err := processDerefNestedArth(
+				a.Val.(pr.ArthExpr), nestLvl+1); err != nil {
+				return err
+			} else {
+				ret.Ty = DEREF_T2RO
+				ret.Reg1 = b.Val.(pr.RegExpr).Reg
+				ret.Reg2 = nestedD.Reg1
+				ret.Offset = nestedD.Offset
+				ret.OffsetOp = nestedD.OffsetOp
+			}
+		} else {
+			return errors.InvalidDerefExpr(
+				a.Line, a.Col,
+				"In expression `%s`",
+			)
+		}
+		return nil
+	}
+	switch arth := arthExpr.Val.(type) {
+	case pr.ArthExprAdd:
+		if err := extract1RO(arth.A, arth.B, vm.OP_TADD); err != nil {
+			return ret, err
+		} else if err := extract2RO(arth.A, arth.B, vm.OP_TADD); err != nil {
+			return ret, err
+		}
+	case pr.ArthExprSub:
+		if err := extract1RO(arth.A, arth.B, vm.OP_TSUB); err != nil {
+			return ret, err
+		}
+	case pr.ArthExprDiv:
+		if err := extract1RO(arth.A, arth.B, vm.OP_TDIV); err != nil {
+			return ret, err
+		}
+	case pr.ArthExprMul:
+		if err := extract1RO(arth.A, arth.B, vm.OP_TMUL); err != nil {
+			return ret, err
+		} else if err := extract2RO(arth.A, arth.B, vm.OP_TMUL); err != nil {
+			return ret, err
+		}
+
+	}
+	switch {
 	case IsConstexprType(arthExpr.B, CONSTEXPR_TREG) &&
 		IsArthexprType(arthExpr.A, ARTHEXPR_TADD) &&
 		nestLvl == 0 &&
@@ -609,7 +658,8 @@ func (ev *ExpressionEvaluator) processDerefNestedArth(
 	return ret, nil
 }
 
-func (ev *ExpressionEvaluator) processDeref(inner *pr.Expr) (DerefData, error) {
+// probably does not need a reciever argument
+func ProcessDeref(inner *pr.Expr) (DerefData, error) {
 	ret := DerefData{
 		Reg1:       lx.GetInvalidRegister(),
 		Reg2:       lx.GetInvalidRegister(),
@@ -644,7 +694,7 @@ func (ev *ExpressionEvaluator) processDeref(inner *pr.Expr) (DerefData, error) {
 		ret.Offset = int64(0)
 		ret.OffsetOp = vm.OP_TADD
 	case pr.ArthExpr:
-		return ev.processDerefNestedArth(expr, 0)
+		return processDerefNestedArth(expr, 0)
 	default:
 		// em, _ := inner.Emit()
 		// return ret, errors.FailedToParse("dereference expression",
@@ -661,4 +711,205 @@ func (ev *ExpressionEvaluator) processDeref(inner *pr.Expr) (DerefData, error) {
 		)
 	}
 	return ret, nil
+}
+
+const (
+	// expect a single register or a single immediate value
+	EXPECT_R_OR_IMM = 1
+	// expect a register, operator and then a register or an immediate value
+	EXPECT_R_OP_R_OR_IMM = 3
+	// expect two registers and an immediate value
+	EXPECT_2R1IMM = 5
+)
+
+func ProcessDeref2(dexpr pr.DerefExpr) (DerefData, error) {
+	ret := DerefData{}
+	var flattened []lx.Token
+	inner := dexpr.Inner
+	if out, err := flattenDeref(inner); err != nil {
+		return ret, err
+	} else {
+		flattened = out
+	}
+	switch len(flattened) {
+	case EXPECT_R_OR_IMM:
+		t0 := flattened[0]
+		switch t0.Ty {
+		case lx.TOKEN_TREG:
+			ret = DerefData{
+				Ty:       DEREF_T1RO,
+				Reg1:     t0.Val.(lx.RegisterData),
+				Offset:   0,
+				OffsetOp: vm.OP_TADD,
+			}
+		case lx.TOKEN_TINTEGER_LIT:
+			ret = DerefData{
+				Ty:     DEREF_T0RO,
+				Offset: int64(t0.Val.(uint64)),
+			}
+		default:
+			return ret, errors.InvalidDerefExpr(
+				t0.Line, t0.Col,
+				"Disallowed derefernce parameter",
+			)
+		}
+	case EXPECT_R_OP_R_OR_IMM:
+		t0 := flattened[0]
+		op := flattened[1]
+		t2 := flattened[2]
+		// swap them so the immediate value will always be on the right side
+		if t2.Ty == lx.TOKEN_TREG &&
+			(op.Ty == lx.TOKEN_TASTERISK || op.Ty == lx.TOKEN_TPLUS) {
+			t0, t2 = t2, t0
+		}
+		if t0.Ty != lx.TOKEN_TREG {
+			return ret, errors.InvalidDerefExpr(
+				t0.Line, t0.Col,
+				"Disallowed derefernce parameter",
+			)
+		}
+		ret.Reg1 = t0.Val.(lx.RegisterData)
+		switch op.Ty {
+		case lx.TOKEN_TPLUS:
+			ret.OffsetOp = vm.OP_TADD
+		case lx.TOKEN_TMINUS:
+			ret.OffsetOp = vm.OP_TSUB
+		case lx.TOKEN_TASTERISK:
+			ret.OffsetOp = vm.OP_TMUL
+		case lx.TOKEN_TSLASH:
+			ret.OffsetOp = vm.OP_TDIV
+		default:
+			return ret, errors.InvalidDerefExpr(
+				op.Line, op.Col,
+				"Bad expression",
+			)
+		}
+		switch t2.Ty {
+		case lx.TOKEN_TINTEGER_LIT:
+			ret.Ty = DEREF_T1RO
+			ret.Offset = int64(t2.Val.(uint64))
+		case lx.TOKEN_TREG:
+			switch ret.OffsetOp {
+			case vm.OP_TADD:
+				fallthrough
+			case vm.OP_TSUB:
+				break
+			default:
+				return ret, errors.InvalidDerefExpr(
+					op.Line, op.Col,
+					"Disallowed operator",
+				)
+			}
+			ret.Ty = DEREF_T2RO
+			ret.Offset = 0
+			ret.Reg2 = t2.Val.(lx.RegisterData)
+		default:
+			return ret, errors.InvalidDerefExpr(
+				t2.Line, t2.Col,
+				"Disallowed derefernce parameter",
+			)
+		}
+	case EXPECT_2R1IMM:
+	}
+
+	return ret, nil
+}
+
+func flattenDeref(expr *pr.Expr) ([]lx.Token, error) {
+	flattened := make([]lx.Token, 0)
+	if out, err := flattenImpl(expr, flattened, 0); err != nil {
+		return nil, err
+	} else {
+		flattened = out
+	}
+	return flattened, nil
+}
+
+func flattenImpl(expr *pr.Expr, out []lx.Token, depth int) ([]lx.Token, error) {
+	tok := lx.Token{
+		Col:  expr.Col,
+		Line: expr.Line,
+	}
+	switch v := expr.Val.(type) {
+	case pr.ConstExprILit:
+		tok.Ty = lx.TOKEN_TINTEGER_LIT
+		tok.Val = v.Integer
+		out = append(out, tok)
+	case pr.RegExpr:
+		tok.Ty = lx.TOKEN_TREG
+		tok.Val = v.Reg
+		out = append(out, tok)
+	case pr.ArthExpr:
+		if depth > 0 {
+			return out, errors.InvalidDerefExpr(
+				expr.Line, expr.Col,
+				"Expression too complex",
+			)
+		}
+		switch arth := v.Val.(type) {
+		case pr.ArthExprAdd:
+			if fa, err := flattenImpl(arth.A, out, depth+1); err != nil {
+				return out, err
+			} else {
+				out = fa
+			}
+			tok.Ty = lx.TOKEN_TPLUS
+			out = append(out, tok)
+			if fb, err := flattenImpl(arth.B, out, depth+1); err != nil {
+				return out, err
+			} else {
+				out = fb
+			}
+		case pr.ArthExprSub:
+			if fa, err := flattenImpl(arth.A, out, depth+1); err != nil {
+				return out, err
+			} else {
+				out = fa
+			}
+			tok.Ty = lx.TOKEN_TMINUS
+			out = append(out, tok)
+			if fb, err := flattenImpl(arth.B, out, depth+1); err != nil {
+				return out, err
+			} else {
+				out = fb
+			}
+		case pr.ArthExprMul:
+			if fa, err := flattenImpl(arth.A, out, depth+1); err != nil {
+				return out, err
+			} else {
+				out = fa
+			}
+			tok.Ty = lx.TOKEN_TASTERISK
+			out = append(out, tok)
+			if fb, err := flattenImpl(arth.B, out, depth+1); err != nil {
+				return out, err
+			} else {
+				out = fb
+			}
+		case pr.ArthExprDiv:
+			if fa, err := flattenImpl(arth.A, out, depth+1); err != nil {
+				return out, err
+			} else {
+				out = fa
+			}
+			tok.Ty = lx.TOKEN_TSLASH
+			out = append(out, tok)
+			if fb, err := flattenImpl(arth.B, out, depth+1); err != nil {
+				return out, err
+			} else {
+				out = fb
+			}
+		default:
+			return out, errors.InvalidDerefExpr(
+				expr.Line, expr.Col,
+				"Unsupported expression type",
+			)
+		}
+	default:
+		return out, errors.InvalidDerefExpr(
+			expr.Line, expr.Col,
+			"Invalid parameter in expression",
+		)
+	}
+	return out, nil
 }
