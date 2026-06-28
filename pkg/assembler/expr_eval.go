@@ -15,7 +15,7 @@ type EvaluationContext struct {
 }
 
 type ExpressionEvaluator struct {
-	ctx EvaluationContext
+	Ctx EvaluationContext
 }
 
 // Extract the value of the constant expression into either uint64 or float64
@@ -23,7 +23,7 @@ type ExpressionEvaluator struct {
 func (ev *ExpressionEvaluator) extractValue(cexpr pr.ConstExpr) any {
 	switch v := cexpr.Val.(type) {
 	case pr.ConstExprIden:
-		f, _ := ev.ctx.Variables[v.Ident]
+		f, _ := ev.Ctx.Variables[v.Ident]
 		return f
 	case pr.ConstExprILit:
 		return v.Integer
@@ -271,6 +271,14 @@ func (ev *ExpressionEvaluator) TryConstEvaluateExpression(e *pr.Expr) (pr.ConstE
 	}
 	return pr.ConstExpr{}, false
 }
+func TryConstEvalExprT[CE pr.CExpr](
+	ev *ExpressionEvaluator, e *pr.Expr) (any, bool) {
+	if expr, ok := ev.TryEvaluateExpression(e); ok && expr.IsConstexpr() {
+		ce, ok := expr.Val.(pr.ConstExpr).Val.(CE), true
+		return ce, ok
+	}
+	return nil, false
+}
 
 // func (ev *ExpressionEvaluator) tryEvaluateBinaryExpression(
 // 	a, b *pr.Expr) (*pr.Expr, bool) {
@@ -378,6 +386,14 @@ func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, bool
 	case pr.DerefExpr:
 		inner, ok := ev.TryEvaluateExpression(expr.Inner)
 		return pr.MakeDeref(inner), ok
+	case pr.OneRegOffsetExpr:
+		offset, ok := ev.TryEvaluateExpression(expr.Offset)
+		expr.Offset = offset
+		return &pr.Expr{Val: expr}, ok
+	case pr.TwoRegOffsetExpr:
+		offset, ok := ev.TryEvaluateExpression(expr.Offset)
+		expr.Offset = offset
+		return &pr.Expr{Val: expr}, ok
 	}
 	return e, false
 }
@@ -482,181 +498,181 @@ type DerefData struct {
 
 // TODO: make this work with the current paradigm
 // maybe first do the fat tree stuff?
-func processDerefNestedArth(
-	arthExpr pr.ArthExpr, nestLvl int) (DerefData, error) {
-	ret := DerefData{
-		Reg1:       lx.GetInvalidRegister(),
-		Reg2:       lx.GetInvalidRegister(),
-		OffsetOp:   INVALID,
-		Offset:     INVALID,
-		OffsetExpr: nil,
-	}
-	extract1RO := func(a, b *pr.Expr, op int) error {
-		var reg, off *pr.Expr
-		if a.IsRegexpr() && pr.IsConstexprType[pr.ConstExprILit](b) {
-			reg = a
-			off = b
-		} else if b.IsRegexpr() && pr.IsConstexprType[pr.ConstExprILit](a) &&
-			(op == vm.OP_TADD || op == vm.OP_TMUL) {
-			reg = b
-			off = a
-		} else {
-			return errors.InvalidDerefExpr(
-				a.Line, a.Col,
-				"In expression `%s`",
-			)
-		}
-		ret.Ty = DEREF_T1RO
-		ret.Reg1 = reg.Val.(pr.RegExpr).Reg
-		ret.Offset = off.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Signed()
-		ret.OffsetOp = op
-		return nil
-	}
-	extract2RO := func(a, b *pr.Expr, op int) error {
-		// r0 <op> r0
-		if a.IsRegexpr() && b.IsRegexpr() {
-			ret.Ty = DEREF_T2RO
-			ret.Reg1 = a.Val.(pr.RegExpr).Reg
-			ret.Reg2 = b.Val.(pr.RegExpr).Reg
-			ret.Offset = int64(0)
-			ret.OffsetOp = op
-			// r0 <op> ( + )
-		} else if a.IsRegexpr() && pr.IsArthexprType[pr.ArthExprAdd](b) &&
-			nestLvl == 0 {
-			if nestedD, err := processDerefNestedArth(
-				b.Val.(pr.ArthExpr), nestLvl+1); err != nil {
-				return err
-			} else if nestedD.OffsetOp != vm.OP_TADD && nestedD.OffsetOp != vm.OP_TSUB {
-				return errors.InvalidDerefExpr(
-					b.Line, b.Col,
-					"In expression `%s`",
-				)
-			} else {
-				ret.Ty = DEREF_T2RO
-				ret.Reg1 = a.Val.(pr.RegExpr).Reg
-				ret.Reg2 = nestedD.Reg1
-				ret.Offset = nestedD.Offset
-				ret.OffsetOp = nestedD.OffsetOp
-			}
-			// ( + ) <op> r0
-		} else if b.IsRegexpr() && pr.IsArthexprType[pr.ArthExprAdd](a) &&
-			nestLvl == 0 &&
-			op == vm.OP_TADD {
-			if nestedD, err := processDerefNestedArth(
-				a.Val.(pr.ArthExpr), nestLvl+1); err != nil {
-				return err
-			} else {
-				ret.Ty = DEREF_T2RO
-				ret.Reg1 = b.Val.(pr.RegExpr).Reg
-				ret.Reg2 = nestedD.Reg1
-				ret.Offset = nestedD.Offset
-				ret.OffsetOp = nestedD.OffsetOp
-			}
-		} else {
-			return errors.InvalidDerefExpr(
-				a.Line, a.Col,
-				"In expression `%s`",
-			)
-		}
-		return nil
-	}
-	switch arth := arthExpr.Val.(type) {
-	case pr.ArthExprAdd:
-		if err := extract1RO(arth.A, arth.B, vm.OP_TADD); err != nil {
-			return ret, err
-		} else if err := extract2RO(arth.A, arth.B, vm.OP_TADD); err != nil {
-			return ret, err
-		}
-	case pr.ArthExprSub:
-		if err := extract1RO(arth.A, arth.B, vm.OP_TSUB); err != nil {
-			return ret, err
-		}
-	case pr.ArthExprDiv:
-		if err := extract1RO(arth.A, arth.B, vm.OP_TDIV); err != nil {
-			return ret, err
-		}
-	case pr.ArthExprMul:
-		if err := extract1RO(arth.A, arth.B, vm.OP_TMUL); err != nil {
-			return ret, err
-		} else if err := extract2RO(arth.A, arth.B, vm.OP_TMUL); err != nil {
-			return ret, err
-		}
-
-	}
-	switch {
-	case IsConstexprType(arthExpr.B, CONSTEXPR_TREG) &&
-		IsArthexprType(arthExpr.A, ARTHEXPR_TADD) &&
-		nestLvl == 0 &&
-		(arthExpr.Ty == ARTHEXPR_TADD):
-
-		nestedD, err := ev.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)
-		if err != nil {
-			return ret, err
-		}
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
-		ret.Reg2 = nestedD.Reg1
-		ret.Offset = nestedD.Offset
-		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexprType(arthExpr.A, CONSTEXPR_TILIT) &&
-		IsArthexprType(arthExpr.B, ARTHEXPR_TADD) &&
-		nestLvl == 0 &&
-		(arthExpr.Ty == ARTHEXPR_TADD):
-
-		nestedD, err := ev.processDerefNestedArth(arthExpr.B.Val.(ArthExpr), nestLvl+1)
-		if err != nil {
-			return ret, err
-		}
-		if nestedD.OffsetOp != vm.OP_TADD || nestedD.Ty != DEREF_T2RO {
-			em, _ := arthExpr.B.Emit()
-			return ret, errors.FailedToParse("dereference expression",
-				ev.currentStartToken.Line, ev.currentStartToken.Col,
-				"Disallowed operation in expression, only addition "+
-					"is allowed between registers in"+
-					" this expression\n In expression: `%s`",
-				em,
-			)
-		}
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = nestedD.Reg1
-		ret.Reg2 = nestedD.Reg2
-		ret.Offset = int64(arthExpr.A.Val.(ConstExpr).Val)
-		ret.OffsetOp = nestedD.OffsetOp
-	case IsConstexprType(arthExpr.B, CONSTEXPR_TILIT) &&
-		IsArthexprType(arthExpr.A, ARTHEXPR_TADD) &&
-		nestLvl == 0:
-
-		nestedD, err := ev.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)
-		if err != nil {
-			return ret, err
-		}
-		if nestedD.OffsetOp != vm.OP_TADD || nestedD.Ty != DEREF_T2RO {
-			em, _ := arthExpr.B.Emit()
-			return ret, errors.FailedToParse("dereference expression",
-				ev.currentStartToken.Line, ev.currentStartToken.Col,
-				"Disallowed operation in expression, only addition "+
-					"is allowed between registers in"+
-					" this expression\n In expression: `%s`",
-				em,
-			)
-		}
-		ret.Ty = DEREF_T2RO
-		ret.Reg1 = nestedD.Reg1
-		ret.Reg2 = nestedD.Reg2
-		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
-		ret.OffsetOp = nestedD.OffsetOp
-	default:
-		em, _ := arthExpr.Emit()
-		return ret, errors.FailedToParse(
-			"dereference expression",
-			ev.currentStartToken.Line, ev.currentStartToken.Col,
-			"Invalid dereference expression `%s`",
-			em,
-		)
-		// TODO: label dereference support
-	}
-	return ret, nil
-}
+// func processDerefNestedArth(
+// 	arthExpr pr.ArthExpr, nestLvl int) (DerefData, error) {
+// 	ret := DerefData{
+// 		Reg1:       lx.GetInvalidRegister(),
+// 		Reg2:       lx.GetInvalidRegister(),
+// 		OffsetOp:   INVALID,
+// 		Offset:     INVALID,
+// 		OffsetExpr: nil,
+// 	}
+// 	extract1RO := func(a, b *pr.Expr, op int) error {
+// 		var reg, off *pr.Expr
+// 		if a.IsRegexpr() && pr.IsConstexprType[pr.ConstExprILit](b) {
+// 			reg = a
+// 			off = b
+// 		} else if b.IsRegexpr() && pr.IsConstexprType[pr.ConstExprILit](a) &&
+// 			(op == vm.OP_TADD || op == vm.OP_TMUL) {
+// 			reg = b
+// 			off = a
+// 		} else {
+// 			return errors.InvalidDerefExpr(
+// 				a.Line, a.Col,
+// 				"In expression `%s`",
+// 			)
+// 		}
+// 		ret.Ty = DEREF_T1RO
+// 		ret.Reg1 = reg.Val.(pr.RegExpr).Reg
+// 		ret.Offset = off.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Signed()
+// 		ret.OffsetOp = op
+// 		return nil
+// 	}
+// 	extract2RO := func(a, b *pr.Expr, op int) error {
+// 		// r0 <op> r0
+// 		if a.IsRegexpr() && b.IsRegexpr() {
+// 			ret.Ty = DEREF_T2RO
+// 			ret.Reg1 = a.Val.(pr.RegExpr).Reg
+// 			ret.Reg2 = b.Val.(pr.RegExpr).Reg
+// 			ret.Offset = int64(0)
+// 			ret.OffsetOp = op
+// 			// r0 <op> ( + )
+// 		} else if a.IsRegexpr() && pr.IsArthexprType[pr.ArthExprAdd](b) &&
+// 			nestLvl == 0 {
+// 			if nestedD, err := processDerefNestedArth(
+// 				b.Val.(pr.ArthExpr), nestLvl+1); err != nil {
+// 				return err
+// 			} else if nestedD.OffsetOp != vm.OP_TADD && nestedD.OffsetOp != vm.OP_TSUB {
+// 				return errors.InvalidDerefExpr(
+// 					b.Line, b.Col,
+// 					"In expression `%s`",
+// 				)
+// 			} else {
+// 				ret.Ty = DEREF_T2RO
+// 				ret.Reg1 = a.Val.(pr.RegExpr).Reg
+// 				ret.Reg2 = nestedD.Reg1
+// 				ret.Offset = nestedD.Offset
+// 				ret.OffsetOp = nestedD.OffsetOp
+// 			}
+// 			// ( + ) <op> r0
+// 		} else if b.IsRegexpr() && pr.IsArthexprType[pr.ArthExprAdd](a) &&
+// 			nestLvl == 0 &&
+// 			op == vm.OP_TADD {
+// 			if nestedD, err := processDerefNestedArth(
+// 				a.Val.(pr.ArthExpr), nestLvl+1); err != nil {
+// 				return err
+// 			} else {
+// 				ret.Ty = DEREF_T2RO
+// 				ret.Reg1 = b.Val.(pr.RegExpr).Reg
+// 				ret.Reg2 = nestedD.Reg1
+// 				ret.Offset = nestedD.Offset
+// 				ret.OffsetOp = nestedD.OffsetOp
+// 			}
+// 		} else {
+// 			return errors.InvalidDerefExpr(
+// 				a.Line, a.Col,
+// 				"In expression `%s`",
+// 			)
+// 		}
+// 		return nil
+// 	}
+// 	switch arth := arthExpr.Val.(type) {
+// 	case pr.ArthExprAdd:
+// 		if err := extract1RO(arth.A, arth.B, vm.OP_TADD); err != nil {
+// 			return ret, err
+// 		} else if err := extract2RO(arth.A, arth.B, vm.OP_TADD); err != nil {
+// 			return ret, err
+// 		}
+// 	case pr.ArthExprSub:
+// 		if err := extract1RO(arth.A, arth.B, vm.OP_TSUB); err != nil {
+// 			return ret, err
+// 		}
+// 	case pr.ArthExprDiv:
+// 		if err := extract1RO(arth.A, arth.B, vm.OP_TDIV); err != nil {
+// 			return ret, err
+// 		}
+// 	case pr.ArthExprMul:
+// 		if err := extract1RO(arth.A, arth.B, vm.OP_TMUL); err != nil {
+// 			return ret, err
+// 		} else if err := extract2RO(arth.A, arth.B, vm.OP_TMUL); err != nil {
+// 			return ret, err
+// 		}
+//
+// 	}
+// 	switch {
+// 	case IsConstexprType(arthExpr.B, CONSTEXPR_TREG) &&
+// 		IsArthexprType(arthExpr.A, ARTHEXPR_TADD) &&
+// 		nestLvl == 0 &&
+// 		(arthExpr.Ty == ARTHEXPR_TADD):
+//
+// 		nestedD, err := ev.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)
+// 		if err != nil {
+// 			return ret, err
+// 		}
+// 		ret.Ty = DEREF_T2RO
+// 		ret.Reg1 = arthExpr.B.Val.(ConstExpr).UnpackAsRegisterData()
+// 		ret.Reg2 = nestedD.Reg1
+// 		ret.Offset = nestedD.Offset
+// 		ret.OffsetOp = nestedD.OffsetOp
+// 	case IsConstexprType(arthExpr.A, CONSTEXPR_TILIT) &&
+// 		IsArthexprType(arthExpr.B, ARTHEXPR_TADD) &&
+// 		nestLvl == 0 &&
+// 		(arthExpr.Ty == ARTHEXPR_TADD):
+//
+// 		nestedD, err := ev.processDerefNestedArth(arthExpr.B.Val.(ArthExpr), nestLvl+1)
+// 		if err != nil {
+// 			return ret, err
+// 		}
+// 		if nestedD.OffsetOp != vm.OP_TADD || nestedD.Ty != DEREF_T2RO {
+// 			em, _ := arthExpr.B.Emit()
+// 			return ret, errors.FailedToParse("dereference expression",
+// 				ev.currentStartToken.Line, ev.currentStartToken.Col,
+// 				"Disallowed operation in expression, only addition "+
+// 					"is allowed between registers in"+
+// 					" this expression\n In expression: `%s`",
+// 				em,
+// 			)
+// 		}
+// 		ret.Ty = DEREF_T2RO
+// 		ret.Reg1 = nestedD.Reg1
+// 		ret.Reg2 = nestedD.Reg2
+// 		ret.Offset = int64(arthExpr.A.Val.(ConstExpr).Val)
+// 		ret.OffsetOp = nestedD.OffsetOp
+// 	case IsConstexprType(arthExpr.B, CONSTEXPR_TILIT) &&
+// 		IsArthexprType(arthExpr.A, ARTHEXPR_TADD) &&
+// 		nestLvl == 0:
+//
+// 		nestedD, err := ev.processDerefNestedArth(arthExpr.A.Val.(ArthExpr), nestLvl+1)
+// 		if err != nil {
+// 			return ret, err
+// 		}
+// 		if nestedD.OffsetOp != vm.OP_TADD || nestedD.Ty != DEREF_T2RO {
+// 			em, _ := arthExpr.B.Emit()
+// 			return ret, errors.FailedToParse("dereference expression",
+// 				ev.currentStartToken.Line, ev.currentStartToken.Col,
+// 				"Disallowed operation in expression, only addition "+
+// 					"is allowed between registers in"+
+// 					" this expression\n In expression: `%s`",
+// 				em,
+// 			)
+// 		}
+// 		ret.Ty = DEREF_T2RO
+// 		ret.Reg1 = nestedD.Reg1
+// 		ret.Reg2 = nestedD.Reg2
+// 		ret.Offset = int64(arthExpr.B.Val.(ConstExpr).Val)
+// 		ret.OffsetOp = nestedD.OffsetOp
+// 	default:
+// 		em, _ := arthExpr.Emit()
+// 		return ret, errors.FailedToParse(
+// 			"dereference expression",
+// 			ev.currentStartToken.Line, ev.currentStartToken.Col,
+// 			"Invalid dereference expression `%s`",
+// 			em,
+// 		)
+// 		// TODO: label dereference support
+// 	}
+// 	return ret, nil
+// }
 
 // probably does not need a reciever argument
 func ProcessDeref(inner *pr.Expr) (DerefData, error) {
@@ -694,7 +710,7 @@ func ProcessDeref(inner *pr.Expr) (DerefData, error) {
 		ret.Offset = int64(0)
 		ret.OffsetOp = vm.OP_TADD
 	case pr.ArthExpr:
-		return processDerefNestedArth(expr, 0)
+		// return processDerefNestedArth(expr, 0)
 	default:
 		// em, _ := inner.Emit()
 		// return ret, errors.FailedToParse("dereference expression",

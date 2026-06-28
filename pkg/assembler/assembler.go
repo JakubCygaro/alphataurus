@@ -5,11 +5,12 @@ import (
 	"encoding/binary"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	decls "github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
-	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 )
+
 type void struct{}
 
 type PatchCall void
@@ -22,6 +23,7 @@ type unresolvedJump struct {
 	// what instruction is gonna get patched, type of Patch... struct
 	PatchTy  any
 	Absolute bool
+	Expr     *pr.Expr
 }
 type unresolvedJumpMap map[int]unresolvedJump
 
@@ -46,6 +48,7 @@ type Assembler struct {
 	entry       uint64
 	// pointer to a function that recieves warnings emitted by the assembler
 	WarningSink func(AssemblerWarningData)
+	ev          ExpressionEvaluator
 }
 
 func (a *Assembler) InstructionCount() int {
@@ -59,6 +62,11 @@ func aInitialState() Assembler {
 		symbols:         aobj.NewSymbolTable(),
 		relocations:     make(aobj.RelocationTable, 0),
 		hasEntry:        false,
+		ev: ExpressionEvaluator{
+			Ctx: EvaluationContext{
+				Variables: make(map[string]any),
+			},
+		},
 	}
 	return a
 }
@@ -68,6 +76,7 @@ func (a *Assembler) clearState() {
 	clear(a.bytecode)
 	a.symbols.Clear()
 	clear(a.relocations)
+	clear(a.ev.Ctx.Variables)
 	a.hasEntry = false
 }
 func NewAssembler(reader *bufio.Reader) *Assembler {
@@ -197,7 +206,7 @@ func (a *Assembler) emitMovIR(data pr.InstMovIR, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVIR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	lastByte :=
-		(0b0000_1111 & byte(data.Dest)) |
+		(0b0000_1111 & byte(data.Dest.Reg)) |
 			(0b0011_0000 & (byte(0) << 4)) |
 			(0b1100_0000 & (byte(data.DataSize) << 6))
 	(*out)[len(*out)-4] = lastByte
@@ -208,14 +217,14 @@ func (a *Assembler) emitMovIR(data pr.InstMovIR, out *[]byte) error {
 func (a *Assembler) emitMovRR(data pr.InstMovRR, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest)) {
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
 		return errors.DisallowedDestinationRegister(a.line, a.col)
 	}
-	if !vm.IsMovFromRAllowed(byte(data.Src)) {
+	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
 		return errors.DisallowedSourceRegister(a.line, a.col)
 	}
-	destsrc := 0b00001111 & byte(data.Dest)
-	destsrc |= (0b00001111 & byte(data.Src)) << 4
+	destsrc := 0b00001111 & byte(data.Dest.Size)
+	destsrc |= (0b00001111 & byte(data.Src.Size)) << 4
 	dataSz := (0b0000_0011 & data.DataSize)
 	(*out)[len(*out)-4] = dataSz
 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
@@ -605,12 +614,25 @@ func (a *Assembler) jmpInstToOpCode(ty pr.JmpVariant) uint32 {
 func (a *Assembler) emitJmp(data pr.InstJmp, out *[]byte) error {
 	opcode := a.jmpInstToOpCode(data.Variant)
 	position := len(*out)
-	if addr, ok := data.Address.(uint64); ok {
+	evaluated, ok := a.ev.TryEvaluateExpression(data.Address)
+	switch ok {
+	case true:
+		if !pr.IsConstexprType[pr.ConstExprILit](evaluated) {
+			return errors.Expected(
+				"Valid address",
+				data.Address.Line,
+				data.Address.Col,
+			)
+		}
+		addr := evaluated.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Integer
 		*out = binary.BigEndian.AppendUint32(*out, uint32(opcode))
-		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
-	} else {
+		*out = binary.BigEndian.AppendUint64(
+			*out,
+			uint64(addr),
+		)
+	case false:
 		a.unresolvedJumps[position] = unresolvedJump{
-			Ident: data.Address.(string),
+			Expr: data.Address,
 			PatchTy: PatchJmp{
 				Variant: data.Variant,
 			},
@@ -619,6 +641,18 @@ func (a *Assembler) emitJmp(data pr.InstJmp, out *[]byte) error {
 		*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes.GetBytes(vm.OP_NOP)))
 		*out = binary.BigEndian.AppendUint64(*out, uint64(0))
 	}
+
+	// else if addr, ok := cexpr.Val.(pr.ConstExprIden); ok {
+	// 	a.unresolvedJumps[position] = unresolvedJump{
+	// 		Ident: data.Address.(string),
+	// 		PatchTy: PatchJmp{
+	// 			Variant: data.Variant,
+	// 		},
+	// 		Absolute: data.Absolute,
+	// 	}
+	// 	*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes.GetBytes(vm.OP_NOP)))
+	// 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
+	// }
 	return nil
 }
 
@@ -856,6 +890,12 @@ func (a *Assembler) emitPop(data pr.InstPop, out *[]byte) error {
 	pop := a.opCodes.GetBytes(vm.OP_POP)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(pop))
 	(*out)[len(*out)-4] = 0b0000_0011 & data.DataSz
+	return nil
+}
+func (a *Assembler) emitPopR(data pr.InstPopR, out *[]byte) error {
+	pop := a.opCodes.GetBytes(vm.OP_POP)
+	*out = binary.BigEndian.AppendUint32(*out, uint32(pop))
+	(*out)[len(*out)-4] = 0b0000_0011 & data.DataSz
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Reg))
 	return nil
 }
@@ -899,13 +939,23 @@ func (a *Assembler) emitCallIP1R(data pr.InstCallIP1R, out *[]byte) error {
 func (a *Assembler) emitCall(data pr.InstCall, out *[]byte) error {
 	call := a.opCodes.GetBytes(vm.OP_CALL)
 	//direct call case
-	if data.Addr != 0 {
+	evaluated, ok := a.ev.TryEvaluateExpression(data.Expr)
+	switch ok {
+	case true:
+		if !pr.IsConstexprType[pr.ConstExprILit](evaluated) {
+			return errors.Expected(
+				"Valid address",
+				data.Expr.Line,
+				data.Expr.Col,
+			)
+		}
+		addr := evaluated.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Integer
 		*out = binary.BigEndian.AppendUint32(*out, uint32(call))
-		*out = binary.BigEndian.AppendUint64(*out, uint64(data.Addr))
-	} else {
+		*out = binary.BigEndian.AppendUint64(*out, uint64(addr))
+	case false:
 		position := len(*out)
 		a.unresolvedJumps[position] = unresolvedJump{
-			Ident:   data.Ident,
+			Expr:    data.Expr,
 			PatchTy: PatchCall{},
 		}
 		*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes.GetBytes(vm.OP_NOP)))

@@ -36,11 +36,6 @@ const (
 
 type void struct{}
 
-var associativeOperators = map[int]void{
-	ARTHEXPR_TADD: void{},
-	ARTHEXPR_TMUL: void{},
-}
-
 type Expr struct {
 	Val       any
 	Line, Col int
@@ -52,12 +47,24 @@ type ConstExpr struct {
 type RegExpr struct {
 	Reg lx.RegisterData
 }
+type OneRegOffsetExpr struct {
+	Reg      lx.RegisterData
+	OffsetOp int
+	Offset   *Expr
+}
+type TwoRegOffsetExpr struct {
+	Reg1, Reg2      lx.RegisterData
+	OffsetOp, RegOp int
+	Offset          *Expr
+}
 type ConstExprILit struct {
 	Integer uint64
 }
-func(c ConstExprILit) Signed() int64 {
+
+func (c ConstExprILit) Signed() int64 {
 	return int64(c.Integer)
 }
+
 type ConstExprFLit struct {
 	Float uint64
 }
@@ -117,9 +124,24 @@ func (e *Expr) IsRegexpr() bool {
 	_, ok := e.Val.(RegExpr)
 	return ok
 }
+func (e *Expr) IsOneRegOffsetExpr() bool {
+	_, ok := e.Val.(OneRegOffsetExpr)
+	return ok
+}
+func (e *Expr) IsTwoRegOffsetExpr() bool {
+	_, ok := e.Val.(TwoRegOffsetExpr)
+	return ok
+}
+func IsExpr[E any](e *Expr) bool {
+	_, ok := e.Val.(E)
+	return ok
+}
 
-func IsConstexprType[
-	CT ConstExprILit | ConstExprFLit | ConstExprIden](e *Expr) bool {
+type CExpr interface {
+	ConstExprILit | ConstExprFLit | ConstExprIden
+}
+
+func IsConstexprType[CT CExpr](e *Expr) bool {
 	if c, ok := e.Val.(ConstExpr); !ok {
 		return false
 	} else {
@@ -127,8 +149,12 @@ func IsConstexprType[
 		return ok
 	}
 }
-func IsArthexprType[
-	AT ArthExprAdd | ArthExprSub | ArthExprMul | ArthExprDiv](e *Expr) bool {
+
+type AExpr interface {
+	ArthExprAdd | ArthExprSub | ArthExprMul | ArthExprDiv
+}
+
+func IsArthexprType[AT AExpr](e *Expr) bool {
 	if a, ok := e.Val.(ArthExpr); !ok {
 		return false
 	} else {

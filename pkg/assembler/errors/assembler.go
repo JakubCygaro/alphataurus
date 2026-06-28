@@ -24,6 +24,16 @@ func RedeclaredLabel(label, first string, line, col int) AssemblerError {
 	}
 	return err
 }
+func Expected(what string, line, col int) AssemblerError {
+	err := AssemblerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return fmt.Sprintf("Expected %s", what)
+		},
+	}
+	return err
+}
 func MultipleEntry(line, col int) AssemblerError {
 	err := AssemblerError{
 		Line: line,

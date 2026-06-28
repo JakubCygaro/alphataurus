@@ -7,9 +7,21 @@ import (
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
+var Void void = void{}
+
 type pair [2]int
 type precedenceMap map[int]pair
+type assocMap map[int]void
 
+func IsAssoc(op int) bool {
+	_, isAssoc := associativeBOps[op]
+	return isAssoc
+}
+
+var associativeBOps = assocMap{
+	lx.TOKEN_TPLUS:     Void,
+	lx.TOKEN_TASTERISK: Void,
+}
 var inBMap = precedenceMap{
 	lx.TOKEN_TPLUS:     pair{1, 2},
 	lx.TOKEN_TMINUS:    pair{1, 2},
@@ -132,13 +144,227 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		if err != nil {
 			return lhs, err
 		}
-		lhs = &Expr{
-			Val: ArthExpr{
-				Val: opTyToArthExpr(lhs, rhs, op.Ty),
-			},
+		if e, err := makeBinop(lhs, rhs, op); err != nil {
+			return nil, err
+		} else {
+			lhs = e
 		}
+		// lhs = &Expr{
+		// 	Val: ArthExpr{
+		// 		Val: opTyToArthExpr(lhs, rhs, op.Ty),
+		// 	},
+		// }
 	}
 	return lhs, nil
+}
+
+func makeBinop(lhs, rhs *Expr, opToken lx.Token) (*Expr, error) {
+	if lhs.IsRegexpr() || rhs.IsRegexpr() {
+		if e, err := opTyToRegOffExpr(lhs, rhs, opToken.Ty); err != nil {
+			return nil, err
+		} else {
+			return &Expr{
+				Val: e,
+			}, nil
+		}
+	}
+	if lhs.IsOneRegOffsetExpr() || rhs.IsOneRegOffsetExpr() {
+		if e, err := opTyWithOneOffRegExpr(lhs, rhs, opToken.Ty); err != nil {
+			return nil, err
+		} else {
+			return &Expr{
+				Val: e,
+			}, nil
+		}
+	}
+	if lhs.IsTwoRegOffsetExpr() {
+		if e, err := opTyWithTwoOffRegExpr(lhs, rhs, opToken.Ty); err != nil {
+			return nil, err
+		} else {
+			return &Expr{
+				Val: e,
+			}, nil
+		}
+	} else if rhs.IsTwoRegOffsetExpr() {
+		if e, err := opTyWithTwoOffRegExpr(lhs, rhs, opToken.Ty); err != nil {
+			return nil, err
+		} else {
+			return &Expr{
+				Val: e,
+			}, nil
+		}
+	}
+	return &Expr{
+		Val: opTyToArthExpr(lhs, rhs, opToken.Ty),
+	}, nil
+}
+func opTyWithTwoOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
+	switch a := lhs.Val.(type) {
+	case TwoRegOffsetExpr:
+		switch rhs.Val.(type) {
+		case ConstExpr:
+			return TwoRegOffsetExpr{
+				Reg1:     a.Reg1,
+				Reg2:     a.Reg2,
+				RegOp:    ty,
+				OffsetOp: a.OffsetOp,
+				Offset:   &Expr{Val: opTyToArthExpr(a.Offset, rhs, ty)},
+			}, nil
+		default:
+			return nil, errors.FailedToParse(
+				"two register offset expression",
+				rhs.Line, rhs.Col,
+				"Disallowed operation",
+			)
+		}
+	case ConstExpr:
+		switch b := rhs.Val.(type) {
+		case TwoRegOffsetExpr:
+			if IsAssoc(ty) && ty == b.OffsetOp {
+				return TwoRegOffsetExpr{
+					Reg1:     b.Reg1,
+					Reg2:     b.Reg2,
+					RegOp:    ty,
+					OffsetOp: b.OffsetOp,
+					Offset:   &Expr{Val: opTyToArthExpr(lhs, b.Offset, ty)},
+				}, nil
+			}
+			return nil, errors.FailedToParse(
+				"two register offset expression",
+				rhs.Line, rhs.Col,
+				"Disallowed operation",
+			)
+		default:
+			return nil, errors.FailedToParse(
+				"two register offset expression",
+				rhs.Line, rhs.Col,
+				"Disallowed operation",
+			)
+		}
+	}
+	return nil, errors.FailedToParse(
+		"two register offset expression",
+		rhs.Line, rhs.Col,
+		"Disallowed operation",
+	)
+}
+
+func opTyWithOneOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
+	switch a := lhs.Val.(type) {
+	case OneRegOffsetExpr:
+		switch b := rhs.Val.(type) {
+		case RegExpr:
+			if IsAssoc(ty) && ty == a.OffsetOp {
+				return TwoRegOffsetExpr{
+					Reg1:     a.Reg,
+					Reg2:     b.Reg,
+					RegOp:    ty,
+					OffsetOp: a.OffsetOp,
+					Offset:   &Expr{Val: opTyToArthExpr(a.Offset, rhs, ty)},
+				}, nil
+			} else {
+				return nil, errors.FailedToParse(
+					"two register offset expression",
+					rhs.Line, rhs.Col,
+					"Disallowed operation between registers",
+				)
+			}
+		default:
+			return OneRegOffsetExpr{
+				Reg:      a.Reg,
+				OffsetOp: a.OffsetOp,
+				Offset:   &Expr{Val: opTyToArthExpr(a.Offset, rhs, ty)},
+			}, nil
+		}
+	case RegExpr:
+		switch b := rhs.Val.(type) {
+		case OneRegOffsetExpr:
+			if IsAssoc(ty) && ty == b.OffsetOp {
+				return TwoRegOffsetExpr{
+					Reg1:     a.Reg,
+					Reg2:     b.Reg,
+					RegOp:    ty,
+					OffsetOp: b.OffsetOp,
+					Offset:   &Expr{Val: opTyToArthExpr(lhs, b.Offset, ty)},
+				}, nil
+			} else {
+				return nil, errors.FailedToParse(
+					"two register offset expression",
+					rhs.Line, rhs.Col,
+					"Disallowed operation between registers",
+				)
+			}
+		default:
+			return nil, errors.FailedToParse(
+				"two register offset expression",
+				rhs.Line, rhs.Col,
+				"Disallowed expression operands",
+			)
+		}
+	case ConstExpr:
+		switch b := rhs.Val.(type) {
+		case OneRegOffsetExpr:
+			if IsAssoc(ty) && ty == b.OffsetOp {
+				return OneRegOffsetExpr{
+					Reg:      b.Reg,
+					OffsetOp: b.OffsetOp,
+					Offset:   &Expr{Val: opTyToArthExpr(lhs, b.Offset, ty)},
+				}, nil
+			} else {
+				return nil, errors.FailedToParse(
+					"two register offset expression",
+					rhs.Line, rhs.Col,
+					"Disallowed operation between registers",
+				)
+			}
+		}
+	}
+	return nil, errors.FailedToParse(
+		"two register offset expression",
+		rhs.Line, rhs.Col,
+		"Bad expression",
+	)
+}
+
+func opTyToRegOffExpr(lhs, rhs *Expr, ty int) (any, error) {
+	switch a := lhs.Val.(type) {
+	case RegExpr:
+		if rhs.IsRegexpr() {
+			if ty != lx.TOKEN_TASTERISK && ty != lx.TOKEN_TPLUS {
+				return nil, errors.FailedToParse(
+					"two register offset expression",
+					rhs.Line, rhs.Col,
+					"Disallowed operation between registers",
+				)
+			}
+			return TwoRegOffsetExpr{
+				Reg1:   a.Reg,
+				Reg2:   rhs.Val.(RegExpr).Reg,
+				RegOp:  ty,
+				Offset: nil,
+			}, nil
+		} else {
+			return OneRegOffsetExpr{
+				Reg:      a.Reg,
+				OffsetOp: ty,
+				Offset:   rhs,
+			}, nil
+		}
+	case ConstExpr:
+		if !IsAssoc(ty) {
+			return nil, errors.FailedToParse(
+				"single register offset expression",
+				lhs.Line, lhs.Col,
+				"Disallowed operator between register and offset",
+			)
+		}
+		return OneRegOffsetExpr{
+			Reg:      rhs.Val.(RegExpr).Reg,
+			OffsetOp: ty,
+			Offset:   lhs,
+		}, nil
+	}
+	return nil, nil
 }
 
 func opTyToArthExpr(lhs, rhs *Expr, ty int) any {
