@@ -337,6 +337,58 @@ func (e *Expr) Emit() (string, error) {
 		} else {
 			return fmt.Sprintf("(%s)", inner), nil
 		}
+	case OneRegOffsetExpr:
+		var op rune
+		switch v.OffsetOp {
+		case lx.TOKEN_TPLUS:
+			op = '+'
+		case lx.TOKEN_TMINUS:
+			op = '-'
+		case lx.TOKEN_TASTERISK:
+			op = '*'
+		case lx.TOKEN_TSLASH:
+			op = '/'
+		default:
+			op = '?'
+		}
+		offset := ""
+		if v.Offset == nil { } else if off, err := v.Offset.Emit(); err != nil {
+			return "", err
+		} else {
+			offset = off
+		}
+		return fmt.Sprintf("(%s %c %s)", v.Reg.String(), op, offset), nil
+	case TwoRegOffsetExpr:
+		var offop, regop rune
+		switch v.OffsetOp {
+		case lx.TOKEN_TPLUS:
+			offop = '+'
+		case lx.TOKEN_TMINUS:
+			offop = '-'
+		case lx.TOKEN_TASTERISK:
+			offop = '*'
+		case lx.TOKEN_TSLASH:
+			offop = '/'
+		default:
+			offop = '?'
+		}
+		switch v.RegOp {
+		case lx.TOKEN_TPLUS:
+			regop = '+'
+		case lx.TOKEN_TMINUS:
+			regop = '-'
+		default:
+			regop = '?'
+		}
+		offset := ""
+		if v.Offset == nil { } else if off, err := v.Offset.Emit(); err != nil {
+			return "", err
+		} else {
+			offset = off
+		}
+		return fmt.Sprintf("(%s %c %s %c %s)",
+				v.Reg1.String(), regop, v.Reg2.String(), offop, offset),
+			nil
 	default:
 		return "", fmt.Errorf("<INVALID EXPRESSION TYPE>")
 	}

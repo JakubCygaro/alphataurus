@@ -36,8 +36,10 @@ func (p *Parser) ParseExpression() (*Expr, error) {
 	t, _ := p.lexer.ReadNextTokenReturn()
 	p.lexer.UnreadToken()
 	e, err := p.parseExpression(0)
-	e.Col = t.Col
-	e.Line = t.Line
+	if err == nil {
+		e.Col = t.Col
+		e.Line = t.Line
+	}
 	return e, err
 }
 func (p *Parser) parseExpression(minBp int) (*Expr, error) {
@@ -195,8 +197,19 @@ func makeBinop(lhs, rhs *Expr, opToken lx.Token) (*Expr, error) {
 		}
 	}
 	return &Expr{
-		Val: opTyToArthExpr(lhs, rhs, opToken.Ty),
+		Val: ArthExpr{
+			opTyToArthExpr(lhs, rhs, opToken.Ty),
+		},
 	}, nil
+}
+func arthOrPass(lhs, rhs *Expr, ty int) *Expr {
+	if lhs == nil {
+		return rhs
+	} else if rhs == nil {
+		return lhs
+	} else {
+		return &Expr{Val: opTyToArthExpr(lhs, rhs, ty)}
+	}
 }
 func opTyWithTwoOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
 	switch a := lhs.Val.(type) {
@@ -206,9 +219,17 @@ func opTyWithTwoOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
 			return TwoRegOffsetExpr{
 				Reg1:     a.Reg1,
 				Reg2:     a.Reg2,
-				RegOp:    ty,
-				OffsetOp: a.OffsetOp,
-				Offset:   &Expr{Val: opTyToArthExpr(a.Offset, rhs, ty)},
+				RegOp:    a.RegOp,
+				OffsetOp: ty,
+				Offset:   arthOrPass(a.Offset, rhs, ty),
+			}, nil
+		case ArthExpr:
+			return TwoRegOffsetExpr{
+				Reg1:     a.Reg1,
+				Reg2:     a.Reg2,
+				RegOp:    a.RegOp,
+				OffsetOp: ty,
+				Offset:   arthOrPass(a.Offset, rhs, ty),
 			}, nil
 		default:
 			return nil, errors.FailedToParse(
@@ -224,9 +245,33 @@ func opTyWithTwoOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
 				return TwoRegOffsetExpr{
 					Reg1:     b.Reg1,
 					Reg2:     b.Reg2,
-					RegOp:    ty,
+					RegOp:    b.RegOp,
 					OffsetOp: b.OffsetOp,
-					Offset:   &Expr{Val: opTyToArthExpr(lhs, b.Offset, ty)},
+					Offset:   arthOrPass(lhs, b.Offset, ty),
+				}, nil
+			}
+			return nil, errors.FailedToParse(
+				"two register offset expression",
+				rhs.Line, rhs.Col,
+				"Disallowed operation",
+			)
+		default:
+			return nil, errors.FailedToParse(
+				"two register offset expression",
+				rhs.Line, rhs.Col,
+				"Disallowed operation",
+			)
+		}
+	case ArthExpr:
+		switch b := rhs.Val.(type) {
+		case TwoRegOffsetExpr:
+			if IsAssoc(ty) && ty == b.OffsetOp {
+				return TwoRegOffsetExpr{
+					Reg1:     b.Reg1,
+					Reg2:     b.Reg2,
+					RegOp:    b.RegOp,
+					OffsetOp: b.OffsetOp,
+					Offset:   arthOrPass(lhs, b.Offset, ty),
 				}, nil
 			}
 			return nil, errors.FailedToParse(
@@ -260,7 +305,7 @@ func opTyWithOneOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
 					Reg2:     b.Reg,
 					RegOp:    ty,
 					OffsetOp: a.OffsetOp,
-					Offset:   &Expr{Val: opTyToArthExpr(a.Offset, rhs, ty)},
+					Offset:   arthOrPass(a.Offset, rhs, ty),
 				}, nil
 			} else {
 				return nil, errors.FailedToParse(
@@ -273,7 +318,7 @@ func opTyWithOneOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
 			return OneRegOffsetExpr{
 				Reg:      a.Reg,
 				OffsetOp: a.OffsetOp,
-				Offset:   &Expr{Val: opTyToArthExpr(a.Offset, rhs, ty)},
+				Offset:   arthOrPass(a.Offset, rhs, ty),
 			}, nil
 		}
 	case RegExpr:
@@ -285,7 +330,7 @@ func opTyWithOneOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
 					Reg2:     b.Reg,
 					RegOp:    ty,
 					OffsetOp: b.OffsetOp,
-					Offset:   &Expr{Val: opTyToArthExpr(lhs, b.Offset, ty)},
+					Offset:   arthOrPass(lhs, b.Offset, ty),
 				}, nil
 			} else {
 				return nil, errors.FailedToParse(
@@ -308,7 +353,7 @@ func opTyWithOneOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
 				return OneRegOffsetExpr{
 					Reg:      b.Reg,
 					OffsetOp: b.OffsetOp,
-					Offset:   &Expr{Val: opTyToArthExpr(lhs, b.Offset, ty)},
+					Offset:   arthOrPass(lhs, b.Offset, ty),
 				}, nil
 			} else {
 				return nil, errors.FailedToParse(
