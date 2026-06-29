@@ -17,7 +17,7 @@ func (p *Parser) parsePush() error {
 	if sz, ok := lx.TokenAsSize(&nextT); ok {
 		dataSz = sz
 	} else {
-		p.lexer.UnreadToken()
+		p.lexer.UnreadCurrentToken()
 	}
 	if arg, err := p.ParseExpression(); err != nil {
 		return err
@@ -131,7 +131,7 @@ func (p *Parser) parsePop() error {
 		}
 		return nil
 	} else {
-		p.lexer.UnreadToken()
+		p.lexer.UnreadCurrentToken()
 	}
 	// pop r0, r0b, r0q, r0h case
 	arg, err := p.parseExpression(0)

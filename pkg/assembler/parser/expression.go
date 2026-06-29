@@ -20,6 +20,7 @@ const (
 )
 const (
 	INVALID = -1
+	PENDING = -1
 	// r0
 	// sp
 	// CONSTEXPR_TREG stores its register data in the bits of the uint64 Val field

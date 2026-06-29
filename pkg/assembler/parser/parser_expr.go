@@ -12,6 +12,7 @@ var Void void = void{}
 type pair [2]int
 type precedenceMap map[int]pair
 type assocMap map[int]void
+type endParseMap map[int]void
 
 func IsAssoc(op int) bool {
 	_, isAssoc := associativeBOps[op]
@@ -28,13 +29,37 @@ var inBMap = precedenceMap{
 	lx.TOKEN_TASTERISK: pair{3, 4},
 	lx.TOKEN_TSLASH:    pair{3, 4},
 }
+
+func IsInfixOp(op int) bool {
+	_, ok := inBMap[op]
+	return ok
+}
+
 var preBMap = precedenceMap{
 	lx.TOKEN_TMINUS: pair{0, 5},
 }
 
+func IsPrefixOp(op int) bool {
+	_, ok := preBMap[op]
+	return ok
+}
+
+var endParse = endParseMap{
+	lx.TOKEN_TCLOSEDBRACKET:   Void,
+	lx.TOKEN_TEOF:             Void,
+	lx.TOKEN_TNEWLINE:         Void,
+	lx.TOKEN_TCLOSEDPAREN:     Void,
+	lx.TOKEN_TDOUBLESEMICOLON: Void,
+}
+
+func shouldEndParseExpr(op int) bool {
+	_, ok := endParse[op]
+	return ok
+}
+
 func (p *Parser) ParseExpression() (*Expr, error) {
 	t, _ := p.lexer.ReadNextTokenReturn()
-	p.lexer.UnreadToken()
+	p.lexer.UnreadCurrentToken()
 	e, err := p.parseExpression(0)
 	if err == nil {
 		e.Col = t.Col
@@ -85,8 +110,12 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		deref := MakeDeref(inner)
 		return deref, nil
 	case lx.TOKEN_TREG:
-		regData := lhsToken.Val.(lx.RegisterData)
-		lhs = MakeRegexpr(byte(regData.Reg), regData.Size)
+		// this wont be an expression, so stop parsing here
+		p.lexer.UnreadCurrentToken()
+		return nil, nil
+	// case lx.TOKEN_TREG:
+	// 	regData := lhsToken.Val.(lx.RegisterData)
+	// 	lhs = MakeRegexpr(byte(regData.Reg), regData.Size)
 	case lx.TOKEN_TINTEGER_LIT:
 		lhs = MakeConstexprU64(lhsToken.Val.(uint64))
 	case lx.TOKEN_TFLOAT_LIT:
@@ -125,37 +154,37 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			return nil, err
 		}
 		op := p.lexer.CurrentToken()
-		if op.Ty == lx.TOKEN_TCLOSEDBRACKET ||
-			op.Ty == lx.TOKEN_TEOF ||
-			op.Ty == lx.TOKEN_TNEWLINE ||
-			op.Ty == lx.TOKEN_TCLOSEDPAREN ||
-			op.Ty == lx.TOKEN_TDOUBLESEMICOLON {
-			p.lexer.UnreadToken()
+		if shouldEndParseExpr(op.Ty) {
+			p.lexer.UnreadCurrentToken()
 			break
 		}
 		binding, ok := inBMap[op.Ty]
 		if !ok {
-			p.lexer.UnreadToken()
+			p.lexer.UnreadCurrentToken()
 			break
 		}
 		if binding[0] < minBp {
-			p.lexer.UnreadToken()
+			p.lexer.UnreadCurrentToken()
 			break
 		}
 		rhs, err := p.parseExpression(binding[1])
 		if err != nil {
 			return lhs, err
+		} else if rhs == nil {
+			// in case a register was hit, unread the operator
+			p.lexer.UnreadToken(op)
+			return lhs, nil
 		}
-		if e, err := makeBinop(lhs, rhs, op); err != nil {
-			return nil, err
-		} else {
-			lhs = e
-		}
-		// lhs = &Expr{
-		// 	Val: ArthExpr{
-		// 		Val: opTyToArthExpr(lhs, rhs, op.Ty),
-		// 	},
+		// if e, err := makeBinop(lhs, rhs, op); err != nil {
+		// 	return nil, err
+		// } else {
+		// 	lhs = e
 		// }
+		lhs = &Expr{
+			Val: ArthExpr{
+				Val: opTyToArthExpr(lhs, rhs, op.Ty),
+			},
+		}
 	}
 	return lhs, nil
 }

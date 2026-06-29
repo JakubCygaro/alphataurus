@@ -3,6 +3,7 @@ package assembler
 import (
 	"bufio"
 	"fmt"
+
 	// "math/big"
 
 	// "io"
@@ -10,6 +11,7 @@ import (
 	"strconv"
 	"unicode"
 
+	"github.com/JakubCygaro/alphataurus/internal/pkg/dt"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -176,6 +178,7 @@ type Lexer struct {
 	currentToken Token
 	unRead       bool
 	reader       *bufio.Reader
+	tBuf         dt.RingBuffer[Token]
 }
 
 func (l *Lexer) GetPos() (line, col int) {
@@ -218,6 +221,7 @@ func lInitialState() Lexer {
 		unRead:       false,
 		col:          0,
 		line:         1,
+		tBuf:         dt.NewRingBuffer[Token](5),
 	}
 }
 
@@ -237,6 +241,8 @@ func (l *Lexer) CurrentPosition() string {
 }
 func (l *Lexer) CurrentToken() Token {
 	return l.currentToken
+	// t, _ := l.tBuf.Pop()
+	// return t
 }
 func numberCheck(b byte) bool {
 	return b-'0' <= 9
@@ -274,8 +280,11 @@ func (l *Lexer) unreadByte() error {
 	l.line, l.col = l.lastLine, l.lastCol
 	return l.reader.UnreadByte()
 }
-func (l *Lexer) UnreadToken() {
-	l.unRead = true
+func (l *Lexer) UnreadToken(t Token) {
+	l.tBuf.Put(t)
+}
+func (l *Lexer) UnreadCurrentToken() {
+	l.tBuf.Put(l.currentToken)
 }
 
 // Reads tokens into an array untill an EOF is encountered, EOF is included at the end
@@ -331,8 +340,8 @@ func (l *Lexer) ReadNextTokenReturn() (Token, error) {
 //
 // The read token can be accessed with CurrentToken()
 func (l *Lexer) ReadNextToken() error {
-	if l.unRead {
-		l.unRead = false
+	if ut, empty := l.tBuf.Pop(); !empty {
+		l.currentToken = ut
 		return nil
 	}
 	var b byte

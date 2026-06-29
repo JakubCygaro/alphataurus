@@ -53,9 +53,9 @@ func (p *Parser) SkipCommentLine() error {
 		}
 		switch p.lexer.CurrentToken().Ty {
 		case lx.TOKEN_TNEWLINE:
-			p.lexer.UnreadToken()
+			p.lexer.UnreadCurrentToken()
 		case lx.TOKEN_TEOF:
-			p.lexer.UnreadToken()
+			p.lexer.UnreadCurrentToken()
 		default:
 			continue
 		}
@@ -118,9 +118,9 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 	p.currentIdent = ident
 
 	if err := p.lexer.ReadNextToken(); err != nil {
-		p.lexer.UnreadToken()
+		p.lexer.UnreadCurrentToken()
 	} else if next := p.lexer.CurrentToken(); next.Ty != lx.TOKEN_TCOLON {
-		p.lexer.UnreadToken()
+		p.lexer.UnreadCurrentToken()
 	} else {
 		p.currentInst = Instruction{
 			Data: InstLab{
@@ -332,7 +332,7 @@ func (p *Parser) parseExit() error {
 		return err
 	}
 	// start := p.lexer.CurrentToken()
-	p.lexer.UnreadToken()
+	p.lexer.UnreadCurrentToken()
 	expr, err := p.ParseExpression()
 	if err != nil {
 		return err

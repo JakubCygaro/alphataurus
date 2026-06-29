@@ -15,7 +15,7 @@ func (p *Parser) parseMov() error {
 	}
 	op1 = p.lexer.CurrentToken()
 	if sz, ok := lx.TokenAsSize(&op1); !ok {
-		p.lexer.UnreadToken()
+		p.lexer.UnreadCurrentToken()
 	} else {
 		sized = sz
 		// sizedL = p.lexer.CurrentToken().Line

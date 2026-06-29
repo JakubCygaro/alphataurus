@@ -21,7 +21,7 @@ func (p *Parser) parseCmp() error {
 	case lx.TOKEN_TUNSIGNED:
 		ty = vm.TY_UINT
 	default:
-		p.lexer.UnreadToken()
+		p.lexer.UnreadCurrentToken()
 	}
 	if expr, err := p.ParseExpression(); err != nil {
 		return err
@@ -165,7 +165,7 @@ func (p *Parser) parseJmp(ty JmpVariant) error {
 	} else if p.lexer.CurrentToken().Ty == lx.TOKEN_TABSOLUTE {
 		absolute = true
 	} else {
-		p.lexer.UnreadToken()
+		p.lexer.UnreadCurrentToken()
 		absolute = false
 	}
 	if expr, err := p.ParseExpression(); err != nil {

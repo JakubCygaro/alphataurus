@@ -23,7 +23,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 			valTy = ARTH_TFLOAT
 		}
 	} else {
-		p.lexer.UnreadToken()
+		p.lexer.UnreadCurrentToken()
 	}
 	if expr, err := p.ParseExpression(); err != nil {
 		return err
@@ -206,7 +206,7 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 		valTy = ARTH_TFLOAT
 	default:
 		valTy = -1
-		p.lexer.UnreadToken()
+		p.lexer.UnreadCurrentToken()
 	}
 	err = p.lexer.ReadNextToken()
 	if err != nil {
