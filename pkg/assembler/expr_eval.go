@@ -387,12 +387,20 @@ func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, bool
 		inner, ok := ev.TryEvaluateExpression(expr.Inner)
 		return pr.MakeDeref(inner), ok
 	case pr.OneRegOffsetExpr:
-		offset, ok := ev.TryEvaluateExpression(expr.Offset)
-		expr.Offset = offset
+		var offset *pr.Expr
+		var ok bool
+		if expr.Offset != nil {
+			offset, ok = ev.TryEvaluateExpression(expr.Offset)
+			expr.Offset = offset
+		}
 		return &pr.Expr{Val: expr}, ok
 	case pr.TwoRegOffsetExpr:
-		offset, ok := ev.TryEvaluateExpression(expr.Offset)
-		expr.Offset = offset
+		var offset *pr.Expr
+		var ok bool
+		if expr.Offset != nil {
+			offset, ok = ev.TryEvaluateExpression(expr.Offset)
+			expr.Offset = offset
+		}
 		return &pr.Expr{Val: expr}, ok
 	}
 	return e, false

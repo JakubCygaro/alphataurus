@@ -111,7 +111,7 @@ func main() {
 	// }
 	// fmt.Printf("%+v\n", mach.GetFlags())
 	// fmt.Printf("stack:\n%+v\n", mach.GetStack())
-	const in = "r0 + r1 - 5 + 2"
+	const in = "r0 + r1"
 	var ex *pr.Expr
 	p := pr.NewParser(bufio.NewReader(strings.NewReader(in)))
 	if expr, err := p.ParseExpression(); err != nil {

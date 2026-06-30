@@ -3,6 +3,7 @@ package assembler
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
@@ -339,52 +340,65 @@ func (e *Expr) Emit() (string, error) {
 			return fmt.Sprintf("(%s)", inner), nil
 		}
 	case OneRegOffsetExpr:
-		var op rune
+		em := [3]string{}
+		em[0] = v.Reg.String()
 		switch v.OffsetOp {
 		case lx.TOKEN_TPLUS:
-			op = '+'
+			em[1] = "+"
 		case lx.TOKEN_TMINUS:
-			op = '-'
+			em[1] = "-"
 		case lx.TOKEN_TASTERISK:
-			op = '*'
+			em[1] = "*"
 		case lx.TOKEN_TSLASH:
-			op = '/'
+			em[1] = "/"
 		default:
-			op = '?'
+			em[1] = "?"
 		}
-		offset := ""
-		if v.Offset == nil { } else if off, err := v.Offset.Emit(); err != nil {
+		if v.Offset == nil {
+			em[1] = ""
+		} else if oem, err := v.Offset.Emit(); err != nil {
 			return "", err
 		} else {
-			offset = off
+			em[2] = oem
 		}
-		return fmt.Sprintf("(%s %c %s)", v.Reg.String(), op, offset), nil
+		return strings.
+			Join(
+				em[:],
+				" ",
+			), 
+			nil
 	case TwoRegOffsetExpr:
-		var offop, regop rune
-		switch v.OffsetOp {
-		case lx.TOKEN_TPLUS:
-			offop = '+'
-		case lx.TOKEN_TMINUS:
-			offop = '-'
-		default:
-			offop = '?'
-		}
+		em := [5]string{}
+		em[0] = v.Reg1.String()
 		switch v.RegOp {
 		case lx.TOKEN_TPLUS:
-			regop = '+'
+			em[1] = "+"
 		case lx.TOKEN_TMINUS:
-			regop = '-'
+			em[1] = "-"
 		default:
-			regop = '?'
+			em[1] = "?"
 		}
-		offset := ""
-		if v.Offset == nil { } else if off, err := v.Offset.Emit(); err != nil {
+		em[2] = v.Reg2.String()
+		switch v.RegOp {
+		case lx.TOKEN_TPLUS:
+			em[3] = "+"
+		case lx.TOKEN_TMINUS:
+			em[3] = "-"
+		default:
+			em[3] = "?"
+		}
+		if v.Offset == nil {
+			em[3] = ""
+		} else if oem, err := v.Offset.Emit(); err != nil {
 			return "", err
 		} else {
-			offset = off
+			em[4] = oem
 		}
-		return fmt.Sprintf("(%s %c %s %c %s)",
-				v.Reg1.String(), regop, v.Reg2.String(), offop, offset),
+		return strings.
+			Join(
+				em[:],
+				" ",
+			), 
 			nil
 	default:
 		return "", fmt.Errorf("<INVALID EXPRESSION TYPE>")
