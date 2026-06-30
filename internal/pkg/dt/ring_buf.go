@@ -21,8 +21,8 @@ func (rb *RingBuffer[T]) Len() int {
 
 // return value indicates that the buffer overwrote unread data
 func (rb *RingBuffer[T]) Put(item T) bool {
-	rb.w = (rb.w + 1) % len(rb.buf)
 	rb.buf[rb.w] = item
+	rb.w = (rb.w + 1) % len(rb.buf)
 	full := rb.w == rb.r
 	if full {
 		rb.r = (rb.r + 1) % len(rb.buf)
@@ -33,19 +33,19 @@ func (rb *RingBuffer[T]) Put(item T) bool {
 func (rb *RingBuffer[T]) Pop() (T, bool) {
 	var item T
 	if rb.r == rb.w {
-		return item, false
+		return item, true
 	} else {
 		item = rb.buf[rb.r]
 		rb.r = (rb.r + 1) % len(rb.buf)
-		return item, true
+		return item, false
 	}
 }
 // return value indicates wether the buffer is empty
 func (rb *RingBuffer[T]) Peek() (T, bool) {
 	var item T
 	if rb.r == rb.w {
-		return item, false
+		return item, true
 	} else {
-		return rb.buf[rb.r], true
+		return rb.buf[rb.r], false
 	}
 }

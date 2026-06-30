@@ -39,37 +39,37 @@ func (p *Parser) ParseRegisterStmt(offset *Expr) (*Stmt, error) {
 		}
 		return p.parseWithOneRegisterStmt(ors)
 	default:
-		p.lastBOpT = lx.Token{ Ty: INVALID }
-		if e, err := p.ParseExpression(); err != nil {
-			return nil, err
-		} else if e == nil {
-			return nil, errors.FailedToParse(
-				"Register offset statement",
-				first.Line, first.Col,
-				"Invalid token at `%s`", first.ForceValAsString(),
-			)
-		} else if op, ok := p.lexer.ReadNextTokenReturn(); !IsAssoc(op) {
-			return nil, errors.FailedToParse(
-				"Register offset statement",
-				first.Line, first.Col,
-				"Disallowed offset operator `%s`", op.ForceValAsString(),
-			)
-		} else if reg, ok := p.lexer.ReadNextTokenReturn(); reg.Ty != TOKEN_TREG {
-			return nil, errors.FailedToParse(
-				"Register offset statement",
-				first.Line, first.Col,
-				"Expected register, got `%s`", reg.ForceValAsString(),
-			)
-		} else {
-			ors := OneRegOffsetStmt{
-				Reg: first.Val.(lx.RegisterData),
-				OffsetOp: op.Ty,
-				Offset: e,
-			}
-			return p.parseWithOneRegisterStmt(ors)
-		}
+		// if e, err := p.ParseExpression(); err != nil {
+		// 	return nil, err
+		// } else if e == nil {
+		// 	return nil, errors.FailedToParse(
+		// 		"Register offset statement",
+		// 		first.Line, first.Col,
+		// 		"Invalid token at `%s`", first.ForceValAsString(),
+		// 	)
+		// } else if op, ok := p.lexer.ReadNextTokenReturn(); !IsAssoc(op) {
+		// 	return nil, errors.FailedToParse(
+		// 		"Register offset statement",
+		// 		first.Line, first.Col,
+		// 		"Disallowed offset operator `%s`", op.ForceValAsString(),
+		// 	)
+		// } else if reg, ok := p.lexer.ReadNextTokenReturn(); reg.Ty != TOKEN_TREG {
+		// 	return nil, errors.FailedToParse(
+		// 		"Register offset statement",
+		// 		first.Line, first.Col,
+		// 		"Expected register, got `%s`", reg.ForceValAsString(),
+		// 	)
+		// } else {
+		// 	ors := OneRegOffsetStmt{
+		// 		Reg: first.Val.(lx.RegisterData),
+		// 		OffsetOp: op.Ty,
+		// 		Offset: e,
+		// 	}
+		// 	return p.parseWithOneRegisterStmt(ors)
+		// }
 
 	}
+	return nil, nil
 }
 func (p *Parser) parseWithOneRegisterStmt(ors OneRegOffsetStmt) (*Stmt, error) {
 	var first lx.Token
@@ -85,7 +85,7 @@ func (p *Parser) parseWithOneRegisterStmt(ors OneRegOffsetStmt) (*Stmt, error) {
 			"Invalid statement token `%s`", first.ForceValAsString(),
 		)
 	}
-	op := first
+	// op := first
 	var next lx.Token
 	if n, err := p.lexer.ReadNextTokenReturn(); err != nil {
 		return nil, err
@@ -94,8 +94,9 @@ func (p *Parser) parseWithOneRegisterStmt(ors OneRegOffsetStmt) (*Stmt, error) {
 	}
 	switch next.Ty {
 	case lx.TOKEN_TREG:
-		trs := TwoRegOffsetStmt {
-			Reg1: ,
-		}
+		// trs := TwoRegOffsetStmt {
+			// Reg1: ,
+		// }
 	}
+	return nil, nil
 }

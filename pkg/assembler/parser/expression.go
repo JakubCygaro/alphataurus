@@ -366,10 +366,6 @@ func (e *Expr) Emit() (string, error) {
 			offop = '+'
 		case lx.TOKEN_TMINUS:
 			offop = '-'
-		case lx.TOKEN_TASTERISK:
-			offop = '*'
-		case lx.TOKEN_TSLASH:
-			offop = '/'
 		default:
 			offop = '?'
 		}

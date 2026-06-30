@@ -13,6 +13,7 @@ type pair [2]int
 type precedenceMap map[int]pair
 type assocMap map[int]void
 type endParseMap map[int]void
+type allowedBetweenRegsMap map[int]void
 
 func IsAssoc(op int) bool {
 	_, isAssoc := associativeBOps[op]
@@ -57,6 +58,15 @@ func shouldEndParseExpr(op int) bool {
 	return ok
 }
 
+var abrMap = allowedBetweenRegsMap{
+	lx.TOKEN_TPLUS:  Void,
+	lx.TOKEN_TMINUS: Void,
+}
+
+func allowedBetweenRegs(op int) bool {
+	_, ok := abrMap[op]
+	return ok
+}
 func (p *Parser) ParseExpression() (*Expr, error) {
 	t, _ := p.lexer.ReadNextTokenReturn()
 	p.lexer.UnreadCurrentToken()
@@ -109,13 +119,13 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		}
 		deref := MakeDeref(inner)
 		return deref, nil
-	case lx.TOKEN_TREG:
-		// this wont be an expression, so stop parsing here
-		p.lexer.UnreadCurrentToken()
-		return nil, nil
 	// case lx.TOKEN_TREG:
-	// 	regData := lhsToken.Val.(lx.RegisterData)
-	// 	lhs = MakeRegexpr(byte(regData.Reg), regData.Size)
+	// 	// this wont be an expression, so stop parsing here
+	// 	p.lexer.UnreadCurrentToken()
+	// 	return nil, nil
+	case lx.TOKEN_TREG:
+		regData := lhsToken.Val.(lx.RegisterData)
+		lhs = MakeRegexpr(byte(regData.Reg), regData.Size)
 	case lx.TOKEN_TINTEGER_LIT:
 		lhs = MakeConstexprU64(lhsToken.Val.(uint64))
 	case lx.TOKEN_TFLOAT_LIT:
@@ -170,21 +180,22 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		rhs, err := p.parseExpression(binding[1])
 		if err != nil {
 			return lhs, err
-		} else if rhs == nil {
-			// in case a register was hit, unread the operator
-			p.lexer.UnreadToken(op)
-			return lhs, nil
 		}
-		// if e, err := makeBinop(lhs, rhs, op); err != nil {
-		// 	return nil, err
-		// } else {
-		// 	lhs = e
+		// else if rhs == nil {
+		// 	// in case a register was hit, unread the operator
+		// 	p.lexer.UnreadToken(op)
+		// 	return lhs, nil
 		// }
-		lhs = &Expr{
-			Val: ArthExpr{
-				Val: opTyToArthExpr(lhs, rhs, op.Ty),
-			},
+		if e, err := makeBinop(lhs, rhs, op); err != nil {
+			return nil, err
+		} else {
+			lhs = e
 		}
+		// lhs = &Expr{
+		// 	Val: ArthExpr{
+		// 		Val: opTyToArthExpr(lhs, rhs, op.Ty),
+		// 	},
+		// }
 	}
 	return lhs, nil
 }
@@ -237,7 +248,11 @@ func arthOrPass(lhs, rhs *Expr, ty int) *Expr {
 	} else if rhs == nil {
 		return lhs
 	} else {
-		return &Expr{Val: opTyToArthExpr(lhs, rhs, ty)}
+		return &Expr{
+			Val: ArthExpr{
+				Val: opTyToArthExpr(lhs, rhs, ty),
+			},
+		}
 	}
 }
 func opTyWithTwoOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
@@ -328,7 +343,7 @@ func opTyWithOneOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
 	case OneRegOffsetExpr:
 		switch b := rhs.Val.(type) {
 		case RegExpr:
-			if IsAssoc(ty) && ty == a.OffsetOp {
+			if allowedBetweenRegs(ty) && allowedBetweenRegs(a.OffsetOp) {
 				return TwoRegOffsetExpr{
 					Reg1:     a.Reg,
 					Reg2:     b.Reg,
@@ -353,7 +368,7 @@ func opTyWithOneOffRegExpr(lhs, rhs *Expr, ty int) (any, error) {
 	case RegExpr:
 		switch b := rhs.Val.(type) {
 		case OneRegOffsetExpr:
-			if IsAssoc(ty) && ty == b.OffsetOp {
+			if allowedBetweenRegs(ty) && allowedBetweenRegs(b.OffsetOp) {
 				return TwoRegOffsetExpr{
 					Reg1:     a.Reg,
 					Reg2:     b.Reg,
@@ -404,7 +419,7 @@ func opTyToRegOffExpr(lhs, rhs *Expr, ty int) (any, error) {
 	switch a := lhs.Val.(type) {
 	case RegExpr:
 		if rhs.IsRegexpr() {
-			if ty != lx.TOKEN_TASTERISK && ty != lx.TOKEN_TPLUS {
+			if ty != lx.TOKEN_TMINUS && ty != lx.TOKEN_TPLUS {
 				return nil, errors.FailedToParse(
 					"two register offset expression",
 					rhs.Line, rhs.Col,
