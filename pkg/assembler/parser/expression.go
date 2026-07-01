@@ -362,10 +362,10 @@ func (e *Expr) Emit() (string, error) {
 			em[2] = oem
 		}
 		return strings.
-			Join(
-				em[:],
-				" ",
-			), 
+				Join(
+					em[:],
+					" ",
+				),
 			nil
 	case TwoRegOffsetExpr:
 		em := [5]string{}
@@ -379,7 +379,7 @@ func (e *Expr) Emit() (string, error) {
 			em[1] = "?"
 		}
 		em[2] = v.Reg2.String()
-		switch v.RegOp {
+		switch v.OffsetOp {
 		case lx.TOKEN_TPLUS:
 			em[3] = "+"
 		case lx.TOKEN_TMINUS:
@@ -395,10 +395,10 @@ func (e *Expr) Emit() (string, error) {
 			em[4] = oem
 		}
 		return strings.
-			Join(
-				em[:],
-				" ",
-			), 
+				Join(
+					em[:],
+					" ",
+				),
 			nil
 	default:
 		return "", fmt.Errorf("<INVALID EXPRESSION TYPE>")
