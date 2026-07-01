@@ -3,14 +3,12 @@ package assembler
 import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
+	// "github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func (p *Parser) parseMov() error {
 	genericMov := InstMov{}
 	var op1 lx.Token
-	var sized byte = 0xff
-	var sizedL, sizedC int
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
@@ -18,9 +16,11 @@ func (p *Parser) parseMov() error {
 	if sz, ok := lx.TokenAsSize(&op1); !ok {
 		p.lexer.UnreadCurrentToken()
 	} else {
-		sized = sz
-		sizedL = op1.Line
-		sizedC = op1.Col
+		genericMov.DataSize = &MovSize{
+			Size: sz,
+			Col: op1.Col,
+			Line: op1.Line,
+		}
 		op1 = lx.Token{}
 	}
 	if expr, err := p.ParseExpression(); err != nil {
@@ -66,9 +66,16 @@ func (p *Parser) parseMov() error {
 	} else {
 		genericMov.Src = expr
 	}
-	genericMov.DataSize = sized
-	p.currentInst = Instruction{
-		Data: genericMov,
+	if cMov, err := GetConcreteMovInst(genericMov); err != nil {
+		return err
+	} else if cMov == nil {
+		p.currentInst = Instruction{
+			Data: genericMov,
+		}
+	} else {
+		p.currentInst = Instruction{
+			Data: cMov,
+		}
 	}
 	// else {
 	// 	eval, _ := TryEvaluatePruneExpression(expr)

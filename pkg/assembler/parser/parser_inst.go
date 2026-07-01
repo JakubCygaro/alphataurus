@@ -75,9 +75,13 @@ type Instruction struct {
 	Data      any
 	Line, Col int
 }
+type MovSize struct {
+	Line, Col int
+	Size      byte
+}
 type InstMov struct {
 	Dest, Src *Expr
-	DataSize  byte
+	DataSize  *MovSize
 }
 type InstMovIR struct {
 	Dest     lx.RegisterData
@@ -86,7 +90,6 @@ type InstMovIR struct {
 }
 type InstMovRR struct {
 	Src, Dest lx.RegisterData
-	DataSize  byte
 }
 type InstInc struct {
 	Reg lx.RegisterData
@@ -178,8 +181,8 @@ type InstLab struct {
 	DeclaredAt string
 }
 type InstPush struct {
-	Val *Expr
-	DataSz   byte
+	Val    *Expr
+	DataSz byte
 }
 type InstPushR struct {
 	Reg    uint64
@@ -197,24 +200,24 @@ type InstPopR struct {
 	DataSz byte
 }
 type InstNop struct{}
+
 // move dereference of an arbitrary address into register
 type InstMovDR struct {
-	Dest   lx.RegisterData
+	Dest    lx.RegisterData
 	Address int64
-	OpTy   int
 }
 type InstMovDRO1 struct {
 	Dest   lx.RegisterData
 	Offset int64
 	OReg1  lx.RegisterData
-	OpTy   int
+	OffOp  int
 }
 type InstMovDRO2 struct {
-	Dest   lx.RegisterData
-	Offset int64
-	OReg1  lx.RegisterData
-	OReg2  lx.RegisterData
-	OpTy   int
+	Dest         lx.RegisterData
+	Offset       int64
+	OReg1        lx.RegisterData
+	OReg2        lx.RegisterData
+	OffOp, RegOp int
 }
 type InstMovID struct {
 	DataSize byte
