@@ -8,8 +8,8 @@ import (
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
-	// "github.com/JakubCygaro/alphataurus/pkg/linker"
-	// vm "github.com/JakubCygaro/alphataurus/pkg/vm"
+	"github.com/JakubCygaro/alphataurus/pkg/linker"
+	vm "github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 const assembly3 = `
@@ -60,57 +60,57 @@ func logWarnings(awd assembler.AssemblerWarningData) {
 }
 
 func main() {
-	// sources := []string{assembly}
-	// objects := make([]linker.LinkerInput, 0)
-	// for _, s := range sources {
-	// 	asm := assembler.NewAssembler(bufio.NewReader(strings.NewReader(s)))
-	// 	asm.WarningSink = logWarnings
-	// 	bytecode, err := asm.Assemble()
-	// 	if err != nil {
-	// 		os.Stderr.WriteString("Assembler error: ")
-	// 		os.Stderr.WriteString(err.Error())
-	// 		os.Stderr.WriteString("\n")
-	// 		os.Exit(-1)
-	// 	}
-	// 	iCount := asm.InstructionCount()
-	// 	fmt.Printf("Emitted bytecode size: %d\n", len(bytecode))
-	// 	fmt.Printf("Emitted %d instructions\n", iCount)
-	// 	objects = append(objects, linker.Bytes(bytecode))
-	// }
-	// ld := linker.NewLinker()
-	// elf, err := ld.Link(objects)
-	// os.WriteFile("dump", elf.Write(), os.FileMode(os.O_TRUNC))
-	// if err != nil {
-	// 	os.Stderr.WriteString("linking error\n")
-	// 	os.Stderr.WriteString(err.Error())
-	// 	os.Stderr.WriteString("\n")
-	// 	os.Exit(-1)
-	// }
-	// mach := vm.CreateVmState(64)
-	// mach.SetOpCodeTrace(func(op vm.OpCodeVal) {
-	// 	fmt.Printf("[%s]\n", op.String())
-	// })
-	// err = mach.Execute(elf)
-	// if err != nil {
-	// 	os.Stderr.WriteString(err.Error())
-	// 	os.Stderr.WriteString("\n")
-	// 	os.Exit(-1)
-	// }
-	// if rx, err := mach.GetGpRXAsS64(vm.R0_IDX); err == nil {
-	// 	fmt.Printf("r0 = %+v\n", int8(rx))
-	// }
-	// if rx, err := mach.GetGpRXAsU64(vm.R1_IDX); err == nil {
-	// 	fmt.Printf("r1 = %+v\n", rx)
-	// }
-	// if rx, err := mach.GetGpRXAsS64(vm.R2_IDX); err == nil {
-	// 	fmt.Printf("r2 = %+v\n", rx)
-	// }
-	// fmt.Printf("REGISTERS:\n")
-	// for i, v := range mach.GetRegisters() {
-	// 	fmt.Printf("%v\t%+v\n", i, v.ToDisplayString())
-	// }
-	// fmt.Printf("%+v\n", mach.GetFlags())
-	// fmt.Printf("stack:\n%+v\n", mach.GetStack())
+	sources := []string{assembly}
+	objects := make([]linker.LinkerInput, 0)
+	for _, s := range sources {
+		asm := assembler.NewAssembler(bufio.NewReader(strings.NewReader(s)))
+		asm.WarningSink = logWarnings
+		bytecode, err := asm.Assemble()
+		if err != nil {
+			os.Stderr.WriteString("Assembler error: ")
+			os.Stderr.WriteString(err.Error())
+			os.Stderr.WriteString("\n")
+			os.Exit(-1)
+		}
+		iCount := asm.InstructionCount()
+		fmt.Printf("Emitted bytecode size: %d\n", len(bytecode))
+		fmt.Printf("Emitted %d instructions\n", iCount)
+		objects = append(objects, linker.Bytes(bytecode))
+	}
+	ld := linker.NewLinker()
+	elf, err := ld.Link(objects)
+	os.WriteFile("dump", elf.Write(), os.FileMode(os.O_TRUNC))
+	if err != nil {
+		os.Stderr.WriteString("linking error\n")
+		os.Stderr.WriteString(err.Error())
+		os.Stderr.WriteString("\n")
+		os.Exit(-1)
+	}
+	mach := vm.CreateVmState(64)
+	mach.SetOpCodeTrace(func(op vm.OpCodeVal) {
+		fmt.Printf("[%s]\n", op.String())
+	})
+	err = mach.Execute(elf)
+	if err != nil {
+		os.Stderr.WriteString(err.Error())
+		os.Stderr.WriteString("\n")
+		os.Exit(-1)
+	}
+	if rx, err := mach.GetGpRXAsS64(vm.R0_IDX); err == nil {
+		fmt.Printf("r0 = %+v\n", int8(rx))
+	}
+	if rx, err := mach.GetGpRXAsU64(vm.R1_IDX); err == nil {
+		fmt.Printf("r1 = %+v\n", rx)
+	}
+	if rx, err := mach.GetGpRXAsS64(vm.R2_IDX); err == nil {
+		fmt.Printf("r2 = %+v\n", rx)
+	}
+	fmt.Printf("REGISTERS:\n")
+	for i, v := range mach.GetRegisters() {
+		fmt.Printf("%v\t%+v\n", i, v.ToDisplayString())
+	}
+	fmt.Printf("%+v\n", mach.GetFlags())
+	fmt.Printf("stack:\n%+v\n", mach.GetStack())
 	const in = "r1 + r1 - (1 + 2)"
 	var ex *pr.Expr
 	p := pr.NewParser(bufio.NewReader(strings.NewReader(in)))

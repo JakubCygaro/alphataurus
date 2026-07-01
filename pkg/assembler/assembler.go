@@ -111,11 +111,13 @@ func (a *Assembler) EmitBytecode() (int, error) {
 		inst := a.parser.CurrentInst()
 		a.col, a.line = inst.Col, inst.Line
 		switch i := inst.Data.(type) {
+		case pr.InstMov:
+			err = a.emitGenericMov(i, &(a.bytecode))
 		case pr.InstMovIR:
 			err = a.emitMovIR(i, &(a.bytecode))
 		case pr.InstMovRR:
 			err = a.emitMovRR(i, &(a.bytecode))
-		case pr.InstMovDRI:
+		case pr.InstMovDR:
 			err = a.emitMovDRI(i, &(a.bytecode))
 		case pr.InstMovDRO1:
 			err = a.emitMovDRO1(i, &(a.bytecode))
@@ -202,6 +204,10 @@ func (a *Assembler) EmitBytecode() (int, error) {
 	return instCount, err
 }
 
+func (a *Assembler) emitGenericMov(data pr.InstMov, out *[]byte) error {
+	return nil
+}
+
 func (a *Assembler) emitMovIR(data pr.InstMovIR, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVIR)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
@@ -232,7 +238,7 @@ func (a *Assembler) emitMovRR(data pr.InstMovRR, out *[]byte) error {
 	return nil
 }
 
-func (a *Assembler) emitMovDRI(data pr.InstMovDRI, out *[]byte) error {
+func (a *Assembler) emitMovDRI(data pr.InstMovDR, out *[]byte) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRI)
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
@@ -241,7 +247,7 @@ func (a *Assembler) emitMovDRI(data pr.InstMovDRI, out *[]byte) error {
 	lastByte := (0b0000_1111 & byte(data.Dest.Reg))
 	lastByte |= (0b0000_0011 & data.Dest.Size) << 4
 	(*out)[len(*out)-4] = lastByte
-	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Address))
 	return nil
 }
 func (a *Assembler) emitMovDRO1(data pr.InstMovDRO1, out *[]byte) error {

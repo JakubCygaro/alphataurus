@@ -197,9 +197,10 @@ type InstPopR struct {
 	DataSz byte
 }
 type InstNop struct{}
-type InstMovDRI struct {
+// move dereference of an arbitrary address into register
+type InstMovDR struct {
 	Dest   lx.RegisterData
-	Offset int64
+	Address int64
 	OpTy   int
 }
 type InstMovDRO1 struct {
@@ -254,7 +255,6 @@ type InstMovRDO2 struct {
 	Offset int64
 	OReg1  lx.RegisterData
 	OReg2  lx.RegisterData
-	Label  string
 	OpTy   int
 }
 type InstCall struct {

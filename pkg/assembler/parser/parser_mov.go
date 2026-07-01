@@ -3,13 +3,14 @@ package assembler
 import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func (p *Parser) parseMov() error {
 	genericMov := InstMov{}
 	var op1 lx.Token
 	var sized byte = 0xff
-	// var sizedL, sizedC int
+	var sizedL, sizedC int
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
@@ -18,8 +19,8 @@ func (p *Parser) parseMov() error {
 		p.lexer.UnreadCurrentToken()
 	} else {
 		sized = sz
-		// sizedL = p.lexer.CurrentToken().Line
-		// sizedC = p.lexer.CurrentToken().Col
+		sizedL = op1.Line
+		sizedC = op1.Col
 		op1 = lx.Token{}
 	}
 	if expr, err := p.ParseExpression(); err != nil {
@@ -66,36 +67,8 @@ func (p *Parser) parseMov() error {
 		genericMov.Src = expr
 	}
 	genericMov.DataSize = sized
-	if genericMov.Dest.IsRegexpr() {
-		if genericMov.Src.IsRegexpr() {
-			p.currentInst = Instruction{
-				Data: InstMovRR{
-					Src:    genericMov.Src.Val.(RegExpr).Reg,
-					Dest:   genericMov.Dest.Val.(RegExpr).Reg,
-					DataSize: sized,
-				},
-			}
-		} else if IsConstexprType[ConstExprILit](genericMov.Src) {
-			p.currentInst = Instruction{
-				Data: InstMovIR{
-					Imm:    genericMov.Src.Val.(ConstExpr).Val.(ConstExprILit).Integer,
-					Dest:   genericMov.Dest.Val.(RegExpr).Reg,
-					DataSize: sized,
-				},
-			}
-		} else if IsConstexprType[ConstExprFLit](genericMov.Src) {
-			p.currentInst = Instruction{
-				Data: InstMovIR{
-					Imm:    genericMov.Src.Val.(ConstExpr).Val.(ConstExprFLit).Float,
-					Dest:   genericMov.Dest.Val.(RegExpr).Reg,
-					DataSize: sized,
-				},
-			}
-		}
-	} else {
-		p.currentInst = Instruction{
-			Data: genericMov,
-		}
+	p.currentInst = Instruction{
+		Data: genericMov,
 	}
 	// else {
 	// 	eval, _ := TryEvaluatePruneExpression(expr)
