@@ -79,7 +79,7 @@ type MovSize struct {
 	Line, Col int
 	Size      byte
 }
-type InstMov struct {
+type InstGenericMov struct {
 	Dest, Src *Expr
 	DataSize  *MovSize
 }
@@ -97,7 +97,7 @@ type InstInc struct {
 type InstDec struct {
 	Reg lx.RegisterData
 }
-type InstArth struct {
+type InstGenericArth struct {
 	Src, Dest *Expr
 	Ty        int
 	DataSize  byte
@@ -252,11 +252,11 @@ type InstMovIDO2 struct {
 	NoOff           bool
 }
 type InstMovRDO2 struct {
-	Src    lx.RegisterData
-	Offset int64
-	OReg1  lx.RegisterData
-	OReg2  lx.RegisterData
-	RegOp, OffsetOp   int
+	Src             lx.RegisterData
+	Offset          int64
+	OReg1           lx.RegisterData
+	OReg2           lx.RegisterData
+	RegOp, OffsetOp int
 }
 type InstCall struct {
 	Expr *Expr

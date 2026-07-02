@@ -7,7 +7,7 @@ import (
 )
 
 func (p *Parser) parseAddOrSub(arthTy int) error {
-	genericArth := InstArth{}
+	genericArth := InstGenericArth{}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}

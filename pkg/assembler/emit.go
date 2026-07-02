@@ -1,0 +1,128 @@
+package assembler
+
+import (
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
+	decls "github.com/JakubCygaro/alphataurus/pkg/vm/decls"
+)
+
+func (a *Assembler) EmitBytecode() (int, error) {
+	var ok bool
+	var err error = nil
+	ok, err = a.parser.ParseNext()
+	for ; ok && err == nil; ok, err = a.parser.ParseNext() {
+		inst := a.parser.CurrentInst()
+		a.col, a.line = inst.Col, inst.Line
+		switch inst.Data.(type) {
+		// in case this is a label declaration, do not allocate instruction space
+		case pr.InstLab:
+		default:
+			// allocate instruction space, the emitInst() function does not allocate it
+			dummy := [decls.INSTRUCTION_SIZE]byte{}
+			a.bytecode = append(a.bytecode, dummy[:]...)
+		}
+		err = a.emitInst(inst, a.pos)
+		a.pos += decls.INSTRUCTION_SIZE
+	}
+	return a.instCount, err
+}
+
+// emit instruction bytecode *at* specified point in the bytecode array
+// the instruction space must be allocated, ie. *at* is a valid index into a.bytecode
+// otherwise, you are fucked
+func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
+	var err error
+	switch i := inst.Data.(type) {
+	case pr.InstGenericMov:
+		err = a.emitGenericMov(i, at)
+	case pr.InstMovIR:
+		err = a.emitMovIR(i, at)
+	case pr.InstMovRR:
+		err = a.emitMovRR(i, at)
+	case pr.InstMovDR:
+		err = a.emitMovDRI(i, at)
+	case pr.InstMovDRO1:
+		err = a.emitMovDRO1(i, at)
+	case pr.InstMovDRO2:
+		err = a.emitMovDRO2(i, at)
+	case pr.InstMovID:
+		err = a.emitMovID(i, at)
+	case pr.InstMovRD:
+		err = a.emitMovRD(i, at)
+	case pr.InstMovIDO1:
+		err = a.emitMovIDO1(i, at)
+	case pr.InstMovRDO1:
+		err = a.emitMovRDO1(i, at)
+	case pr.InstMovIDO2:
+		err = a.emitMovIDO2(i, at)
+	case pr.InstMovRDO2:
+		err = a.emitMovRDO2(i, at)
+	case pr.InstGenericArth:
+		err = a.emitGenericArth(i, at)
+	case pr.InstArthRR:
+		err = a.emitArthRR(i, at)
+	case pr.InstArthIR:
+		err = a.emitArthIR(i, at)
+	case pr.InstNot:
+		err = a.emitNot(i, at)
+	case pr.InstLogicalRR:
+		err = a.emitLogRR(i, at)
+	case pr.InstLogicalIR:
+		err = a.emitLogIR(i, at)
+	case pr.InstInc:
+		err = a.emitInc(i, at)
+	case pr.InstDec:
+		err = a.emitDec(i, at)
+	case pr.InstCmpRR:
+		err = a.emitCmpRR(i, at)
+	case pr.InstCmpIR:
+		err = a.emitCmpIR(i, at)
+	case pr.InstJmp:
+		err = a.emitJmp(i, at)
+	case pr.InstJmpIP0R:
+		err = a.emitJmpIP0R(i, at)
+	case pr.InstJmpIP1R:
+		err = a.emitJmpIP1R(i, at)
+	case pr.InstLab:
+		err = a.declareLabel(i, at)
+		a.instCount--
+	case pr.InstPushR:
+		err = a.emitPushR(i, at)
+	case pr.InstPushI:
+		err = a.emitPushI(i, at)
+	case pr.InstPop:
+		err = a.emitPop(i, at)
+	case pr.InstNop:
+		err = a.emitNop(at)
+	case pr.InstCall:
+		err = a.emitCall(i, at)
+	case pr.InstCallIP0R:
+		err = a.emitCallIP0R(i, at)
+	case pr.InstCallIP1R:
+		err = a.emitCallIP1R(i, at)
+	case pr.InstRet:
+		err = a.emitRet(at)
+	case pr.InstExitI:
+		err = a.emitExitI(i, at)
+	case pr.InstExitR:
+		err = a.emitExitR(i, at)
+	case pr.InstEntry:
+		if a.hasEntry {
+			err = errors.MultipleEntry(inst.Line, inst.Col)
+		} else {
+			a.hasEntry = true
+			_, ent := a.currentCodePos()
+			a.entry = ent
+		}
+	case pr.InstClr:
+		err = a.emitClr(at)
+	default:
+		a.lastInst = inst
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	a.instCount++
+	return nil
+}

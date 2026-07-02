@@ -106,6 +106,26 @@ func DisallowedDestinationRegister(line, col int) AssemblerError {
 	}
 	return err
 }
+func BadDestination(line, col int) AssemblerError {
+	err := AssemblerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return "Bad destination"
+		},
+	}
+	return err
+}
+func BadSource(line, col int) AssemblerError {
+	err := AssemblerError{
+		Line: line,
+		Col:  col,
+		construct: func() string {
+			return "Bad source"
+		},
+	}
+	return err
+}
 func DisallowedSourceRegister(line, col int) AssemblerError {
 	err := AssemblerError{
 		Line: line,

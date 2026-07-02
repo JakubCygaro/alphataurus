@@ -7,7 +7,7 @@ import (
 )
 
 func (p *Parser) parseMov() error {
-	genericMov := InstMov{}
+	genericMov := InstGenericMov{}
 	var op1 lx.Token
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
@@ -66,16 +66,8 @@ func (p *Parser) parseMov() error {
 	} else {
 		genericMov.Src = expr
 	}
-	if cMov, err := GetConcreteMovInst(genericMov); err != nil {
-		return err
-	} else if cMov == nil {
-		p.currentInst = Instruction{
-			Data: genericMov,
-		}
-	} else {
-		p.currentInst = Instruction{
-			Data: cMov,
-		}
+	p.currentInst = Instruction{
+		Data: genericMov,
 	}
 	// else {
 	// 	eval, _ := TryEvaluatePruneExpression(expr)
