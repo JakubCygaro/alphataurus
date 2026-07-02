@@ -1,6 +1,8 @@
 package assembler
 
 import (
+	"fmt"
+
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	decls "github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
@@ -92,10 +94,20 @@ func (a *Assembler) resolveSymbols() error {
 	return nil
 }
 func (a *Assembler) resolveUnevaluated() error {
-	start := len(a.unevalInsts)
-	for {
-		for pos, inst := range a.unevalInsts {
-
+	startingUnev := len(a.unevalInsts)
+	// change in unevaluted instructions
+	diff := -1
+	for diff < 0 {
+		for pos := range a.unevalInsts {
+			inst := a.unevalInsts[pos]
+			delete(a.unevalInsts, pos)
+			a.emitInst(inst, pos)
 		}
+		diff = len(a.unevalInsts) - startingUnev
 	}
+	if len(a.unevalInsts) != 0 {
+		return fmt.
+			Errorf("TODO: Unresolved expressions, unable to finish assembling")
+	}
+	return nil
 }

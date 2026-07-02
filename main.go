@@ -35,10 +35,11 @@ foo:
 	pop bp
 	ret
 `
-const assembly = `section '.code'
+const assembly = `
+section '.code'
 @entry
 _start:
-    mov r1q, 69
+    mov r1q, chuj
 	exit 0
 `
 

@@ -369,7 +369,18 @@ func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, bool
 	switch expr := e.Val.(type) {
 	//if this is a constant expression, pass it on
 	case pr.ConstExpr:
-		return e, true
+		if val := ev.extractValue(expr); val == nil {
+			return e, false
+		} else {
+			switch v := val.(type) {
+			case uint64:
+				return pr.MakeConstexprU64(v), true
+			case float64:
+				return pr.MakeConstexprF64(v), true
+			default:
+				panic("Unreachable code")
+			}
+		}
 		//if this is an arthmetic expression, atttempt to evaluate it
 	case pr.ArthExpr:
 		return ev.performOperation(expr)
@@ -383,6 +394,8 @@ func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, bool
 		// case pr.ArthExprDiv:
 		// 	return ev.tryEvaluateBinaryExpression(arth.A, arth.B)
 		// }
+	case pr.RegExpr:
+		return e, true
 	case pr.DerefExpr:
 		inner, ok := ev.TryEvaluateExpression(expr.Inner)
 		return pr.MakeDeref(inner), ok

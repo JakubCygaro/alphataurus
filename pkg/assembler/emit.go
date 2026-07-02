@@ -6,25 +6,31 @@ import (
 	decls "github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 )
 
-func (a *Assembler) EmitBytecode() (int, error) {
+func (a *Assembler) EmitBytecode() error {
 	var ok bool
 	var err error = nil
 	ok, err = a.parser.ParseNext()
 	for ; ok && err == nil; ok, err = a.parser.ParseNext() {
 		inst := a.parser.CurrentInst()
 		a.col, a.line = inst.Col, inst.Line
+		increment := false
 		switch inst.Data.(type) {
-		// in case this is a label declaration, do not allocate instruction space
+		// in case this is a non-emit declaration, do not allocate instruction space
 		case pr.InstLab:
+		case pr.InstEntry:
 		default:
 			// allocate instruction space, the emitInst() function does not allocate it
 			dummy := [decls.INSTRUCTION_SIZE]byte{}
 			a.bytecode = append(a.bytecode, dummy[:]...)
+			increment = true
 		}
 		err = a.emitInst(inst, a.pos)
-		a.pos += decls.INSTRUCTION_SIZE
+		if increment {
+			a.pos += decls.INSTRUCTION_SIZE
+			a.instCount++
+		}
 	}
-	return a.instCount, err
+	return err
 }
 
 // emit instruction bytecode *at* specified point in the bytecode array
@@ -85,7 +91,6 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitJmpIP1R(i, at)
 	case pr.InstLab:
 		err = a.declareLabel(i, at)
-		a.instCount--
 	case pr.InstPushR:
 		err = a.emitPushR(i, at)
 	case pr.InstPushI:
@@ -111,7 +116,7 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 			err = errors.MultipleEntry(inst.Line, inst.Col)
 		} else {
 			a.hasEntry = true
-			_, ent := a.currentCodePos()
+			_, ent := a.codePos(at)
 			a.entry = ent
 		}
 	case pr.InstClr:
@@ -123,6 +128,5 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	if err != nil {
 		return err
 	}
-	a.instCount++
 	return nil
 }

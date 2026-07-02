@@ -40,15 +40,15 @@ func (a *Assembler) emitGenericArth(data pr.InstGenericArth, at int) error {
 			Data: data,
 		}
 		a.emitNop(at)
-	} else if mov, err := GetConcreteArth(data); err != nil {
+	} else if arth, err := GetConcreteArth(data); err != nil {
 		return err
-	} else if mov == nil {
-		return fmt.Errorf("TODO: bad arth instruction cannot be deduced to concrete mov")
+	} else if arth == nil {
+		return fmt.Errorf("TODO: bad arth instruction cannot be deduced to concrete arth")
 	} else {
 		return a.emitInst(pr.Instruction{
 			Line: a.line,
 			Col:  a.col,
-			Data: mov,
+			Data: arth,
 		}, at)
 	}
 	return nil

@@ -26,11 +26,10 @@ func (a *Assembler) Assemble() ([]byte, error) {
 				return nil, err
 			}
 		case pr.InstSecCode:
-			instCount, err := a.EmitBytecode()
+			err := a.EmitBytecode()
 			if err != nil {
 				return nil, err
 			}
-			a.instCount += instCount
 		default:
 			return nil, errors.DisallowedTopLevelInstruction(a.line, a.col)
 		}
@@ -42,6 +41,9 @@ func (a *Assembler) Assemble() ([]byte, error) {
 		return nil, err
 	}
 	if err := a.resolveSymbols(); err != nil {
+		return nil, err
+	}
+	if err := a.resolveUnevaluated(); err != nil {
 		return nil, err
 	}
 	return a.writeObjFile()
