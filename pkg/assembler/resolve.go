@@ -106,8 +106,10 @@ func (a *Assembler) resolveUnevaluated() error {
 		diff = len(a.unevalInsts) - startingUnev
 	}
 	if len(a.unevalInsts) != 0 {
+		last := a.prov.LastFailedAccess
 		return fmt.
-			Errorf("TODO: Unresolved expressions, unable to finish assembling")
+			Errorf("TODO: Unresolved expressions, unable to finish assembling `%s`" ,
+				*last)
 	}
 	return nil
 }

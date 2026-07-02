@@ -9,6 +9,7 @@ import (
 )
 
 type void struct{}
+
 var Void void = void{}
 
 type PatchCall void
@@ -52,11 +53,26 @@ type Assembler struct {
 	// pointer to a function that recieves warnings emitted by the assembler
 	WarningSink func(AssemblerWarningData)
 	ev          ExpressionEvaluator
+	prov        *assemblerVarProvider
+}
+
+type assemblerVarProvider struct {
+	syms             *aobj.SymbolTable
+	LastFailedAccess *string
+}
+
+func (avp *assemblerVarProvider) Get(name string) any {
+	if sd, _, ok := avp.syms.GetByName(name); ok {
+		return sd.Loc
+	}
+	avp.LastFailedAccess = &name
+	return nil
 }
 
 func (a *Assembler) InstructionCount() int {
 	return a.instCount
 }
+
 func aInitialState() Assembler {
 	a := Assembler{
 		opCodes:         vm.GenerateOpcodeMap(),
@@ -66,11 +82,7 @@ func aInitialState() Assembler {
 		symbols:         aobj.NewSymbolTable(),
 		relocations:     make(aobj.RelocationTable, 0),
 		hasEntry:        false,
-		ev: ExpressionEvaluator{
-			Ctx: EvaluationContext{
-				Variables: make(map[string]any),
-			},
-		},
+		prov:            &assemblerVarProvider{},
 	}
 	return a
 }
@@ -81,7 +93,6 @@ func (a *Assembler) clearState() {
 	clear(a.unevalInsts)
 	a.symbols.Clear()
 	clear(a.relocations)
-	clear(a.ev.Ctx.Variables)
 	a.hasEntry = false
 	a.instCount = 0
 }
@@ -89,6 +100,12 @@ func NewAssembler(reader *bufio.Reader) *Assembler {
 	a := aInitialState()
 	a.parser = pr.NewParser(reader)
 	a.parser.WarningSink = a.parserWarningHandler
+	a.prov.syms = &a.symbols
+	a.ev = ExpressionEvaluator{
+		Ctx: EvaluationContext{
+			VarProvider: a.prov,
+		},
+	}
 	return &a
 }
 
@@ -110,4 +127,3 @@ func (a *Assembler) codePos(at int) (byte uint64, address uint64) {
 func (a *Assembler) currentCodePos() (byte uint64, address uint64) {
 	return a.codePos(a.pos)
 }
-

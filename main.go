@@ -39,7 +39,7 @@ const assembly = `
 section '.code'
 @entry
 _start:
-    mov r1q, chuj
+	jmp _start
 	exit 0
 `
 
@@ -115,7 +115,7 @@ func main() {
 	}
 	ev := assembler.ExpressionEvaluator{
 		Ctx: assembler.EvaluationContext{
-			Variables: make(map[string]any),
+			VarProvider: nil,
 		},
 	}
 	if eval, ok := ev.TryEvaluateExpression(ex); !ok {

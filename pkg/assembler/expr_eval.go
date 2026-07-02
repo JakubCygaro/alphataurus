@@ -10,8 +10,13 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
+type VariableValueProvider interface {
+	// Get variable value for given name, either uint64 or float64
+	Get(name string) any
+}
+
 type EvaluationContext struct {
-	Variables map[string]any
+	VarProvider VariableValueProvider
 }
 
 type ExpressionEvaluator struct {
@@ -23,7 +28,10 @@ type ExpressionEvaluator struct {
 func (ev *ExpressionEvaluator) extractValue(cexpr pr.ConstExpr) any {
 	switch v := cexpr.Val.(type) {
 	case pr.ConstExprIden:
-		f, _ := ev.Ctx.Variables[v.Ident]
+		if ev.Ctx.VarProvider == nil {
+			return nil
+		}
+		f := ev.Ctx.VarProvider.Get(v.Ident)
 		return f
 	case pr.ConstExprILit:
 		return v.Integer
@@ -378,7 +386,7 @@ func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, bool
 			case float64:
 				return pr.MakeConstexprF64(v), true
 			default:
-				panic("Unreachable code")
+				panic("Unsupported variable value extracted from evaluation context")
 			}
 		}
 		//if this is an arthmetic expression, atttempt to evaluate it
