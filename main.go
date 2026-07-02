@@ -36,18 +36,10 @@ foo:
 	ret
 `
 const assembly = `section '.code'
-foo:
-    mov r0q, 0
-    add UNSIGNED r0q, r1q
-    add UNSIGNED r0q, r2q
-    ret
 @entry
 _start:
     mov r1q, 69
-    mov r2q, 420
-	jmp ABSOLUTE 0x1000
-    call foo
-    exit r0q
+	exit 0
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {

@@ -3,6 +3,7 @@ package assembler
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
@@ -26,6 +27,7 @@ type unresolvedJump struct {
 	Expr     *pr.Expr
 }
 type unresolvedJumpMap map[int]unresolvedJump
+type unevaledInstMap map[int]pr.Instruction
 
 type AssemblerWarningData struct {
 	Line, Col int
@@ -36,6 +38,8 @@ type Assembler struct {
 	parser          *pr.Parser
 	opCodes         vm.OpCodeMap
 	unresolvedJumps unresolvedJumpMap
+	// instructions that depend on expressions that have yet to be evaluated
+	unevalInsts unevaledInstMap
 	//relating to the current instruction
 	line, col int
 	// labels          labelMap
@@ -58,6 +62,7 @@ func aInitialState() Assembler {
 	a := Assembler{
 		opCodes:         vm.GenerateOpcodeMap(),
 		unresolvedJumps: make(unresolvedJumpMap),
+		unevalInsts:     make(unevaledInstMap),
 		bytecode:        make([]byte, 0, 64),
 		symbols:         aobj.NewSymbolTable(),
 		relocations:     make(aobj.RelocationTable, 0),
@@ -74,10 +79,12 @@ func (a *Assembler) clearState() {
 	clear(a.unresolvedJumps)
 	clear(a.bytecode)
 	clear(a.bytecode)
+	clear(a.unevalInsts)
 	a.symbols.Clear()
 	clear(a.relocations)
 	clear(a.ev.Ctx.Variables)
 	a.hasEntry = false
+	a.instCount = 0
 }
 func NewAssembler(reader *bufio.Reader) *Assembler {
 	a := aInitialState()
@@ -103,108 +110,234 @@ func (a *Assembler) currentCodePos() (byte uint64, address uint64) {
 }
 
 func (a *Assembler) EmitBytecode() (int, error) {
-	instCount := 0
 	var ok bool
 	var err error = nil
 	ok, err = a.parser.ParseNext()
 	for ; ok && err == nil; ok, err = a.parser.ParseNext() {
 		inst := a.parser.CurrentInst()
 		a.col, a.line = inst.Col, inst.Line
-		switch i := inst.Data.(type) {
-		case pr.InstMov:
-			err = a.emitGenericMov(i, &(a.bytecode))
-		case pr.InstMovIR:
-			err = a.emitMovIR(i, &(a.bytecode))
-		case pr.InstMovRR:
-			err = a.emitMovRR(i, &(a.bytecode))
-		case pr.InstMovDR:
-			err = a.emitMovDRI(i, &(a.bytecode))
-		case pr.InstMovDRO1:
-			err = a.emitMovDRO1(i, &(a.bytecode))
-		case pr.InstMovDRO2:
-			err = a.emitMovDRO2(i, &(a.bytecode))
-		case pr.InstMovID:
-			err = a.emitMovID(i, &(a.bytecode))
-		case pr.InstMovRD:
-			err = a.emitMovRD(i, &(a.bytecode))
-		case pr.InstMovIDO1:
-			err = a.emitMovIDO1(i, &(a.bytecode))
-		case pr.InstMovRDO1:
-			err = a.emitMovRDO1(i, &(a.bytecode))
-		case pr.InstMovIDO2:
-			err = a.emitMovIDO2(i, &(a.bytecode))
-		case pr.InstMovRDO2:
-			err = a.emitMovRDO2(i, &(a.bytecode))
-		case pr.InstArthRR:
-			err = a.emitArthRR(i, &(a.bytecode))
-		case pr.InstArthIR:
-			err = a.emitArthIR(i, &(a.bytecode))
-		case pr.InstNot:
-			err = a.emitNot(i, &(a.bytecode))
-		case pr.InstLogicalRR:
-			err = a.emitLogRR(i, &(a.bytecode))
-		case pr.InstLogicalIR:
-			err = a.emitLogIR(i, &(a.bytecode))
-		case pr.InstInc:
-			err = a.emitInc(i, &(a.bytecode))
-		case pr.InstDec:
-			err = a.emitDec(i, &(a.bytecode))
-		case pr.InstCmpRR:
-			err = a.emitCmpRR(i, &(a.bytecode))
-		case pr.InstCmpIR:
-			err = a.emitCmpIR(i, &(a.bytecode))
-		case pr.InstJmp:
-			err = a.emitJmp(i, &(a.bytecode))
-		case pr.InstJmpIP0R:
-			err = a.emitJmpIP0R(i, &(a.bytecode))
-		case pr.InstJmpIP1R:
-			err = a.emitJmpIP1R(i, &(a.bytecode))
-		case pr.InstLab:
-			err = a.declareLabel(i)
-			instCount--
-		case pr.InstPushR:
-			err = a.emitPushR(i, &(a.bytecode))
-		case pr.InstPushI:
-			err = a.emitPushI(i, &(a.bytecode))
-		case pr.InstPop:
-			err = a.emitPop(i, &(a.bytecode))
-		case pr.InstNop:
-			err = a.emitNop(&(a.bytecode))
-		case pr.InstCall:
-			err = a.emitCall(i, &(a.bytecode))
-		case pr.InstCallIP0R:
-			err = a.emitCallIP0R(i, &(a.bytecode))
-		case pr.InstCallIP1R:
-			err = a.emitCallIP1R(i, &(a.bytecode))
-		case pr.InstRet:
-			err = a.emitRet(&(a.bytecode))
-		case pr.InstExitI:
-			err = a.emitExitI(i, &(a.bytecode))
-		case pr.InstExitR:
-			err = a.emitExitR(i, &(a.bytecode))
-		case pr.InstEntry:
-			if a.hasEntry {
-				err = errors.MultipleEntry(inst.Line, inst.Col)
-			} else {
-				a.hasEntry = true
-				_, ent := a.currentCodePos()
-				a.entry = ent
-			}
-		case pr.InstClr:
-			err = a.emitClr(&(a.bytecode))
-		default:
-			a.lastInst = inst
-			return instCount, err
-		}
-		if err != nil {
-			return instCount, err
-		}
-		instCount++
+		err = a.emitInst(inst, &(a.bytecode))
+		// switch i := inst.Data.(type) {
+		// case pr.InstMov:
+		// 	err = a.emitGenericMov(i, &(a.bytecode))
+		// case pr.InstMovIR:
+		// 	err = a.emitMovIR(i, &(a.bytecode))
+		// case pr.InstMovRR:
+		// 	err = a.emitMovRR(i, &(a.bytecode))
+		// case pr.InstMovDR:
+		// 	err = a.emitMovDRI(i, &(a.bytecode))
+		// case pr.InstMovDRO1:
+		// 	err = a.emitMovDRO1(i, &(a.bytecode))
+		// case pr.InstMovDRO2:
+		// 	err = a.emitMovDRO2(i, &(a.bytecode))
+		// case pr.InstMovID:
+		// 	err = a.emitMovID(i, &(a.bytecode))
+		// case pr.InstMovRD:
+		// 	err = a.emitMovRD(i, &(a.bytecode))
+		// case pr.InstMovIDO1:
+		// 	err = a.emitMovIDO1(i, &(a.bytecode))
+		// case pr.InstMovRDO1:
+		// 	err = a.emitMovRDO1(i, &(a.bytecode))
+		// case pr.InstMovIDO2:
+		// 	err = a.emitMovIDO2(i, &(a.bytecode))
+		// case pr.InstMovRDO2:
+		// 	err = a.emitMovRDO2(i, &(a.bytecode))
+		// case pr.InstArthRR:
+		// 	err = a.emitArthRR(i, &(a.bytecode))
+		// case pr.InstArthIR:
+		// 	err = a.emitArthIR(i, &(a.bytecode))
+		// case pr.InstNot:
+		// 	err = a.emitNot(i, &(a.bytecode))
+		// case pr.InstLogicalRR:
+		// 	err = a.emitLogRR(i, &(a.bytecode))
+		// case pr.InstLogicalIR:
+		// 	err = a.emitLogIR(i, &(a.bytecode))
+		// case pr.InstInc:
+		// 	err = a.emitInc(i, &(a.bytecode))
+		// case pr.InstDec:
+		// 	err = a.emitDec(i, &(a.bytecode))
+		// case pr.InstCmpRR:
+		// 	err = a.emitCmpRR(i, &(a.bytecode))
+		// case pr.InstCmpIR:
+		// 	err = a.emitCmpIR(i, &(a.bytecode))
+		// case pr.InstJmp:
+		// 	err = a.emitJmp(i, &(a.bytecode))
+		// case pr.InstJmpIP0R:
+		// 	err = a.emitJmpIP0R(i, &(a.bytecode))
+		// case pr.InstJmpIP1R:
+		// 	err = a.emitJmpIP1R(i, &(a.bytecode))
+		// case pr.InstLab:
+		// 	err = a.declareLabel(i)
+		// 	a.instCount--
+		// case pr.InstPushR:
+		// 	err = a.emitPushR(i, &(a.bytecode))
+		// case pr.InstPushI:
+		// 	err = a.emitPushI(i, &(a.bytecode))
+		// case pr.InstPop:
+		// 	err = a.emitPop(i, &(a.bytecode))
+		// case pr.InstNop:
+		// 	err = a.emitNop(&(a.bytecode))
+		// case pr.InstCall:
+		// 	err = a.emitCall(i, &(a.bytecode))
+		// case pr.InstCallIP0R:
+		// 	err = a.emitCallIP0R(i, &(a.bytecode))
+		// case pr.InstCallIP1R:
+		// 	err = a.emitCallIP1R(i, &(a.bytecode))
+		// case pr.InstRet:
+		// 	err = a.emitRet(&(a.bytecode))
+		// case pr.InstExitI:
+		// 	err = a.emitExitI(i, &(a.bytecode))
+		// case pr.InstExitR:
+		// 	err = a.emitExitR(i, &(a.bytecode))
+		// case pr.InstEntry:
+		// 	if a.hasEntry {
+		// 		err = errors.MultipleEntry(inst.Line, inst.Col)
+		// 	} else {
+		// 		a.hasEntry = true
+		// 		_, ent := a.currentCodePos()
+		// 		a.entry = ent
+		// 	}
+		// case pr.InstClr:
+		// 	err = a.emitClr(&(a.bytecode))
+		// default:
+		// 	a.lastInst = inst
+		// 	return a.instCount, err
+		// }
+		// if err != nil {
+		// 	return a.instCount, err
+		// }
+		// a.instCount++
 	}
-	return instCount, err
+	return a.instCount, err
+}
+func (a *Assembler) emitInst(inst pr.Instruction, out *[]byte) error {
+	var err error
+	switch i := inst.Data.(type) {
+	case pr.InstMov:
+		err = a.emitGenericMov(i, &(a.bytecode))
+	case pr.InstMovIR:
+		err = a.emitMovIR(i, &(a.bytecode))
+	case pr.InstMovRR:
+		err = a.emitMovRR(i, &(a.bytecode))
+	case pr.InstMovDR:
+		err = a.emitMovDRI(i, &(a.bytecode))
+	case pr.InstMovDRO1:
+		err = a.emitMovDRO1(i, &(a.bytecode))
+	case pr.InstMovDRO2:
+		err = a.emitMovDRO2(i, &(a.bytecode))
+	case pr.InstMovID:
+		err = a.emitMovID(i, &(a.bytecode))
+	case pr.InstMovRD:
+		err = a.emitMovRD(i, &(a.bytecode))
+	case pr.InstMovIDO1:
+		err = a.emitMovIDO1(i, &(a.bytecode))
+	case pr.InstMovRDO1:
+		err = a.emitMovRDO1(i, &(a.bytecode))
+	case pr.InstMovIDO2:
+		err = a.emitMovIDO2(i, &(a.bytecode))
+	case pr.InstMovRDO2:
+		err = a.emitMovRDO2(i, &(a.bytecode))
+	case pr.InstArthRR:
+		err = a.emitArthRR(i, &(a.bytecode))
+	case pr.InstArthIR:
+		err = a.emitArthIR(i, &(a.bytecode))
+	case pr.InstNot:
+		err = a.emitNot(i, &(a.bytecode))
+	case pr.InstLogicalRR:
+		err = a.emitLogRR(i, &(a.bytecode))
+	case pr.InstLogicalIR:
+		err = a.emitLogIR(i, &(a.bytecode))
+	case pr.InstInc:
+		err = a.emitInc(i, &(a.bytecode))
+	case pr.InstDec:
+		err = a.emitDec(i, &(a.bytecode))
+	case pr.InstCmpRR:
+		err = a.emitCmpRR(i, &(a.bytecode))
+	case pr.InstCmpIR:
+		err = a.emitCmpIR(i, &(a.bytecode))
+	case pr.InstJmp:
+		err = a.emitJmp(i, &(a.bytecode))
+	case pr.InstJmpIP0R:
+		err = a.emitJmpIP0R(i, &(a.bytecode))
+	case pr.InstJmpIP1R:
+		err = a.emitJmpIP1R(i, &(a.bytecode))
+	case pr.InstLab:
+		err = a.declareLabel(i)
+		a.instCount--
+	case pr.InstPushR:
+		err = a.emitPushR(i, &(a.bytecode))
+	case pr.InstPushI:
+		err = a.emitPushI(i, &(a.bytecode))
+	case pr.InstPop:
+		err = a.emitPop(i, &(a.bytecode))
+	case pr.InstNop:
+		err = a.emitNop(&(a.bytecode))
+	case pr.InstCall:
+		err = a.emitCall(i, &(a.bytecode))
+	case pr.InstCallIP0R:
+		err = a.emitCallIP0R(i, &(a.bytecode))
+	case pr.InstCallIP1R:
+		err = a.emitCallIP1R(i, &(a.bytecode))
+	case pr.InstRet:
+		err = a.emitRet(&(a.bytecode))
+	case pr.InstExitI:
+		err = a.emitExitI(i, &(a.bytecode))
+	case pr.InstExitR:
+		err = a.emitExitR(i, &(a.bytecode))
+	case pr.InstEntry:
+		if a.hasEntry {
+			err = errors.MultipleEntry(inst.Line, inst.Col)
+		} else {
+			a.hasEntry = true
+			_, ent := a.currentCodePos()
+			a.entry = ent
+		}
+	case pr.InstClr:
+		err = a.emitClr(&(a.bytecode))
+	default:
+		a.lastInst = inst
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	a.instCount++
+	return nil
 }
 
 func (a *Assembler) emitGenericMov(data pr.InstMov, out *[]byte) error {
+	evaluated := true
+	if src, ok := a.ev.TryEvaluateExpression(data.Src); ok {
+		data.Src = src
+		evaluated = evaluated && true
+	} else {
+		evaluated = evaluated && false
+	}
+	if dest, ok := a.ev.TryEvaluateExpression(data.Dest); ok {
+		data.Dest = dest
+		evaluated = evaluated && true
+	} else {
+		evaluated = evaluated && false
+	}
+	if !evaluated {
+		a.unevalInsts[len(*out)] = pr.Instruction{
+			Line: a.line,
+			Col:  a.col,
+			Data: data,
+		}
+		a.emitNop(out)
+	} else if mov, err := pr.GetConcreteMovInst(data); err != nil {
+		return err
+	} else if mov == nil {
+		return fmt.Errorf("TODO: bad mov instruction cannot be deduced to concrete mov")
+	} else {
+		return a.emitInst(pr.Instruction{
+			Line: a.line,
+			Col:  a.col,
+			Data: mov,
+		}, out)
+	}
+
 	return nil
 }
 
@@ -290,7 +423,7 @@ func (a *Assembler) emitMovID(data pr.InstMovID, out *[]byte) error {
 	*out = binary.BigEndian.AppendUint32(*out, uint32(mov))
 	lastByte := 0b0000_0011 & data.DataSize
 	(*out)[len(*out)-4] = lastByte
-	*out = binary.BigEndian.AppendUint32(*out, uint32(data.Offset))
+	*out = binary.BigEndian.AppendUint32(*out, uint32(data.Address))
 	*out = binary.BigEndian.AppendUint32(*out, uint32(data.Imm))
 	return nil
 }
@@ -303,7 +436,7 @@ func (a *Assembler) emitMovRD(data pr.InstMovRD, out *[]byte) error {
 	lastByte := 0b0000_1111 & byte(data.Src.Reg)
 	lastByte |= (0b0000_0011 & data.Src.Size) << 4
 	(*out)[len(*out)-4] = lastByte
-	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
+	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Address))
 	return nil
 }
 func (a *Assembler) emitMovIDO1(data pr.InstMovIDO1, out *[]byte) error {
@@ -311,7 +444,7 @@ func (a *Assembler) emitMovIDO1(data pr.InstMovIDO1, out *[]byte) error {
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
 	penultByte := (0b0000_0011 & byte(data.DataSize)) << 4
 	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	penultByte |= (0b0000_0011 & byte(data.OpTy))
+	penultByte |= (0b0000_0011 & byte(data.OffsetOp))
 	param := uint64(0)
 	var mov uint32
 	if data.NoOff {
@@ -338,7 +471,7 @@ func (a *Assembler) emitMovRDO1(data pr.InstMovRDO1, out *[]byte) error {
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
 	penultByte := (0b0000_0011 & byte(data.Src.Size)) << 4
 	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	penultByte |= (0b0000_0011 & byte(data.OpTy))
+	penultByte |= (0b0000_0011 & byte(data.OffsetOp))
 	(*out)[len(*out)-4] = lastByte
 	(*out)[len(*out)-3] = penultByte
 	*out = binary.BigEndian.AppendUint64(*out, uint64(data.Offset))
@@ -355,7 +488,7 @@ func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, out *[]byte) error {
 	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
 	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	byte3 |= (0b0000_0011 & byte(data.OpTy))
+	byte3 |= (0b0000_0011 & byte(data.OffsetOp))
 	byte2 := (0b0000_0011 & byte(data.DataSize))
 	var mov uint32
 	var param uint64
@@ -391,7 +524,7 @@ func (a *Assembler) emitMovRDO2(data pr.InstMovRDO2, out *[]byte) error {
 	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
 	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	byte3 |= (0b0000_0011 & byte(data.OpTy))
+	byte3 |= (0b0000_0011 & byte(data.RegOp))
 	byte2 := (0b0000_0011 & data.Src.Size)
 	(*out)[len(*out)-4] = byte4
 	(*out)[len(*out)-3] = byte3

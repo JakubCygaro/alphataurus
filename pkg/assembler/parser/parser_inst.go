@@ -222,43 +222,41 @@ type InstMovDRO2 struct {
 type InstMovID struct {
 	DataSize byte
 	Imm      uint64
-	Offset   int64
-	OpTy     int
+	Address  int64
 }
 type InstMovRD struct {
-	Src    lx.RegisterData
-	Offset int64
-	OpTy   int
+	Src     lx.RegisterData
+	Address int64
 }
 type InstMovIDO1 struct {
 	DataSize byte
 	Imm      uint64
 	Offset   int64
 	OReg1    lx.RegisterData
-	OpTy     int
+	OffsetOp int
 	NoOff    bool
 }
 type InstMovRDO1 struct {
-	Src    lx.RegisterData
-	Offset int64
-	OReg1  lx.RegisterData
-	OpTy   int
-}
-type InstMovIDO2 struct {
-	DataSize byte
-	Imm      uint64
+	Src      lx.RegisterData
 	Offset   int64
 	OReg1    lx.RegisterData
-	OReg2    lx.RegisterData
-	OpTy     int
-	NoOff    bool
+	OffsetOp int
+}
+type InstMovIDO2 struct {
+	DataSize        byte
+	Imm             uint64
+	Offset          int64
+	OReg1           lx.RegisterData
+	OReg2           lx.RegisterData
+	OffsetOp, RegOp int
+	NoOff           bool
 }
 type InstMovRDO2 struct {
 	Src    lx.RegisterData
 	Offset int64
 	OReg1  lx.RegisterData
 	OReg2  lx.RegisterData
-	OpTy   int
+	RegOp, OffsetOp   int
 }
 type InstCall struct {
 	Expr *Expr
