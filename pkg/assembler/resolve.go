@@ -4,12 +4,23 @@ import (
 	"fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	decls "github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
 func (a *Assembler) resolveJumpInsturctions() error {
 	for codePos, unresolved := range a.unresolvedJumps {
+		var addr uint64
+		if eval, ok :=
+			a.ev.TryConstEvaluateExpression(unresolved.Expr); !ok {
+			return errors.UnresolvedSymbol(unresolved.Ident)
+		} else if cepxr, ok := eval.Val.(pr.ConstExprILit); !ok {
+			return errors.UnresolvedSymbol(unresolved.Ident)
+		} else {
+			addr = cepxr.Integer
+		}
+		//TODO: this is to be changed probably
 		sym, symIdx, ok := a.symbols.GetByName(unresolved.Ident)
 		if !ok {
 			return errors.UnresolvedSymbol(unresolved.Ident)
@@ -108,7 +119,7 @@ func (a *Assembler) resolveUnevaluated() error {
 	if len(a.unevalInsts) != 0 {
 		last := a.prov.LastFailedAccess
 		return fmt.
-			Errorf("TODO: Unresolved expressions, unable to finish assembling `%s`" ,
+			Errorf("TODO: Unresolved expressions, unable to finish assembling `%s`",
 				*last)
 	}
 	return nil

@@ -7,7 +7,7 @@ import (
 	// "github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
-func GetConcreteArth(genericArth pr.InstGenericArth) (any, error) {
+func GetConcreteArthInst(genericArth pr.InstGenericArth) (any, error) {
 	switch dest := genericArth.Dest.Val.(type) {
 	case pr.RegExpr:
 		switch src := genericArth.Src.Val.(type) {

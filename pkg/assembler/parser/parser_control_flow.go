@@ -7,7 +7,7 @@ import (
 )
 
 func (p *Parser) parseCmp() error {
-	genericCmp := InstCmp{}
+	genericCmp := InstGenericCmp{}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
@@ -23,6 +23,7 @@ func (p *Parser) parseCmp() error {
 	default:
 		p.lexer.UnreadCurrentToken()
 	}
+	genericCmp.Ty = ty
 	if expr, err := p.ParseExpression(); err != nil {
 		return err
 	} else {
@@ -89,36 +90,8 @@ func (p *Parser) parseCmp() error {
 	// 		em,
 	// 	)
 	// }
-	if genericCmp.Min.IsRegexpr() {
-		if genericCmp.Sub.IsRegexpr() {
-			p.currentInst = Instruction{
-				Data: InstCmpRR{
-					Min: genericCmp.Min.Val.(RegExpr).Reg,
-					Sub: genericCmp.Sub.Val.(RegExpr).Reg,
-					Ty:  ty,
-				},
-			}
-		} else if IsConstexprType[ConstExprILit](genericCmp.Sub) {
-			p.currentInst = Instruction{
-				Data: InstCmpIR{
-					Imm: genericCmp.Sub.Val.(ConstExpr).Val.(ConstExprILit).Integer,
-					Min: genericCmp.Min.Val.(RegExpr).Reg,
-					Ty:  ty,
-				},
-			}
-		} else if IsConstexprType[ConstExprFLit](genericCmp.Sub) {
-			p.currentInst = Instruction{
-				Data: InstCmpIR{
-					Imm: genericCmp.Sub.Val.(ConstExpr).Val.(ConstExprFLit).Float,
-					Min: genericCmp.Min.Val.(RegExpr).Reg,
-					Ty:  ty,
-				},
-			}
-		}
-	} else {
-		p.currentInst = Instruction{
-			Data: genericCmp,
-		}
+	p.currentInst = Instruction{
+		Data: genericCmp,
 	}
 	// switch op2.Ty {
 	// case lx.TOKEN_TREG:
@@ -158,7 +131,7 @@ func (p *Parser) parseCmp() error {
 	return nil
 }
 func (p *Parser) parseJmp(ty JmpVariant) error {
-	genericJmp := InstJmp{}
+	genericJmp := InstGenericJmp{}
 	var absolute bool
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
@@ -287,7 +260,7 @@ func (p *Parser) parseJmp(ty JmpVariant) error {
 //		return nil
 //	}
 func (p *Parser) parseCall() error {
-	genericCall := InstCall{}
+	genericCall := InstGenericCall{}
 	// ok := false
 	// var pruned ConstExpr
 	if param, err := p.ParseExpression(); err != nil {

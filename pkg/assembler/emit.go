@@ -69,8 +69,10 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitArthRR(i, at)
 	case pr.InstArthIR:
 		err = a.emitArthIR(i, at)
-	case pr.InstNot:
+	case pr.InstNotR:
 		err = a.emitNot(i, at)
+	case pr.InstGenericLogical:
+		err = a.emitGenericLogical(i, at)
 	case pr.InstLogicalRR:
 		err = a.emitLogRR(i, at)
 	case pr.InstLogicalIR:
@@ -79,11 +81,13 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitInc(i, at)
 	case pr.InstDec:
 		err = a.emitDec(i, at)
+	case pr.InstGenericCmp:
+		err = a.emitGenericCmp(i, at)
 	case pr.InstCmpRR:
 		err = a.emitCmpRR(i, at)
 	case pr.InstCmpIR:
 		err = a.emitCmpIR(i, at)
-	case pr.InstJmp:
+	case pr.InstGenericJmp:
 		err = a.emitJmp(i, at)
 	case pr.InstJmpIP0R:
 		err = a.emitJmpIP0R(i, at)
@@ -97,9 +101,11 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitPushI(i, at)
 	case pr.InstPop:
 		err = a.emitPop(i, at)
+	case pr.InstPopR:
+		err = a.emitPopR(i, at)
 	case pr.InstNop:
 		err = a.emitNop(at)
-	case pr.InstCall:
+	case pr.InstGenericCall:
 		err = a.emitCall(i, at)
 	case pr.InstCallIP0R:
 		err = a.emitCallIP0R(i, at)

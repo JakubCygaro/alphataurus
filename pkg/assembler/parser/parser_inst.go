@@ -116,10 +116,10 @@ type InstArthIR struct {
 	DataSize byte
 	ArthTy   ArthTy
 }
-type InstNot struct {
+type InstNotR struct {
 	First lx.RegisterData
 }
-type InstLogical struct {
+type InstGenericLogical struct {
 	First, Second *Expr
 	LogTy         LogTy
 }
@@ -132,7 +132,7 @@ type InstLogicalIR struct {
 	Imm   uint64
 	LogTy LogTy
 }
-type InstCmp struct {
+type InstGenericCmp struct {
 	Ty       int
 	Sub, Min *Expr
 }
@@ -145,7 +145,7 @@ type InstCmpIR struct {
 	Min lx.RegisterData
 	Imm uint64
 }
-type InstJmp struct {
+type InstGenericJmp struct {
 	Address  *Expr
 	Absolute bool
 	Variant  JmpVariant
@@ -258,7 +258,7 @@ type InstMovRDO2 struct {
 	OReg2           lx.RegisterData
 	RegOp, OffsetOp int
 }
-type InstCall struct {
+type InstGenericCall struct {
 	Expr *Expr
 }
 type InstExport struct {

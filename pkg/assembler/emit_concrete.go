@@ -73,7 +73,7 @@ func (a *Assembler) emitCallIP1R(data pr.InstCallIP1R, at int) error {
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitCall(data pr.InstCall, at int) error {
+func (a *Assembler) emitCall(data pr.InstGenericCall, at int) error {
 	call := a.opCodes.GetBytes(vm.OP_CALL)
 	//direct call case
 	evaluated, ok := a.ev.TryEvaluateExpression(data.Expr)
@@ -150,7 +150,7 @@ func (a *Assembler) emitJmpIP1R(data pr.InstJmpIP1R, at int) error {
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitJmp(data pr.InstJmp, at int) error {
+func (a *Assembler) emitJmp(data pr.InstGenericJmp, at int) error {
 	opcode := a.jmpInstToOpCode(data.Variant)
 	position := at
 	evaluated, ok := a.ev.TryEvaluateExpression(data.Address)
@@ -516,7 +516,7 @@ func (a *Assembler) emitArthIR(data pr.InstArthIR, at int) error {
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Imm))
 	return nil
 }
-func (a *Assembler) emitNot(data pr.InstNot, at int) error {
+func (a *Assembler) emitNot(data pr.InstNotR, at int) error {
 	opCode := a.opCodes.GetBytes(vm.OP_NOT)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
 	param := [8]byte{

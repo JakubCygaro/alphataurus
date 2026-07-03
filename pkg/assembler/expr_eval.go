@@ -104,7 +104,7 @@ func (ev *ExpressionEvaluator) performOperation(arth pr.ArthExpr) (*pr.Expr, boo
 			return pr.ConstExpr{}
 		})
 		if !ok {
-			return pr.MakeArth[pr.ArthExprAdd](
+			return pr.MakeArth(
 				pr.ArthExprAdd{
 					A: a,
 					B: b,
@@ -150,7 +150,7 @@ func (ev *ExpressionEvaluator) performOperation(arth pr.ArthExpr) (*pr.Expr, boo
 			return pr.ConstExpr{}
 		})
 		if !ok {
-			return pr.MakeArth[pr.ArthExprAdd](
+			return pr.MakeArth(
 				pr.ArthExprAdd{
 					A: a,
 					B: b,
@@ -196,7 +196,7 @@ func (ev *ExpressionEvaluator) performOperation(arth pr.ArthExpr) (*pr.Expr, boo
 			return pr.ConstExpr{}
 		})
 		if !ok {
-			return pr.MakeArth[pr.ArthExprAdd](
+			return pr.MakeArth(
 				pr.ArthExprAdd{
 					A: a,
 					B: b,
@@ -242,7 +242,7 @@ func (ev *ExpressionEvaluator) performOperation(arth pr.ArthExpr) (*pr.Expr, boo
 			return pr.ConstExpr{}
 		})
 		if !ok {
-			return pr.MakeArth[pr.ArthExprAdd](
+			return pr.MakeArth(
 				pr.ArthExprAdd{
 					A: a,
 					B: b,

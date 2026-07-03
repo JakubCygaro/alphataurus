@@ -6,7 +6,7 @@ import (
 )
 
 func (p *Parser) parseLogical(logTy int) error {
-	genericLogical := InstLogical{}
+	genericLogical := InstGenericLogical{}
 	// var op1 lx.Token
 	if expr, err := p.ParseExpression(); err != nil {
 		return err
@@ -43,7 +43,7 @@ func (p *Parser) parseLogical(logTy int) error {
 			)
 		}
 		p.currentInst = Instruction{
-			Data: InstNot{
+			Data: InstNotR{
 				First: genericLogical.First.Val.(RegExpr).Reg,
 			},
 		}
@@ -81,36 +81,9 @@ func (p *Parser) parseLogical(logTy int) error {
 	case LOG_TRSH:
 		ty = RSH
 	}
-	if genericLogical.First.IsRegexpr() {
-		if genericLogical.Second.IsRegexpr() {
-			p.currentInst = Instruction{
-				Data: InstLogicalRR{
-					Second:    genericLogical.Second.Val.(RegExpr).Reg,
-					First:   genericLogical.First.Val.(RegExpr).Reg,
-					LogTy: ty,
-				},
-			}
-		} else if IsConstexprType[ConstExprILit](genericLogical.Second) {
-			p.currentInst = Instruction{
-				Data: InstLogicalIR{
-					Imm:    genericLogical.Second.Val.(ConstExpr).Val.(ConstExprILit).Integer,
-					First:   genericLogical.First.Val.(RegExpr).Reg,
-					LogTy: ty,
-				},
-			}
-		} else if IsConstexprType[ConstExprFLit](genericLogical.Second) {
-			p.currentInst = Instruction{
-				Data: InstLogicalIR{
-					Imm:    genericLogical.Second.Val.(ConstExpr).Val.(ConstExprFLit).Float,
-					First:   genericLogical.First.Val.(RegExpr).Reg,
-					LogTy: ty,
-				},
-			}
-		}
-	} else {
-		p.currentInst = Instruction{
-			Data: genericLogical,
-		}
+	genericLogical.LogTy = ty
+	p.currentInst = Instruction{
+		Data: genericLogical,
 	}
 	// else {
 	// 	eval, ok := TryConstEvaluateExpression(expr)
