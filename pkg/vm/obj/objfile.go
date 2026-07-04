@@ -64,6 +64,7 @@ type SymbolTable struct {
 	InOrder    []*SymbolData
 	ByName     map[string]int
 	ByLocation map[uint64]*SymbolData
+	foreign    map[*SymbolData]struct{}
 }
 
 type SymbolData struct {
@@ -120,25 +121,30 @@ func (t *SymbolTable) AddSymbol(def SymbolData) (*SymbolData, error) {
 func (t *SymbolTable) AddForeignSymbol(name string, sym *SymbolData) error {
 	if i, ok := t.ByName[name]; ok {
 		return fmt.Errorf("TODO: Redefinition of symbol `%s`\n"+
-				"Previously defined at: 0x%x", name, t.InOrder[i].Loc)
+			"Previously defined at: 0x%x", name, t.InOrder[i].Loc)
 	}
 	if sym, ok := t.ByLocation[sym.Loc]; ok {
 		return fmt.Errorf("TODO: Multiple symbols defined for single location\n"+
-				"First: %v\nSecond: %v", sym.name, name)
+			"First: %v\nSecond: %v", sym.name, name)
 	}
 	t.InOrder = append(t.InOrder, sym)
 	t.ByName[name] = len(t.InOrder) - 1
 	t.ByLocation[sym.Loc] = sym
+	t.foreign[sym] = struct{}{};
 	return nil
 }
 func (t *SymbolTable) RenameSymbol(oldName, newName string) error {
 	if sym, idx, ok := t.GetByName(oldName); ok {
+		if _, ok := t.foreign[sym]; ok {
+			return fmt.Errorf("TODO: Foreign symbol `%s`cannot be renamed",
+				oldName)
+		}
 		delete(t.ByName, oldName)
 		sym.name = newName
 		t.ByName[newName] = idx
 		return nil
 	}
-	return fmt.Errorf("TODO: No such symbol `%s` cannot rename to `%s`",
+	return fmt.Errorf("TODO: No such symbol `%s`, cannot rename to `%s`",
 		oldName, newName)
 }
 

@@ -75,13 +75,13 @@ type Instruction struct {
 	Data      any
 	Line, Col int
 }
-type MovSize struct {
+type DataSize struct {
 	Line, Col int
 	Size      byte
 }
 type InstGenericMov struct {
 	Dest, Src *Expr
-	DataSize  *MovSize
+	DataSize  *DataSize
 }
 type InstMovIR struct {
 	Dest     lx.RegisterData
@@ -180,13 +180,12 @@ type InstLab struct {
 	Label      string
 	DeclaredAt string
 }
-type InstPush struct {
-	Val    *Expr
-	DataSz byte
+type InstGenericPush struct {
+	Expr   *Expr
+	DataSz *DataSize
 }
 type InstPushR struct {
-	Reg    uint64
-	DataSz byte
+	Reg lx.RegisterData
 }
 type InstPushI struct {
 	Imm    uint64
@@ -210,14 +209,18 @@ type InstMovDRO1 struct {
 	Dest   lx.RegisterData
 	Offset int64
 	OReg1  lx.RegisterData
-	OffOp  int
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	OffOp int
 }
 type InstMovDRO2 struct {
-	Dest         lx.RegisterData
-	Offset       int64
-	OReg1        lx.RegisterData
-	OReg2        lx.RegisterData
-	OffOp, RegOp int
+	Dest   lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	OReg2  lx.RegisterData
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	RegOff, RegOp int
 }
 type InstMovID struct {
 	DataSize byte
@@ -233,30 +236,38 @@ type InstMovIDO1 struct {
 	Imm      uint64
 	Offset   int64
 	OReg1    lx.RegisterData
-	OffsetOp int
-	NoOff    bool
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	OffOp int
+	NoOff bool
 }
 type InstMovRDO1 struct {
-	Src      lx.RegisterData
-	Offset   int64
-	OReg1    lx.RegisterData
-	OffsetOp int
+	Src    lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	OffOp int
 }
 type InstMovIDO2 struct {
-	DataSize        byte
-	Imm             uint64
-	Offset          int64
-	OReg1           lx.RegisterData
-	OReg2           lx.RegisterData
-	OffsetOp, RegOp int
-	NoOff           bool
+	DataSize byte
+	Imm      uint64
+	Offset   int64
+	OReg1    lx.RegisterData
+	OReg2    lx.RegisterData
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	OffOp, RegOp int
+	NoOff        bool
 }
 type InstMovRDO2 struct {
-	Src             lx.RegisterData
-	Offset          int64
-	OReg1           lx.RegisterData
-	OReg2           lx.RegisterData
-	RegOp, OffsetOp int
+	Src    lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	OReg2  lx.RegisterData
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	RegOp, OffOp int
 }
 type InstGenericCall struct {
 	Expr *Expr

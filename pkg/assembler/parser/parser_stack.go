@@ -3,73 +3,37 @@ package assembler
 import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
-	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func (p *Parser) parsePush() error {
-	genericPush := InstPush{}
+	genericPush := InstGenericPush{}
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
 	nextT := p.lexer.CurrentToken()
 	// WORD by default
-	dataSz := byte(0xff)
 	if sz, ok := lx.TokenAsSize(&nextT); ok {
-		dataSz = sz
+		genericPush.DataSz = &DataSize{
+			Line: nextT.Line,
+			Col: nextT.Col,
+			Size: sz,
+		}
 	} else {
 		p.lexer.UnreadCurrentToken()
 	}
 	if arg, err := p.ParseExpression(); err != nil {
 		return err
 	} else {
-		genericPush.Val = arg
+		genericPush.Expr = arg
+	}
+	p.currentInst = Instruction{
+		Data: genericPush,
 	}
 	// eval, ok := TryConstEvaluateExpression(arg)
 	// if !ok {
 	// 	return fmt.Errorf("Operand to push instruction must be a constant expression or a register name %s",
 	// 		p.lexer.CurrentPosition())
 	// }
-	if genericPush.Val.IsRegexpr() {
-		if dataSz != 0xff {
-			p, _ := lx.GetSizeKeyword(dataSz)
-			return errors.UnnecessarySizeParameter(p, nextT.Line, nextT.Col)
-		}
-		regData := genericPush.Val.Val.(RegExpr).Reg
-		p.currentInst = Instruction{
-			Data: InstPushR{
-				Reg:    uint64(regData.Reg),
-				DataSz: regData.Size,
-			},
-		}
-	} else if IsConstexprType[ConstExprILit](genericPush.Val) {
-		p.currentInst = Instruction{
-			Data: InstPushI{
-				Imm:    genericPush.Val.Val.(ConstExpr).Val.(ConstExprILit).Integer,
-				DataSz: dataSz,
-			},
-		}
-	} else if IsConstexprType[ConstExprFLit](genericPush.Val) {
-		if dataSz != vm.SZ_64 {
-			g, _ := lx.GetSizeKeyword(dataSz)
-			n, _ := lx.GetSizeKeyword(vm.SZ_64)
-			return errors.BadSizeArgument(
-				g,
-				n,
-				nextT.Line,
-				nextT.Col,
-			)
-		}
-		p.currentInst = Instruction{
-			Data: InstPushI{
-				Imm:    genericPush.Val.Val.(ConstExpr).Val.(ConstExprFLit).Float,
-				DataSz: dataSz,
-			},
-		}
-	} else {
-		p.currentInst = Instruction{
-			Data: genericPush,
-		}
-	}
 	// switch eval.Ty {
 	// case CONSTEXPR_TREG:
 	// 	if dataSz != 0xff {

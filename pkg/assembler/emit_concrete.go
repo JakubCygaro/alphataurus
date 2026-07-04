@@ -5,6 +5,7 @@ import (
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 )
@@ -12,8 +13,8 @@ import (
 func (a *Assembler) emitPushR(data pr.InstPushR, at int) error {
 	push := a.opCodes.GetBytes(vm.OP_PUSHR)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(push))
-	a.bytecode[at] = 0b0000_0011 & data.DataSz
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Reg))
+	a.bytecode[at] = 0b0000_0011 & data.Reg.Size
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Reg.Reg))
 	return nil
 }
 func (a *Assembler) emitPushI(data pr.InstPushI, at int) error {
@@ -244,7 +245,8 @@ func (a *Assembler) emitMovDRO1(data pr.InstMovDRO1, at int) error {
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
 	penultByte := (0b0000_0011 & byte(data.Dest.Size)) << 4
 	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	penultByte |= (0b0000_0011 & byte(data.OffOp))
+	off, _ := lx.TokenTToOpT(data.OffOp)
+	penultByte |= (0b0000_0011 & byte(off))
 	a.bytecode[at] = lastByte
 	a.bytecode[at+1] = penultByte
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
@@ -260,7 +262,8 @@ func (a *Assembler) emitMovDRO2(data pr.InstMovDRO2, at int) error {
 	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
 	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	byte3 |= (0b0000_0011 & byte(data.OffOp))
+	off, _ := lx.TokenTToOpT(data.RegOff)
+	byte3 |= (0b0000_0011 & byte(off))
 	byte2 := (data.Dest.Size & 0b0000_0011)
 	a.bytecode[at] = byte4
 	a.bytecode[at+1] = byte3
@@ -295,7 +298,8 @@ func (a *Assembler) emitMovIDO1(data pr.InstMovIDO1, at int) error {
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
 	penultByte := (0b0000_0011 & byte(data.DataSize)) << 4
 	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	penultByte |= (0b0000_0011 & byte(data.OffsetOp))
+	off, _ := lx.TokenTToOpT(data.OffOp)
+	penultByte |= (0b0000_0011 & byte(off))
 	param := uint64(0)
 	var mov uint32
 	if data.NoOff {
@@ -322,7 +326,8 @@ func (a *Assembler) emitMovRDO1(data pr.InstMovRDO1, at int) error {
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
 	penultByte := (0b0000_0011 & byte(data.Src.Size)) << 4
 	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	penultByte |= (0b0000_0011 & byte(data.OffsetOp))
+	off, _ := lx.TokenTToOpT(data.OffOp)
+	penultByte |= (0b0000_0011 & byte(off))
 	a.bytecode[at] = lastByte
 	a.bytecode[at+1] = penultByte
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
@@ -339,7 +344,7 @@ func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, at int) error {
 	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
 	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	byte3 |= (0b0000_0011 & byte(data.OffsetOp))
+	byte3 |= (0b0000_0011 & byte(data.OffOp))
 	byte2 := (0b0000_0011 & byte(data.DataSize))
 	var mov uint32
 	var param uint64

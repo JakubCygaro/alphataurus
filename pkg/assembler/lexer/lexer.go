@@ -52,6 +52,21 @@ const (
 	TOKEN_TEOF
 )
 
+
+func TokenTToOpT(tokenT int) (int, bool) {
+	switch tokenT {
+	case TOKEN_TPLUS:
+		return vm.OP_TADD, true
+	case TOKEN_TMINUS:
+		return vm.OP_TSUB, true
+	case TOKEN_TASTERISK:
+		return vm.OP_TMUL, true
+	case TOKEN_TSLASH:
+		return vm.OP_TDIV, true
+	}
+	return -1, false
+}
+
 var keywords = map[string]int{
 	"SIGNED":   TOKEN_TSIGNED,
 	"UNSIGNED": TOKEN_TUNSIGNED,

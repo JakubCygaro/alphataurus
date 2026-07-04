@@ -16,7 +16,7 @@ func (p *Parser) parseMov() error {
 	if sz, ok := lx.TokenAsSize(&op1); !ok {
 		p.lexer.UnreadCurrentToken()
 	} else {
-		genericMov.DataSize = &MovSize{
+		genericMov.DataSize = &DataSize{
 			Size: sz,
 			Col: op1.Col,
 			Line: op1.Line,

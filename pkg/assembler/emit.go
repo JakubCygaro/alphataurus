@@ -96,6 +96,8 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitJmpIP1R(i, at)
 	case pr.InstLab:
 		err = a.declareLabel(i, at)
+	case pr.InstGenericPush:
+		err = a.emitGenericPush(i, at)
 	case pr.InstPushR:
 		err = a.emitPushR(i, at)
 	case pr.InstPushI:

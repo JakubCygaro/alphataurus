@@ -40,24 +40,50 @@ section '.code'
 fail:
 	exit 1
 @entry
-	mov r7, 1
-	lsh r7, 1
-	mov r1, 2 ;; divisor
-	mov r4, 1 ;; comparer
+	mov bp, sp
+	push BYTE 1
+	push BYTE 2
+	push BYTE 3
+	push BYTE 4
+	push BYTE 5
+	push BYTE 6
+	push BYTE 7
+	push BYTE 8
+
+	;; pack into r0
+
+	mov r0b, [bp+1]
+	lsh r0, 8
+	mov r0b, [bp+2]
+	lsh r0, 8
+	mov r0b, [bp+3]
+	lsh r0, 8
+	mov r0b, [bp+4]
+	lsh r0, 8
+	mov r0b, [bp+5]
+	lsh r0, 8
+	mov r0b, [bp+6]
+	lsh r0, 8
+	mov r0b, [bp+7]
+	lsh r0, 8
+	mov r0b, [bp+8]
+
+	;; check
+
+	mov r1, 8 ;; loop counter
 
 L0:
-	cmp r7, 1024
-	jg leave
-	mov r0, r7
-	div UNSIGNED WORD
-	cmp r2, r4
+	cmp r1, 0 ;; loop check
+	jle leave
+	pop r2b
+	cmp r0b, r2b
 	jne fail
-	lsh r7, 1
-	lsh r4, 1
+	rsh r0, 8
+	dec r1
 	jmp L0
 
 leave:
-	exit 0
+exit 0
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -100,11 +126,10 @@ func main() {
 	mach.SetOpCodeTrace(func(op vm.OpCodeVal) {
 		fmt.Printf("[%s]\n", op.String())
 	})
+	var execError error
 	err = mach.Execute(elf)
 	if err != nil {
-		os.Stderr.WriteString(err.Error())
-		os.Stderr.WriteString("\n")
-		os.Exit(-1)
+		execError = err
 	}
 	if rx, err := mach.GetGpRXAsS64(vm.R0_IDX); err == nil {
 		fmt.Printf("r0 = %+v\n", int8(rx))
@@ -144,5 +169,10 @@ func main() {
 	}
 	// expr, _ = pr.TryEvaluatePruneExpression(expr)
 	// fmt.Println((((6594007686923535256 / (6948242974143 - 1987936890282)) / 3106268) / 1758))
+	if execError != nil {
+		os.Stderr.WriteString(err.Error())
+		os.Stderr.WriteString("\n")
+		os.Exit(1)
+	}
 	os.Exit(int(mach.GetExitCode()))
 }

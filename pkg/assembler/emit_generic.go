@@ -148,3 +148,30 @@ func (a *Assembler) emitGenericCmp(data pr.InstGenericCmp, at int) error {
 
 	return nil
 }
+func (a *Assembler) emitGenericPush(data pr.InstGenericPush, at int) error {
+	evaluated := true
+	evaluated = evaluated &&
+		evalInstField(a, &data, func(i *pr.InstGenericPush) **pr.Expr {
+			return &(i.Expr)
+		})
+	if !evaluated {
+		a.unevalInsts[at] = pr.Instruction{
+			Line: a.line,
+			Col:  a.col,
+			Data: data,
+		}
+		a.emitNop(at)
+	} else if mov, err := GetConcretePushInst(data); err != nil {
+		return err
+	} else if mov == nil {
+		return fmt.Errorf("TODO: bad push instruction cannot be deduced to concrete push")
+	} else {
+		return a.emitInst(pr.Instruction{
+			Line: a.line,
+			Col:  a.col,
+			Data: mov,
+		}, at)
+	}
+
+	return nil
+}

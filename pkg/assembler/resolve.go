@@ -20,7 +20,6 @@ func (a *Assembler) resolveJumpInsturctions() error {
 		} else {
 			addr = cepxr.Integer
 		}
-		//TODO: this is to be changed probably
 		sym, ok := a.symbols.GetByLocation(addr)
 		_, symIdx, _ := a.symbols.GetByName(sym.GetName())
 		if !ok {

@@ -63,7 +63,7 @@ func gcmMovDR(dest pr.RegExpr, deref pr.DerefExpr, mov *pr.InstGenericMov) (any,
 		if pr.IsConstexprType[pr.ConstExprILit](inner.Offset) {
 			return pr.InstMovDRO1{
 				Dest:   dest.Reg,
-				Offset: inner.Offset.Val.(pr.ConstExprILit).Signed(),
+				Offset: inner.Offset.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Signed(),
 				OReg1:  inner.Reg,
 				OffOp:  inner.OffsetOp,
 			}, nil
@@ -76,8 +76,8 @@ func gcmMovDR(dest pr.RegExpr, deref pr.DerefExpr, mov *pr.InstGenericMov) (any,
 				OReg1:  inner.Reg1,
 				RegOp:  inner.RegOp,
 				OReg2:  inner.Reg2,
-				OffOp:  inner.OffsetOp,
-				Offset: inner.Offset.Val.(pr.ConstExprILit).Signed(),
+				RegOff:  inner.OffsetOp,
+				Offset: inner.Offset.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Signed(),
 			}, nil
 		}
 	}
@@ -143,7 +143,7 @@ func gcmRDO1_NO(inner pr.RegExpr, mov *pr.InstGenericMov) (any, error) {
 				Imm:      src.Val.(pr.ConstExprILit).Integer,
 				Offset:   0,
 				OReg1:    inner.Reg,
-				OffsetOp: vm.OP_TADD,
+				OffOp: vm.OP_TADD,
 				DataSize: mov.DataSize.Size,
 				NoOff:    true,
 			}, nil
@@ -154,7 +154,7 @@ func gcmRDO1_NO(inner pr.RegExpr, mov *pr.InstGenericMov) (any, error) {
 			Src:      src.Reg,
 			Offset:   0,
 			OReg1:    inner.Reg,
-			OffsetOp: vm.OP_TADD,
+			OffOp: vm.OP_TADD,
 		}, nil
 	}
 	return nil, nil
@@ -184,7 +184,7 @@ func gcmRDO1(inner pr.OneRegOffsetExpr, mov *pr.InstGenericMov) (any, error) {
 				Imm:      src.Val.(pr.ConstExprILit).Integer,
 				Offset:   off,
 				OReg1:    inner.Reg,
-				OffsetOp: inner.OffsetOp,
+				OffOp: inner.OffsetOp,
 				DataSize: mov.DataSize.Size,
 				NoOff:    off == 0,
 			}, nil
@@ -195,7 +195,7 @@ func gcmRDO1(inner pr.OneRegOffsetExpr, mov *pr.InstGenericMov) (any, error) {
 			Src:      src.Reg,
 			Offset:   off,
 			OReg1:    inner.Reg,
-			OffsetOp: inner.OffsetOp,
+			OffOp: inner.OffsetOp,
 		}, nil
 	}
 	return nil, nil
@@ -223,7 +223,7 @@ func gcmRDO2(inner pr.TwoRegOffsetExpr, mov *pr.InstGenericMov) (any, error) {
 				OReg2:    inner.Reg2,
 				RegOp:    inner.RegOp,
 				Offset:   off,
-				OffsetOp: inner.OffsetOp,
+				OffOp: inner.OffsetOp,
 				NoOff:    off == 0,
 			}, nil
 		}
@@ -235,7 +235,7 @@ func gcmRDO2(inner pr.TwoRegOffsetExpr, mov *pr.InstGenericMov) (any, error) {
 			OReg1:    inner.Reg1,
 			OReg2:    inner.Reg2,
 			RegOp:    inner.RegOp,
-			OffsetOp: inner.OffsetOp,
+			OffOp: inner.OffsetOp,
 		}, nil
 	}
 
