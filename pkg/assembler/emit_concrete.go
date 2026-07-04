@@ -213,10 +213,10 @@ func (a *Assembler) emitMovRR(data pr.InstMovRR, at int) error {
 	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
 		return errors.DisallowedSourceRegister(a.line, a.col)
 	}
-	destsrc := 0b00001111 & byte(data.Dest.Size)
-	destsrc |= (0b00001111 & byte(data.Src.Size)) << 4
-	// dataSz := (0b0000_0011 & data.DataSize)
-	// (*out)[len(*out)-4] = dataSz
+	destsrc := 0b00001111 & byte(data.Dest.Reg)
+	destsrc |= (0b00001111 & byte(data.Src.Reg)) << 4
+	dataSz := (0b0000_0011 & data.Dest.Size)
+	a.bytecode[at] = dataSz
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	a.bytecode[at+decls.INSTRUCTION_SIZE-1] = destsrc
 	return nil

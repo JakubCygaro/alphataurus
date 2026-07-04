@@ -18,7 +18,6 @@ type PatchJmp struct {
 }
 
 type unresolvedJump struct {
-	Ident string
 	// what instruction is gonna get patched, type of Patch... struct
 	PatchTy  any
 	Absolute bool

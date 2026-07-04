@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
 	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 )
 
@@ -60,8 +61,9 @@ const (
 )
 
 type SymbolTable struct {
-	InOrder []*SymbolData
-	ByName  map[string]int
+	InOrder    []*SymbolData
+	ByName     map[string]int
+	ByLocation map[uint64]*SymbolData
 }
 
 type SymbolData struct {
@@ -69,36 +71,75 @@ type SymbolData struct {
 	Vis byte
 	// the location is defined with the deadzone added, so any value below the deadzone is treated as invalid
 	Loc  uint64
-	Name string
+	name string
+}
+
+func (sym *SymbolData) GetName() string {
+	return sym.name
+}
+
+func DefineSymbol(ty, vis byte, loc uint64, name string) SymbolData {
+	return SymbolData{
+		Ty:   ty,
+		Vis:  vis,
+		Loc:  loc,
+		name: name,
+	}
 }
 
 func NewSymbolTable() SymbolTable {
 	table := SymbolTable{
-		InOrder: make([]*SymbolData, 0),
-		ByName:  make(map[string]int),
+		InOrder:    make([]*SymbolData, 0),
+		ByName:     make(map[string]int),
+		ByLocation: make(map[uint64]*SymbolData),
 	}
 	return table
 }
 
-func (t *SymbolTable) Clear()  {
+func (t *SymbolTable) Clear() {
 	clear(t.InOrder)
 	clear(t.ByName)
+	clear(t.ByLocation)
 }
-func (t *SymbolTable) AddSymbol(def SymbolData) (*SymbolData, bool) {
-	if _, ok := t.ByName[def.Name]; ok {
-		return nil, false
+func (t *SymbolTable) AddSymbol(def SymbolData) (*SymbolData, error) {
+	if i, ok := t.ByName[def.name]; ok {
+		return nil,
+			fmt.Errorf("TODO: Redefinition of symbol `%s`\n"+
+				"Previously defined at: 0x%x", def.name, t.InOrder[i].Loc)
+	}
+	if sym, ok := t.ByLocation[def.Loc]; ok {
+		return nil,
+			fmt.Errorf("TODO: Multiple symbols defined for single location\n"+
+				"First: %v\nSecond: %v", sym.name, def.name)
 	}
 	t.InOrder = append(t.InOrder, &def)
-	t.ByName[def.Name] = len(t.InOrder) - 1
-	return t.InOrder[len(t.InOrder)-1], true
+	t.ByName[def.name] = len(t.InOrder) - 1
+	t.ByLocation[def.Loc] = &def
+	return t.InOrder[len(t.InOrder)-1], nil
 }
-func (t *SymbolTable) AddForeignSymbol(name string, sym *SymbolData) bool {
-	if _, ok := t.ByName[name]; ok {
-		return false
+func (t *SymbolTable) AddForeignSymbol(name string, sym *SymbolData) error {
+	if i, ok := t.ByName[name]; ok {
+		return fmt.Errorf("TODO: Redefinition of symbol `%s`\n"+
+				"Previously defined at: 0x%x", name, t.InOrder[i].Loc)
+	}
+	if sym, ok := t.ByLocation[sym.Loc]; ok {
+		return fmt.Errorf("TODO: Multiple symbols defined for single location\n"+
+				"First: %v\nSecond: %v", sym.name, name)
 	}
 	t.InOrder = append(t.InOrder, sym)
 	t.ByName[name] = len(t.InOrder) - 1
-	return true
+	t.ByLocation[sym.Loc] = sym
+	return nil
+}
+func (t *SymbolTable) RenameSymbol(oldName, newName string) error {
+	if sym, idx, ok := t.GetByName(oldName); ok {
+		delete(t.ByName, oldName)
+		sym.name = newName
+		t.ByName[newName] = idx
+		return nil
+	}
+	return fmt.Errorf("TODO: No such symbol `%s` cannot rename to `%s`",
+		oldName, newName)
 }
 
 func (t *SymbolTable) GetByName(name string) (*SymbolData, int, bool) {
@@ -106,6 +147,12 @@ func (t *SymbolTable) GetByName(name string) (*SymbolData, int, bool) {
 		return t.InOrder[idx], idx, ok
 	}
 	return nil, -1, false
+}
+func (t *SymbolTable) GetByLocation(loc uint64) (*SymbolData, bool) {
+	if sym, ok := t.ByLocation[loc]; ok {
+		return sym, ok
+	}
+	return nil, false
 }
 func (t *SymbolTable) GetName(idx int) (string, bool) {
 	for n, i := range t.ByName {
@@ -263,12 +310,12 @@ func readSymbols(symbolSec []byte) (SymbolTable, error) {
 		if vis > SYM_VPRIVATE {
 			return table, fmt.Errorf("Invalid symbol `%s` visibility [%d]", name, vis)
 		}
-		sym := SymbolData{
-			Ty:   ty,
-			Vis:  vis,
-			Loc:  loc,
-			Name: name,
-		}
+		sym := DefineSymbol(
+			ty,
+			vis,
+			loc,
+			name,
+		)
 		table.AddSymbol(sym)
 	}
 	return table, nil

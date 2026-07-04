@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 	aelf "github.com/JakubCygaro/alphataurus/pkg/vm/aelf"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
 type objFileData struct {
@@ -65,14 +65,16 @@ func newGlobalSymbolTable() globalSymbolTable {
 	}
 }
 
-func (t *globalSymbolTable) AddSymbol(file objFileIdx, name string, sym *vm.SymbolData) bool {
-	if ok := t.symbols.AddForeignSymbol(name, sym); !ok {
+func (t *globalSymbolTable) AddSymbol(
+	file objFileIdx, name string, sym *vm.SymbolData) bool {
+	if err := t.symbols.AddForeignSymbol(name, sym); err != nil {
 		return false
 	}
 	t.files[sym] = file
 	return true
 }
-func (t *globalSymbolTable) GetSymbol(name string) (file objFileIdx, inTable int, sym *vm.SymbolData, ok bool) {
+func (t *globalSymbolTable) GetSymbol(name string) (
+	file objFileIdx, inTable int, sym *vm.SymbolData, ok bool) {
 	if sym, idx, ok := t.symbols.GetByName(name); !ok {
 		return 0, 0, nil, false
 	} else {
@@ -174,9 +176,9 @@ func (l *Linker) link() (aelf.AlphaELFFile, error) {
 			// if this is an import symbol
 			if symInFile.Loc == 0 {
 				// find the symbol
-				f, _, symInGlobals, ok := l.globals.GetSymbol(symInFile.Name)
+				f, _, symInGlobals, ok := l.globals.GetSymbol(symInFile.GetName())
 				if !ok {
-					return ret, fmt.Errorf("Unresolved symbol '%s'", symInFile.Name)
+					return ret, fmt.Errorf("Unresolved symbol '%s'", symInFile.GetName())
 				}
 				relocated := l.relocations[objFileIdx(f)]
 				realRef = +symInGlobals.Loc + relocated.CodeSecOff

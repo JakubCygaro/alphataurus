@@ -27,12 +27,12 @@ func (a *Assembler) declareLabel(data pr.InstLab, at int) error {
 			return errors.ImportedSymbolDeclared(data.Label, a.line, a.col)
 		}
 	} else {
-		lab := aobj.SymbolData{
-			Ty:   aobj.SYM_TFUNC,
-			Vis:  aobj.SYM_VPRIVATE,
-			Loc:  posAsInstAddr,
-			Name: data.Label,
-		}
+		lab := aobj.DefineSymbol(
+			aobj.SYM_TFUNC,
+			aobj.SYM_VPRIVATE,
+			posAsInstAddr,
+			data.Label,
+		)
 		a.symbols.AddSymbol(lab)
 	}
 	return nil

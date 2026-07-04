@@ -1,6 +1,7 @@
 package assembler
 
 import (
+
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	decls "github.com/JakubCygaro/alphataurus/pkg/vm/decls"

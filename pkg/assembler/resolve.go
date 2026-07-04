@@ -14,16 +14,17 @@ func (a *Assembler) resolveJumpInsturctions() error {
 		var addr uint64
 		if eval, ok :=
 			a.ev.TryConstEvaluateExpression(unresolved.Expr); !ok {
-			return errors.UnresolvedSymbol(unresolved.Ident)
+			return errors.UnresolvedSymbol(fmt.Sprint(codePos))
 		} else if cepxr, ok := eval.Val.(pr.ConstExprILit); !ok {
-			return errors.UnresolvedSymbol(unresolved.Ident)
+			return errors.UnresolvedSymbol(fmt.Sprint(codePos))
 		} else {
 			addr = cepxr.Integer
 		}
 		//TODO: this is to be changed probably
-		sym, symIdx, ok := a.symbols.GetByName(unresolved.Ident)
+		sym, ok := a.symbols.GetByLocation(addr)
+		_, symIdx, _ := a.symbols.GetByName(sym.GetName())
 		if !ok {
-			return errors.UnresolvedSymbol(unresolved.Ident)
+			return errors.UnresolvedSymbol(fmt.Sprint(codePos))
 		}
 		switch sym.Vis {
 		case aobj.SYM_VPRIVATE:

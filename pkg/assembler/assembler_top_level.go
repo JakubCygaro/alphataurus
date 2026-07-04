@@ -13,14 +13,20 @@ func (a *Assembler) handleExport(data pr.InstExport) error {
 		return errors.MultipleSymbolDefinitions(data.Name, a.line,
 			a.col)
 	}
-	sym := vm.SymbolData{
-		Ty:   vm.SYM_TFUNC,
-		Vis:  vm.SYM_VEXPORT,
-		Loc:  0,
-		Name: data.Name,
-	}
-	if _, ok := a.symbols.AddSymbol(sym); !ok {
-		return fmt.Errorf("Failed to declare export symbol")
+	sym := vm.DefineSymbol(
+		vm.SYM_TFUNC,
+		vm.SYM_VEXPORT,
+		0,
+		data.Name,
+	)
+	// sym := vm.SymbolData{
+	// 	Ty:   vm.SYM_TFUNC,
+	// 	Vis:  vm.SYM_VEXPORT,
+	// 	Loc:  0,
+	// 	Name: data.Name,
+	// }
+	if _, err := a.symbols.AddSymbol(sym); err != nil {
+		return fmt.Errorf("Failed to declare export symbol: %s", err.Error())
 	}
 	return nil
 }
@@ -28,12 +34,12 @@ func (a *Assembler) handleImport(data pr.InstImport) error {
 	if _, _, ok := a.symbols.GetByName(data.Name); ok {
 		return errors.MultipleSymbolDefinitions(data.Name, a.line, a.col)
 	}
-	sym := vm.SymbolData{
-		Ty:   vm.SYM_TFUNC,
-		Vis:  vm.SYM_VIMPORTSTRONG,
-		Loc:  0,
-		Name: data.Name,
-	}
+	sym := vm.DefineSymbol(
+		vm.SYM_TFUNC,
+		vm.SYM_VIMPORTSTRONG,
+		0,
+		data.Name,
+	)
 	if data.Weak {
 		sym.Vis = vm.SYM_VIMPORTWEAK
 	}
