@@ -70,7 +70,7 @@ func (c ConstExprILit) Signed() int64 {
 type ConstExprFLit struct {
 	Float uint64
 }
-func (c ConstExprFLit) AsFloat() float64 {
+func (c ConstExprFLit) ToFloat() float64 {
 	return math.Float64frombits(c.Float)
 }
 type ConstExprIden struct {

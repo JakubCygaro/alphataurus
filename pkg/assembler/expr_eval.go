@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	"fmt"
 	"math"
 
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
@@ -36,251 +37,198 @@ func (ev *ExpressionEvaluator) extractValue(cexpr pr.ConstExpr) any {
 	}
 	return nil
 }
+
+type binopFn func(any, any) (pr.ConstExpr, error)
+type binopFnU func(a, b uint64) (uint64, error)
+type binopFnF func(a, b float64) (float64, error)
+type binopFnG[T uint64 | float64] func(a, b T) (pr.ConstExpr, error)
+
+// perform binary operation between two expressions
 func (ev *ExpressionEvaluator) performBinary(
-	a, b *pr.Expr, op func(any, any) pr.ConstExpr) (res, bestA, bestB *pr.Expr, ok bool) {
-	var canPerform bool = true
+	a, b *pr.Expr, opU binopFnU, opF binopFnF) (
+	res *pr.Expr, err error) {
 	if !a.IsConstexpr() || a.IsArthexpr() {
-		tmp, ok := ev.TryEvaluateExpression(a)
-		canPerform = canPerform && ok
-		a = tmp
+		if tmp, err := ev.TryEvaluateExpression(a); err != nil {
+			return tmp, err
+		} else {
+			a = tmp
+		}
 	}
 	if !b.IsConstexpr() || b.IsArthexpr() {
-		tmp, ok := ev.TryEvaluateExpression(b)
-		canPerform = canPerform && ok
-		b = tmp
-	}
-	if !canPerform {
-		return nil, a, b, false
+		if tmp, err := ev.TryEvaluateExpression(b); err != nil {
+			return tmp, err
+		} else {
+			b = tmp
+		}
 	}
 	aV, bV := ev.extractValue(a.Val.(pr.ConstExpr)),
 		ev.extractValue(b.Val.(pr.ConstExpr))
 	if aV == nil || bV == nil {
-		return nil, a, b, false
+		return nil, fmt.Errorf("Could not extract value of either aV or bV")
+	} else if res, err := driver(aV, bV, opU, opF); err != nil {
+		return nil, err
 	} else {
-		return &pr.Expr{Val: op(aV, bV)}, nil, nil, true
+		return &pr.Expr{Val: res}, nil
 	}
 }
 
-func (ev *ExpressionEvaluator) performOperation(arth pr.ArthExpr) (*pr.Expr, bool) {
-	switch ar := arth.Val.(type) {
-	case pr.ArthExprAdd:
-		res, a, b, ok := ev.performBinary(ar.A, ar.B, func(a, b any) pr.ConstExpr {
-			switch aV := a.(type) {
-			case uint64:
-				switch bV := b.(type) {
-				case uint64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprILit{
-							Integer: aV + bV,
-						},
-					}
-				case float64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(float64(aV) + bV),
-						},
-					}
-				}
-			case float64:
-				switch bV := b.(type) {
-				case uint64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(aV + float64(bV)),
-						},
-					}
-				case float64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(float64(aV) + bV),
-						},
-					}
-				}
+// this function deduces the types of a and b and then performs an op
+func driver(a, b any, opU binopFnU, opF binopFnF) (pr.ConstExpr, error) {
+	var def pr.ConstExpr
+	switch aV := a.(type) {
+	case uint64:
+		switch bV := b.(type) {
+		case uint64:
+			if r, e := opU(aV, bV); e != nil {
+				return def, e
+			} else {
+				return pr.ConstExpr{
+					Val: pr.ConstExprILit{
+						Integer: r,
+					},
+				}, nil
 			}
-			return pr.ConstExpr{}
-		})
-		if !ok {
-			return pr.MakeArth(
-				pr.ArthExprAdd{
-					A: a,
-					B: b,
-				},
-			), false
-		} else {
-			return res, true
+		case float64:
+			if r, e := opF(float64(aV), bV); e != nil {
+				return def, e
+			} else {
+				return pr.ConstExpr{
+					Val: pr.ConstExprFLit{
+						Float: math.Float64bits(r),
+					},
+				}, nil
+			}
 		}
-	case pr.ArthExprSub:
-		res, a, b, ok := ev.performBinary(ar.A, ar.B, func(a, b any) pr.ConstExpr {
-			switch aV := a.(type) {
-			case uint64:
-				switch bV := b.(type) {
-				case uint64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprILit{
-							Integer: aV - bV,
-						},
-					}
-				case float64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(float64(aV) - bV),
-						},
-					}
-				}
-			case float64:
-				switch bV := b.(type) {
-				case uint64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(aV - float64(bV)),
-						},
-					}
-				case float64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(float64(aV) - bV),
-						},
-					}
-				}
+	case float64:
+		switch bV := b.(type) {
+		case uint64:
+			if r, e := opF(float64(aV), float64(bV)); e != nil {
+				return def, e
+			} else {
+				return pr.ConstExpr{
+					Val: pr.ConstExprFLit{
+						Float: math.Float64bits(r),
+					},
+				}, nil
 			}
-			return pr.ConstExpr{}
-		})
-		if !ok {
-			return pr.MakeArth(
-				pr.ArthExprAdd{
-					A: a,
-					B: b,
-				},
-			), false
-		} else {
-			return res, true
-		}
-	case pr.ArthExprMul:
-		res, a, b, ok := ev.performBinary(ar.A, ar.B, func(a, b any) pr.ConstExpr {
-			switch aV := a.(type) {
-			case uint64:
-				switch bV := b.(type) {
-				case uint64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprILit{
-							Integer: aV * bV,
-						},
-					}
-				case float64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(float64(aV) * bV),
-						},
-					}
-				}
-			case float64:
-				switch bV := b.(type) {
-				case uint64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(aV * float64(bV)),
-						},
-					}
-				case float64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(float64(aV) * bV),
-						},
-					}
-				}
+		case float64:
+			if r, e := opF(float64(aV), float64(bV)); e != nil {
+				return def, e
+			} else {
+				return pr.ConstExpr{
+					Val: pr.ConstExprFLit{
+						Float: math.Float64bits(r),
+					},
+				}, nil
 			}
-			return pr.ConstExpr{}
-		})
-		if !ok {
-			return pr.MakeArth(
-				pr.ArthExprAdd{
-					A: a,
-					B: b,
-				},
-			), false
-		} else {
-			return res, true
-		}
-	case pr.ArthExprDiv:
-		res, a, b, ok := ev.performBinary(ar.A, ar.B, func(a, b any) pr.ConstExpr {
-			switch aV := a.(type) {
-			case uint64:
-				switch bV := b.(type) {
-				case uint64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprILit{
-							Integer: aV / bV,
-						},
-					}
-				case float64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(float64(aV) / bV),
-						},
-					}
-				}
-			case float64:
-				switch bV := b.(type) {
-				case uint64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(aV / float64(bV)),
-						},
-					}
-				case float64:
-					return pr.ConstExpr{
-						Val: pr.ConstExprFLit{
-							Float: math.Float64bits(float64(aV) / bV),
-						},
-					}
-				}
-			}
-			return pr.ConstExpr{}
-		})
-		if !ok {
-			return pr.MakeArth(
-				pr.ArthExprAdd{
-					A: a,
-					B: b,
-				},
-			), false
-		} else {
-			return res, true
 		}
 	}
-	return &pr.Expr{Val: arth}, false
+	return def, fmt.Errorf("TODO Operation not performed -")
+}
+
+func (ev *ExpressionEvaluator) performOperation(arth pr.ArthExpr) (*pr.Expr, error) {
+	switch ar := arth.Val.(type) {
+	case pr.ArthExprAdd:
+		if res, err := ev.performBinary(
+			ar.A,
+			ar.B,
+			func(a, b uint64) (uint64, error) { return a + b, nil },
+			func(a, b float64) (float64, error) { return a + b, nil },
+		); err != nil {
+			return nil, err
+		} else {
+			return res, nil
+		}
+	case pr.ArthExprSub:
+		if res, err := ev.performBinary(
+			ar.A,
+			ar.B,
+			func(a, b uint64) (uint64, error) { return a - b, nil },
+			func(a, b float64) (float64, error) { return a - b, nil },
+		); err != nil {
+			return nil, err
+		} else {
+			return res, nil
+		}
+	case pr.ArthExprMul:
+		if res, err := ev.performBinary(
+			ar.A,
+			ar.B,
+			func(a, b uint64) (uint64, error) { return a * b, nil },
+			func(a, b float64) (float64, error) { return a * b, nil },
+		); err != nil {
+			return nil, err
+		} else {
+			return res, nil
+		}
+	case pr.ArthExprDiv:
+		if res, err := ev.performBinary(
+			ar.A,
+			ar.B,
+			func(a, b uint64) (uint64, error) {
+				if b == 0 {
+					return 0, fmt.Errorf("TODO: binary op error, zero division")
+				}
+				return a / b, nil
+			},
+			func(a, b float64) (float64, error) {
+				if b == 0.0 {
+					return 0, fmt.Errorf("TODO: binary op error, zero division")
+				}
+				return a / b, nil
+			},
+		); err != nil {
+			return nil, err
+		} else {
+			return res, nil
+		}
+	}
+	return nil, fmt.
+		Errorf("TODO Unrecognized binary operation expression typ")
 }
 
 // Does what TryEvaluateExpression does, but at the end verifies that the expression is constant
-func (ev *ExpressionEvaluator) TryConstEvaluateExpression(e *pr.Expr) (pr.ConstExpr, bool) {
-	if expr, ok := ev.TryEvaluateExpression(e); ok && expr.IsConstexpr() {
-		return expr.Val.(pr.ConstExpr), true
+func (ev *ExpressionEvaluator) TryConstEvaluateExpression(e *pr.Expr) (
+	pr.ConstExpr, bool, error) {
+	var def pr.ConstExpr
+	if expr, err := ev.TryEvaluateExpression(e); err != nil {
+		return def, false, err
+	} else if expr.IsConstexpr() {
+		return expr.Val.(pr.ConstExpr), true, nil
 	}
-	return pr.ConstExpr{}, false
+	return def, false, nil
 }
 func TryConstEvalExprT[CE pr.CExpr](
-	ev *ExpressionEvaluator, e *pr.Expr) (any, bool) {
-	if expr, ok := ev.TryEvaluateExpression(e); ok && expr.IsConstexpr() {
+	ev *ExpressionEvaluator, e *pr.Expr) (CE, bool, error) {
+	var def CE
+	if expr, err := ev.TryEvaluateExpression(e); err != nil {
+		return def, false, err
+	} else if expr.IsConstexpr() {
 		ce, ok := expr.Val.(pr.ConstExpr).Val.(CE), true
-		return ce, ok
+		return ce, ok, nil
 	}
-	return nil, false
+	return def, false, nil
 }
+
 // Basically try to evalueate an expression at compile time.
-// Does a best effor evaluation - tries to evaluate all expressions that involve constant expressions,
-// otherwise returns them as is
-func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, bool) {
+// Attenpts to evaluate the whole expression and either returns it or returns a nil pointer
+// error contains all potential errors encountered
+//
+// nil, nil -> unable to evaluate, no errors
+// nil, error -> unable to evaluate, has errors
+// *pr.Expr, nil -> evaluated, no errors
+func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, error) {
 	switch expr := e.Val.(type) {
 	//if this is a constant expression, pass it on
 	case pr.ConstExpr:
 		if val := ev.extractValue(expr); val == nil {
-			return e, false
+			return nil, nil
 		} else {
 			switch v := val.(type) {
 			case uint64:
-				return pr.MakeConstexprU64(v), true
+				return pr.MakeConstexprU64(v), nil
 			case float64:
-				return pr.MakeConstexprF64(v), true
+				return pr.MakeConstexprF64(v), nil
 			default:
 				panic("Unsupported variable value extracted from evaluation context")
 			}
@@ -289,7 +237,7 @@ func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, bool
 	case pr.ArthExpr:
 		return ev.performOperation(expr)
 	case pr.RegExpr:
-		return e, true
+		return e, nil
 	case pr.DerefExpr:
 		inner, ok := ev.TryEvaluateExpression(expr.Inner)
 		return pr.MakeDeref(inner), ok
