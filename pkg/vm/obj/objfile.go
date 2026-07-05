@@ -93,6 +93,7 @@ func NewSymbolTable() SymbolTable {
 		InOrder:    make([]*SymbolData, 0),
 		ByName:     make(map[string]int),
 		ByLocation: make(map[uint64]*SymbolData),
+		foreign: make(map[*SymbolData]struct{}),
 	}
 	return table
 }

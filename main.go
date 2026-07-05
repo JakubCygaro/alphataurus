@@ -160,8 +160,8 @@ func main() {
 			VarProvider: nil,
 		},
 	}
-	if eval, ok := ev.TryEvaluateExpression(ex); !ok {
-		fmt.Fprintln(os.Stderr, ok)
+	if eval, err := ev.TryEvaluateExpression(ex); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 	} else if em, err := eval.Emit(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	} else {

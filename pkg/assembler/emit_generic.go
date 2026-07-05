@@ -15,7 +15,7 @@ func evalInstField[Inst any](
 	slc fieldSelector[Inst],
 ) bool {
 	expr := slc(inst)
-	if eval, ok := a.ev.TryEvaluateExpression(*expr); ok {
+	if eval, err := a.ev.TryEvaluateExpression(*expr); err == nil {
 		*expr = eval
 		return true
 	} else {

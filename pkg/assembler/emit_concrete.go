@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
-	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 )
@@ -78,8 +78,7 @@ func (a *Assembler) emitCall(data pr.InstGenericCall, at int) error {
 	call := a.opCodes.GetBytes(vm.OP_CALL)
 	//direct call case
 	evaluated, ok := a.ev.TryEvaluateExpression(data.Expr)
-	switch ok {
-	case true:
+	if ok == nil {
 		if !pr.IsConstexprType[pr.ConstExprILit](evaluated) {
 			return errors.Expected(
 				"Valid address",
@@ -90,7 +89,7 @@ func (a *Assembler) emitCall(data pr.InstGenericCall, at int) error {
 		addr := evaluated.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Integer
 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
 		binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr))
-	case false:
+	} else {
 		position := at
 		a.unresolvedJumps[position] = unresolvedJump{
 			Expr:    data.Expr,
@@ -155,8 +154,7 @@ func (a *Assembler) emitJmp(data pr.InstGenericJmp, at int) error {
 	opcode := a.jmpInstToOpCode(data.Variant)
 	position := at
 	evaluated, ok := a.ev.TryEvaluateExpression(data.Address)
-	switch ok {
-	case true:
+	if ok == nil {
 		if !pr.IsConstexprType[pr.ConstExprILit](evaluated) {
 			return errors.Expected(
 				"Valid address",
@@ -167,7 +165,7 @@ func (a *Assembler) emitJmp(data pr.InstGenericJmp, at int) error {
 		addr := evaluated.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Integer
 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opcode))
 		binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr))
-	case false:
+	} else {
 		a.unresolvedJumps[position] = unresolvedJump{
 			Expr: data.Address,
 			PatchTy: PatchJmp{
