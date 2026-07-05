@@ -239,24 +239,39 @@ func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, erro
 	case pr.RegExpr:
 		return e, nil
 	case pr.DerefExpr:
-		inner, ok := ev.TryEvaluateExpression(expr.Inner)
-		return pr.MakeDeref(inner), ok
+		if inner, err := ev.TryEvaluateExpression(expr.Inner); err != nil {
+			return nil, err
+		} else if inner == nil{
+			return nil, nil
+		} else {
+			return pr.MakeDeref(inner), nil
+		}
 	case pr.OneRegOffsetExpr:
-		var offset *pr.Expr
-		var ok bool
 		if expr.Offset != nil {
-			offset, ok = ev.TryEvaluateExpression(expr.Offset)
-			expr.Offset = offset
+			if offset, err := ev.TryEvaluateExpression(expr.Offset); err != nil {
+				return nil, err
+			} else if offset == nil {
+				return nil, nil
+			} else {
+				expr.Offset = offset
+				return &pr.Expr{Val: expr}, nil
+			}
+		} else {
+			return &pr.Expr{Val: expr}, nil
 		}
-		return &pr.Expr{Val: expr}, ok
 	case pr.TwoRegOffsetExpr:
-		var offset *pr.Expr
-		var ok bool
 		if expr.Offset != nil {
-			offset, ok = ev.TryEvaluateExpression(expr.Offset)
-			expr.Offset = offset
+			if offset, err := ev.TryEvaluateExpression(expr.Offset); err != nil {
+				return nil, err
+			} else if offset == nil {
+				return nil, nil
+			} else {
+				expr.Offset = offset
+				return &pr.Expr{Val: expr}, nil
+			}
+		} else {
+			return &pr.Expr{Val: expr}, nil
 		}
-		return &pr.Expr{Val: expr}, ok
 	}
-	return e, false
+	return nil, fmt.Errorf("TODO: expression cannot be evaluated")
 }
