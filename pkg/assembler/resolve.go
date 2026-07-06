@@ -12,8 +12,10 @@ import (
 func (a *Assembler) resolveJumpInsturctions() error {
 	for codePos, unresolved := range a.unresolvedJumps {
 		var addr uint64
-		if eval, ok :=
-			a.ev.TryConstEvaluateExpression(unresolved.Expr); !ok {
+		if eval, ok, err :=
+			a.ev.TryConstEvaluateExpression(unresolved.Expr); err != nil {
+			return err
+		} else if !ok {
 			return errors.UnresolvedSymbol(fmt.Sprint(codePos))
 		} else if cepxr, ok := eval.Val.(pr.ConstExprILit); !ok {
 			return errors.UnresolvedSymbol(fmt.Sprint(codePos))

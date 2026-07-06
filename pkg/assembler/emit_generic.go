@@ -13,27 +13,40 @@ func evalInstField[Inst any](
 	a *Assembler,
 	inst *Inst,
 	slc fieldSelector[Inst],
-) bool {
+) (bool, error) {
 	expr := slc(inst)
-	if eval, err := a.ev.TryEvaluateExpression(*expr); err == nil {
+	eval, err := a.ev.TryEvaluateExpression(*expr)
+	if eval != nil && err == nil {
 		*expr = eval
-		return true
-	} else {
-		return false
 	}
+	return eval != nil, err
+}
+
+func evalAll[Inst any](
+	a *Assembler, inst *Inst, slcs ...fieldSelector[Inst],
+) (bool, error) {
+	for _, s := range slcs {
+		ok, err := evalInstField(a, inst, s)
+		if !ok {
+			return false, err
+		} else if err != nil {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 func (a *Assembler) emitGenericArth(data pr.InstGenericArth, at int) error {
-	evaluated := true
-	evaluated = evaluated &&
-		evalInstField(a, &data, func(i *pr.InstGenericArth) **pr.Expr {
+	if ok, err := evalAll(a, &data,
+		func(i *pr.InstGenericArth) **pr.Expr {
 			return &(i.Dest)
-		})
-	evaluated = evaluated &&
-		evalInstField(a, &data, func(i *pr.InstGenericArth) **pr.Expr {
+		},
+		func(i *pr.InstGenericArth) **pr.Expr {
 			return &(i.Src)
-		})
-	if !evaluated {
+		},
+	); err != nil {
+		return err
+	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
 			Line: a.line,
 			Col:  a.col,
@@ -55,16 +68,16 @@ func (a *Assembler) emitGenericArth(data pr.InstGenericArth, at int) error {
 }
 
 func (a *Assembler) emitGenericMov(data pr.InstGenericMov, at int) error {
-	evaluated := true
-	evaluated = evaluated &&
-		evalInstField(a, &data, func(i *pr.InstGenericMov) **pr.Expr {
+	if ok, err := evalAll(a, &data,
+		func(i *pr.InstGenericMov) **pr.Expr {
 			return &(i.Src)
-		})
-	evaluated = evaluated &&
-		evalInstField(a, &data, func(i *pr.InstGenericMov) **pr.Expr {
+		},
+		func(i *pr.InstGenericMov) **pr.Expr {
 			return &(i.Dest)
-		})
-	if !evaluated {
+		},
+	); err != nil {
+		return err
+	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
 			Line: a.line,
 			Col:  a.col,
@@ -86,16 +99,16 @@ func (a *Assembler) emitGenericMov(data pr.InstGenericMov, at int) error {
 	return nil
 }
 func (a *Assembler) emitGenericLogical(data pr.InstGenericLogical, at int) error {
-	evaluated := true
-	evaluated = evaluated &&
-		evalInstField(a, &data, func(i *pr.InstGenericLogical) **pr.Expr {
+	if ok, err := evalAll(a, &data,
+		func(i *pr.InstGenericLogical) **pr.Expr {
 			return &(i.First)
-		})
-	evaluated = evaluated &&
-		evalInstField(a, &data, func(i *pr.InstGenericLogical) **pr.Expr {
+		},
+		func(i *pr.InstGenericLogical) **pr.Expr {
 			return &(i.Second)
-		})
-	if !evaluated {
+		},
+	); err != nil {
+		return err
+	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
 			Line: a.line,
 			Col:  a.col,
@@ -118,16 +131,16 @@ func (a *Assembler) emitGenericLogical(data pr.InstGenericLogical, at int) error
 	return nil
 }
 func (a *Assembler) emitGenericCmp(data pr.InstGenericCmp, at int) error {
-	evaluated := true
-	evaluated = evaluated &&
-		evalInstField(a, &data, func(i *pr.InstGenericCmp) **pr.Expr {
+	if ok, err := evalAll(a, &data,
+		func(i *pr.InstGenericCmp) **pr.Expr {
 			return &(i.Min)
-		})
-	evaluated = evaluated &&
-		evalInstField(a, &data, func(i *pr.InstGenericCmp) **pr.Expr {
+		},
+		func(i *pr.InstGenericCmp) **pr.Expr {
 			return &(i.Sub)
-		})
-	if !evaluated {
+		},
+	); err != nil {
+		return err
+	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
 			Line: a.line,
 			Col:  a.col,
@@ -149,12 +162,13 @@ func (a *Assembler) emitGenericCmp(data pr.InstGenericCmp, at int) error {
 	return nil
 }
 func (a *Assembler) emitGenericPush(data pr.InstGenericPush, at int) error {
-	evaluated := true
-	evaluated = evaluated &&
-		evalInstField(a, &data, func(i *pr.InstGenericPush) **pr.Expr {
+	if ok, err := evalAll(a, &data,
+		func(i *pr.InstGenericPush) **pr.Expr {
 			return &(i.Expr)
-		})
-	if !evaluated {
+		},
+	); err != nil {
+		return err
+	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
 			Line: a.line,
 			Col:  a.col,

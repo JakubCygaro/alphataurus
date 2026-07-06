@@ -77,8 +77,10 @@ func (a *Assembler) emitCallIP1R(data pr.InstCallIP1R, at int) error {
 func (a *Assembler) emitCall(data pr.InstGenericCall, at int) error {
 	call := a.opCodes.GetBytes(vm.OP_CALL)
 	//direct call case
-	evaluated, ok := a.ev.TryEvaluateExpression(data.Expr)
-	if ok == nil {
+	evaluated, err := a.ev.TryEvaluateExpression(data.Expr)
+	if err != nil {
+		return err
+	} else if evaluated != nil {
 		if !pr.IsConstexprType[pr.ConstExprILit](evaluated) {
 			return errors.Expected(
 				"Valid address",
@@ -153,8 +155,10 @@ func (a *Assembler) emitJmpIP1R(data pr.InstJmpIP1R, at int) error {
 func (a *Assembler) emitJmp(data pr.InstGenericJmp, at int) error {
 	opcode := a.jmpInstToOpCode(data.Variant)
 	position := at
-	evaluated, ok := a.ev.TryEvaluateExpression(data.Address)
-	if ok == nil {
+	evaluated, err := a.ev.TryEvaluateExpression(data.Address)
+	if err != nil {
+		return err
+	} else if evaluated != nil {
 		if !pr.IsConstexprType[pr.ConstExprILit](evaluated) {
 			return errors.Expected(
 				"Valid address",

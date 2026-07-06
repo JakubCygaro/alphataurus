@@ -50,6 +50,8 @@ func (ev *ExpressionEvaluator) performBinary(
 	if !a.IsConstexpr() || a.IsArthexpr() {
 		if tmp, err := ev.TryEvaluateExpression(a); err != nil {
 			return tmp, err
+		} else if tmp == nil {
+			return nil, nil
 		} else {
 			a = tmp
 		}
@@ -57,6 +59,8 @@ func (ev *ExpressionEvaluator) performBinary(
 	if !b.IsConstexpr() || b.IsArthexpr() {
 		if tmp, err := ev.TryEvaluateExpression(b); err != nil {
 			return tmp, err
+		} else if tmp == nil {
+			return nil, nil
 		} else {
 			b = tmp
 		}
@@ -241,7 +245,7 @@ func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, erro
 	case pr.DerefExpr:
 		if inner, err := ev.TryEvaluateExpression(expr.Inner); err != nil {
 			return nil, err
-		} else if inner == nil{
+		} else if inner == nil {
 			return nil, nil
 		} else {
 			return pr.MakeDeref(inner), nil
