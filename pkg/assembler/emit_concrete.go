@@ -81,16 +81,16 @@ func (a *Assembler) emitCall(data pr.InstGenericCall, at int) error {
 	if err != nil {
 		return err
 	} else if evaluated != nil {
-		if !pr.IsConstexprType[pr.ConstExprILit](evaluated) {
+		if addr, ok := pr.IsConstexprType[pr.ConstExprILit](evaluated); !ok {
 			return errors.Expected(
 				"Valid address",
 				data.Expr.Line,
 				data.Expr.Col,
 			)
+		} else {
+			binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
+			binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr.Integer))
 		}
-		addr := evaluated.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Integer
-		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
-		binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr))
 	} else {
 		position := at
 		a.unresolvedJumps[position] = unresolvedJump{
@@ -159,16 +159,16 @@ func (a *Assembler) emitJmp(data pr.InstGenericJmp, at int) error {
 	if err != nil {
 		return err
 	} else if evaluated != nil {
-		if !pr.IsConstexprType[pr.ConstExprILit](evaluated) {
+		if addr, ok := pr.IsConstexprType[pr.ConstExprILit](evaluated); !ok {
 			return errors.Expected(
 				"Valid address",
 				data.Address.Line,
 				data.Address.Col,
 			)
+		} else {
+			binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opcode))
+			binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr.Integer))
 		}
-		addr := evaluated.Val.(pr.ConstExpr).Val.(pr.ConstExprILit).Integer
-		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opcode))
-		binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr))
 	} else {
 		a.unresolvedJumps[position] = unresolvedJump{
 			Expr: data.Address,
@@ -264,7 +264,7 @@ func (a *Assembler) emitMovDRO2(data pr.InstMovDRO2, at int) error {
 	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
 	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.RegOff)
+	off, _ := lx.TokenTToOpT(data.RegOp)
 	byte3 |= (0b0000_0011 & byte(off))
 	byte2 := (data.Dest.Size & 0b0000_0011)
 	a.bytecode[at] = byte4
@@ -346,7 +346,7 @@ func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, at int) error {
 	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
 	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	byte3 |= (0b0000_0011 & byte(data.OffOp))
+	byte3 |= (0b0000_0011 & byte(data.RegOp))
 	byte2 := (0b0000_0011 & byte(data.DataSize))
 	var mov uint32
 	var param uint64

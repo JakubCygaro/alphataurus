@@ -29,24 +29,6 @@ func (p *Parser) parseCmp() error {
 	} else {
 		genericCmp.Min = expr
 	}
-	// else if eval, _ := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TREG {
-	// 	op1.Ty = lx.TOKEN_TREG
-	// 	op1.Val = eval.UnpackAsRegisterData()
-	// } else {
-	// 	em, _ := expr.Emit()
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"First operand to instruction must be a valid register, got `%s`",
-	// 		em,
-	// 	)
-	// }
-	// if op1.Val.(lx.RegisterData).Reg > vm.MAX_REG_IDX {
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"Disallowed minuend register `%s`",
-	// 		op1.ForceValAsString(),
-	// 	)
-	// }
 	if err := p.lexer.ReadNextToken(); err != nil {
 		return err
 	}
@@ -58,76 +40,20 @@ func (p *Parser) parseCmp() error {
 			t.ForceValAsString(),
 		)
 	}
-
-	// op2 := lx.Token{Ty: INVALID}
 	if expr, err := p.ParseExpression(); err != nil {
 		return err
 	} else {
 		genericCmp.Sub = expr
 	}
-	// else if eval, ok := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TREG {
-	// 	op2.Ty = lx.TOKEN_TREG
-	// 	op2.Val = eval.UnpackAsRegisterData()
-	// } else if !ok {
-	// 	em, _ := expr.Emit()
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"Second operand to instruction must be a valid register "+
-	// 			"or a constant expression. Got `%s` instead.",
-	// 		em,
-	// 	)
-	// } else if eval.Ty == CONSTEXPR_TILIT {
-	// 	op2.Ty = lx.TOKEN_TINTEGER_LIT
-	// 	op2.Val = eval.Val
-	// } else if eval.Ty == CONSTEXPR_TFLIT {
-	// 	op2.Ty = lx.TOKEN_TFLOAT_LIT
-	// 	op2.Val = eval.Val
-	// } else {
-	// 	em, _ := expr.Emit()
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"Bad expression `%s`",
-	// 		em,
-	// 	)
-	// }
-	p.currentInst = Instruction{
-		Data: genericCmp,
+	if concrete, err := GetConcreteCmpInst(genericCmp); concrete != nil && err == nil {
+		p.currentInst = Instruction{
+			Data: concrete,
+		}
+	} else {
+		p.currentInst = Instruction{
+			Data: genericCmp,
+		}
 	}
-	// switch op2.Ty {
-	// case lx.TOKEN_TREG:
-	// 	if op1.Val.(lx.RegisterData).Size != op2.Val.(lx.RegisterData).Size {
-	// 		return errors.MismatchedRegisterSizes(op1.Line, op1.Col)
-	// 	}
-	// 	p.currentInst = Instruction{
-	// 		Data: InstCmpRR{
-	// 			Ty:  ty,
-	// 			Min: op1.Val.(lx.RegisterData),
-	// 			Sub: op2.Val.(lx.RegisterData),
-	// 		},
-	// 	}
-	// case lx.TOKEN_TINTEGER_LIT:
-	// 	p.currentInst = Instruction{
-	// 		Data: InstCmpIR{
-	// 			Ty:  ty,
-	// 			Min: op1.Val.(lx.RegisterData),
-	// 			Imm: op2.Val.(uint64),
-	// 		},
-	// 	}
-	// case lx.TOKEN_TFLOAT_LIT:
-	// 	if ty != vm.TY_FLOAT {
-	// 		p.issueWarning(
-	// 			op2.Line, op2.Col,
-	// 			"Immediate float value comparison with non FLOAT cmp instruction",
-	// 		)
-	// 	}
-	// 	p.currentInst = Instruction{
-	// 		Data: InstCmpIR{
-	// 			Ty:  ty,
-	// 			Min: op1.Val.(lx.RegisterData),
-	// 			Imm: op2.Val.(uint64),
-	// 		},
-	// 	}
-	// }
 	return nil
 }
 func (p *Parser) parseJmp(ty JmpVariant) error {

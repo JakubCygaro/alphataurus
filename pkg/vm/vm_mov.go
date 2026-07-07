@@ -145,7 +145,7 @@ func (state *VmState) movIDO1NoOffset(byte3, byte4 byte, param []byte) error {
 	p := binary.BigEndian.Uint64(param)
 	imm := p
 	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
-	if addr, e := state.movXDO1GetAddr(regV, 0, dParams.opTy); e != nil {
+	if addr, e := state.movXDO1GetAddr(regV, 0, OP_TADD); e != nil {
 		return e
 	} else {
 		return state.putValInStackWithSize(dParams.destSz, imm, addr)

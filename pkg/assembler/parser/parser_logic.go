@@ -7,31 +7,11 @@ import (
 
 func (p *Parser) parseLogical(logTy int) error {
 	genericLogical := InstGenericLogical{}
-	// var op1 lx.Token
 	if expr, err := p.ParseExpression(); err != nil {
 		return err
 	} else {
 		genericLogical.First = expr
 	}
-	// else if eval, _ := TryEvaluateExpression(expr); eval.Ty != CONSTEXPR_TREG {
-	// 	em, _ := expr.Emit()
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"First operand to instruction must be a valid register.\n"+
-	// 			"In expression `%s`",
-	// 		em,
-	// 	)
-	// } else {
-	// 	op1.Val = expr.Val.(ConstExpr).UnpackAsRegisterData()
-	// }
-	// if !vm.IsLogRAllowed(byte(op1.Val.(lx.RegisterData).Reg)) {
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"Disallowed first operand register `%s`",
-	// 		op1.ForceValAsString(),
-	// 	)
-	// }
-
 	if logTy == LOG_TNOT {
 		if !genericLogical.First.IsRegexpr() {
 			em, _ := genericLogical.First.Emit()
@@ -62,7 +42,6 @@ func (p *Parser) parseLogical(logTy int) error {
 			comma.ForceValAsString(),
 		)
 	}
-	// var op2 ConstExpr
 	if expr, err := p.ParseExpression(); err != nil {
 		return err
 	} else {
@@ -82,82 +61,15 @@ func (p *Parser) parseLogical(logTy int) error {
 		ty = RSH
 	}
 	genericLogical.LogTy = ty
-	p.currentInst = Instruction{
-		Data: genericLogical,
+	if concrete, err :=
+		GetConcreteLogicalInst(genericLogical); concrete != nil && err == nil {
+		p.currentInst = Instruction{
+			Data: concrete,
+		}
+	} else {
+		p.currentInst = Instruction{
+			Data: genericLogical,
+		}
 	}
-	// else {
-	// 	eval, ok := TryConstEvaluateExpression(expr)
-	// 	if eval.Ty != CONSTEXPR_TREG && !ok {
-	// 		em, _ := expr.Emit()
-	// 		return errors.FailedToParse(p.currentIdent,
-	// 			expr.Line, expr.Col,
-	// 			"Second operand to instruction has to be a "+
-	// 				"valid register or a compile time expression\n"+
-	// 				"In expression `%s`",
-	// 			em,
-	// 		)
-	// 	}
-	// 	op2 = eval
-	// }
-	// switch op2.Ty {
-	// case CONSTEXPR_TREG:
-	// 	if !vm.IsMovFromRAllowed(byte(op2.Val)) {
-	// 		return errors.FailedToParse(p.currentIdent,
-	// 			p.currentStartToken.Line, p.currentStartToken.Col,
-	// 			"Disallowed second operand register, got `%s`",
-	// 			op2.UnpackAsRegisterData().String(),
-	// 		)
-	// 	}
-	// 	var ty LogTy
-	// 	switch logTy {
-	// 	case LOG_TOR:
-	// 		ty = OR
-	// 	case LOG_TAND:
-	// 		ty = AND
-	// 	case LOG_TXOR:
-	// 		ty = XOR
-	// 	case LOG_TLSH:
-	// 		ty = LSH
-	// 	case LOG_TRSH:
-	// 		ty = RSH
-	// 	}
-	// 	p.currentInst = Instruction{
-	// 		Data: InstLogicalRR{
-	// 			First:  op1.Val.(lx.RegisterData),
-	// 			Second: op2.UnpackAsRegisterData(),
-	// 			LogTy: ty,
-	// 		},
-	// 	}
-	// case CONSTEXPR_TILIT:
-	// 	var ty LogTy
-	// 	switch logTy {
-	// 	case LOG_TOR:
-	// 		ty = OR
-	// 	case LOG_TAND:
-	// 		ty = AND
-	// 	case LOG_TXOR:
-	// 		ty = XOR
-	// 	case LOG_TLSH:
-	// 		ty = LSH
-	// 	case LOG_TRSH:
-	// 		ty = RSH
-	// 	}
-	// 	p.currentInst = Instruction{
-	// 		Data: InstLogicalIR{
-	// 			First: op1.Val.(lx.RegisterData),
-	// 			Imm:   op2.Val,
-	// 			LogTy: ty,
-	// 		},
-	// 	}
-	// default:
-	// 	em, _ := op2.Emit()
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"Second operand to instruction has to be a valid "+
-	// 		"register or a compile time expression."+
-	// 		"In expression: `%s`",
-	// 		em,
-	// 	)
-	// }
 	return nil
 }

@@ -26,59 +26,16 @@ func (p *Parser) parsePush() error {
 	} else {
 		genericPush.Expr = arg
 	}
-	p.currentInst = Instruction{
-		Data: genericPush,
+	if concrete, err :=
+		GetConcretePushInst(genericPush); concrete != nil && err == nil {
+		p.currentInst = Instruction{
+			Data: concrete,
+		}
+	} else {
+		p.currentInst = Instruction{
+			Data: genericPush,
+		}
 	}
-	// eval, ok := TryConstEvaluateExpression(arg)
-	// if !ok {
-	// 	return fmt.Errorf("Operand to push instruction must be a constant expression or a register name %s",
-	// 		p.lexer.CurrentPosition())
-	// }
-	// switch eval.Ty {
-	// case CONSTEXPR_TREG:
-	// 	if dataSz != 0xff {
-	// 		p, _ := lx.GetSizeKeyword(dataSz)
-	// 		return errors.UnnecessarySizeParameter(p, nextT.Line, nextT.Col)
-	// 	}
-	// 	regData := eval.UnpackAsRegisterData()
-	// 	p.currentInst = Instruction{
-	// 		Data: InstPushR{
-	// 			Reg:    uint64(regData.Reg),
-	// 			DataSz: regData.Size,
-	// 		},
-	// 	}
-	// case CONSTEXPR_TILIT:
-	// 	p.currentInst = Instruction{
-	// 		Data: InstPushI{
-	// 			Imm:    eval.Val,
-	// 			DataSz: dataSz,
-	// 		},
-	// 	}
-	// case CONSTEXPR_TFLIT:
-	// 	if dataSz != vm.SZ_64 {
-	// 		g, _ := lx.GetSizeKeyword(dataSz)
-	// 		n, _ := lx.GetSizeKeyword(vm.SZ_64)
-	// 		return errors.BadSizeArgument(
-	// 			g,
-	// 			n,
-	// 			nextT.Line,
-	// 			nextT.Col,
-	// 		)
-	// 	}
-	// 	p.currentInst = Instruction{
-	// 		Data: InstPushI{
-	// 			Imm:    eval.Val,
-	// 			DataSz: dataSz,
-	// 		},
-	// 	}
-	// default:
-	// 	em, _ := arg.Emit()
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		arg.Line, arg.Col,
-	// 		"Unsupported operand expression type `%s`",
-	// 		em,
-	// 	)
-	// }
 	return nil
 }
 func (p *Parser) parsePop() error {

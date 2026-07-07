@@ -220,7 +220,7 @@ type InstMovDRO2 struct {
 	OReg2  lx.RegisterData
 	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
 	// use lexer.TokenTToOpT to get the vm compatible OP type
-	RegOff, RegOp int
+	RegOp int
 }
 type InstMovID struct {
 	DataSize byte
@@ -257,7 +257,7 @@ type InstMovIDO2 struct {
 	OReg2    lx.RegisterData
 	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
 	// use lexer.TokenTToOpT to get the vm compatible OP type
-	OffOp, RegOp int
+	RegOp int
 	NoOff        bool
 }
 type InstMovRDO2 struct {
@@ -280,7 +280,7 @@ type InstImport struct {
 	Name string
 	Weak bool
 }
-type InstExit struct {
+type InstGenericExit struct {
 	Expr *Expr
 }
 type InstExitI struct {

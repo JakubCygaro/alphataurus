@@ -4,21 +4,20 @@ import (
 	"fmt"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
-	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
-func GetConcretePushInst(push pr.InstGenericPush) (any, error) {
+func GetConcretePushInst(push InstGenericPush) (any, error) {
 	switch val := push.Expr.Val.(type) {
-	case pr.RegExpr:
+	case RegExpr:
 		if push.DataSz != nil {
 			return nil, errors.
 				UnnecessarySizeParameter("TODO", push.DataSz.Line, push.DataSz.Col)
 		}
-		return pr.InstPushR{
+		return InstPushR{
 			Reg: val.Reg,
 		}, nil
-	case pr.ConstExpr:
+	case ConstExpr:
 		var dataSz byte
 		if push.DataSz == nil {
 			dataSz = vm.SZ_64
@@ -26,12 +25,12 @@ func GetConcretePushInst(push pr.InstGenericPush) (any, error) {
 			dataSz = push.DataSz.Size
 		}
 		switch cexpr := val.Val.(type) {
-		case pr.ConstExprILit:
-			return pr.InstPushI{
+		case ConstExprILit:
+			return InstPushI{
 				Imm:    cexpr.Integer,
 				DataSz: dataSz,
 			}, nil
-		case pr.ConstExprFLit:
+		case ConstExprFLit:
 			if dataSz != vm.SZ_64 {
 				return errors.BadSizeArgument(
 					"TODO",
@@ -40,7 +39,7 @@ func GetConcretePushInst(push pr.InstGenericPush) (any, error) {
 					push.DataSz.Col,
 				), nil
 			}
-			return pr.InstPushI{
+			return InstPushI{
 				Imm:    cexpr.Float,
 				DataSz: dataSz,
 			}, nil

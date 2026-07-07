@@ -146,12 +146,13 @@ type CExpr interface {
 	ConstExprILit | ConstExprFLit | ConstExprIden
 }
 
-func IsConstexprType[CT CExpr](e *Expr) bool {
+func IsConstexprType[CT CExpr](e *Expr) (CT, bool) {
+	var def CT
 	if c, ok := e.Val.(ConstExpr); !ok {
-		return false
+		return def, false
 	} else {
-		_, ok := c.Val.(CT)
-		return ok
+		r, ok := c.Val.(CT)
+		return r, ok
 	}
 }
 

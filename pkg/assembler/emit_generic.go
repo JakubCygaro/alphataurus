@@ -53,7 +53,7 @@ func (a *Assembler) emitGenericArth(data pr.InstGenericArth, at int) error {
 			Data: data,
 		}
 		a.emitNop(at)
-	} else if arth, err := GetConcreteArthInst(data); err != nil {
+	} else if arth, err := pr.GetConcreteArthInst(data); err != nil {
 		return err
 	} else if arth == nil {
 		return fmt.Errorf("TODO: bad arth instruction cannot be deduced to concrete arth")
@@ -84,7 +84,7 @@ func (a *Assembler) emitGenericMov(data pr.InstGenericMov, at int) error {
 			Data: data,
 		}
 		a.emitNop(at)
-	} else if mov, err := GetConcreteMovInst(data); err != nil {
+	} else if mov, err := pr.GetConcreteMovInst(data); err != nil {
 		return err
 	} else if mov == nil {
 		return fmt.Errorf("TODO: bad mov instruction cannot be deduced to concrete mov")
@@ -115,7 +115,7 @@ func (a *Assembler) emitGenericLogical(data pr.InstGenericLogical, at int) error
 			Data: data,
 		}
 		a.emitNop(at)
-	} else if mov, err := GetConcreteLogicalInst(data); err != nil {
+	} else if mov, err := pr.GetConcreteLogicalInst(data); err != nil {
 		return err
 	} else if mov == nil {
 		return fmt.
@@ -147,7 +147,7 @@ func (a *Assembler) emitGenericCmp(data pr.InstGenericCmp, at int) error {
 			Data: data,
 		}
 		a.emitNop(at)
-	} else if mov, err := GetConcreteCmpInst(data); err != nil {
+	} else if mov, err := pr.GetConcreteCmpInst(data); err != nil {
 		return err
 	} else if mov == nil {
 		return fmt.Errorf("TODO: bad mov instruction cannot be deduced to concrete mov")
@@ -175,7 +175,7 @@ func (a *Assembler) emitGenericPush(data pr.InstGenericPush, at int) error {
 			Data: data,
 		}
 		a.emitNop(at)
-	} else if mov, err := GetConcretePushInst(data); err != nil {
+	} else if mov, err := pr.GetConcretePushInst(data); err != nil {
 		return err
 	} else if mov == nil {
 		return fmt.Errorf("TODO: bad push instruction cannot be deduced to concrete push")

@@ -328,11 +328,11 @@ func (p *Parser) ParseAttribute() error {
 	return nil
 }
 func (p *Parser) parseExit() error {
-	if err := p.lexer.ReadNextToken(); err != nil {
-		return err
-	}
-	// start := p.lexer.CurrentToken()
-	p.lexer.UnreadCurrentToken()
+	// if err := p.lexer.ReadNextToken(); err != nil {
+	// 	return err
+	// }
+	// // start := p.lexer.CurrentToken()
+	// p.lexer.UnreadCurrentToken()
 	expr, err := p.ParseExpression()
 	if err != nil {
 		return err
@@ -344,10 +344,10 @@ func (p *Parser) parseExit() error {
 	// 			"\nThe argument to this instruction must be either a valid register "+
 	// 			"or a compile time expression.", em)
 	// } else
-	if IsConstexprType[ConstExprILit](expr) {
+	if v, ok := IsConstexprType[ConstExprILit](expr); ok {
 		p.currentInst = Instruction{
 			Data: InstExitI{
-				Val: expr.Val.(ConstExpr).Val.(ConstExprILit).Integer,
+				Val: v.Integer,
 			},
 		}
 	} else if expr.IsRegexpr() {
@@ -358,7 +358,7 @@ func (p *Parser) parseExit() error {
 		}
 	} else {
 		p.currentInst = Instruction{
-			Data: InstExit{
+			Data: InstGenericExit{
 				Expr: expr,
 			},
 		}
