@@ -1,7 +1,10 @@
 package assembler
 
 import (
+	"fmt"
+
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -9,6 +12,14 @@ import (
 func gcmMovRR(dest, src RegExpr, mov *InstGenericMov) (any, error) {
 	if mov.DataSize != nil {
 		return nil, errors.UnnecessarySizeParameter("", mov.DataSize.Line, mov.Dest.Col)
+	}
+	if !vm.IsMovFromRAllowed(byte(src.Reg.Reg)) {
+		return nil, errors.
+			DisallowedSourceRegister(0, 0)
+	}
+	if src.Reg.Size > dest.Reg.Size {
+		return nil, errors.
+			MismatchedRegisterSizes(0, 0)
 	}
 	return InstMovRR{
 		Src:  src.Reg,
@@ -42,7 +53,8 @@ func gcmMovRI(dest RegExpr, imm ConstExpr, mov *InstGenericMov) (any, error) {
 			DataSize: dest.Reg.Size,
 		}, nil
 	}
-	return nil, nil
+	return nil, fmt.
+		Errorf("TODO: bad movRI")
 }
 
 // mov rx, [(inner)]
@@ -57,6 +69,14 @@ func gcmMovDR(dest RegExpr, deref DerefExpr, mov *InstGenericMov) (any, error) {
 				Dest:    dest.Reg,
 			}, nil
 		}
+	// mov rx, [rx]
+	case RegExpr:
+		return InstMovDRO1{
+			Dest:   dest.Reg,
+			Offset: 0,
+			OReg1:  inner.Reg,
+			OffOp:  lx.TOKEN_TPLUS,
+		}, nil
 	// mov rx, [rx + 1]
 	case OneRegOffsetExpr:
 		if o, ok := getAsOffset(inner.Offset); ok {
@@ -79,11 +99,16 @@ func gcmMovDR(dest RegExpr, deref DerefExpr, mov *InstGenericMov) (any, error) {
 			}, nil
 		}
 	}
-	return nil, nil
+	return nil, fmt.
+		Errorf("TODO: bad movDR %v %v", mov.Src.Line, mov.Src.Col)
 }
 
 // mov rx, (expr)
 func gcmIntoRegister(dest RegExpr, mov *InstGenericMov) (any, error) {
+	if !vm.IsMovIntoRAllowed(byte(dest.Reg.Reg)) {
+		return nil, errors.
+			DisallowedDestinationRegister(0, 0)
+	}
 	switch src := mov.Src.Val.(type) {
 	case RegExpr:
 		return gcmMovRR(dest, src, mov)
@@ -93,7 +118,8 @@ func gcmIntoRegister(dest RegExpr, mov *InstGenericMov) (any, error) {
 	case DerefExpr:
 		return gcmMovDR(dest, src, mov)
 	}
-	return nil, nil
+	return nil, fmt.
+		Errorf("TODO: bad move source")
 }
 func gcmRD(inner ConstExpr, mov *InstGenericMov) (any, error) {
 	var off int64
@@ -141,7 +167,7 @@ func gcmRDO1_NO(inner RegExpr, mov *InstGenericMov) (any, error) {
 				Imm:      imm.Integer,
 				Offset:   0,
 				OReg1:    inner.Reg,
-				OffOp: vm.OP_TADD,
+				OffOp:    vm.OP_TADD,
 				DataSize: mov.DataSize.Size,
 				NoOff:    true,
 			}, nil
@@ -149,10 +175,10 @@ func gcmRDO1_NO(inner RegExpr, mov *InstGenericMov) (any, error) {
 	// mov [rx], rx
 	case RegExpr:
 		return InstMovRDO1{
-			Src:      src.Reg,
-			Offset:   0,
-			OReg1:    inner.Reg,
-			OffOp: vm.OP_TADD,
+			Src:    src.Reg,
+			Offset: 0,
+			OReg1:  inner.Reg,
+			OffOp:  vm.OP_TADD,
 		}, nil
 	}
 	return nil, nil
@@ -182,7 +208,7 @@ func gcmRDO1(inner OneRegOffsetExpr, mov *InstGenericMov) (any, error) {
 				Imm:      imm.Integer,
 				Offset:   off,
 				OReg1:    inner.Reg,
-				OffOp: inner.OffsetOp,
+				OffOp:    inner.OffsetOp,
 				DataSize: mov.DataSize.Size,
 				NoOff:    off == 0,
 			}, nil
@@ -190,10 +216,10 @@ func gcmRDO1(inner OneRegOffsetExpr, mov *InstGenericMov) (any, error) {
 	// mov [rx+1], rx
 	case RegExpr:
 		return InstMovRDO1{
-			Src:      src.Reg,
-			Offset:   off,
-			OReg1:    inner.Reg,
-			OffOp: inner.OffsetOp,
+			Src:    src.Reg,
+			Offset: off,
+			OReg1:  inner.Reg,
+			OffOp:  inner.OffsetOp,
 		}, nil
 	}
 	return nil, nil
@@ -214,6 +240,9 @@ func gcmRDO2(inner TwoRegOffsetExpr, mov *InstGenericMov) (any, error) {
 			if mov.DataSize == nil {
 				return nil, errors.MissingDataSize(mov.Src.Line, mov.Src.Col)
 			}
+			if off == 0 {
+				inner.RegOp = lx.TOKEN_TPLUS
+			}
 			return InstMovIDO2{
 				Imm:      imm.Integer,
 				DataSize: mov.DataSize.Size,
@@ -227,12 +256,12 @@ func gcmRDO2(inner TwoRegOffsetExpr, mov *InstGenericMov) (any, error) {
 	// mov [rx+rx+1], rx
 	case RegExpr:
 		return InstMovRDO2{
-			Src:      src.Reg,
-			Offset:   off,
-			OReg1:    inner.Reg1,
-			OReg2:    inner.Reg2,
-			RegOp:    inner.RegOp,
-			OffOp: inner.OffsetOp,
+			Src:    src.Reg,
+			Offset: off,
+			OReg1:  inner.Reg1,
+			OReg2:  inner.Reg2,
+			RegOp:  inner.RegOp,
+			OffOp:  inner.OffsetOp,
 		}, nil
 	}
 
@@ -266,14 +295,11 @@ func GetConcreteMovInst(genericMov InstGenericMov) (any, error) {
 	switch dest := genericMov.Dest.Val.(type) {
 	// mov rx, (src)
 	case RegExpr:
-		if !vm.IsMovIntoRAllowed(byte(dest.Reg.Reg)){
-			return nil, errors.
-				DisallowedDestinationRegister(0, 0)
-		}
 		return gcmIntoRegister(dest, &genericMov)
 	// mov [(inner)], (src)
 	case DerefExpr:
 		return gcmIntoDeref(dest, &genericMov)
 	}
-	return nil, nil
+	return nil, fmt.
+		Errorf("TODO: bad mov instruction arguments")
 }

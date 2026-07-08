@@ -395,7 +395,7 @@ func TestMovRDO1_1(t *testing.T) {
 				stackBase+i+7,
 			),
 			fmt.Sprintf(
-				"mov WORD [0x0+%s], %v",
+				"mov WORD [%s+0x0], %v",
 				tc.RegStr(randomOffsetReg, vm.SZ_64),
 				int64(v),
 			),
@@ -607,7 +607,7 @@ func TestMovRDO2_1(t *testing.T) {
 				offHalf2,
 			),
 			fmt.Sprintf(
-				"mov WORD [0x0+%s+%s], %v",
+				"mov WORD [%s+%s+0x0], %v",
 				tc.RegStr(randomOffsetRegA, vm.SZ_64),
 				tc.RegStr(randomOffsetRegB, vm.SZ_64),
 				int64(v),

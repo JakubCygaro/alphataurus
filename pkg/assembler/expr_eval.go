@@ -33,15 +33,13 @@ func (ev *ExpressionEvaluator) extractValue(cexpr pr.ConstExpr) any {
 	case pr.ConstExprILit:
 		return v.Integer
 	case pr.ConstExprFLit:
-		return v.Float
+		return v.ToFloat()
 	}
 	return nil
 }
 
-type binopFn func(any, any) (pr.ConstExpr, error)
 type binopFnU func(a, b uint64) (uint64, error)
 type binopFnF func(a, b float64) (float64, error)
-type binopFnG[T uint64 | float64] func(a, b T) (pr.ConstExpr, error)
 
 // perform binary operation between two expressions
 func (ev *ExpressionEvaluator) performBinary(
@@ -173,7 +171,7 @@ func (ev *ExpressionEvaluator) performOperation(arth pr.ArthExpr) (*pr.Expr, err
 				if b == 0 {
 					return 0, fmt.Errorf("TODO: binary op error, zero division")
 				}
-				return a / b, nil
+				return uint64(int64(a) / int64(b)), nil
 			},
 			func(a, b float64) (float64, error) {
 				if b == 0.0 {
@@ -223,7 +221,25 @@ func TryConstEvalExprT[CE pr.CExpr](
 // *pr.Expr, nil -> evaluated, no errors
 func (ev *ExpressionEvaluator) TryEvaluateExpression(e *pr.Expr) (*pr.Expr, error) {
 	switch expr := e.Val.(type) {
-	//if this is a constant expression, pass it on
+	case pr.NegExpr:
+		if inner, err := ev.TryEvaluateExpression(expr.Inner); err != nil {
+			return nil, err
+		} else if inner == nil {
+			return nil, nil
+		} else if cexpr, ok := inner.Val.(pr.ConstExpr); !ok {
+			return nil, fmt.Errorf("TODO: cannot negate non const expression")
+		} else if val := ev.extractValue(cexpr); val == nil{
+			return nil, nil
+		} else {
+			switch v := val.(type) {
+			case uint64:
+				return pr.MakeConstexprI64(-int64(v)), nil
+			case float64:
+				return pr.MakeConstexprF64(-v), nil
+			default:
+				panic("Unsupported variable value extracted from evaluation context")
+			}
+		}
 	case pr.ConstExpr:
 		if val := ev.extractValue(expr); val == nil {
 			return nil, nil

@@ -94,7 +94,6 @@ func TestMov3(t *testing.T) {
 		tc.RegStr(rE, vm.SZ_8), tc.RegStr(rD, rDsz), tc.RegStr(rE, vm.SZ_8),
 		tc.RegStr(rD, rDsz),
 	)
-	t.Error(asm)
 	if mach, err := assembleAndExecute(asm); err != nil {
 		t.Error(compilationOfErr(asm))
 		t.Error(err)

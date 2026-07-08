@@ -49,6 +49,12 @@ func (a *Assembler) emitClr(at int) error {
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
+func (a *Assembler) emitCallI(data pr.InstCallI, at int) error {
+	call := a.opCodes.GetBytes(vm.OP_CALL)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Address))
+	return nil
+}
 func (a *Assembler) emitCallIP0R(data pr.InstCallIP0R, at int) error {
 	call := a.opCodes.GetBytes(vm.OP_CALLIP)
 	var reg byte
@@ -72,34 +78,6 @@ func (a *Assembler) emitCallIP1R(data pr.InstCallIP1R, at int) error {
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
 	a.bytecode[at] = reg
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
-	return nil
-}
-func (a *Assembler) emitCall(data pr.InstGenericCall, at int) error {
-	call := a.opCodes.GetBytes(vm.OP_CALL)
-	//direct call case
-	evaluated, err := a.ev.TryEvaluateExpression(data.Expr)
-	if err != nil {
-		return err
-	} else if evaluated != nil {
-		if addr, ok := pr.IsConstexprType[pr.ConstExprILit](evaluated); !ok {
-			return errors.Expected(
-				"Valid address",
-				data.Expr.Line,
-				data.Expr.Col,
-			)
-		} else {
-			binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
-			binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr.Integer))
-		}
-	} else {
-		position := at
-		a.unresolvedJumps[position] = unresolvedJump{
-			Expr:    data.Expr,
-			PatchTy: PatchCall{},
-		}
-		binary.BigEndian.AppendUint32(a.bytecode[at:], uint32(a.opCodes.GetBytes(vm.OP_NOP)))
-		binary.BigEndian.AppendUint64(a.bytecode[at+4:], 0)
-	}
 	return nil
 }
 
@@ -152,47 +130,10 @@ func (a *Assembler) emitJmpIP1R(data pr.InstJmpIP1R, at int) error {
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
 	return nil
 }
-func (a *Assembler) emitJmp(data pr.InstGenericJmp, at int) error {
-	opcode := a.jmpInstToOpCode(data.Variant)
-	position := at
-	evaluated, err := a.ev.TryEvaluateExpression(data.Address)
-	if err != nil {
-		return err
-	} else if evaluated != nil {
-		if addr, ok := pr.IsConstexprType[pr.ConstExprILit](evaluated); !ok {
-			return errors.Expected(
-				"Valid address",
-				data.Address.Line,
-				data.Address.Col,
-			)
-		} else {
-			binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opcode))
-			binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr.Integer))
-		}
-	} else {
-		a.unresolvedJumps[position] = unresolvedJump{
-			Expr: data.Address,
-			PatchTy: PatchJmp{
-				Variant: data.Variant,
-			},
-			Absolute: data.Absolute,
-		}
-		binary.BigEndian.PutUint32(a.bytecode[at:],
-			uint32(a.opCodes.GetBytes(vm.OP_NOP)))
-		binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
-	}
-
-	// else if addr, ok := cexpr.Val.(pr.ConstExprIden); ok {
-	// 	a.unresolvedJumps[position] = unresolvedJump{
-	// 		Ident: data.Address.(string),
-	// 		PatchTy: PatchJmp{
-	// 			Variant: data.Variant,
-	// 		},
-	// 		Absolute: data.Absolute,
-	// 	}
-	// 	*out = binary.BigEndian.AppendUint32(*out, uint32(a.opCodes.GetBytes(vm.OP_NOP)))
-	// 	*out = binary.BigEndian.AppendUint64(*out, uint64(0))
-	// }
+func (a *Assembler) emitJmpI(data pr.InstJmpI, at int) error {
+	opcode := a.jmpInstToOpCode(data.JmpTy)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opcode))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Address))
 	return nil
 }
 func (a *Assembler) emitMovIR(data pr.InstMovIR, at int) error {
@@ -346,7 +287,8 @@ func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, at int) error {
 	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
 	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	byte3 |= (0b0000_0011 & byte(data.RegOp))
+	off, _ := lx.TokenTToOpT(data.RegOp)
+	byte3 |= (0b0000_0011 & byte(off))
 	byte2 := (0b0000_0011 & byte(data.DataSize))
 	var mov uint32
 	var param uint64

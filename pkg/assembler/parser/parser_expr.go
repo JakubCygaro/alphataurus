@@ -136,11 +136,8 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			}
 			switch lhsToken.Ty {
 			case lx.TOKEN_TMINUS:
-				lhs = MakeArth(
-					ArthExprSub{
-						A: MakeConstexprU64(0),
-						B: rhs,
-					},
+				lhs = MakeNeg(
+					rhs,
 				)
 			default:
 				return lhs, fmt.Errorf("Prefix operator TODO %s", p.lexer.CurrentPosition())

@@ -70,69 +70,10 @@ func (p *Parser) parseJmp(ty JmpVariant) error {
 	if expr, err := p.ParseExpression(); err != nil {
 		return err
 	} else {
-		genericJmp.Address = expr
+		genericJmp.Expr = expr
 	}
 	genericJmp.Absolute = absolute
 	genericJmp.Variant = ty
-	// else if expr.Ty == EXPR_TDEREF && absolute {
-	// 	em, _ := expr.Emit()
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"ABSOLUTE disallowed relative jumps. "+
-	// 			"In expression `%s`.",
-	// 		em,
-	// 	)
-	// } else if expr.Ty == EXPR_TDEREF {
-	// 	return p.parseJmpIP(ty, expr)
-	// } else if eval, ok := TryConstEvaluateExpression(expr); eval.Ty == CONSTEXPR_TIDENT {
-	// 	addr.Ty = lx.TOKEN_TIDENT
-	// 	addr.Val = eval.Ident
-	// } else if !ok {
-	// 	em, _ := expr.Emit()
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"Second operand to instruction must be a valid label or a an address. "+
-	// 			"In expression `%s`.",
-	// 		em,
-	// 	)
-	// } else if eval.Ty == CONSTEXPR_TILIT {
-	// 	addr.Ty = lx.TOKEN_TINTEGER_LIT
-	// 	addr.Val = eval.Val
-	// } else {
-	// 	em, _ := expr.Emit()
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		p.currentStartToken.Line, p.currentStartToken.Col,
-	// 		"Bad expression `%s`.",
-	// 		em,
-	// 	)
-	// }
-	// switch addr.Ty {
-	// case lx.TOKEN_TINTEGER_LIT:
-	// 	if absolute {
-	// 		p.issueWarning(
-	// 			p.currentStartToken.Line, p.currentStartToken.Col,
-	// 			"Unnecessary use of ABSOLUTE keyword",
-	// 		)
-	// 		absolute = false
-	// 	}
-	// 	inst.Data = InstJmp{
-	// 		Address:  addr.Val.(uint64),
-	// 		Absolute: absolute,
-	// 		Variant:  ty,
-	// 	}
-	// case lx.TOKEN_TIDENT:
-	// 	inst.Data = InstJmp{
-	// 		Address:  addr.Val.(string),
-	// 		Absolute: absolute,
-	// 		Variant:  ty,
-	// 	}
-	// default:
-	// 	return errors.FailedToParse(p.currentIdent,
-	// 		addr.Line, addr.Col,
-	// 		"Instruction requires a valid address or label as a parameter, got `%s`",
-	// 		addr.ForceValAsString(),
-	// 	)
-	// }
 	p.currentInst = Instruction{
 		Data: genericJmp,
 	}
@@ -185,6 +126,7 @@ func (p *Parser) parseJmp(ty JmpVariant) error {
 //		}
 //		return nil
 //	}
+
 func (p *Parser) parseCall() error {
 	genericCall := InstGenericCall{}
 	// ok := false
@@ -193,6 +135,9 @@ func (p *Parser) parseCall() error {
 		return err
 	} else {
 		genericCall.Expr = param
+	}
+	p.currentInst = Instruction{
+		Data: genericCall,
 	}
 	// else if param.Ty == EXPR_TDEREF {
 	// 	return p.parseCallIP(param)

@@ -146,9 +146,13 @@ type InstCmpIR struct {
 	Imm uint64
 }
 type InstGenericJmp struct {
-	Address  *Expr
+	Expr  *Expr
 	Absolute bool
 	Variant  JmpVariant
+}
+type InstJmpI struct {
+	Address int64
+	JmpTy  JmpVariant
 }
 type InstJmpIP0R struct {
 	Offset int64
@@ -160,6 +164,9 @@ type InstJmpIP1R struct {
 	Offset int64
 	OpTy   int
 	JmpTy  JmpVariant
+}
+type InstCallI struct {
+	Address int64
 }
 type InstCallIP0R struct {
 	Offset int64

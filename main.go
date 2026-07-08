@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	vm "github.com/JakubCygaro/alphataurus/pkg/vm"
+	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
 const assembly3 = `
@@ -36,16 +38,12 @@ foo:
 	ret
 `
 const assembly = `
+import 'autogen_func_0'
 section '.code'
 @entry
-	push WORD 0
-	mov bp, sp
-	mov WORD [bp+0], 18446744073709551566
-	mov WORD [bp+8], 18446744073709551605
-	mov r4, [bp+0]
-	mov r5, [bp+8]
-	add SIGNED r4, r5
-	mov [bp+16], r4
+_start:
+	call autogen_func_0
+	exit r6
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -73,6 +71,8 @@ func main() {
 		iCount := asm.InstructionCount()
 		fmt.Printf("Emitted bytecode size: %d\n", len(bytecode))
 		fmt.Printf("Emitted %d instructions\n", iCount)
+		header, err := aobj.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(bytecode)))
+		fmt.Fprintf(os.Stdout, "Obj header relocs size: %v\n", header.RelocsSize)
 		objects = append(objects, linker.Bytes(bytecode))
 	}
 	ld := linker.NewLinker()
@@ -84,7 +84,7 @@ func main() {
 		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
-	mach := vm.CreateVmState(64)
+	mach := vm.CreateVmState(300)
 	mach.SetOpCodeTrace(func(op vm.OpCodeVal) {
 		fmt.Printf("[%s]\n", op.String())
 	})

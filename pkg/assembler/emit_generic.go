@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 type fieldSelector[Inst any] func(*Inst) **pr.Expr
@@ -188,4 +189,110 @@ func (a *Assembler) emitGenericPush(data pr.InstGenericPush, at int) error {
 	}
 
 	return nil
+}
+func (a *Assembler) emitGenericJmp(data pr.InstGenericJmp, at int) error {
+	if evaluated, err := evalAll(a, &data,
+		func(i *pr.InstGenericJmp) **pr.Expr {
+			return &(i.Expr)
+		},
+	); err != nil {
+		return err
+	} else if !evaluated {
+		a.unresolvedJumps[at] = unresolvedJump{
+			Expr: data.Expr,
+			PatchTy: PatchJmp{
+				Variant: data.Variant,
+			},
+			Absolute: data.Absolute,
+		}
+		a.emitNop(at)
+	} else if jmp, err := pr.GetConcreteJmpInst(data); err != nil {
+		return err
+	} else if jmp == nil {
+		return fmt.Errorf("TODO: bad jmp instruction cannot be deduced to concrete jmp")
+	} else if jmpi, ok := jmp.(pr.InstJmpI); ok && !data.Absolute {
+		// in case this is not an absolute direct jump, emit it as an IP relative jump
+		// this will reduce the number of relocations needed
+		posAsInstAddr := uint64(at + vm.ADDRESSDEADZONE_SIZE)
+		diff := int64(jmpi.Address) - int64(posAsInstAddr)
+		return a.emitJmpIP0R(
+			pr.InstJmpIP0R{
+				Offset: diff,
+				OpTy: vm.OP_TADD,
+				JmpTy: jmpi.JmpTy,
+			},
+			at,
+		)
+	} else {
+		return a.emitInst(pr.Instruction{
+			Line: a.line,
+			Col:  a.col,
+			Data: jmp,
+		}, at)
+	}
+	return nil
+}
+func (a *Assembler) emitGenericCall(data pr.InstGenericCall, at int) error {
+	// call := a.opCodes.GetBytes(vm.OP_CALL)
+	if evaluated, err := evalAll(a, &data,
+		func(i *pr.InstGenericCall) **pr.Expr {
+			return &(i.Expr)
+		},
+	); err != nil {
+		return err
+	} else if !evaluated {
+		a.unresolvedJumps[at] = unresolvedJump{
+			Expr: data.Expr,
+			PatchTy: PatchCall{},
+			Absolute: false,
+		}
+		a.emitNop(at)
+	} else if call, err := pr.GetConcreteCallInst(data); err != nil {
+		return err
+	} else if call == nil {
+		return fmt.Errorf("TODO: bad call instruction cannot be deduced to concrete call")
+	} else if calli, ok := call.(pr.InstCallI); ok {
+		// same case as with InstJmpI
+		posAsInstAddr := uint64(at + vm.ADDRESSDEADZONE_SIZE)
+		diff := int64(calli.Address) - int64(posAsInstAddr)
+		return a.emitCallIP0R(
+			pr.InstCallIP0R{
+				Offset: diff,
+				OpTy: vm.OP_TADD,
+			},
+			at,
+		)
+	} else {
+		return a.emitInst(pr.Instruction{
+			Line: a.line,
+			Col:  a.col,
+			Data: call,
+		}, at)
+	}
+	return nil
+	//direct call case
+	// evaluated, err := a.ev.TryEvaluateExpression(data.Expr)
+	// if err != nil {
+	// 	return err
+	// } else if evaluated != nil {
+	// 	if addr, ok := pr.IsConstexprType[pr.ConstExprILit](evaluated); !ok {
+	// 		return errors.Expected(
+	// 			"Valid address",
+	// 			data.Expr.Line,
+	// 			data.Expr.Col,
+	// 		)
+	// 	} else {
+	// 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
+	// 		binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr.Integer))
+	// 	}
+	// } else {
+	// 	position := at
+	// 	a.unresolvedJumps[position] = unresolvedJump{
+	// 		Expr:    data.Expr,
+	// 		PatchTy: PatchCall{},
+	// 	}
+	// 	binary.BigEndian.AppendUint32(a.bytecode[at:], uint32(a.opCodes.GetBytes(vm.OP_NOP)))
+	// 	binary.BigEndian.AppendUint64(a.bytecode[at+4:], 0)
+	// }
+	// return nil
 }

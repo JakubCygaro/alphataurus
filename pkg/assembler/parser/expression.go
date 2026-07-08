@@ -70,11 +70,16 @@ func (c ConstExprILit) Signed() int64 {
 type ConstExprFLit struct {
 	Float uint64
 }
+
 func (c ConstExprFLit) ToFloat() float64 {
 	return math.Float64frombits(c.Float)
 }
+
 type ConstExprIden struct {
 	Ident string
+}
+type NegExpr struct {
+	Inner *Expr
 }
 
 type ArthExpr struct {
@@ -250,7 +255,13 @@ func MakeDeref(inner *Expr) *Expr {
 		},
 	}
 }
-
+func MakeNeg(inner *Expr) *Expr {
+	return &Expr{
+		Val: NegExpr{
+			Inner: inner,
+		},
+	}
+}
 func (e *ConstExpr) AsFloat() float64 {
 	switch c := e.Val.(type) {
 	case ConstExprFLit:

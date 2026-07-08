@@ -25,7 +25,9 @@ func (a *Assembler) EmitBytecode() error {
 			a.bytecode = append(a.bytecode, dummy[:]...)
 			increment = true
 		}
-		err = a.emitInst(inst, a.pos)
+		if emitErr := a.emitInst(inst, a.pos); emitErr != nil {
+			return emitErr
+		}
 		if increment {
 			a.pos += decls.INSTRUCTION_SIZE
 			a.instCount++
@@ -89,7 +91,9 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	case pr.InstCmpIR:
 		err = a.emitCmpIR(i, at)
 	case pr.InstGenericJmp:
-		err = a.emitJmp(i, at)
+		err = a.emitGenericJmp(i, at)
+	case pr.InstJmpI:
+		err = a.emitJmpI(i, at)
 	case pr.InstJmpIP0R:
 		err = a.emitJmpIP0R(i, at)
 	case pr.InstJmpIP1R:
@@ -109,7 +113,9 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	case pr.InstNop:
 		err = a.emitNop(at)
 	case pr.InstGenericCall:
-		err = a.emitCall(i, at)
+		err = a.emitGenericCall(i, at)
+	case pr.InstCallI:
+		err = a.emitCallI(i, at)
 	case pr.InstCallIP0R:
 		err = a.emitCallIP0R(i, at)
 	case pr.InstCallIP1R:
