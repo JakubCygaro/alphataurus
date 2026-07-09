@@ -56,13 +56,27 @@ type Assembler struct {
 }
 
 type assemblerVarProvider struct {
-	syms             *aobj.SymbolTable
-	LastFailedAccess *string
+	syms              *aobj.SymbolTable
+	LastFailedAccess  *string
+	LastFailedSymbols []*aobj.SymbolData
+}
+
+func (avp *assemblerVarProvider) ClearFailedExtractCache() {
+	avp.LastFailedSymbols = avp.LastFailedSymbols[:0]
+	avp.LastFailedAccess = nil
 }
 
 func (avp *assemblerVarProvider) Get(name string) any {
 	if sd, _, ok := avp.syms.GetByName(name); ok {
-		return sd.Loc
+		switch sd.Vis {
+		case aobj.SYM_VIMPORTSTRONG:
+			fallthrough
+		case aobj.SYM_VIMPORTWEAK:
+			avp.LastFailedSymbols = append(avp.LastFailedSymbols, sd)
+			return nil
+		default:
+			return sd.Loc
+		}
 	}
 	avp.LastFailedAccess = &name
 	return nil

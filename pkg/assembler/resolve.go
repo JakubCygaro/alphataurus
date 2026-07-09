@@ -9,12 +9,71 @@ import (
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
+func (a *Assembler) resolveWithSymbols(
+	at int, unr unresolvedJump, syms []*aobj.SymbolData,
+) error {
+	if len(syms) > 1 {
+		return fmt.
+			Errorf("TODO: too many symbols to resolve")
+	}
+	sym := syms[0]
+	_, symIdx, ok := a.symbols.GetByName(sym.GetName())
+	if !ok {
+		return errors.UnresolvedSymbol("TODO: resolveWithSymbols 1")
+	}
+	switch sym.Vis {
+	case aobj.SYM_VPRIVATE:
+		fallthrough
+	case aobj.SYM_VEXPORT:
+		var err error
+		switch p := unr.PatchTy.(type) {
+		case PatchCall:
+			err = a.patchCallIP(sym, at)
+		case PatchJmp:
+			if unr.Absolute {
+				err = a.patchJmp(p, at, sym.Loc)
+				reloc := aobj.RelocData{
+					Loc:       uint64(at) + decls.OPCODE_SIZE,
+					Ref:       uint64(symIdx),
+					PatchSize: 8,
+				}
+				a.relocations = append(a.relocations, reloc)
+			} else {
+				err = a.patchJmpIP(p, sym, at)
+			}
+		}
+		if err != nil {
+			return err
+		}
+	default:
+		var err error
+		switch p := unr.PatchTy.(type) {
+		case PatchCall:
+			err = a.patchCall(at, 0)
+		case PatchJmp:
+			err = a.patchJmp(p, at, 0)
+		}
+		if err != nil {
+			return err
+		}
+		reloc := aobj.RelocData{
+			Loc:       uint64(at) + decls.OPCODE_SIZE,
+			Ref:       uint64(symIdx),
+			PatchSize: 8,
+		}
+		a.relocations = append(a.relocations, reloc)
+	}
+	return nil
+}
+
 func (a *Assembler) resolveJumpInsturctions() error {
 	for codePos, unresolved := range a.unresolvedJumps {
 		var addr uint64
 		if eval, ok, err :=
 			a.ev.TryConstEvaluateExpression(unresolved.Expr); err != nil {
 			return err
+		} else if !ok && len(a.prov.LastFailedSymbols) > 0 {
+			return a.resolveWithSymbols(codePos, unresolved, a.prov.LastFailedSymbols)
 		} else if !ok {
 			return errors.UnresolvedSymbol(fmt.Sprint(codePos))
 		} else if cepxr, ok := eval.Val.(pr.ConstExprILit); !ok {
@@ -23,69 +82,12 @@ func (a *Assembler) resolveJumpInsturctions() error {
 			addr = cepxr.Integer
 		}
 		sym, ok := a.symbols.GetByLocation(addr)
-		_, symIdx, _ := a.symbols.GetByName(sym.GetName())
 		if !ok {
-			return errors.UnresolvedSymbol(fmt.Sprint(codePos))
+			return errors.UnresolvedSymbol("TODO: resolveWithSymbols 1")
 		}
-		switch sym.Vis {
-		case aobj.SYM_VPRIVATE:
-			fallthrough
-		case aobj.SYM_VEXPORT:
-			var err error
-			switch p := unresolved.PatchTy.(type) {
-			case PatchCall:
-				err = a.patchCallIP(sym, codePos)
-			case PatchJmp:
-				if unresolved.Absolute {
-					err = a.patchJmp(p, codePos, sym.Loc)
-					reloc := aobj.RelocData{
-						Loc:       uint64(codePos) + decls.OPCODE_SIZE,
-						Ref:       uint64(symIdx),
-						PatchSize: 8,
-					}
-					a.relocations = append(a.relocations, reloc)
-				} else {
-					err = a.patchJmpIP(p, sym, codePos)
-				}
-			}
-			// if unresolved.PatchTy == PATCH_CALL {
-			// 	err = a.patchCallIP(sym, codePos)
-			// } else if unresolved.Absolute {
-			// 	err = a.patchJmp(unresolved, codePos, sym.Loc)
-			// 	reloc := aobj.RelocData{
-			// 		Loc:       uint64(codePos) + decls.OPCODE_SIZE,
-			// 		Ref:       uint64(symIdx),
-			// 		PatchSize: 8,
-			// 	}
-			// 	a.relocations = append(a.relocations, reloc)
-			// } else {
-			// 	err = a.patchJmpIP(unresolved, sym, codePos)
-			// }
-			if err != nil {
-				return err
-			}
-		default:
-			var err error
-			switch p := unresolved.PatchTy.(type) {
-			case PatchCall:
-				err = a.patchCall(codePos, 0)
-			case PatchJmp:
-				err = a.patchJmp(p, codePos, 0)
-			}
-			// if unresolved.PatchTy == PATCH_CALL {
-			// 	err = a.patchCall(codePos, 0)
-			// } else {
-			// 	err = a.patchJmp(unresolved, codePos, 0)
-			// }
-			if err != nil {
-				return err
-			}
-			reloc := aobj.RelocData{
-				Loc:       uint64(codePos) + decls.OPCODE_SIZE,
-				Ref:       uint64(symIdx),
-				PatchSize: 8,
-			}
-			a.relocations = append(a.relocations, reloc)
+		if err := a.resolveWithSymbols(
+			codePos, unresolved, []*aobj.SymbolData{sym}); err != nil {
+			return err
 		}
 	}
 	return nil

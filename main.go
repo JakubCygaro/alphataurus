@@ -38,12 +38,23 @@ foo:
 	ret
 `
 const assembly = `
-import 'autogen_func_0'
 section '.code'
 @entry
-_start:
-	call autogen_func_0
-	exit r6
+ENTRY:
+	mov r0, 2
+	mov r1, 0
+	jmp START
+ZERO:
+	mov r4, 420
+	jmp END
+START:
+	dec r0
+	inc r1
+	cmp r0, 0
+	je ZERO
+	jg START
+END:
+	mov r5, 1337
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -84,7 +95,7 @@ func main() {
 		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
-	mach := vm.CreateVmState(300)
+	mach := vm.CreateVmState(10)
 	mach.SetOpCodeTrace(func(op vm.OpCodeVal) {
 		fmt.Printf("[%s]\n", op.String())
 	})

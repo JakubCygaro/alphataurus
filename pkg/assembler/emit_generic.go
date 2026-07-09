@@ -190,6 +190,7 @@ func (a *Assembler) emitGenericPush(data pr.InstGenericPush, at int) error {
 
 	return nil
 }
+//TODO: this needs to be adjusted for symbols that are not defined in the current source
 func (a *Assembler) emitGenericJmp(data pr.InstGenericJmp, at int) error {
 	if evaluated, err := evalAll(a, &data,
 		func(i *pr.InstGenericJmp) **pr.Expr {
@@ -232,6 +233,7 @@ func (a *Assembler) emitGenericJmp(data pr.InstGenericJmp, at int) error {
 	}
 	return nil
 }
+//TODO: this needs to be adjusted for symbols that are not defined in the current source
 func (a *Assembler) emitGenericCall(data pr.InstGenericCall, at int) error {
 	// call := a.opCodes.GetBytes(vm.OP_CALL)
 	if evaluated, err := evalAll(a, &data,

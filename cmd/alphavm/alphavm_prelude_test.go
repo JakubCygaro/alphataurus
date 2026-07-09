@@ -83,6 +83,7 @@ func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 		trv := tro.(uint64)
 		if r, _ := mach.GetGpRXAsU64(k); r != trv {
 			msg = strings.Join([]string{
+				msg,
 				fmt.Sprintf("State of general purpose register r%v was different from expected", k),
 				fmt.Sprintf("\t[uint64]  expected (%v) \t got (%v)", trv, r),
 				fmt.Sprintf("\t[int64]   expected (%v) \t got (%v)", int64(trv), int64(r)),
@@ -92,10 +93,6 @@ func expectGpRegisters(asm string, mach *vm.VmState, regStates ExpMap) error {
 		}
 	}
 	if err {
-		msg = strings.Join([]string{
-			fmt.Sprintf("Compilation of %s", asm),
-			msg,
-		}, "\n")
 		return fmt.Errorf("%s", msg)
 	}
 	return nil
