@@ -19,12 +19,6 @@ func (a *Assembler) handleExport(data pr.InstExport) error {
 		0,
 		data.Name,
 	)
-	// sym := vm.SymbolData{
-	// 	Ty:   vm.SYM_TFUNC,
-	// 	Vis:  vm.SYM_VEXPORT,
-	// 	Loc:  0,
-	// 	Name: data.Name,
-	// }
 	if _, err := a.symbols.AddSymbol(sym); err != nil {
 		return fmt.Errorf("Failed to declare export symbol: %s", err.Error())
 	}

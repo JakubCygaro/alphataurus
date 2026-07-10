@@ -206,6 +206,27 @@ func MakeConstexprI64(v int64) *Expr {
 		},
 	}
 }
+func MakeConstexprAny(v any) (*Expr, error) {
+	var cexpr any
+	switch v := v.(type) {
+	case int64:
+		cexpr = ConstExprILit{Integer: uint64(v)}
+	case uint64:
+		cexpr = ConstExprILit{Integer: v}
+	case float64:
+		cexpr = ConstExprFLit{Float: math.Float64bits(v)}
+	case string:
+		cexpr = ConstExprIden{Ident: v}
+	default:
+		return nil, fmt.
+			Errorf("Unsupported constexpr value type `%T`.", v)
+	}
+	return &Expr{
+		Val: ConstExpr{
+			Val: cexpr,
+		},
+	}, nil
+}
 func MakeConstexprF64Bits(bits uint64) *Expr {
 	return &Expr{
 		Val: ConstExpr{

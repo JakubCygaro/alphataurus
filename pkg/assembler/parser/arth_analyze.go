@@ -1,9 +1,7 @@
 package assembler
 
 import (
-	// "github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
-	// "github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func GetConcreteArthInst(genericArth InstGenericArth) (any, error) {
