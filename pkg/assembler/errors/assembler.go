@@ -141,7 +141,7 @@ func InvalidDerefExpr(line, col int, format string, a ...any) AssemblerError {
 		Line: line,
 		Col:  col,
 		construct: func() string {
-			return fmt.Sprintf(format)
+			return fmt.Sprintf(format, a...)
 		},
 	}
 	return err

@@ -93,17 +93,20 @@ func (t *SymbolTable) AddSymbol(def SymbolData) (*SymbolData, error) {
 				"Previously defined at: 0x%x", def.name, t.InOrder[i].Loc)
 	}
 	if sym, ok := t.ByLocation[def.Loc]; ok &&
-		sym.Vis != SYM_VIMPORTSTRONG &&
-		sym.Vis != SYM_VIMPORTWEAK {
+		def.Vis != SYM_VIMPORTSTRONG &&
+		def.Vis != SYM_VIMPORTWEAK {
 		return nil,
 			fmt.Errorf(
 				"TODO: Multiple non-import symbols defined for single location"+
-				" within symbol table.\n"+
-				"First: %v\nSecond: %v", sym.name, def.name)
+					" within symbol table.\n"+
+					"First: %v\nSecond: %v", sym.name, def.name)
 	}
 	t.InOrder = append(t.InOrder, &def)
 	t.ByName[def.name] = len(t.InOrder) - 1
-	t.ByLocation[def.Loc] = &def
+	if def.Vis != SYM_VIMPORTSTRONG &&
+		def.Vis != SYM_VIMPORTWEAK {
+		t.ByLocation[def.Loc] = &def
+	}
 	return t.InOrder[len(t.InOrder)-1], nil
 }
 func (t *SymbolTable) AddForeignSymbol(name string, sym *SymbolData) error {
@@ -113,7 +116,6 @@ func (t *SymbolTable) AddForeignSymbol(name string, sym *SymbolData) error {
 	}
 	t.InOrder = append(t.InOrder, sym)
 	t.ByName[name] = len(t.InOrder) - 1
-	t.ByLocation[sym.Loc] = sym
 	t.foreign[sym] = struct{}{}
 	return nil
 }

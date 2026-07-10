@@ -23,31 +23,34 @@ autogen_func_0:
 `
 
 const assembly3 = `
-export 'autogen_func_1'
+export 'bar'
 section '.code'
-autogen_func_1:
-	add SIGNED r4, -159
+bar:
+	push bp
+	mov bp, sp
+	mov r0b, 187
+	pop bp
 	ret
 `
 
 const assembly2 = `
-export 'autogen_func_2'
+export 'foo'
+import 'bar'
 section '.code'
-autogen_func_2:
-	add SIGNED r4, 18
+foo:
+	push bp
+	mov bp, sp
+	call bar
+	pop bp
 	ret
 `
 const assembly = `
-import 'autogen_func_0'
-import 'autogen_func_1'
-import 'autogen_func_2'
+import 'foo'
 section '.code'
 @entry
 _start:
-	call autogen_func_0
-	call autogen_func_1
-	call autogen_func_2
-	exit r4
+	call foo
+	exit r0b
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -60,7 +63,7 @@ func logWarnings(awd assembler.AssemblerWarningData) {
 }
 
 func main() {
-	sources := []string{assembly, assembly2, assembly3, assembly4}
+	sources := []string{assembly, assembly2, assembly3}
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(bufio.NewReader(strings.NewReader(s)))
@@ -100,7 +103,7 @@ func main() {
 		os.Stderr.WriteString("\n")
 		os.Exit(-1)
 	}
-	mach := vm.CreateVmState(10)
+	mach := vm.CreateVmState(64)
 	mach.SetOpCodeTrace(func(op vm.OpCodeVal) {
 		fmt.Printf("[%s]\n", op.String())
 	})
