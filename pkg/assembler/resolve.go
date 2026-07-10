@@ -73,11 +73,16 @@ func (a *Assembler) resolveJumpInsturctions() error {
 			a.ev.TryConstEvaluateExpression(unresolved.Expr); err != nil {
 			return err
 		} else if !ok && len(a.prov.LastFailedSymbols) > 0 {
-			return a.resolveWithSymbols(codePos, unresolved, a.prov.LastFailedSymbols)
-		} else if !ok {
-			return errors.UnresolvedSymbol(fmt.Sprint(codePos))
+			if err :=
+				a.resolveWithSymbols(
+					codePos, unresolved, a.prov.LastFailedSymbols); err != nil {
+				return err
+			}
+			continue
+		} else if !ok && len(a.prov.LastFailedSymbols) == 0 {
+			return errors.UnresolvedSymbol("TODO: unresolved symbol 2")
 		} else if cepxr, ok := eval.Val.(pr.ConstExprILit); !ok {
-			return errors.UnresolvedSymbol(fmt.Sprint(codePos))
+			return errors.UnresolvedSymbol("TODO: unresolved symbol 3")
 		} else {
 			addr = cepxr.Integer
 		}

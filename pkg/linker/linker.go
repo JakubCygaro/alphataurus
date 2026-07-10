@@ -66,12 +66,12 @@ func newGlobalSymbolTable() globalSymbolTable {
 }
 
 func (t *globalSymbolTable) AddSymbol(
-	file objFileIdx, name string, sym *vm.SymbolData) bool {
+	file objFileIdx, name string, sym *vm.SymbolData) error {
 	if err := t.symbols.AddForeignSymbol(name, sym); err != nil {
-		return false
+		return err
 	}
 	t.files[sym] = file
-	return true
+	return nil
 }
 func (t *globalSymbolTable) GetSymbol(name string) (
 	file objFileIdx, inTable int, sym *vm.SymbolData, ok bool) {
@@ -101,8 +101,8 @@ func (l *Linker) readGlobalSymbols(objidx objFileIdx, obj *vm.ObjFile) error {
 		if sym.Vis != vm.SYM_VEXPORT {
 			continue
 		}
-		if ok := l.globals.AddSymbol(objidx, name, sym); !ok {
-			return fmt.Errorf("multiple definitions of symbol '%s'", name)
+		if err := l.globals.AddSymbol(objidx, name, sym); err != nil {
+			return fmt.Errorf("%s -- symbol '%s'", err, name)
 		}
 	}
 	return nil

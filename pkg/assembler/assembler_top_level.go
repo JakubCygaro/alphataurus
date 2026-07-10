@@ -43,6 +43,6 @@ func (a *Assembler) handleImport(data pr.InstImport) error {
 	if data.Weak {
 		sym.Vis = vm.SYM_VIMPORTWEAK
 	}
-	a.symbols.AddSymbol(sym)
-	return nil
+	_, err := a.symbols.AddSymbol(sym)
+	return err
 }

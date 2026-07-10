@@ -2,7 +2,6 @@ package vm
 
 import (
 	"bufio"
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -44,147 +43,6 @@ type StaticData struct {
 	Val []uint64
 }
 
-const (
-	SYM_TFUNC = iota
-	SYM_TSTATVAR
-)
-
-const (
-	/// defined in file
-	SYM_VEXPORT = iota
-	/// required by the file but not defined
-	SYM_VIMPORTSTRONG
-	/// weak reference in the file
-	SYM_VIMPORTWEAK
-	/// defined by the file but not linkable from the outside
-	SYM_VPRIVATE
-)
-
-type SymbolTable struct {
-	InOrder    []*SymbolData
-	ByName     map[string]int
-	ByLocation map[uint64]*SymbolData
-	foreign    map[*SymbolData]struct{}
-}
-
-type SymbolData struct {
-	Ty  byte
-	Vis byte
-	// the location is defined with the deadzone added, so any value below the deadzone is treated as invalid
-	Loc  uint64
-	name string
-}
-
-func (sym *SymbolData) GetName() string {
-	return sym.name
-}
-
-func DefineSymbol(ty, vis byte, loc uint64, name string) SymbolData {
-	return SymbolData{
-		Ty:   ty,
-		Vis:  vis,
-		Loc:  loc,
-		name: name,
-	}
-}
-
-func NewSymbolTable() SymbolTable {
-	table := SymbolTable{
-		InOrder:    make([]*SymbolData, 0),
-		ByName:     make(map[string]int),
-		ByLocation: make(map[uint64]*SymbolData),
-		foreign: make(map[*SymbolData]struct{}),
-	}
-	return table
-}
-
-func (t *SymbolTable) Clear() {
-	clear(t.InOrder)
-	clear(t.ByName)
-	clear(t.ByLocation)
-}
-func (t *SymbolTable) AddSymbol(def SymbolData) (*SymbolData, error) {
-	if i, ok := t.ByName[def.name]; ok {
-		return nil,
-			fmt.Errorf("TODO: Redefinition of symbol `%s`\n"+
-				"Previously defined at: 0x%x", def.name, t.InOrder[i].Loc)
-	}
-	if sym, ok := t.ByLocation[def.Loc]; ok {
-		return nil,
-			fmt.Errorf("TODO: Multiple symbols defined for single location\n"+
-				"First: %v\nSecond: %v", sym.name, def.name)
-	}
-	t.InOrder = append(t.InOrder, &def)
-	t.ByName[def.name] = len(t.InOrder) - 1
-	t.ByLocation[def.Loc] = &def
-	return t.InOrder[len(t.InOrder)-1], nil
-}
-func (t *SymbolTable) AddForeignSymbol(name string, sym *SymbolData) error {
-	if i, ok := t.ByName[name]; ok {
-		return fmt.Errorf("TODO: Redefinition of symbol `%s`\n"+
-			"Previously defined at: 0x%x", name, t.InOrder[i].Loc)
-	}
-	if sym, ok := t.ByLocation[sym.Loc]; ok {
-		return fmt.Errorf("TODO: Multiple symbols defined for single location\n"+
-			"First: %v\nSecond: %v", sym.name, name)
-	}
-	t.InOrder = append(t.InOrder, sym)
-	t.ByName[name] = len(t.InOrder) - 1
-	t.ByLocation[sym.Loc] = sym
-	t.foreign[sym] = struct{}{};
-	return nil
-}
-func (t *SymbolTable) RenameSymbol(oldName, newName string) error {
-	if sym, idx, ok := t.GetByName(oldName); ok {
-		if _, ok := t.foreign[sym]; ok {
-			return fmt.Errorf("TODO: Foreign symbol `%s`cannot be renamed",
-				oldName)
-		}
-		delete(t.ByName, oldName)
-		sym.name = newName
-		t.ByName[newName] = idx
-		return nil
-	}
-	return fmt.Errorf("TODO: No such symbol `%s`, cannot rename to `%s`",
-		oldName, newName)
-}
-
-func (t *SymbolTable) GetByName(name string) (*SymbolData, int, bool) {
-	if idx, ok := t.ByName[name]; ok {
-		return t.InOrder[idx], idx, ok
-	}
-	return nil, -1, false
-}
-func (t *SymbolTable) GetByLocation(loc uint64) (*SymbolData, bool) {
-	if sym, ok := t.ByLocation[loc]; ok {
-		return sym, ok
-	}
-	return nil, false
-}
-func (t *SymbolTable) GetName(idx int) (string, bool) {
-	for n, i := range t.ByName {
-		if i == idx {
-			return n, true
-		}
-	}
-	return "", false
-
-}
-
-const (
-	RELOC_TINVALID = 0
-)
-
-// 8b(LOC) 8b(REF) 1b(PATCHSIZE)
-type RelocData struct {
-	// where that symbol is referenced in the code
-	Loc uint64
-	// what symbol is being referenced
-	Ref       uint64
-	PatchSize byte
-}
-
-type RelocationTable []RelocData
 
 type ObjFile struct {
 	Header     ObjFileHeader
@@ -201,7 +59,6 @@ func readSecStartSize(r *bufio.Reader) (start, size uint64, err error) {
 	}
 	return binary.BigEndian.Uint64(buf[:8]), binary.BigEndian.Uint64(buf[8:]), nil
 }
-
 func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 	ret := ObjFileHeader{}
 	mag := [4]byte{}
@@ -273,114 +130,6 @@ func LoadObjFileHeader(reader *bufio.Reader) (ObjFileHeader, error) {
 	}
 	return ret, nil
 }
-func readSymbols(symbolSec []byte) (SymbolTable, error) {
-	// 1b(TY) 1b(VISIBILITY) 8b(LOC) 4b(NAMELEN) NAMELENb(NAME)
-	table := NewSymbolTable()
-	reader := bufio.NewReader(bytes.NewReader(symbolSec))
-	buf := make([]byte, 64)
-	for {
-		var vis byte
-		var loc uint64
-		var namelen uint32
-		var name string
-		first, err := reader.ReadByte()
-		if err != nil {
-			break
-		}
-		ty := first
-		if ty > SYM_TSTATVAR {
-			return table, fmt.Errorf("Invalid symbol type")
-		}
-		if b, err := reader.ReadByte(); err != nil {
-			return table, err
-		} else {
-			vis = b
-		}
-		if _, err := reader.Read(buf[:8]); err != nil {
-			return table, err
-		} else {
-			loc = binary.BigEndian.Uint64(buf[:8])
-		}
-		if _, err := reader.Read(buf[:4]); err != nil {
-			return table, err
-		} else {
-			namelen = binary.BigEndian.Uint32(buf[:4])
-		}
-		if extendBy := int(namelen) - len(buf); extendBy > 0 {
-			buf = make([]byte, len(buf)+extendBy)
-		}
-		if _, err := reader.Read(buf[:namelen]); err != nil {
-			return table, err
-		} else {
-			name = string(buf[:namelen])
-		}
-		if vis > SYM_VPRIVATE {
-			return table, fmt.Errorf("Invalid symbol `%s` visibility [%d]", name, vis)
-		}
-		sym := DefineSymbol(
-			ty,
-			vis,
-			loc,
-			name,
-		)
-		table.AddSymbol(sym)
-	}
-	return table, nil
-
-}
-
-// 8b(LOC) 8b(REF) 1b(PATCHSIZE)
-func readRelocs(relocSec []byte) (RelocationTable, error) {
-	relocs := make(RelocationTable, 0)
-	reader := bufio.NewReader(bytes.NewReader(relocSec))
-	buf := make([]byte, 0, 64)
-	for {
-		var loc, ref uint64
-		var patchSize byte
-		_, err := reader.Read(buf[:8])
-		if err != nil {
-			break
-		}
-		loc = binary.BigEndian.Uint64(buf[:8])
-		if _, err := reader.Read(buf[:8]); err != nil {
-			return relocs, err
-		} else {
-			ref = binary.BigEndian.Uint64(buf[:8])
-		}
-		if b, err := reader.ReadByte(); err != nil {
-			return relocs, err
-		} else {
-			patchSize = b
-		}
-		reloc := RelocData{
-			Loc:       loc,
-			Ref:       ref,
-			PatchSize: patchSize,
-		}
-		relocs = append(relocs, reloc)
-	}
-	return relocs, nil
-}
-func writeSymbolDef(sname string, sym SymbolData) []byte {
-	// 1b(TY) 1b(VISIBILITY) 8b(LOC) 4b(NAMELEN) NAMELENb(NAME)
-	head := make([]byte, 1+1+8+4)
-	head[0] = sym.Ty
-	head[1] = sym.Vis
-	binary.BigEndian.PutUint64(head[2:], sym.Loc)
-	binary.BigEndian.PutUint32(head[10:], uint32(len(sname)))
-	head = append(head, []byte(sname)...)
-	return head
-}
-func WriteSymbols(st *SymbolTable) ([]byte, error) {
-	syms := make([]byte, 0, 64)
-	for idx, sym := range (*st).InOrder {
-		sname, _ := st.GetName(idx)
-		syms = append(syms, writeSymbolDef(sname, *sym)...)
-	}
-
-	return syms, nil
-}
-
 func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 	ret := ObjFile{}
 	h.HeaderSize += 10
@@ -413,19 +162,4 @@ func LoadObjFile(h ObjFileHeader, binary []byte) (ObjFile, error) {
 		return ret, fmt.Errorf("sdata todo")
 	}
 	return ret, nil
-}
-func writeRelocDef(rel RelocData) []byte {
-	head := make([]byte, 8+8+1)
-	binary.BigEndian.PutUint64(head[0:], rel.Loc)
-	binary.BigEndian.PutUint64(head[8:], rel.Ref)
-	head[len(head)-1] = rel.PatchSize
-	return head
-}
-func WriteRelocs(rel RelocationTable) ([]byte, error) {
-	relocs := make([]byte, 0, 64)
-
-	for _, reloc := range rel {
-		relocs = append(relocs, writeRelocDef(reloc)...)
-	}
-	return relocs, nil
 }

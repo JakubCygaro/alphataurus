@@ -14,47 +14,40 @@ import (
 	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
-const assembly3 = `
-export 'bar'
+const assembly4 = `
+export 'autogen_func_0'
 section '.code'
-bar:
-	push bp
-	mov bp, sp
-	mov r0b, 184
-	pop bp
+autogen_func_0:
+	add SIGNED r4, -761
+	ret
+`
+
+const assembly3 = `
+export 'autogen_func_1'
+section '.code'
+autogen_func_1:
+	add SIGNED r4, -159
 	ret
 `
 
 const assembly2 = `
-export 'foo'
-import 'bar'
+export 'autogen_func_2'
 section '.code'
-foo:
-	push bp
-	mov bp, sp
-	call bar
-	mov r2, 14
-	pop bp
+autogen_func_2:
+	add SIGNED r4, 18
 	ret
 `
 const assembly = `
+import 'autogen_func_0'
+import 'autogen_func_1'
+import 'autogen_func_2'
 section '.code'
 @entry
-ENTRY:
-	mov r0, 2
-	mov r1, 0
-	jmp START
-ZERO:
-	mov r4, 420
-	jmp END
-START:
-	dec r0
-	inc r1
-	cmp r0, 0
-	je ZERO
-	jg START
-END:
-	mov r5, 1337
+_start:
+	call autogen_func_0
+	call autogen_func_1
+	call autogen_func_2
+	exit r4
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -67,7 +60,7 @@ func logWarnings(awd assembler.AssemblerWarningData) {
 }
 
 func main() {
-	sources := []string{assembly}
+	sources := []string{assembly, assembly2, assembly3, assembly4}
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(bufio.NewReader(strings.NewReader(s)))
@@ -84,6 +77,18 @@ func main() {
 		fmt.Printf("Emitted %d instructions\n", iCount)
 		header, err := aobj.LoadObjFileHeader(bufio.NewReader(bytes.NewReader(bytecode)))
 		fmt.Fprintf(os.Stdout, "Obj header relocs size: %v\n", header.RelocsSize)
+		st, err := aobj.LoadSymbolsWithHeader(header, bytecode)
+		fmt.Fprintf(os.Stdout, "Obj symbols: %v\n", header.SymbolsSize)
+		for i, s := range st.InOrder {
+			fmt.Fprintf(os.Stdout,
+				"%v -- %s\n", i, s.String())
+		}
+		rels, err := aobj.LoadRelocsWithHeader(header, bytecode)
+		fmt.Fprintf(os.Stdout, "Obj relocs: %v\n", header.SymbolsSize)
+		for i, s := range rels {
+			fmt.Fprintf(os.Stdout,
+				"%v -- %+v\n", i, s)
+		}
 		objects = append(objects, linker.Bytes(bytecode))
 	}
 	ld := linker.NewLinker()
