@@ -12,7 +12,7 @@ import (
 	"unicode"
 
 	"github.com/JakubCygaro/alphataurus/internal/pkg/dt"
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/lexer/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -51,7 +51,6 @@ const (
 	TOKEN_TABSOLUTE
 	TOKEN_TEOF
 )
-
 
 func TokenTToOpT(tokenT int) (int, bool) {
 	switch tokenT {
@@ -512,7 +511,7 @@ func (l *Lexer) ReadNextToken() error {
 			}
 		}
 	default:
-		return errors.UnrecognizedChar(rune(b), l.line, l.col)
+		return errors.UnrecognizedCharacter(l.line, l.col, rune(b))
 	}
 	l.currentToken.Line, l.currentToken.Col = l.sline, l.scol
 	return nil
@@ -522,20 +521,20 @@ func (l *Lexer) readSingleQuoted() error {
 	for {
 		next, ok := l.readByte()
 		if !ok {
-			return errors.LUnclosedSingleQuote(l.line, l.col)
+			return errors.UnclosedSingleQuote(l.sline, l.scol)
 		}
 		if next == '\'' {
 			break
 		} else if next == '\\' {
 			if next, ok := l.readByte(); !ok {
-				return errors.LPrematureEndOfInput(l.line, l.col)
+				return errors.PrematureEndOfInput(l.line, l.col)
 			} else if next == '\'' || next == '\\' {
 				buf = append(buf, next)
 			} else {
-				return errors.UnsupportedEscape(l.line, l.col, rune(next))
+				return errors.UnsupportedEscapeSequence(l.line, l.col, rune(next))
 			}
 		} else if next == '\n' {
-			return errors.LSingleQuoteNewline(l.line, l.col)
+			return errors.SingleQuoteNewline(l.line, l.col)
 		} else {
 			buf = append(buf, next)
 		}
@@ -611,7 +610,7 @@ func (l *Lexer) readDigit(b byte) error {
 			}
 			next, ok := l.readByte()
 			if !ok {
-				return errors.LPrematureEndOfInput(l.line, l.col)
+				return errors.PrematureEndOfInput(l.line, l.col)
 			}
 			if next == '-' || next == '+' {
 				if err := appendToBuf(next); err != nil {
@@ -619,14 +618,14 @@ func (l *Lexer) readDigit(b byte) error {
 				}
 				next, ok = l.readByte()
 				if !ok {
-					return errors.LPrematureEndOfInput(l.line, l.col)
+					return errors.PrematureEndOfInput(l.line, l.col)
 				}
 			}
 			for {
 				if numberCheck(next) {
 					if expBufC >= MAX_EXP {
 						return errors.
-							MalformedFloatLit(l.line, l.col, string(buf[:bufC]))
+							MalformedFloatLiteral(l.line, l.col, string(buf[:bufC]))
 					} else if err := appendToBuf(next); err != nil {
 						return err
 					}
@@ -640,14 +639,16 @@ func (l *Lexer) readDigit(b byte) error {
 			l.unreadByte()
 			break
 		} else {
-			return errors.MalformedIntegerLit(l.line, l.col, string(buf[:bufC]))
+			return errors.
+				MalformedIntegerLiteral(l.line, l.col, string(buf[:bufC]))
 		}
 	}
 	lit := string(buf[:bufC])
 	if !dot {
 		val, err := strconv.ParseUint(lit, 10, 64)
 		if err != nil {
-			return errors.MalformedIntegerLit(l.line, l.col, lit)
+			return errors.
+				MalformedIntegerLiteral(l.line, l.col, lit)
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER_LIT,
@@ -656,7 +657,8 @@ func (l *Lexer) readDigit(b byte) error {
 	} else if hex {
 		val, err := strconv.ParseUint(lit, 16, 64)
 		if err != nil {
-			return errors.MalformedIntegerLit(l.line, l.col, lit)
+			return errors.
+				MalformedIntegerLiteral(l.line, l.col, lit)
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER_LIT,
@@ -665,7 +667,8 @@ func (l *Lexer) readDigit(b byte) error {
 	} else if binary {
 		val, err := strconv.ParseUint(lit, 2, 64)
 		if err != nil {
-			return errors.MalformedIntegerLit(l.line, l.col, lit)
+			return errors.
+				MalformedIntegerLiteral(l.line, l.col, lit)
 		}
 		l.currentToken = Token{
 			Ty:  TOKEN_TINTEGER_LIT,
@@ -674,16 +677,9 @@ func (l *Lexer) readDigit(b byte) error {
 	} else {
 		val, err := strconv.ParseFloat(lit, 64)
 		if err != nil {
-			return errors.MalformedFloatLit(l.line, l.col, string(buf[:bufC]))
+			return errors.
+				MalformedFloatLiteral(l.line, l.col, string(buf[:bufC]))
 		}
-		// if e {
-		// 	if i, err := strconv.ParseInt(string(expBuf[:expBufC]), 10, 64); err != nil {
-		// 		return err
-		// 	} else {
-		// 		exp := math.Pow10(int(i))
-		// 		val = val * exp
-		// 	}
-		// }
 		l.currentToken = Token{
 			Ty:  TOKEN_TFLOAT_LIT,
 			Val: uint64(math.Float64bits(val)),

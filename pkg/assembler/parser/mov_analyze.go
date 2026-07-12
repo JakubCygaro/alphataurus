@@ -3,23 +3,40 @@ package assembler
 import (
 	"fmt"
 
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 // mov rx, rx
 func gcmMovRR(dest, src RegExpr, mov *InstGenericMov) (any, error) {
 	if mov.DataSize != nil {
-		return nil, errors.UnnecessarySizeParameter("", mov.DataSize.Line, mov.Dest.Col)
+		return nil,
+			errors.
+				UnnecessarySizeParameter(
+					mov.DataSize.Line,
+					mov.DataSize.Col,
+					mov.DataSize.Size,
+				)
 	}
 	if !vm.IsMovFromRAllowed(byte(src.Reg.Reg)) {
-		return nil, errors.
-			DisallowedSourceRegister(0, 0)
+		return nil,
+			errors.
+				DisallowedSrcReg(
+					mov.Src.Line,
+					mov.Src.Col,
+					src.Reg,
+				)
 	}
 	if src.Reg.Size > dest.Reg.Size {
-		return nil, errors.
-			MismatchedRegisterSizes(0, 0)
+		return nil,
+			errors.
+				MismatchedRegisterSizes(
+					mov.Dest.Line, mov.Dest.Col,
+					mov.Src.Line, mov.Src.Col,
+					src.Reg,
+					dest.Reg,
+				)
 	}
 	return InstMovRR{
 		Src:  src.Reg,
@@ -30,8 +47,13 @@ func gcmMovRR(dest, src RegExpr, mov *InstGenericMov) (any, error) {
 // mov rx, int/float
 func gcmMovRI(dest RegExpr, imm ConstExpr, mov *InstGenericMov) (any, error) {
 	if mov.DataSize != nil {
-		return nil, errors.
-			UnnecessarySizeParameter("", mov.Src.Line, mov.Src.Col)
+		return nil,
+			errors.
+				UnnecessarySizeParameter(
+					mov.DataSize.Line,
+					mov.DataSize.Col,
+					mov.DataSize.Size,
+				)
 	}
 	switch cexpr := imm.Val.(type) {
 	// mov rx, 1
@@ -44,8 +66,12 @@ func gcmMovRI(dest RegExpr, imm ConstExpr, mov *InstGenericMov) (any, error) {
 	// mov rx, 1.0
 	case ConstExprFLit:
 		if dest.Reg.Size != vm.SZ_64 {
-			return nil, errors.BadSizeArgument("TODO", "TODO",
-				mov.DataSize.Line, mov.Dest.Col)
+			return nil,
+				errors.MakeParserError(
+					mov.DataSize.Line,
+					mov.DataSize.Col,
+					"Bad data size parameter, expected 64-bits for float literal",
+				)
 		}
 		return InstMovIR{
 			Imm:      cexpr.Float,
@@ -53,12 +79,26 @@ func gcmMovRI(dest RegExpr, imm ConstExpr, mov *InstGenericMov) (any, error) {
 			DataSize: dest.Reg.Size,
 		}, nil
 	}
-	return nil, fmt.
-		Errorf("TODO: bad movRI")
+	return nil, MakeParserErrorWithExpr(
+		mov.Src,
+		func(s string) errors.ParserError {
+			return errors.
+				MakeParserError(
+					mov.Src.Line,
+					mov.Src.Col,
+					"Bad expression for immediate value move into register `%s`.",
+					s,
+				)
+		},
+	)
 }
 
 // mov rx, [(inner)]
-func gcmMovDR(dest RegExpr, deref DerefExpr, mov *InstGenericMov) (any, error) {
+func gcmMovDR(
+	dest RegExpr,
+	deref DerefExpr,
+	mov *InstGenericMov,
+) (any, error) {
 	switch inner := deref.Inner.Val.(type) {
 	// mov rx, [1]
 	case ConstExpr:
@@ -87,6 +127,18 @@ func gcmMovDR(dest RegExpr, deref DerefExpr, mov *InstGenericMov) (any, error) {
 				OffOp:  inner.OffsetOp,
 			}, nil
 		}
+		return nil, MakeParserErrorWithExpr(
+			inner.Offset,
+			func(s string) errors.ParserError {
+				return errors.
+					MakeParserError(
+						inner.Offset.Line,
+						inner.Offset.Col,
+						"Bad offset expression for mov instruction `%s`.",
+						s,
+					)
+			},
+		)
 	// mov rx, [rx + rx + 1]
 	case TwoRegOffsetExpr:
 		if o, ok := getAsOffset(inner.Offset); ok {
@@ -98,28 +150,63 @@ func gcmMovDR(dest RegExpr, deref DerefExpr, mov *InstGenericMov) (any, error) {
 				Offset: o,
 			}, nil
 		}
+		return nil, MakeParserErrorWithExpr(
+			inner.Offset,
+			func(s string) errors.ParserError {
+				return errors.
+					MakeParserError(
+						inner.Offset.Line,
+						inner.Offset.Col,
+						"Bad offset expression for mov instruction `%s`.",
+						s,
+					)
+			},
+		)
 	}
-	return nil, fmt.
-		Errorf("TODO: bad movDR %v %v", mov.Src.Line, mov.Src.Col)
+	return nil, MakeParserErrorWithExpr(
+		mov.Src,
+		func(s string) errors.ParserError {
+			return errors.
+				MakeParserError(
+					mov.Src.Line,
+					mov.Src.Col,
+					"Bad expression for dereference move into register `%s`.",
+					s,
+				)
+		},
+	)
 }
 
 // mov rx, (expr)
 func gcmIntoRegister(dest RegExpr, mov *InstGenericMov) (any, error) {
 	if !vm.IsMovIntoRAllowed(byte(dest.Reg.Reg)) {
-		return nil, errors.
-			DisallowedDestinationRegister(0, 0)
+		return nil,
+			errors.
+				DisallowedDestReg(
+					mov.Dest.Line,
+					mov.Dest.Col,
+					dest.Reg,
+				)
 	}
 	switch src := mov.Src.Val.(type) {
 	case RegExpr:
 		return gcmMovRR(dest, src, mov)
 	case ConstExpr:
 		return gcmMovRI(dest, src, mov)
-	// mov rx, [(inner)]
 	case DerefExpr:
 		return gcmMovDR(dest, src, mov)
 	}
-	return nil, fmt.
-		Errorf("TODO: bad move source")
+	return nil, MakeParserErrorWithExpr(
+		mov.Dest,
+		func(s string) errors.ParserError {
+			return errors.
+				DisallowedDest(
+					mov.Dest.Line,
+					mov.Dest.Col,
+					s,
+				)
+		},
+	)
 }
 func gcmRD(inner ConstExpr, mov *InstGenericMov) (any, error) {
 	var off int64
@@ -291,7 +378,10 @@ func gcmIntoDeref(dest DerefExpr, mov *InstGenericMov) (any, error) {
 	return nil, nil
 }
 
-func GetConcreteMovInst(genericMov InstGenericMov) (any, error) {
+func GetConcreteMovInst(
+	genericMov InstGenericMov,
+	outer *Instruction,
+) (any, error) {
 	switch dest := genericMov.Dest.Val.(type) {
 	// mov rx, (src)
 	case RegExpr:
@@ -300,6 +390,10 @@ func GetConcreteMovInst(genericMov InstGenericMov) (any, error) {
 	case DerefExpr:
 		return gcmIntoDeref(dest, &genericMov)
 	}
-	return nil, fmt.
-		Errorf("TODO: bad mov instruction arguments")
+	return nil,
+		errors.MakeParserError(
+			outer.Line,
+			outer.Col,
+			"Bad mov instruction.",
+		)
 }

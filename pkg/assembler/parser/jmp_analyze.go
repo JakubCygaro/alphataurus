@@ -1,18 +1,28 @@
 package assembler
 
 import (
-	"fmt"
-
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
-func GetConcreteJmpInst(genericCmp InstGenericJmp) (any, error) {
+func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, error) {
 	switch addr := genericCmp.Expr.Val.(type) {
 	case ConstExpr:
 		if i, ok := addr.Val.(ConstExprILit); !ok {
-			return nil, fmt.
-				Errorf("TODO: Invalid expression as jump address %v %v",
-					genericCmp.Expr.Line, genericCmp.Expr.Col)
+			return nil, MakeParserErrorWithExpr(
+				genericCmp.Expr,
+				func(s string) errors.ParserError {
+					return errors.
+						MakeParserError(
+							genericCmp.Expr.Line,
+							genericCmp.Expr.Col,
+							"Disallowed expression used as jump address `%s`. "+
+								"Value is not an integer.",
+							s,
+						)
+
+				},
+			)
 		} else {
 			return InstJmpI{
 				Address: i.Signed(),
@@ -23,52 +33,119 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp) (any, error) {
 		switch deref := addr.Inner.Val.(type) {
 		case RegExpr:
 			if deref.Reg.Reg != vm.IP_IDX {
-				return nil, fmt.Errorf("TODO: expected IP register in jump")
+				return nil,
+					errors.
+						MakeParserError(
+							addr.Inner.Line,
+							addr.Inner.Col,
+							"Expected IP register in IP relative jump instruction. "+
+								"Got `%s` instead.",
+							deref.Reg.String(),
+						)
 			}
 			return InstJmpIP0R{
 				Offset: 0,
-				OpTy: vm.OP_TADD,
-				JmpTy:   genericCmp.Variant,
+				OpTy:   vm.OP_TADD,
+				JmpTy:  genericCmp.Variant,
 			}, nil
 		case OneRegOffsetExpr:
 			if deref.Reg.Reg != vm.IP_IDX {
-				return nil, fmt.Errorf("TODO: expected IP register in jump")
+				return nil,
+					errors.
+						MakeParserError(
+							addr.Inner.Line,
+							addr.Inner.Col,
+							"Expected IP register in IP relative jump instruction. "+
+								"Got `%s` instead.",
+							deref.Reg.String(),
+						)
 			}
 			if off, ok := getAsOffset(deref.Offset); !ok {
-				return nil, fmt.Errorf("TODO: bad offset")
+				return nil, MakeParserErrorWithExpr(
+					deref.Offset,
+					func(s string) errors.ParserError {
+						return errors.
+							MakeParserError(
+								addr.Inner.Line,
+								addr.Inner.Col,
+								"Bad offset value in IP relative jump instruction. "+
+									"Got expressiom `%s` which does not evaluate "+
+									"to a valid offset.",
+								s,
+							)
+
+					},
+				)
 			} else {
 				return InstJmpIP0R{
 					Offset: off,
-					OpTy: vm.OP_TADD,
-					JmpTy:   genericCmp.Variant,
+					OpTy:   vm.OP_TADD,
+					JmpTy:  genericCmp.Variant,
 				}, nil
 			}
 		case TwoRegOffsetExpr:
-			//TODO: more complex checks
-			if deref.Reg1.Reg != vm.IP_IDX {
-				return nil, fmt.Errorf("TODO: expected IP register in jump")
+			if deref.Reg1.Reg != vm.IP_IDX && deref.Reg2.Reg != vm.IP_IDX {
+				return nil,
+					errors.
+						MakeParserError(
+							addr.Inner.Line,
+							addr.Inner.Col,
+							"Expected IP register in IP relative jump instruction. "+
+								"Got `%s` and `%s` instead.",
+							deref.Reg1.String(),
+							deref.Reg2.String(),
+						)
 			}
 			if off, ok := getAsOffset(deref.Offset); !ok {
-				return nil, fmt.Errorf("TODO: bad offset")
+				return nil, MakeParserErrorWithExpr(
+					deref.Offset,
+					func(s string) errors.ParserError {
+						return errors.
+							MakeParserError(
+								addr.Inner.Line,
+								addr.Inner.Col,
+								"Bad offset value in IP relative jump instruction. "+
+									"Got expressiom `%s` which does not evaluate "+
+									"to a valid offset.",
+								s,
+							)
+					},
+				)
 			} else {
 				return InstJmpIP1R{
-					Reg: deref.Reg2,
+					Reg:    deref.Reg2,
 					Offset: off,
-					OpTy: deref.RegOp,
-					JmpTy:   genericCmp.Variant,
+					OpTy:   deref.RegOp,
+					JmpTy:  genericCmp.Variant,
 				}, nil
 			}
 		}
 	}
-	return nil, fmt.Errorf("TODO: invalid jump instruction expression")
+	return nil,
+		errors.
+			MakeParserError(
+				genericCmp.Expr.Line,
+				genericCmp.Expr.Col,
+				"Invalid jump instruction address expression.",
+			)
 }
-func GetConcreteCallInst(genericCmp InstGenericCall) (any, error) {
+func GetConcreteCallInst(genericCmp InstGenericCall, outer *Instruction) (any, error) {
 	switch addr := genericCmp.Expr.Val.(type) {
 	case ConstExpr:
 		if i, ok := addr.Val.(ConstExprILit); !ok {
-			return nil, fmt.
-				Errorf("TODO: Invalid expression as call address %v %v",
-					genericCmp.Expr.Line, genericCmp.Expr.Col)
+			return nil, MakeParserErrorWithExpr(
+				genericCmp.Expr,
+				func(s string) errors.ParserError {
+					return errors.
+						MakeParserError(
+							genericCmp.Expr.Line,
+							genericCmp.Expr.Col,
+							"Disallowed expression used as call address `%s`. "+
+								"Value is not an integer.",
+							s,
+						)
+				},
+			)
 		} else {
 			return InstCallI{
 				Address: i.Signed(),
@@ -78,39 +155,95 @@ func GetConcreteCallInst(genericCmp InstGenericCall) (any, error) {
 		switch deref := addr.Inner.Val.(type) {
 		case RegExpr:
 			if deref.Reg.Reg != vm.IP_IDX {
-				return nil, fmt.Errorf("TODO: expected IP register in call")
+				return nil,
+					errors.
+						MakeParserError(
+							addr.Inner.Line,
+							addr.Inner.Col,
+							"Expected IP register in IP relative call instruction. "+
+								"Got `%s` instead.",
+							deref.Reg.String(),
+						)
 			}
 			return InstCallIP0R{
 				Offset: 0,
-				OpTy: vm.OP_TADD,
+				OpTy:   vm.OP_TADD,
 			}, nil
 		case OneRegOffsetExpr:
 			if deref.Reg.Reg != vm.IP_IDX {
-				return nil, fmt.Errorf("TODO: expected IP register in call")
+				return nil,
+					errors.
+						MakeParserError(
+							addr.Inner.Line,
+							addr.Inner.Col,
+							"Expected IP register in IP relative call instruction. "+
+								"Got `%s` instead.",
+							deref.Reg.String(),
+						)
 			}
 			if off, ok := getAsOffset(deref.Offset); !ok {
-				return nil, fmt.Errorf("TODO: bad offset")
+				return nil, MakeParserErrorWithExpr(
+					deref.Offset,
+					func(s string) errors.ParserError {
+						return errors.
+							MakeParserError(
+								addr.Inner.Line,
+								addr.Inner.Col,
+								"Bad offset value in IP relative call instruction. "+
+									"Got expressiom `%s` which does not evaluate "+
+									"to a valid offset.",
+								s,
+							)
+					},
+				)
 			} else {
 				return InstCallIP0R{
 					Offset: off,
-					OpTy: vm.OP_TADD,
+					OpTy:   vm.OP_TADD,
 				}, nil
 			}
 		case TwoRegOffsetExpr:
-			//TODO: more complex checks
-			if deref.Reg1.Reg != vm.IP_IDX {
-				return nil, fmt.Errorf("TODO: expected IP register in call")
+			if deref.Reg1.Reg != vm.IP_IDX && deref.Reg2.Reg != vm.IP_IDX {
+				return nil,
+					errors.
+						MakeParserError(
+							addr.Inner.Line,
+							addr.Inner.Col,
+							"Expected IP register in IP relative call instruction. "+
+								"Got `%s` and `%s` instead.",
+							deref.Reg1.String(),
+							deref.Reg2.String(),
+						)
 			}
 			if off, ok := getAsOffset(deref.Offset); !ok {
-				return nil, fmt.Errorf("TODO: bad offset")
+				return nil, MakeParserErrorWithExpr(
+					deref.Offset,
+					func(s string) errors.ParserError {
+					return errors.
+							MakeParserError(
+								addr.Inner.Line,
+								addr.Inner.Col,
+								"Bad offset value in IP relative call instruction. "+
+									"Got expressiom `%s` which does not evaluate "+
+									"to a valid offset.",
+								s,
+							)
+					},
+				)
 			} else {
 				return InstCallIP1R{
-					Reg: deref.Reg2,
+					Reg:    deref.Reg2,
 					Offset: off,
-					OpTy: deref.RegOp,
+					OpTy:   deref.RegOp,
 				}, nil
 			}
 		}
 	}
-	return nil, fmt.Errorf("TODO: invalid call instruction expression")
+	return nil,
+		errors.
+			MakeParserError(
+				genericCmp.Expr.Line,
+				genericCmp.Expr.Col,
+				"Invalid call instruction address expression.",
+			)
 }
