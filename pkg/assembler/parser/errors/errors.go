@@ -69,6 +69,13 @@ func UnnecessarySizeParameter(line, col int, size byte) ParserError {
 		sz,
 	)
 }
+func MissingSizeParameter(line, col int) ParserError {
+	return MakeParserError(
+		line,
+		col,
+		"Unnecessary size parameter.",
+	)
+}
 // line1 and col1 will be used as the location of the error
 func MismatchedRegisterSizes(
 	line1, col1, line2, col2 int,

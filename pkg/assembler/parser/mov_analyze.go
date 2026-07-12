@@ -1,12 +1,18 @@
 package assembler
 
 import (
-	"fmt"
-
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
+
+func getAsOffset(expr *Expr) (int64, bool) {
+	if expr == nil {
+		return 0, true
+	}
+	c, ok := IsConstexprType[ConstExprILit](expr)
+	return c.Signed(), ok
+}
 
 // mov rx, rx
 func gcmMovRR(dest, src RegExpr, mov *InstGenericMov) (any, error) {
@@ -170,7 +176,7 @@ func gcmMovDR(
 				MakeParserError(
 					mov.Src.Line,
 					mov.Src.Col,
-					"Bad expression for dereference move into register `%s`.",
+					"Bad expression for register move into dereference `%s`.",
 					s,
 				)
 		},
@@ -219,8 +225,13 @@ func gcmRD(inner ConstExpr, mov *InstGenericMov) (any, error) {
 	// mov [1], rx
 	case RegExpr:
 		if mov.DataSize != nil {
-			return nil, errors.UnnecessarySizeParameter("TODO",
-				mov.Dest.Line, mov.Dest.Col)
+			return nil,
+				errors.
+					UnnecessarySizeParameter(
+						mov.DataSize.Line,
+						mov.DataSize.Col,
+						mov.DataSize.Size,
+					)
 		}
 		return InstMovRD{
 			Src:     src.Reg,
@@ -230,9 +241,13 @@ func gcmRD(inner ConstExpr, mov *InstGenericMov) (any, error) {
 	case ConstExpr:
 		if cexpr, ok := src.Val.(ConstExprILit); ok {
 			if mov.DataSize == nil {
-				return nil, errors.MissingDataSize(mov.Dest.Line, mov.Dest.Col)
+				return nil,
+					errors.
+						MissingSizeParameter(
+							mov.DataSize.Line,
+							mov.DataSize.Col,
+						)
 			}
-
 			return InstMovID{
 				Imm:      cexpr.Integer,
 				Address:  off,
@@ -240,7 +255,18 @@ func gcmRD(inner ConstExpr, mov *InstGenericMov) (any, error) {
 			}, nil
 		}
 	}
-	return nil, nil
+	return nil, MakeParserErrorWithExpr(
+		mov.Src,
+		func(s string) errors.ParserError {
+			return errors.
+				MakeParserError(
+					mov.Src.Line,
+					mov.Src.Col,
+					"Bad expression for dereference move into register `%s`.",
+					s,
+				)
+		},
+	)
 }
 func gcmRDO1_NO(inner RegExpr, mov *InstGenericMov) (any, error) {
 	switch src := mov.Src.Val.(type) {
@@ -248,7 +274,12 @@ func gcmRDO1_NO(inner RegExpr, mov *InstGenericMov) (any, error) {
 	case ConstExpr:
 		if imm, ok := IsConstexprType[ConstExprILit](mov.Src); ok {
 			if mov.DataSize == nil {
-				return nil, errors.MissingDataSize(mov.DataSize.Line, mov.Dest.Col)
+				return nil,
+					errors.
+						MissingSizeParameter(
+							mov.DataSize.Line,
+							mov.DataSize.Col,
+						)
 			}
 			return InstMovIDO1{
 				Imm:      imm.Integer,
@@ -268,14 +299,19 @@ func gcmRDO1_NO(inner RegExpr, mov *InstGenericMov) (any, error) {
 			OffOp:  vm.OP_TADD,
 		}, nil
 	}
-	return nil, nil
-}
-func getAsOffset(expr *Expr) (int64, bool) {
-	if expr == nil {
-		return 0, true
-	}
-	c, ok := IsConstexprType[ConstExprILit](expr)
-	return c.Signed(), ok
+	return nil, MakeParserErrorWithExpr(
+		mov.Src,
+		func(s string) errors.ParserError {
+			return errors.
+				MakeParserError(
+					mov.Src.Line,
+					mov.Src.Col,
+					"Bad expression for dereference move into register with no offset "+
+						"`%s`.",
+					s,
+				)
+		},
+	)
 }
 func gcmRDO1(inner OneRegOffsetExpr, mov *InstGenericMov) (any, error) {
 	var off int64
@@ -289,7 +325,12 @@ func gcmRDO1(inner OneRegOffsetExpr, mov *InstGenericMov) (any, error) {
 	case ConstExpr:
 		if imm, ok := IsConstexprType[ConstExprILit](mov.Src); ok {
 			if mov.DataSize == nil {
-				return nil, errors.MissingDataSize(mov.Dest.Line, mov.Dest.Col)
+				return nil,
+					errors.
+						MissingSizeParameter(
+							mov.DataSize.Line,
+							mov.DataSize.Col,
+						)
 			}
 			return InstMovIDO1{
 				Imm:      imm.Integer,
@@ -309,7 +350,19 @@ func gcmRDO1(inner OneRegOffsetExpr, mov *InstGenericMov) (any, error) {
 			OffOp:  inner.OffsetOp,
 		}, nil
 	}
-	return nil, nil
+	return nil, MakeParserErrorWithExpr(
+		mov.Src,
+		func(s string) errors.ParserError {
+			return errors.
+				MakeParserError(
+					mov.Src.Line,
+					mov.Src.Col,
+					"Bad expression for dereference move into register with offset "+
+						"and one register `%s`.",
+					s,
+				)
+		},
+	)
 }
 func gcmRDO2(inner TwoRegOffsetExpr, mov *InstGenericMov) (any, error) {
 	var off int64
@@ -325,7 +378,12 @@ func gcmRDO2(inner TwoRegOffsetExpr, mov *InstGenericMov) (any, error) {
 	case ConstExpr:
 		if imm, ok := IsConstexprType[ConstExprILit](mov.Src); ok {
 			if mov.DataSize == nil {
-				return nil, errors.MissingDataSize(mov.Src.Line, mov.Src.Col)
+				return nil,
+					errors.
+						MissingSizeParameter(
+							mov.DataSize.Line,
+							mov.DataSize.Col,
+						)
 			}
 			if off == 0 {
 				inner.RegOp = lx.TOKEN_TPLUS
@@ -351,11 +409,26 @@ func gcmRDO2(inner TwoRegOffsetExpr, mov *InstGenericMov) (any, error) {
 			OffOp:  inner.OffsetOp,
 		}, nil
 	}
-
-	return nil, nil
+	return nil, MakeParserErrorWithExpr(
+		mov.Src,
+		func(s string) errors.ParserError {
+			return errors.
+				MakeParserError(
+					mov.Src.Line,
+					mov.Src.Col,
+					"Bad expression for dereference move into register with offset "+
+						"with two registers `%s`.",
+					s,
+				)
+		},
+	)
 }
 
-func gcmIntoDeref(dest DerefExpr, mov *InstGenericMov) (any, error) {
+func gcmIntoDeref(
+	dest DerefExpr,
+	mov *InstGenericMov,
+	outer * Instruction,
+) (any, error) {
 	switch inner := dest.Inner.Val.(type) {
 	case ConstExpr:
 		return gcmRD(inner, mov)
@@ -375,7 +448,12 @@ func gcmIntoDeref(dest DerefExpr, mov *InstGenericMov) (any, error) {
 	case TwoRegOffsetExpr:
 		return gcmRDO2(inner, mov)
 	}
-	return nil, nil
+	return nil, errors.
+		MakeParserError(
+			outer.Line,
+			outer.Line,
+			"Bad expression for move into dereference.",
+		)
 }
 
 func GetConcreteMovInst(
@@ -388,7 +466,7 @@ func GetConcreteMovInst(
 		return gcmIntoRegister(dest, &genericMov)
 	// mov [(inner)], (src)
 	case DerefExpr:
-		return gcmIntoDeref(dest, &genericMov)
+		return gcmIntoDeref(dest, &genericMov, outer)
 	}
 	return nil,
 		errors.MakeParserError(
