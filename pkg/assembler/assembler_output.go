@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
-	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
+	aobj "github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
 func (a *Assembler) Assemble() ([]byte, error) {
@@ -31,7 +31,13 @@ func (a *Assembler) Assemble() ([]byte, error) {
 				return nil, err
 			}
 		default:
-			return nil, errors.DisallowedTopLevelInstruction(a.line, a.col)
+			return nil,
+				errors.
+					MakeAssemblerError(
+						a.line,
+						a.col,
+						"Disallowed top level instruction.",
+					)
 		}
 	}
 	if err != nil {

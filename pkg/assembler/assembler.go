@@ -30,6 +30,8 @@ type AssemblerWarningData struct {
 	Line, Col int
 	Message   string
 }
+type Point struct{ Line, Col int }
+type definedAtMap map[any]Point
 
 type Assembler struct {
 	parser          *pr.Parser
@@ -53,6 +55,8 @@ type Assembler struct {
 	WarningSink func(AssemblerWarningData)
 	ev          ExpressionEvaluator
 	prov        *assemblerVarProvider
+	// this is used to look up where anything is defined at
+	definedAt   definedAtMap
 }
 
 type assemblerVarProvider struct {
@@ -96,6 +100,7 @@ func aInitialState() Assembler {
 		relocations:     make(aobj.RelocationTable, 0),
 		hasEntry:        false,
 		prov:            &assemblerVarProvider{},
+		definedAt:       make(definedAtMap),
 	}
 	return a
 }
@@ -108,6 +113,7 @@ func (a *Assembler) clearState() {
 	clear(a.relocations)
 	a.hasEntry = false
 	a.instCount = 0
+	clear(a.definedAt)
 }
 func NewAssembler(reader *bufio.Reader) *Assembler {
 	a := aInitialState()

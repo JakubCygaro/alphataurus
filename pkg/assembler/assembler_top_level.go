@@ -1,17 +1,22 @@
 package assembler
 
 import (
-	"fmt"
-
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
 
 func (a *Assembler) handleExport(data pr.InstExport) error {
-	if _, ok := a.symbols.ByName[data.Name]; ok {
-		return errors.MultipleSymbolDefinitions(data.Name, a.line,
-			a.col)
+	if s, ok := a.symbols.ByName[data.Name]; ok {
+		definedAt := a.definedAt[s]
+		return errors.
+			MakeAssemblerError(
+				a.line,
+				a.col,
+				"Multiple symbol `%s` definitions."+
+					"\nFirst defined at (%v:%v).\n",
+				definedAt.Line, definedAt.Col,
+			)
 	}
 	sym := vm.DefineSymbol(
 		vm.SYM_TFUNC,
@@ -19,14 +24,29 @@ func (a *Assembler) handleExport(data pr.InstExport) error {
 		0,
 		data.Name,
 	)
-	if _, err := a.symbols.AddSymbol(sym); err != nil {
-		return fmt.Errorf("Failed to declare export symbol: %s", err.Error())
+	if s, err := a.symbols.AddSymbol(sym); err != nil {
+		return errors.MakeAssemblerError(
+			a.line,
+			a.col,
+			"Failed to declare export symbol, %s.",
+			err.Error(),
+		)
+	} else {
+		a.definedAt[s] = Point{a.line, a.col}
 	}
 	return nil
 }
 func (a *Assembler) handleImport(data pr.InstImport) error {
-	if _, _, ok := a.symbols.GetByName(data.Name); ok {
-		return errors.MultipleSymbolDefinitions(data.Name, a.line, a.col)
+	if s, _, ok := a.symbols.GetByName(data.Name); ok {
+		definedAt := a.definedAt[s]
+		return errors.
+			MakeAssemblerError(
+				a.line,
+				a.col,
+				"Multiple symbol `%s` definitions."+
+					"\nFirst defined at (%v:%v).\n",
+				definedAt.Line, definedAt.Col,
+			)
 	}
 	sym := vm.DefineSymbol(
 		vm.SYM_TFUNC,
@@ -37,6 +57,15 @@ func (a *Assembler) handleImport(data pr.InstImport) error {
 	if data.Weak {
 		sym.Vis = vm.SYM_VIMPORTWEAK
 	}
-	_, err := a.symbols.AddSymbol(sym)
-	return err
+	if s, err := a.symbols.AddSymbol(sym); err != nil {
+		return errors.MakeAssemblerError(
+			a.line,
+			a.col,
+			"Failed to declare import symbol, %s.",
+			err.Error(),
+		)
+	} else {
+		a.definedAt[s] = Point{a.line, a.col}
+	}
+	return nil
 }

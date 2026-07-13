@@ -1,7 +1,6 @@
 package assembler
 
 import (
-
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	decls "github.com/JakubCygaro/alphataurus/pkg/vm/decls"
@@ -128,7 +127,13 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitExitR(i, at)
 	case pr.InstEntry:
 		if a.hasEntry {
-			err = errors.MultipleEntry(inst.Line, inst.Col)
+			err = errors.
+				MakeAssemblerError(
+					inst.Line,
+					inst.Col,
+					"More than one entry point declaration is not allowed.",
+				)
+
 		} else {
 			a.hasEntry = true
 			_, ent := a.codePos(at)
