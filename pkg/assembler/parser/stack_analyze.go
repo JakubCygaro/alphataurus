@@ -1,9 +1,7 @@
 package assembler
 
 import (
-	"fmt"
-
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -11,8 +9,13 @@ func GetConcretePushInst(push InstGenericPush) (any, error) {
 	switch val := push.Expr.Val.(type) {
 	case RegExpr:
 		if push.DataSz != nil {
-			return nil, errors.
-				UnnecessarySizeParameter("TODO", push.DataSz.Line, push.DataSz.Col)
+			return nil,
+				errors.
+					UnnecessarySizeParameter(
+						push.DataSz.Line,
+						push.DataSz.Col,
+						push.DataSz.Size,
+					)
 		}
 		return InstPushR{
 			Reg: val.Reg,
@@ -32,12 +35,13 @@ func GetConcretePushInst(push InstGenericPush) (any, error) {
 			}, nil
 		case ConstExprFLit:
 			if dataSz != vm.SZ_64 {
-				return errors.BadSizeArgument(
-					"TODO",
-					"TODO WORD",
-					push.DataSz.Line,
-					push.DataSz.Col,
-				), nil
+				return nil, errors.
+					MakeParserError(
+						push.DataSz.Line,
+						push.DataSz.Col,
+						"Bad data size parameter with 64-bit"+
+							" floating point immediate value",
+					)
 			}
 			return InstPushI{
 				Imm:    cexpr.Float,
@@ -45,6 +49,17 @@ func GetConcretePushInst(push InstGenericPush) (any, error) {
 			}, nil
 		}
 	}
-	return nil, fmt.
-		Errorf("TODO: bad push parameter expression type")
+	return nil, MakeParserErrorWithExpr(
+		push.Expr,
+		func(s string) errors.ParserError {
+			return errors.
+				MakeParserError(
+					push.Expr.Line,
+					push.Expr.Col,
+					"Bad expression as parameter to push instruction "+
+						"`%s`.",
+					s,
+				)
+		},
+	)
 }
