@@ -15,7 +15,7 @@ func getAsOffset(expr *Expr) (int64, bool) {
 }
 
 // mov rx, rx
-func gcmMovRR(dest, src RegExpr, mov *InstGenericMov) (any, error) {
+func movRR(dest, src RegExpr, mov *InstGenericMov) (any, error) {
 	if mov.DataSize != nil {
 		return nil,
 			errors.
@@ -51,7 +51,7 @@ func gcmMovRR(dest, src RegExpr, mov *InstGenericMov) (any, error) {
 }
 
 // mov rx, int/float
-func gcmMovRI(dest RegExpr, imm ConstExpr, mov *InstGenericMov) (any, error) {
+func movRI(dest RegExpr, imm ConstExpr, mov *InstGenericMov) (any, error) {
 	if mov.DataSize != nil {
 		return nil,
 			errors.
@@ -92,7 +92,7 @@ func gcmMovRI(dest RegExpr, imm ConstExpr, mov *InstGenericMov) (any, error) {
 				MakeParserError(
 					mov.Src.Line,
 					mov.Src.Col,
-					"Bad expression for immediate value move into register `%s`.",
+					"Bad source expression in immediate value move into register `%s`.",
 					s,
 				)
 		},
@@ -100,16 +100,15 @@ func gcmMovRI(dest RegExpr, imm ConstExpr, mov *InstGenericMov) (any, error) {
 }
 
 // mov rx, [(inner)]
-func gcmMovDR(
+func movDR(
 	dest RegExpr,
 	deref DerefExpr,
 	mov *InstGenericMov,
 ) (any, error) {
-	switch inner := deref.Inner.Val.(type) {
+	switch innerSrc := deref.Inner.Val.(type) {
 	// mov rx, [1]
 	case ConstExpr:
-		switch ilit := inner.Val.(type) {
-		case ConstExprILit:
+		if ilit, ok := innerSrc.Val.(ConstExprILit); ok {
 			return InstMovDR{
 				Address: ilit.Signed(),
 				Dest:    dest.Reg,
@@ -120,26 +119,26 @@ func gcmMovDR(
 		return InstMovDRO1{
 			Dest:   dest.Reg,
 			Offset: 0,
-			OReg1:  inner.Reg,
+			OReg1:  innerSrc.Reg,
 			OffOp:  lx.TOKEN_TPLUS,
 		}, nil
 	// mov rx, [rx + 1]
 	case OneRegOffsetExpr:
-		if o, ok := getAsOffset(inner.Offset); ok {
+		if o, ok := getAsOffset(innerSrc.Offset); ok {
 			return InstMovDRO1{
 				Dest:   dest.Reg,
 				Offset: o,
-				OReg1:  inner.Reg,
-				OffOp:  inner.OffsetOp,
+				OReg1:  innerSrc.Reg,
+				OffOp:  innerSrc.OffsetOp,
 			}, nil
 		}
 		return nil, MakeParserErrorWithExpr(
-			inner.Offset,
+			innerSrc.Offset,
 			func(s string) errors.ParserError {
 				return errors.
 					MakeParserError(
-						inner.Offset.Line,
-						inner.Offset.Col,
+						innerSrc.Offset.Line,
+						innerSrc.Offset.Col,
 						"Bad offset expression for mov instruction `%s`.",
 						s,
 					)
@@ -147,22 +146,22 @@ func gcmMovDR(
 		)
 	// mov rx, [rx + rx + 1]
 	case TwoRegOffsetExpr:
-		if o, ok := getAsOffset(inner.Offset); ok {
+		if o, ok := getAsOffset(innerSrc.Offset); ok {
 			return InstMovDRO2{
 				Dest:   dest.Reg,
-				OReg1:  inner.Reg1,
-				RegOp:  inner.RegOp,
-				OReg2:  inner.Reg2,
+				OReg1:  innerSrc.Reg1,
+				RegOp:  innerSrc.RegOp,
+				OReg2:  innerSrc.Reg2,
 				Offset: o,
 			}, nil
 		}
 		return nil, MakeParserErrorWithExpr(
-			inner.Offset,
+			innerSrc.Offset,
 			func(s string) errors.ParserError {
 				return errors.
 					MakeParserError(
-						inner.Offset.Line,
-						inner.Offset.Col,
+						innerSrc.Offset.Line,
+						innerSrc.Offset.Col,
 						"Bad offset expression for mov instruction `%s`.",
 						s,
 					)
@@ -176,7 +175,7 @@ func gcmMovDR(
 				MakeParserError(
 					mov.Src.Line,
 					mov.Src.Col,
-					"Bad expression for register move into dereference `%s`.",
+					"Bad source expression for dereference move into register `%s`.",
 					s,
 				)
 		},
@@ -184,7 +183,7 @@ func gcmMovDR(
 }
 
 // mov rx, (expr)
-func gcmIntoRegister(dest RegExpr, mov *InstGenericMov) (any, error) {
+func movIntoRegister(dest RegExpr, mov *InstGenericMov) (any, error) {
 	if !vm.IsMovIntoRAllowed(byte(dest.Reg.Reg)) {
 		return nil,
 			errors.
@@ -196,11 +195,11 @@ func gcmIntoRegister(dest RegExpr, mov *InstGenericMov) (any, error) {
 	}
 	switch src := mov.Src.Val.(type) {
 	case RegExpr:
-		return gcmMovRR(dest, src, mov)
+		return movRR(dest, src, mov)
 	case ConstExpr:
-		return gcmMovRI(dest, src, mov)
+		return movRI(dest, src, mov)
 	case DerefExpr:
-		return gcmMovDR(dest, src, mov)
+		return movDR(dest, src, mov)
 	}
 	return nil, MakeParserErrorWithExpr(
 		mov.Dest,
@@ -214,10 +213,26 @@ func gcmIntoRegister(dest RegExpr, mov *InstGenericMov) (any, error) {
 		},
 	)
 }
-func gcmRD(inner ConstExpr, mov *InstGenericMov) (any, error) {
+func movRD(
+	innerDest ConstExpr,
+	mov *InstGenericMov,
+	outer *Instruction,
+) (any, error) {
 	var off int64
-	if cexpr, ok := inner.Val.(ConstExprILit); !ok {
-		return nil, nil
+	if cexpr, ok := innerDest.Val.(ConstExprILit); !ok {
+		return nil, MakeParserErrorWithExpr(
+			mov.Dest,
+			func(s string) errors.ParserError {
+				return errors.
+					MakeParserError(
+						mov.Dest.Line,
+						mov.Dest.Line,
+						"Bad address expression in dereference"+
+							" destination for move instruction. In expression `%s`.",
+						s,
+					)
+			},
+		)
 	} else {
 		off = cexpr.Signed()
 	}
@@ -244,8 +259,8 @@ func gcmRD(inner ConstExpr, mov *InstGenericMov) (any, error) {
 				return nil,
 					errors.
 						MissingSizeParameter(
-							mov.DataSize.Line,
-							mov.DataSize.Col,
+							outer.Line,
+							outer.Col,
 						)
 			}
 			return InstMovID{
@@ -262,13 +277,17 @@ func gcmRD(inner ConstExpr, mov *InstGenericMov) (any, error) {
 				MakeParserError(
 					mov.Src.Line,
 					mov.Src.Col,
-					"Bad expression for dereference move into register `%s`.",
+					"Bad source expression for move into dereference `%s`.",
 					s,
 				)
 		},
 	)
 }
-func gcmRDO1_NO(inner RegExpr, mov *InstGenericMov) (any, error) {
+func movRDO1_NO(
+	innerDest RegExpr,
+	mov *InstGenericMov,
+	outer *Instruction,
+) (any, error) {
 	switch src := mov.Src.Val.(type) {
 	// mov [rx], 1
 	case ConstExpr:
@@ -277,14 +296,14 @@ func gcmRDO1_NO(inner RegExpr, mov *InstGenericMov) (any, error) {
 				return nil,
 					errors.
 						MissingSizeParameter(
-							mov.DataSize.Line,
-							mov.DataSize.Col,
+							outer.Line,
+							outer.Col,
 						)
 			}
 			return InstMovIDO1{
 				Imm:      imm.Integer,
 				Offset:   0,
-				OReg1:    inner.Reg,
+				OReg1:    innerDest.Reg,
 				OffOp:    vm.OP_TADD,
 				DataSize: mov.DataSize.Size,
 				NoOff:    true,
@@ -295,7 +314,7 @@ func gcmRDO1_NO(inner RegExpr, mov *InstGenericMov) (any, error) {
 		return InstMovRDO1{
 			Src:    src.Reg,
 			Offset: 0,
-			OReg1:  inner.Reg,
+			OReg1:  innerDest.Reg,
 			OffOp:  vm.OP_TADD,
 		}, nil
 	}
@@ -306,17 +325,33 @@ func gcmRDO1_NO(inner RegExpr, mov *InstGenericMov) (any, error) {
 				MakeParserError(
 					mov.Src.Line,
 					mov.Src.Col,
-					"Bad expression for dereference move into register with no offset "+
+					"Bad source expression for move into register dereference"+
 						"`%s`.",
 					s,
 				)
 		},
 	)
 }
-func gcmRDO1(inner OneRegOffsetExpr, mov *InstGenericMov) (any, error) {
+func movRDO1(
+	innerDest OneRegOffsetExpr,
+	mov *InstGenericMov,
+	outer *Instruction,
+) (any, error) {
 	var off int64
-	if o, ok := getAsOffset(inner.Offset); !ok {
-		return nil, nil
+	if o, ok := getAsOffset(innerDest.Offset); !ok {
+		return nil, MakeParserErrorWithExpr(
+			innerDest.Offset,
+			func(s string) errors.ParserError {
+				return errors.
+					MakeParserError(
+						innerDest.Offset.Line,
+						innerDest.Offset.Col,
+						"Bad offset expresion in move into one register dereference"+
+							" `%s`",
+						s,
+					)
+			},
+		)
 	} else {
 		off = o
 	}
@@ -328,15 +363,15 @@ func gcmRDO1(inner OneRegOffsetExpr, mov *InstGenericMov) (any, error) {
 				return nil,
 					errors.
 						MissingSizeParameter(
-							mov.DataSize.Line,
-							mov.DataSize.Col,
+							outer.Line,
+							outer.Col,
 						)
 			}
 			return InstMovIDO1{
 				Imm:      imm.Integer,
 				Offset:   off,
-				OReg1:    inner.Reg,
-				OffOp:    inner.OffsetOp,
+				OReg1:    innerDest.Reg,
+				OffOp:    innerDest.OffsetOp,
 				DataSize: mov.DataSize.Size,
 				NoOff:    off == 0,
 			}, nil
@@ -346,8 +381,8 @@ func gcmRDO1(inner OneRegOffsetExpr, mov *InstGenericMov) (any, error) {
 		return InstMovRDO1{
 			Src:    src.Reg,
 			Offset: off,
-			OReg1:  inner.Reg,
-			OffOp:  inner.OffsetOp,
+			OReg1:  innerDest.Reg,
+			OffOp:  innerDest.OffsetOp,
 		}, nil
 	}
 	return nil, MakeParserErrorWithExpr(
@@ -357,19 +392,33 @@ func gcmRDO1(inner OneRegOffsetExpr, mov *InstGenericMov) (any, error) {
 				MakeParserError(
 					mov.Src.Line,
 					mov.Src.Col,
-					"Bad expression for dereference move into register with offset "+
-						"and one register `%s`.",
+					"Bad source expression for one register dereference move "+
+						"`%s`.",
 					s,
 				)
 		},
 	)
 }
-func gcmRDO2(inner TwoRegOffsetExpr, mov *InstGenericMov) (any, error) {
+func movRDO2(
+	innerDest TwoRegOffsetExpr,
+	mov *InstGenericMov,
+	outer *Instruction,
+) (any, error) {
 	var off int64
-	if inner.Offset == nil {
-		off = 0
-	} else if o, ok := getAsOffset(inner.Offset); !ok {
-		return nil, nil
+	if o, ok := getAsOffset(innerDest.Offset); !ok {
+		return nil, MakeParserErrorWithExpr(
+			innerDest.Offset,
+			func(s string) errors.ParserError {
+				return errors.
+					MakeParserError(
+						innerDest.Offset.Line,
+						innerDest.Offset.Col,
+						"Bad offset expresion in move into two register dereference"+
+							" `%s`",
+						s,
+					)
+			},
+		)
 	} else {
 		off = o
 	}
@@ -381,19 +430,19 @@ func gcmRDO2(inner TwoRegOffsetExpr, mov *InstGenericMov) (any, error) {
 				return nil,
 					errors.
 						MissingSizeParameter(
-							mov.DataSize.Line,
-							mov.DataSize.Col,
+							outer.Line,
+							outer.Col,
 						)
 			}
 			if off == 0 {
-				inner.RegOp = lx.TOKEN_TPLUS
+				innerDest.RegOp = lx.TOKEN_TPLUS
 			}
 			return InstMovIDO2{
 				Imm:      imm.Integer,
 				DataSize: mov.DataSize.Size,
-				OReg1:    inner.Reg1,
-				OReg2:    inner.Reg2,
-				RegOp:    inner.RegOp,
+				OReg1:    innerDest.Reg1,
+				OReg2:    innerDest.Reg2,
+				RegOp:    innerDest.RegOp,
 				Offset:   off,
 				NoOff:    off == 0,
 			}, nil
@@ -403,10 +452,10 @@ func gcmRDO2(inner TwoRegOffsetExpr, mov *InstGenericMov) (any, error) {
 		return InstMovRDO2{
 			Src:    src.Reg,
 			Offset: off,
-			OReg1:  inner.Reg1,
-			OReg2:  inner.Reg2,
-			RegOp:  inner.RegOp,
-			OffOp:  inner.OffsetOp,
+			OReg1:  innerDest.Reg1,
+			OReg2:  innerDest.Reg2,
+			RegOp:  innerDest.RegOp,
+			OffOp:  innerDest.OffsetOp,
 		}, nil
 	}
 	return nil, MakeParserErrorWithExpr(
@@ -416,44 +465,47 @@ func gcmRDO2(inner TwoRegOffsetExpr, mov *InstGenericMov) (any, error) {
 				MakeParserError(
 					mov.Src.Line,
 					mov.Src.Col,
-					"Bad expression for dereference move into register with offset "+
-						"with two registers `%s`.",
+					"Bad source expression for move into two "+
+						"register dereference with offset "+
+						"`%s`.",
 					s,
 				)
 		},
 	)
 }
 
-func gcmIntoDeref(
+func movIntoDeref(
 	dest DerefExpr,
 	mov *InstGenericMov,
-	outer * Instruction,
+	outer *Instruction,
 ) (any, error) {
-	switch inner := dest.Inner.Val.(type) {
+	switch innerDest := dest.Inner.Val.(type) {
 	case ConstExpr:
-		return gcmRD(inner, mov)
-	// mov [rx], (expr)
+		return movRD(innerDest, mov, outer)
 	case RegExpr:
-		return gcmRDO1_NO(inner, mov)
-	// mov [rx+1], (expr)
+		return movRDO1_NO(innerDest, mov, outer)
 	case OneRegOffsetExpr:
-		if inner.Offset == nil {
-			return gcmRDO1_NO(RegExpr{
-				Reg: inner.Reg,
-			}, mov)
+		if innerDest.Offset == nil {
+			return movRDO1_NO(RegExpr{
+				Reg: innerDest.Reg,
+			}, mov, outer)
 		} else {
-			return gcmRDO1(inner, mov)
+			return movRDO1(innerDest, mov, outer)
 		}
-	// mov [rx+rx+1], (expr)
 	case TwoRegOffsetExpr:
-		return gcmRDO2(inner, mov)
+		return movRDO2(innerDest, mov, outer)
 	}
-	return nil, errors.
-		MakeParserError(
-			outer.Line,
-			outer.Line,
-			"Bad expression for move into dereference.",
-		)
+	return nil, MakeParserErrorWithExpr(
+		dest.Inner,
+		func(s string) errors.ParserError {
+			return errors.
+				MakeParserError(
+					outer.Line,
+					outer.Line,
+					"Bad destination expression for move into dereference.",
+				)
+		},
+	)
 }
 
 func GetConcreteMovInst(
@@ -461,17 +513,20 @@ func GetConcreteMovInst(
 	outer *Instruction,
 ) (any, error) {
 	switch dest := genericMov.Dest.Val.(type) {
-	// mov rx, (src)
 	case RegExpr:
-		return gcmIntoRegister(dest, &genericMov)
-	// mov [(inner)], (src)
+		return movIntoRegister(dest, &genericMov)
 	case DerefExpr:
-		return gcmIntoDeref(dest, &genericMov, outer)
+		return movIntoDeref(dest, &genericMov, outer)
 	}
-	return nil,
-		errors.MakeParserError(
-			outer.Line,
-			outer.Col,
-			"Bad mov instruction.",
-		)
+	return nil, MakeParserErrorWithExpr(
+		genericMov.Dest,
+		func(s string) errors.ParserError {
+			return errors.MakeParserError(
+				outer.Line,
+				outer.Col,
+				"Bad mov instruction, destination parameter of unsupported type."+
+					" In expression `%s`.",
+			)
+		},
+	)
 }
