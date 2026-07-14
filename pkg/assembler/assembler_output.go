@@ -14,8 +14,7 @@ func (a *Assembler) Assemble() ([]byte, error) {
 	ok, err = a.parser.ParseNext()
 	for ; ok && err == nil; ok, err = a.parser.ParseNext() {
 		inst := a.parser.CurrentInst()
-		a.line = inst.Line
-		a.col = inst.Col
+		a.cInst = &inst
 		switch i := inst.Data.(type) {
 		case pr.InstExport:
 			if err := a.handleExport(i); err != nil {
@@ -34,11 +33,12 @@ func (a *Assembler) Assemble() ([]byte, error) {
 			return nil,
 				errors.
 					MakeAssemblerError(
-						a.line,
-						a.col,
+						a.cInst.Line,
+						a.cInst.Col,
 						"Disallowed top level instruction.",
 					)
 		}
+		a.cInst = nil
 	}
 	if err != nil {
 		return nil, err

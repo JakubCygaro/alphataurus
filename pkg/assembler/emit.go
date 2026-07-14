@@ -12,7 +12,6 @@ func (a *Assembler) EmitBytecode() error {
 	ok, err = a.parser.ParseNext()
 	for ; ok && err == nil; ok, err = a.parser.ParseNext() {
 		inst := a.parser.CurrentInst()
-		a.col, a.line = inst.Col, inst.Line
 		increment := false
 		switch inst.Data.(type) {
 		// in case this is a non-emit declaration, do not allocate instruction space
@@ -39,6 +38,8 @@ func (a *Assembler) EmitBytecode() error {
 // the instruction space must be allocated, ie. *at* is a valid index into a.bytecode
 // otherwise, you are fucked
 func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
+	a.cInst = &inst
+	defer func() { a.cInst = nil }()
 	var err error
 	switch i := inst.Data.(type) {
 	case pr.InstGenericMov:

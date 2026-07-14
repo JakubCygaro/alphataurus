@@ -2,6 +2,7 @@ package errors
 
 import (
 	"fmt"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
 type constructMessage func() string
@@ -25,4 +26,12 @@ func MakeAssemblerError(line, col int, format string, a... any) AssemblerError {
 		},
 	}
 	return err
+}
+func BadRegisterSize(line, col int, r lx.RegisterData) AssemblerError {
+	return MakeAssemblerError(
+		line,
+		col,
+		"Bad register size `%s`.",
+		r.String(),
+	)
 }

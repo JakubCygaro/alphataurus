@@ -11,8 +11,8 @@ func (a *Assembler) handleExport(data pr.InstExport) error {
 		definedAt := a.definedAt[s]
 		return errors.
 			MakeAssemblerError(
-				a.line,
-				a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 				"Multiple symbol `%s` definitions."+
 					"\nFirst defined at (%v:%v).\n",
 				definedAt.Line, definedAt.Col,
@@ -26,13 +26,13 @@ func (a *Assembler) handleExport(data pr.InstExport) error {
 	)
 	if s, err := a.symbols.AddSymbol(sym); err != nil {
 		return errors.MakeAssemblerError(
-			a.line,
-			a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 			"Failed to declare export symbol, %s.",
 			err.Error(),
 		)
 	} else {
-		a.definedAt[s] = Point{a.line, a.col}
+		a.definedAt[s] = Point{a.cInst.Line, a.cInst.Col}
 	}
 	return nil
 }
@@ -41,8 +41,8 @@ func (a *Assembler) handleImport(data pr.InstImport) error {
 		definedAt := a.definedAt[s]
 		return errors.
 			MakeAssemblerError(
-				a.line,
-				a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 				"Multiple symbol `%s` definitions."+
 					"\nFirst defined at (%v:%v).\n",
 				definedAt.Line, definedAt.Col,
@@ -59,13 +59,13 @@ func (a *Assembler) handleImport(data pr.InstImport) error {
 	}
 	if s, err := a.symbols.AddSymbol(sym); err != nil {
 		return errors.MakeAssemblerError(
-			a.line,
-			a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 			"Failed to declare import symbol, %s.",
 			err.Error(),
 		)
 	} else {
-		a.definedAt[s] = Point{a.line, a.col}
+		a.definedAt[s] = Point{a.cInst.Line, a.cInst.Col}
 	}
 	return nil
 }

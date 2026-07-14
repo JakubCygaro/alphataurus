@@ -40,7 +40,7 @@ type Assembler struct {
 	// instructions that depend on expressions that have yet to be evaluated
 	unevalInsts unevaledInstMap
 	//relating to the current instruction
-	line, col int
+	cInst     *pr.Instruction
 	// labels          labelMap
 	lastInst pr.Instruction
 	bytecode []byte
@@ -56,7 +56,7 @@ type Assembler struct {
 	ev          ExpressionEvaluator
 	prov        *assemblerVarProvider
 	// this is used to look up where anything is defined at
-	definedAt   definedAtMap
+	definedAt definedAtMap
 }
 
 type assemblerVarProvider struct {
