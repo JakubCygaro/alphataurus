@@ -184,8 +184,7 @@ type InstCallIPData struct {
 }
 type InstRet struct{}
 type InstLab struct {
-	Label      string
-	DeclaredAt string
+	LabelName      string
 }
 type InstGenericPush struct {
 	Expr   *Expr

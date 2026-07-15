@@ -12,6 +12,7 @@ func (a *Assembler) EmitBytecode() error {
 	ok, err = a.parser.ParseNext()
 	for ; ok && err == nil; ok, err = a.parser.ParseNext() {
 		inst := a.parser.CurrentInst()
+		a.cInst = &inst
 		increment := false
 		switch inst.Data.(type) {
 		// in case this is a non-emit declaration, do not allocate instruction space
@@ -30,6 +31,7 @@ func (a *Assembler) EmitBytecode() error {
 			a.pos += decls.INSTRUCTION_SIZE
 			a.instCount++
 		}
+		a.cInst = nil
 	}
 	return err
 }
@@ -43,7 +45,7 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	var err error
 	switch i := inst.Data.(type) {
 	case pr.InstGenericMov:
-		err = a.emitGenericMov(i, at)
+		err = a.emitGenericMov(i, a.cInst, at)
 	case pr.InstMovIR:
 		err = a.emitMovIR(i, at)
 	case pr.InstMovRR:
@@ -67,7 +69,7 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	case pr.InstMovRDO2:
 		err = a.emitMovRDO2(i, at)
 	case pr.InstGenericArth:
-		err = a.emitGenericArth(i, at)
+		err = a.emitGenericArth(i, a.cInst, at)
 	case pr.InstArthRR:
 		err = a.emitArthRR(i, at)
 	case pr.InstArthIR:
@@ -75,7 +77,7 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	case pr.InstNotR:
 		err = a.emitNot(i, at)
 	case pr.InstGenericLogical:
-		err = a.emitGenericLogical(i, at)
+		err = a.emitGenericLogical(i, a.cInst, at)
 	case pr.InstLogicalRR:
 		err = a.emitLogRR(i, at)
 	case pr.InstLogicalIR:
@@ -85,13 +87,13 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	case pr.InstDec:
 		err = a.emitDec(i, at)
 	case pr.InstGenericCmp:
-		err = a.emitGenericCmp(i, at)
+		err = a.emitGenericCmp(i, a.cInst, at)
 	case pr.InstCmpRR:
 		err = a.emitCmpRR(i, at)
 	case pr.InstCmpIR:
 		err = a.emitCmpIR(i, at)
 	case pr.InstGenericJmp:
-		err = a.emitGenericJmp(i, at)
+		err = a.emitGenericJmp(i, a.cInst, at)
 	case pr.InstJmpI:
 		err = a.emitJmpI(i, at)
 	case pr.InstJmpIP0R:
@@ -101,7 +103,7 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	case pr.InstLab:
 		err = a.declareLabel(i, at)
 	case pr.InstGenericPush:
-		err = a.emitGenericPush(i, at)
+		err = a.emitGenericPush(i, a.cInst, at)
 	case pr.InstPushR:
 		err = a.emitPushR(i, at)
 	case pr.InstPushI:
@@ -113,7 +115,7 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	case pr.InstNop:
 		err = a.emitNop(at)
 	case pr.InstGenericCall:
-		err = a.emitGenericCall(i, at)
+		err = a.emitGenericCall(i, a.cInst, at)
 	case pr.InstCallI:
 		err = a.emitCallI(i, at)
 	case pr.InstCallIP0R:

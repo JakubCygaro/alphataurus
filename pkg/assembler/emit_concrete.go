@@ -75,8 +75,8 @@ func (a *Assembler) emitCallIP1R(data pr.InstCallIP1R, at int) error {
 	if data.Reg.Size != vm.SZ_64 {
 		return errors.
 			BadRegisterSize(
-				a.line,
-				a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 				data.Reg,
 			)
 	}
@@ -160,16 +160,16 @@ func (a *Assembler) emitMovRR(data pr.InstMovRR, at int) error {
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
 		return pe.
 			DisallowedDestReg(
-				a.line,
-				a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 				data.Dest,
 			)
 	}
 	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
 		return pe.
 			DisallowedSrcReg(
-				a.line,
-				a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 				data.Src,
 			)
 	}
@@ -188,8 +188,8 @@ func (a *Assembler) emitMovDRI(data pr.InstMovDR, at int) error {
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
 		return pe.
 			DisallowedDestReg(
-				a.line,
-				a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 				data.Dest,
 			)
 	}
@@ -205,8 +205,8 @@ func (a *Assembler) emitMovDRO1(data pr.InstMovDRO1, at int) error {
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
 		return pe.
 			DisallowedDestReg(
-				a.line,
-				a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 				data.Dest,
 			)
 	}
@@ -227,8 +227,8 @@ func (a *Assembler) emitMovDRO2(data pr.InstMovDRO2, at int) error {
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
 		return pe.
 			DisallowedDestReg(
-				a.line,
-				a.col,
+				a.cInst.Line,
+				a.cInst.Col,
 				data.Dest,
 			)
 	}
@@ -259,7 +259,7 @@ func (a *Assembler) emitMovRD(data pr.InstMovRD, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRD)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
-		return pe.DisallowedSrcReg(a.line, a.col, data.Src)
+		return pe.DisallowedSrcReg(a.cInst.Line, a.cInst.Col, data.Src)
 	}
 	lastByte := 0b0000_1111 & byte(data.Src.Reg)
 	lastByte |= (0b0000_0011 & data.Src.Size) << 4
@@ -294,7 +294,7 @@ func (a *Assembler) emitMovRDO1(data pr.InstMovRDO1, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRDO1)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
-		return pe.DisallowedSrcReg(a.line, a.col, data.Src)
+		return pe.DisallowedSrcReg(a.cInst.Line, a.cInst.Col, data.Src)
 	}
 	lastByte := (0b0000_1111 & byte(data.Src.Reg)) << 4
 	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))

@@ -35,3 +35,16 @@ func BadRegisterSize(line, col int, r lx.RegisterData) AssemblerError {
 		r.String(),
 	)
 }
+func LabelRedeclared(
+	line, col int,
+	labelName string,
+	declaredAtLine, declaredAtCol int,
+) AssemblerError {
+	return MakeAssemblerError(
+		line,
+		col,
+		"Label `%s` redeclared, originally declared at (%v:%v).",
+		labelName,
+		declaredAtLine, declaredAtCol,
+	)
+}

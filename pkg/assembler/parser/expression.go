@@ -75,7 +75,7 @@ func (c ConstExprFLit) ToFloat() float64 {
 	return math.Float64frombits(c.Float)
 }
 
-type ConstExprIden struct {
+type ExprIden struct {
 	Ident string
 }
 type NegExpr struct {
@@ -148,7 +148,7 @@ func IsExpr[E any](e *Expr) bool {
 }
 
 type CExpr interface {
-	ConstExprILit | ConstExprFLit | ConstExprIden
+	ConstExprILit | ConstExprFLit | ExprIden
 }
 
 func IsConstexprType[CT CExpr](e *Expr) (CT, bool) {
@@ -216,7 +216,7 @@ func MakeConstexprAny(v any) (*Expr, error) {
 	case float64:
 		cexpr = ConstExprFLit{Float: math.Float64bits(v)}
 	case string:
-		cexpr = ConstExprIden{Ident: v}
+		cexpr = ExprIden{Ident: v}
 	default:
 		return nil, fmt.
 			Errorf("Unsupported constexpr value type `%T`.", v)
@@ -248,7 +248,7 @@ func MakeConstexprF64(v float64) *Expr {
 func MakeConstexprIdent(v string) *Expr {
 	return &Expr{
 		Val: ConstExpr{
-			Val: ConstExprIden{
+			Val: ExprIden{
 				Ident: v,
 			},
 		},
@@ -355,7 +355,7 @@ func (e *ConstExpr) Emit() string {
 		return fmt.Sprintf("%v", c.Integer)
 	case ConstExprFLit:
 		return fmt.Sprintf("%v", math.Float64frombits(c.Float))
-	case ConstExprIden:
+	case ExprIden:
 		return c.Ident
 	}
 	return ""

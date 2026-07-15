@@ -37,7 +37,11 @@ func evalAll[Inst any](
 	return true, nil
 }
 
-func (a *Assembler) emitGenericArth(data pr.InstGenericArth, at int) error {
+func (a *Assembler) emitGenericArth(
+	data pr.InstGenericArth,
+	outer *pr.Instruction,
+	at int,
+) error {
 	if ok, err := evalAll(a, &data,
 		func(i *pr.InstGenericArth) **pr.Expr {
 			return &(i.Dest)
@@ -49,26 +53,30 @@ func (a *Assembler) emitGenericArth(data pr.InstGenericArth, at int) error {
 		return err
 	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: data,
 		}
 		a.emitNop(at)
-	} else if arth, err := pr.GetConcreteArthInst(data); err != nil {
+	} else if arth, err := pr.GetConcreteArthInst(data, outer); err != nil {
 		return err
 	} else if arth == nil {
 		return fmt.Errorf("TODO: bad arth instruction cannot be deduced to concrete arth")
 	} else {
 		return a.emitInst(pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: arth,
 		}, at)
 	}
 	return nil
 }
 
-func (a *Assembler) emitGenericMov(data pr.InstGenericMov, at int) error {
+func (a *Assembler) emitGenericMov(
+	data pr.InstGenericMov,
+	outer *pr.Instruction,
+	at int,
+) error {
 	if ok, err := evalAll(a, &data,
 		func(i *pr.InstGenericMov) **pr.Expr {
 			return &(i.Src)
@@ -80,26 +88,30 @@ func (a *Assembler) emitGenericMov(data pr.InstGenericMov, at int) error {
 		return err
 	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: data,
 		}
 		a.emitNop(at)
-	} else if mov, err := pr.GetConcreteMovInst(data); err != nil {
+	} else if mov, err := pr.GetConcreteMovInst(data, outer); err != nil {
 		return err
 	} else if mov == nil {
 		return fmt.Errorf("TODO: bad mov instruction cannot be deduced to concrete mov")
 	} else {
 		return a.emitInst(pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: mov,
 		}, at)
 	}
 
 	return nil
 }
-func (a *Assembler) emitGenericLogical(data pr.InstGenericLogical, at int) error {
+func (a *Assembler) emitGenericLogical(
+	data pr.InstGenericLogical,
+	outer *pr.Instruction,
+	at int,
+) error {
 	if ok, err := evalAll(a, &data,
 		func(i *pr.InstGenericLogical) **pr.Expr {
 			return &(i.First)
@@ -111,27 +123,31 @@ func (a *Assembler) emitGenericLogical(data pr.InstGenericLogical, at int) error
 		return err
 	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: data,
 		}
 		a.emitNop(at)
-	} else if mov, err := pr.GetConcreteLogicalInst(data); err != nil {
+	} else if mov, err := pr.GetConcreteLogicalInst(data, outer); err != nil {
 		return err
 	} else if mov == nil {
 		return fmt.
 			Errorf("TODO: bad logical instruction cannot be deduced to concrete logical")
 	} else {
 		return a.emitInst(pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: mov,
 		}, at)
 	}
 
 	return nil
 }
-func (a *Assembler) emitGenericCmp(data pr.InstGenericCmp, at int) error {
+func (a *Assembler) emitGenericCmp(
+	data pr.InstGenericCmp,
+	outer *pr.Instruction,
+	at int,
+) error {
 	if ok, err := evalAll(a, &data,
 		func(i *pr.InstGenericCmp) **pr.Expr {
 			return &(i.Min)
@@ -143,8 +159,8 @@ func (a *Assembler) emitGenericCmp(data pr.InstGenericCmp, at int) error {
 		return err
 	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: data,
 		}
 		a.emitNop(at)
@@ -154,15 +170,19 @@ func (a *Assembler) emitGenericCmp(data pr.InstGenericCmp, at int) error {
 		return fmt.Errorf("TODO: bad mov instruction cannot be deduced to concrete mov")
 	} else {
 		return a.emitInst(pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: mov,
 		}, at)
 	}
 
 	return nil
 }
-func (a *Assembler) emitGenericPush(data pr.InstGenericPush, at int) error {
+func (a *Assembler) emitGenericPush(
+	data pr.InstGenericPush,
+	outer *pr.Instruction,
+	at int,
+) error {
 	if ok, err := evalAll(a, &data,
 		func(i *pr.InstGenericPush) **pr.Expr {
 			return &(i.Expr)
@@ -171,8 +191,8 @@ func (a *Assembler) emitGenericPush(data pr.InstGenericPush, at int) error {
 		return err
 	} else if !ok {
 		a.unevalInsts[at] = pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: data,
 		}
 		a.emitNop(at)
@@ -182,16 +202,20 @@ func (a *Assembler) emitGenericPush(data pr.InstGenericPush, at int) error {
 		return fmt.Errorf("TODO: bad push instruction cannot be deduced to concrete push")
 	} else {
 		return a.emitInst(pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: mov,
 		}, at)
 	}
 
 	return nil
 }
-//TODO: this needs to be adjusted for symbols that are not defined in the current source
-func (a *Assembler) emitGenericJmp(data pr.InstGenericJmp, at int) error {
+
+func (a *Assembler) emitGenericJmp(
+	data pr.InstGenericJmp,
+	outer *pr.Instruction,
+	at int,
+) error {
 	if evaluated, err := evalAll(a, &data,
 		func(i *pr.InstGenericJmp) **pr.Expr {
 			return &(i.Expr)
@@ -207,7 +231,7 @@ func (a *Assembler) emitGenericJmp(data pr.InstGenericJmp, at int) error {
 			Absolute: data.Absolute,
 		}
 		a.emitNop(at)
-	} else if jmp, err := pr.GetConcreteJmpInst(data); err != nil {
+	} else if jmp, err := pr.GetConcreteJmpInst(data, outer); err != nil {
 		return err
 	} else if jmp == nil {
 		return fmt.Errorf("TODO: bad jmp instruction cannot be deduced to concrete jmp")
@@ -219,23 +243,26 @@ func (a *Assembler) emitGenericJmp(data pr.InstGenericJmp, at int) error {
 		return a.emitJmpIP0R(
 			pr.InstJmpIP0R{
 				Offset: diff,
-				OpTy: vm.OP_TADD,
-				JmpTy: jmpi.JmpTy,
+				OpTy:   vm.OP_TADD,
+				JmpTy:  jmpi.JmpTy,
 			},
 			at,
 		)
 	} else {
 		return a.emitInst(pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: jmp,
 		}, at)
 	}
 	return nil
 }
-//TODO: this needs to be adjusted for symbols that are not defined in the current source
-func (a *Assembler) emitGenericCall(data pr.InstGenericCall, at int) error {
-	// call := a.opCodes.GetBytes(vm.OP_CALL)
+
+func (a *Assembler) emitGenericCall(
+	data pr.InstGenericCall,
+	outer *pr.Instruction,
+	at int,
+) error {
 	if evaluated, err := evalAll(a, &data,
 		func(i *pr.InstGenericCall) **pr.Expr {
 			return &(i.Expr)
@@ -244,12 +271,12 @@ func (a *Assembler) emitGenericCall(data pr.InstGenericCall, at int) error {
 		return err
 	} else if !evaluated {
 		a.unresolvedJumps[at] = unresolvedJump{
-			Expr: data.Expr,
-			PatchTy: PatchCall{},
+			Expr:     data.Expr,
+			PatchTy:  PatchCall{},
 			Absolute: false,
 		}
 		a.emitNop(at)
-	} else if call, err := pr.GetConcreteCallInst(data); err != nil {
+	} else if call, err := pr.GetConcreteCallInst(data, outer); err != nil {
 		return err
 	} else if call == nil {
 		return fmt.Errorf("TODO: bad call instruction cannot be deduced to concrete call")
@@ -260,41 +287,16 @@ func (a *Assembler) emitGenericCall(data pr.InstGenericCall, at int) error {
 		return a.emitCallIP0R(
 			pr.InstCallIP0R{
 				Offset: diff,
-				OpTy: vm.OP_TADD,
+				OpTy:   vm.OP_TADD,
 			},
 			at,
 		)
 	} else {
 		return a.emitInst(pr.Instruction{
-			Line: a.line,
-			Col:  a.col,
+			Line: outer.Line,
+			Col:  outer.Col,
 			Data: call,
 		}, at)
 	}
 	return nil
-	//direct call case
-	// evaluated, err := a.ev.TryEvaluateExpression(data.Expr)
-	// if err != nil {
-	// 	return err
-	// } else if evaluated != nil {
-	// 	if addr, ok := pr.IsConstexprType[pr.ConstExprILit](evaluated); !ok {
-	// 		return errors.Expected(
-	// 			"Valid address",
-	// 			data.Expr.Line,
-	// 			data.Expr.Col,
-	// 		)
-	// 	} else {
-	// 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
-	// 		binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(addr.Integer))
-	// 	}
-	// } else {
-	// 	position := at
-	// 	a.unresolvedJumps[position] = unresolvedJump{
-	// 		Expr:    data.Expr,
-	// 		PatchTy: PatchCall{},
-	// 	}
-	// 	binary.BigEndian.AppendUint32(a.bytecode[at:], uint32(a.opCodes.GetBytes(vm.OP_NOP)))
-	// 	binary.BigEndian.AppendUint64(a.bytecode[at+4:], 0)
-	// }
-	// return nil
 }

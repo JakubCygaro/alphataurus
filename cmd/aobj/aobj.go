@@ -14,7 +14,28 @@ import (
 )
 
 var args struct {
-	File string `arg:"positional,required"`
+	File        string `arg:"positional,required"`
+	ShowSymbols bool   `arg:"-s,--list-symbols" help:"list all symbols in the file"`
+}
+
+func showSymbols(header aobj.ObjFileHeader, obj []byte) error {
+	syms, err := aobj.LoadSymbolsWithHeader(header, obj)
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(
+		os.Stdout,
+		"\n=== SYMBOL TABLE === \n",
+	)
+	for i, s := range syms.InOrder {
+		fmt.Fprintf(
+			os.Stdout,
+			"[%d] %s\n",
+			i,
+			s.String(),
+		)
+	}
+	return nil
 }
 
 func main() {
@@ -24,7 +45,7 @@ func main() {
 		os.Stderr.WriteString(err.Error())
 		os.Stderr.WriteString("\n")
 		os.Exit(1)
-	} else if obj, err := aobj.LoadObjFileHeader(
+	} else if objHeader, err := aobj.LoadObjFileHeader(
 		bufio.NewReader(bytes.NewReader(b))); err != nil {
 		os.Stderr.WriteString(err.Error())
 		os.Stderr.WriteString("\n")
@@ -46,19 +67,26 @@ func main() {
 				"rels section size: %v bytes\n"+
 				"rels section at: %v\n"+
 				"",
-			byte(obj.Version>>24), byte(obj.Version>>16),
-			byte(obj.Version>>8), byte(obj.Version),
-			obj.HeaderSize,
-			obj.HasEntry,
-			obj.Entry,
-			obj.CodeSize,
-			obj.CodeStart,
-			obj.StaticDataSize,
-			obj.StaticDataStart,
-			obj.SymbolsSize,
-			obj.StaticDataStart,
-			obj.RelocsSize,
-			obj.RelocsStart,
+			byte(objHeader.Version>>24), byte(objHeader.Version>>16),
+			byte(objHeader.Version>>8), byte(objHeader.Version),
+			objHeader.HeaderSize,
+			objHeader.HasEntry,
+			objHeader.Entry,
+			objHeader.CodeSize,
+			objHeader.CodeStart,
+			objHeader.StaticDataSize,
+			objHeader.StaticDataStart,
+			objHeader.SymbolsSize,
+			objHeader.StaticDataStart,
+			objHeader.RelocsSize,
+			objHeader.RelocsStart,
 		)
+		if args.ShowSymbols {
+			if err := showSymbols(objHeader, b); err != nil {
+				os.Stderr.WriteString(err.Error())
+				os.Stderr.WriteString("\n")
+				os.Exit(1)
+			}
+		}
 	}
 }

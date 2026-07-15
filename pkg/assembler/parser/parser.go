@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 )
 
 type ParserWarningData struct {
@@ -94,8 +94,10 @@ func (p *Parser) ParseNext() (bool, error) {
 		}
 	default:
 		return false, errors.
-			ExtraTokensOnLine(p.currentStartToken.Line, p.currentStartToken.Col,
-				p.currentStartToken.ForceValAsString())
+			ExtraTokensOnLine(
+				p.currentStartToken.Line, p.currentStartToken.Col,
+				p.currentStartToken,
+			)
 	}
 	err = p.lexer.ReadNextToken()
 	if p.lexer.CurrentToken().Ty == lx.TOKEN_TDOUBLESEMICOLON {
@@ -105,7 +107,12 @@ func (p *Parser) ParseNext() (bool, error) {
 		p.lexer.CurrentToken().Ty != lx.TOKEN_TEOF {
 
 		t := p.lexer.CurrentToken()
-		return false, errors.ExtraTokensOnLine(t.Line, t.Col, t.ForceValAsString())
+		return false,
+			errors.
+				ExtraTokensOnLine(
+					t.Line, t.Col,
+					t,
+				)
 	}
 	p.currentInst.Col, p.currentInst.Line =
 		p.currentStartToken.Col, p.currentStartToken.Line
@@ -124,7 +131,7 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 	} else {
 		p.currentInst = Instruction{
 			Data: InstLab{
-				Label: ident,
+				LabelName: ident,
 			},
 		}
 		return nil
@@ -220,7 +227,7 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 		return p.parseExit()
 	}
 	p.currentIdent = ""
-	return errors.UnknownIdentifier(ident, t.Line, t.Col)
+	return errors.UnknownIdentifier(t.Line, t.Col, ident)
 }
 
 func (p *Parser) parseSection() error {
@@ -237,12 +244,20 @@ func (p *Parser) parseSection() error {
 				Data: InstSecCode{},
 			}
 		default:
-			return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
-				"Unknown section name `%s`", ty)
+			return errors.
+				MakeParserError(
+					op.Line, op.Col,
+					"Unknown section name `%s`.",
+					ty,
+				)
 		}
 	default:
-		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
-			"Bad section type argument `%s`", op.ForceValAsString())
+		return errors.
+			MakeParserError(
+				op.Line, op.Col,
+				"Bad section type argument `%s`.",
+				op.ForceValAsString(),
+			)
 	}
 	return nil
 }
@@ -260,17 +275,21 @@ func (p *Parser) parseImport() error {
 		op = p.lexer.CurrentToken()
 	}
 	if op.Ty != lx.TOKEN_TSINGLEQ {
-		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
-			"Expected a single quoted string parameter, got `%s`",
-			op.ForceValAsString())
+		return errors.
+			MakeParserError(
+				op.Line, op.Col,
+				"Expected a single quoted string parameter, got `%s`.",
+				op.ForceValAsString(),
+			)
 	}
 	name := op.Val.(string)
 	if strings.ContainsFunc(name, unicode.IsSpace) {
-		return errors.FailedToParse(p.currentIdent,
-			op.Line, op.Col,
-			"`%s` is not a valid identifier",
-			name,
-		)
+		return errors.
+			MakeParserError(
+				op.Line, op.Col,
+				"`%s` is not a valid identifier",
+				name,
+			)
 	}
 	p.currentInst = Instruction{
 		Data: InstImport{
@@ -288,14 +307,21 @@ func (p *Parser) parseExport() error {
 	}
 	op := p.lexer.CurrentToken()
 	if op.Ty != lx.TOKEN_TSINGLEQ {
-		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
-			"Expected a single quoted string parameter, got `%s`",
-			op.ForceValAsString())
+		return errors.
+			MakeParserError(
+				op.Line, op.Col,
+				"Expected a single quoted string parameter, got `%s`.",
+				op.ForceValAsString(),
+			)
 	}
 	name := op.Val.(string)
 	if strings.ContainsFunc(name, unicode.IsSpace) {
-		return errors.FailedToParse(p.currentIdent, op.Line, op.Col,
-			"`%s` is not a valid identifier", name)
+		return errors.
+			MakeParserError(
+				op.Line, op.Col,
+				"`%s` is not a valid identifier",
+				name,
+			)
 	}
 	p.currentInst = Instruction{
 		Data: InstExport{
@@ -312,8 +338,12 @@ func (p *Parser) ParseAttribute() error {
 	}
 	op := p.lexer.CurrentToken()
 	if op.Ty != lx.TOKEN_TIDENT {
-		return errors.FailedToParse("attribute", op.Line, op.Col,
-			"`%s` is not a valid parameter", op.ForceValAsString())
+		return errors.
+			MakeParserError(
+				op.Line, op.Col,
+				"`%s` is not a valid identifier",
+				op.ForceValAsString(),
+			)
 	}
 	attr := op.Val.(string)
 	switch attr {
@@ -322,28 +352,20 @@ func (p *Parser) ParseAttribute() error {
 			Data: InstEntry{},
 		}
 	default:
-		return errors.FailedToParse("attribute", op.Line, op.Col,
-			"Unrecognized attribute type `%s`", attr)
+		return errors.
+			MakeParserError(
+				op.Line, op.Col,
+				"Unrecognized attribute `%s`.",
+				attr,
+			)
 	}
 	return nil
 }
 func (p *Parser) parseExit() error {
-	// if err := p.lexer.ReadNextToken(); err != nil {
-	// 	return err
-	// }
-	// // start := p.lexer.CurrentToken()
-	// p.lexer.UnreadCurrentToken()
 	expr, err := p.ParseExpression()
 	if err != nil {
 		return err
 	}
-	// if cexpr, ok := pr.TryParseExpression(expr); !ok {
-	// 	em, _ := cexpr.Emit()
-	// 	return errors.FailedToParse(p.currentIdent, start.Line, start.Col,
-	// 		"Non comp-time expression as parameter `%s`."+
-	// 			"\nThe argument to this instruction must be either a valid register "+
-	// 			"or a compile time expression.", em)
-	// } else
 	if v, ok := IsConstexprType[ConstExprILit](expr); ok {
 		p.currentInst = Instruction{
 			Data: InstExitI{
@@ -363,12 +385,5 @@ func (p *Parser) parseExit() error {
 			},
 		}
 	}
-	// else {
-	// 	em, _ := cexpr.Emit()
-	// 	return errors.FailedToParse(p.currentIdent, start.Line, start.Col,
-	// 		"Invalid expression as parameter `%s`."+
-	// 			"\nThe argument to this instruction must be either a valid register "+
-	// 			"or a compile time expression.", em)
-	// }
 	return nil
 }

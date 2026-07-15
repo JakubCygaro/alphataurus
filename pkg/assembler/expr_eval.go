@@ -26,7 +26,7 @@ type ExpressionEvaluator struct {
 // if the value cannot be extracted it is returned as nil
 func (ev *ExpressionEvaluator) extractValue(cexpr pr.ConstExpr) any {
 	switch v := cexpr.Val.(type) {
-	case pr.ConstExprIden:
+	case pr.ExprIden:
 		if ev.Ctx.VarProvider == nil {
 			return nil
 		}

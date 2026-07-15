@@ -72,7 +72,9 @@ func (a *Assembler) resolveJumpInsturctions() error {
 		if eval, ok, err :=
 			a.ev.TryConstEvaluateExpression(unresolved.Expr); err != nil {
 			return err
-		} else if !ok && len(a.prov.LastFailedSymbols) > 0 {
+		} else if _, isIden :=
+			pr.IsConstexprType[pr.ExprIden](unresolved.Expr); isIden &&
+			!ok && len(a.prov.LastFailedSymbols) == 1 {
 			if err :=
 				a.resolveWithSymbols(
 					codePos, unresolved, a.prov.LastFailedSymbols); err != nil {

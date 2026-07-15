@@ -88,3 +88,25 @@ func MismatchedRegisterSizes(
 		reg1, reg2,
 	)
 }
+func ExtraTokensOnLine(
+	line, col int,
+	token lx.Token,
+) ParserError {
+	return MakeParserError(
+		line,
+		col,
+		"Extra tokens on the line `%s`.",
+		token,
+	)
+}
+func UnknownIdentifier(
+	line, col int,
+	iden string,
+) ParserError {
+	return MakeParserError(
+		line,
+		col,
+		"Unknown identifier `%s`.",
+		iden,
+	)
+}
