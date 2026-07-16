@@ -1,9 +1,8 @@
 package assembler
 
 import (
-	"fmt"
 
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
@@ -111,9 +110,10 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 		}
 		if p.lexer.CurrentToken().Ty != lx.TOKEN_TCLOSEDBRACKET {
 			t := p.lexer.CurrentToken()
-			return inner, errors.FailedToParse("dereference expression",
+			return inner, errors.
+				MakeParserError(
 				t.Line, t.Col,
-				"Unclosed bracket in dereference expression, got `%s` instead",
+				"Unclosed bracket in dereference expression, got `%s` instead.",
 				t.ForceValAsString(),
 			)
 		}
@@ -140,12 +140,17 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 					rhs,
 				)
 			default:
-				return lhs, fmt.Errorf("Prefix operator TODO %s", p.lexer.CurrentPosition())
+				return lhs, errors.
+				MakeParserError(
+					lhsToken.Line, lhsToken.Col,
+					"Prefix operator TODO `%s`.",
+					lhsToken,
+				)
 			}
 		} else {
-			return nil, errors.FailedToParse("expression",
+			return nil, errors.MakeParserError(
 				lhsToken.Line, lhsToken.Col,
-				"Disallowed token in expression `%s`",
+				"Disallowed token in expression `%s`.",
 				lhsToken.ForceValAsString(),
 			)
 		}
@@ -234,10 +239,9 @@ func opTyWithTwoOffRegExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
 	switch a := lhs.Val.(type) {
 	case TwoRegOffsetExpr:
 		if !allowedBetweenRegs(op.Ty) || a.Offset != nil {
-			return nil, errors.FailedToParse(
-				"two register offset expression",
+			return nil, errors.MakeParserError(
 				rhs.Line, rhs.Col,
-				"Disallowed operation for two register offset expression `%s`",
+				"Disallowed operation for two register offset expression `%s`.",
 				op.ForceValAsString(),
 			)
 		}
@@ -260,10 +264,9 @@ func opTyWithTwoOffRegExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
 			}, nil
 		}
 	}
-	return nil, errors.FailedToParse(
-		"two register offset expression",
+	return nil, errors.MakeParserError(
 		rhs.Line, rhs.Col,
-		"Bad expression",
+		"Bad expression.",
 	)
 }
 
@@ -317,17 +320,15 @@ func opTyWithOneOffRegExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
 				}, nil
 			}
 		}
-		return nil, errors.FailedToParse(
-			"two register offset expression",
+		return nil, errors.MakeParserError(
 			rhs.Line, rhs.Col,
-			"Disallowed operation between registers `%s`",
+			"Disallowed operation between registers `%s`.",
 			op.ForceValAsString(),
 		)
 	}
-	return nil, errors.FailedToParse(
-		"two register offset expression",
+	return nil, errors.MakeParserError(
 		rhs.Line, rhs.Col,
-		"Bad expression",
+		"Bad expression.",
 	)
 }
 
@@ -336,10 +337,9 @@ func opTyToRegOffExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
 	case RegExpr:
 		if rhs.IsRegexpr() {
 			if !allowedBetweenRegs(op.Ty) {
-				return nil, errors.FailedToParse(
-					"two register offset expression",
+				return nil, errors.MakeParserError(
 					rhs.Line, rhs.Col,
-					"Disallowed operation between registers `%s`",
+					"Disallowed operation between registers `%s`.",
 					op.ForceValAsString(),
 				)
 			}
@@ -357,10 +357,9 @@ func opTyToRegOffExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
 			}, nil
 		}
 	default:
-		return nil, errors.FailedToParse(
-			"single register offset expression",
+		return nil, errors.MakeParserError(
 			lhs.Line, lhs.Col,
-			"Bad expression",
+			"Bad expression.",
 		)
 	}
 }

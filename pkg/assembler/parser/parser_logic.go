@@ -1,8 +1,8 @@
 package assembler
 
 import (
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 )
 
 func (p *Parser) parseLogical(logTy int) error {
@@ -15,10 +15,10 @@ func (p *Parser) parseLogical(logTy int) error {
 	if logTy == LOG_TNOT {
 		if !genericLogical.First.IsRegexpr() {
 			em, _ := genericLogical.First.Emit()
-			return errors.FailedToParse(p.currentIdent,
+			return errors.MakeParserError(
 				genericLogical.First.Line, genericLogical.First.Col,
-				"First operand to instruction must be a valid register.\n"+
-					"In expression `%s`",
+				"First operand to instruction must be a valid register. "+
+					"In expression `%s`.",
 				em,
 			)
 		}
@@ -36,9 +36,9 @@ func (p *Parser) parseLogical(logTy int) error {
 	comma := p.lexer.CurrentToken()
 
 	if comma.Ty != lx.TOKEN_TCOMMA {
-		return errors.FailedToParse(p.currentIdent,
+		return errors.MakeParserError(
 			comma.Line, comma.Col,
-			"Instruction missing a comma, got `%s`",
+			"Instruction missing a comma, got `%s`.",
 			comma.ForceValAsString(),
 		)
 	}
@@ -62,7 +62,8 @@ func (p *Parser) parseLogical(logTy int) error {
 	}
 	genericLogical.LogTy = ty
 	if concrete, err :=
-		GetConcreteLogicalInst(genericLogical); concrete != nil && err == nil {
+		GetConcreteLogicalInst(genericLogical, &p.currentInst); concrete != nil &&
+		err == nil {
 		p.currentInst = Instruction{
 			Data: concrete,
 		}

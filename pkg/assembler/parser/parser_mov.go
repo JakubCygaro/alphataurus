@@ -1,8 +1,8 @@
 package assembler
 
 import (
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 )
 
 func (p *Parser) parseMov() error {
@@ -17,7 +17,7 @@ func (p *Parser) parseMov() error {
 	} else {
 		genericMov.DataSize = &DataSize{
 			Size: sz,
-			Col: op1.Col,
+			Col:  op1.Col,
 			Line: op1.Line,
 		}
 		op1 = lx.Token{}
@@ -32,9 +32,9 @@ func (p *Parser) parseMov() error {
 	}
 	comma := p.lexer.CurrentToken()
 	if comma.Ty != lx.TOKEN_TCOMMA {
-		return errors.FailedToParse(p.currentIdent,
+		return errors.MakeParserError(
 			comma.Line, comma.Col,
-			"Instruction missing a comma, got `%s`",
+			"Instruction missing a comma, got `%s`.",
 			comma.ForceValAsString(),
 		)
 	}
@@ -43,7 +43,8 @@ func (p *Parser) parseMov() error {
 	} else {
 		genericMov.Src = expr
 	}
-	if concrete, err := GetConcreteMovInst(genericMov); concrete != nil && err == nil {
+	if concrete, err :=
+		GetConcreteMovInst(genericMov, &p.currentInst); concrete != nil && err == nil {
 		p.currentInst = Instruction{
 			Data: concrete,
 		}

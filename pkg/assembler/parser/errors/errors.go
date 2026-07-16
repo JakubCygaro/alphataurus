@@ -110,3 +110,30 @@ func UnknownIdentifier(
 		iden,
 	)
 }
+func MissingComma(
+	line, col int,
+) ParserError {
+	return MakeParserError(
+		line,
+		col,
+		"Instruction missing a comma.",
+	)
+}
+func PrematureEndOfInput(
+	line, col int,
+) ParserError {
+	return MakeParserError(
+		line,
+		col,
+		"Premature end of input.",
+	)
+}
+func UnclosedParen(
+	line, col int,
+) ParserError {
+	return MakeParserError(
+		line,
+		col,
+		"Unclosed parentheses.",
+	)
+}

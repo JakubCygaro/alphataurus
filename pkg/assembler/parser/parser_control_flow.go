@@ -1,8 +1,8 @@
 package assembler
 
 import (
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -34,10 +34,8 @@ func (p *Parser) parseCmp() error {
 	}
 	if p.lexer.CurrentToken().Ty != lx.TOKEN_TCOMMA {
 		t := p.lexer.CurrentToken()
-		return errors.FailedToParse(p.currentIdent,
+		return errors.MissingComma(
 			t.Line, t.Col,
-			"Instruction missing a comma, got `%s`",
-			t.ForceValAsString(),
 		)
 	}
 	if expr, err := p.ParseExpression(); err != nil {

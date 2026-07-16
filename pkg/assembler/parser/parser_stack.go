@@ -1,7 +1,7 @@
 package assembler
 
 import (
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
@@ -61,9 +61,9 @@ func (p *Parser) parsePop() error {
 	}
 	if !arg.IsRegexpr() {
 		em, _ := arg.Emit()
-		return errors.FailedToParse(p.currentIdent,
+		return errors.MakeParserError(
 			arg.Line, arg.Col,
-			"Operand to pop instruction can only be a register name or none, got `%s`",
+			"Operand to pop instruction can only be a register name or none, got `%s`.",
 			em)
 	}
 	regData := arg.Val.(RegExpr).Reg

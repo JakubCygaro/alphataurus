@@ -1,8 +1,8 @@
 package assembler
 
 import (
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
@@ -36,10 +36,9 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	comma := p.lexer.CurrentToken()
 
 	if comma.Ty != lx.TOKEN_TCOMMA {
-		return errors.FailedToParse(p.currentIdent,
+		return errors.MissingComma(
 			comma.Line, comma.Col,
-			"Instruction missing a comma, got `%s` instead",
-			comma.ForceValAsString())
+		)
 	}
 	if expr, err := p.parseExpression(0); err != nil {
 		return err
@@ -55,7 +54,8 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	}
 	genericArth.ArthTy = ty
 	genericArth.Ty = valTy
-	if concrete, err := GetConcreteArthInst(genericArth); concrete != nil && err == nil {
+	if concrete, err :=
+		GetConcreteArthInst(genericArth, &p.currentInst); concrete != nil && err == nil {
 		p.currentInst = Instruction{
 			Data: concrete,
 		}
@@ -91,8 +91,11 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 	sizeT := p.lexer.CurrentToken()
 	var size byte
 	if sz, ok := lx.TokenAsSize(&sizeT); !ok {
-		return errors.FailedToParse(p.currentIdent, op1.Line, op1.Col,
-			"Missing data size parameter, got `%s`", sizeT.ForceValAsString())
+		return errors.MakeParserError(
+			op1.Line, op1.Col,
+			"Missing data size parameter, got `%s`.",
+			sizeT.ForceValAsString(),
+		)
 	} else {
 		size = sz
 	}
@@ -105,10 +108,10 @@ func (p *Parser) parseDivOrMul(arthTy int) error {
 		if valTy == -1 {
 			valTy = ARTH_TUNSIGNED
 		} else if valTy != ARTH_TFLOAT {
-			return errors.FailedToParse(p.currentIdent,
-				p.currentStartToken.Line, p.currentStartToken.Col,
+			return errors.MakeParserError(
+				op1.Line, op1.Col,
 				"Invalid data type specifier `%s`. "+
-					"Either no specifier or FLOAT are allowed.",
+					"Either no specifier or only FLOAT is allowed.",
 				op1.ForceValAsString(),
 			)
 		}
@@ -129,21 +132,25 @@ func (p *Parser) parseInc() error {
 	}
 	op1 := p.lexer.CurrentToken()
 	if op1.Ty == lx.TOKEN_TEOF {
-		return errors.PrematureEndOfInput(p.lexer.CurrentToken().Line,
-			p.lexer.CurrentToken().Col)
+		return errors.PrematureEndOfInput(
+			op1.Line,
+			op1.Col,
+		)
 	}
 	if op1.Ty != lx.TOKEN_TREG {
-		return errors.FailedToParse(p.currentIdent,
+		return errors.MakeParserError(
 			op1.Line, op1.Col,
-			"The instruction operand must be a valid register, got `%s`",
-			op1.ForceValAsString())
+			"The instruction operand must be a valid register, got `%s`.",
+			op1.ForceValAsString(),
+		)
 	}
 	switch op1.Val.(lx.RegisterData).Reg {
 	case vm.IP_IDX:
-		return errors.FailedToParse(p.currentIdent,
+		return errors.MakeParserError(
 			op1.Line, op1.Col,
-			"Disallowed operand register `%s`",
-			op1.ForceValAsString())
+			"Disallowed operand register `%s`.",
+			op1.ForceValAsString(),
+		)
 	}
 	p.currentInst = Instruction{
 		Data: InstInc{
@@ -162,17 +169,19 @@ func (p *Parser) parseDec() error {
 		return errors.PrematureEndOfInput(op1.Line, op1.Col)
 	}
 	if op1.Ty != lx.TOKEN_TREG {
-		return errors.FailedToParse(p.currentIdent,
+		return errors.MakeParserError(
 			op1.Line, op1.Col,
-			"The instruction operand must be a valid register, got `%s`",
-			op1.ForceValAsString())
+			"The instruction operand must be a valid register, got `%s`.",
+			op1.ForceValAsString(),
+		)
 	}
 	switch op1.Val.(lx.RegisterData).Reg {
 	case vm.IP_IDX:
-		return errors.FailedToParse(p.currentIdent,
+		return errors.MakeParserError(
 			op1.Line, op1.Col,
-			"Disallowed operand register `%s`",
-			op1.ForceValAsString())
+			"Disallowed operand register `%s`.",
+			op1.ForceValAsString(),
+		)
 	}
 	p.currentInst = Instruction{
 		Data: InstDec{
