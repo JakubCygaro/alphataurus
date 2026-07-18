@@ -19,7 +19,13 @@ func (a *Assembler) resolveWithSymbols(
 	sym := syms[0]
 	_, symIdx, ok := a.symbols.GetByName(sym.GetName())
 	if !ok {
-		return errors.UnresolvedSymbol("TODO: resolveWithSymbols 1")
+		return errors.
+			MakeAssemblerError(
+				unr.At.Line,
+				unr.Expr.Col,
+				"Symbol `%s` could not be resolved.",
+				sym.GetName(),
+			)
 	}
 	switch sym.Vis {
 	case aobj.SYM_VPRIVATE:
@@ -82,15 +88,30 @@ func (a *Assembler) resolveJumpInsturctions() error {
 			}
 			continue
 		} else if !ok && len(a.prov.LastFailedSymbols) == 0 {
-			return errors.UnresolvedSymbol("TODO: unresolved symbol 2")
+			return errors.
+				MakeAssemblerError(
+					unresolved.At.Line,
+					unresolved.Expr.Col,
+					"Unresolved symbol 1.",
+				)
 		} else if cepxr, ok := eval.Val.(pr.ConstExprILit); !ok {
-			return errors.UnresolvedSymbol("TODO: unresolved symbol 3")
+			return errors.
+				MakeAssemblerError(
+					unresolved.At.Line,
+					unresolved.Expr.Col,
+					"Unresolved symbol 2.",
+				)
 		} else {
 			addr = cepxr.Integer
 		}
 		sym, ok := a.symbols.GetByLocation(addr)
 		if !ok {
-			return errors.UnresolvedSymbol("TODO: resolveWithSymbols 1")
+			return errors.
+				MakeAssemblerError(
+					unresolved.At.Line,
+					unresolved.Expr.Col,
+					"Unresolved symbol 3.",
+				)
 		}
 		if err := a.resolveWithSymbols(
 			codePos, unresolved, []*aobj.SymbolData{sym}); err != nil {
@@ -104,12 +125,16 @@ func (a *Assembler) resolveSymbols() error {
 		symbol := a.symbols.InOrder[idx]
 		switch symbol.Vis {
 		case aobj.SYM_VPRIVATE:
-			if symbol.Loc == 0 {
-				return errors.UnresolvedSymbol(sname)
-			}
+			fallthrough
 		case aobj.SYM_VEXPORT:
 			if symbol.Loc == 0 {
-				return errors.UnresolvedSymbol(sname)
+				return errors.
+					MakeAssemblerError(
+						0,
+						0,
+						"Unresolved symbol `%s`.",
+						sname,
+					)
 			}
 		}
 	}

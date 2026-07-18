@@ -96,7 +96,7 @@ func ExtraTokensOnLine(
 		line,
 		col,
 		"Extra tokens on the line `%s`.",
-		token,
+		token.ForceValAsString(),
 	)
 }
 func UnknownIdentifier(

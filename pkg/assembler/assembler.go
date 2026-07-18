@@ -22,6 +22,7 @@ type unresolvedJump struct {
 	PatchTy  any
 	Absolute bool
 	Expr     *pr.Expr
+	At Point
 }
 type unresolvedJumpMap map[int]unresolvedJump
 type unevaledInstMap map[int]pr.Instruction

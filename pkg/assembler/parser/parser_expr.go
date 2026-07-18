@@ -144,7 +144,7 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 				MakeParserError(
 					lhsToken.Line, lhsToken.Col,
 					"Prefix operator TODO `%s`.",
-					lhsToken,
+					lhsToken.ForceValAsString(),
 				)
 			}
 		} else {

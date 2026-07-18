@@ -15,6 +15,7 @@ func (a *Assembler) handleExport(data pr.InstExport) error {
 				a.cInst.Col,
 				"Multiple symbol `%s` definitions."+
 					"\nFirst defined at (%v:%v).\n",
+				data.Name,
 				definedAt.Line, definedAt.Col,
 			)
 	}
@@ -26,8 +27,8 @@ func (a *Assembler) handleExport(data pr.InstExport) error {
 	)
 	if s, err := a.symbols.AddSymbol(sym); err != nil {
 		return errors.MakeAssemblerError(
-				a.cInst.Line,
-				a.cInst.Col,
+			a.cInst.Line,
+			a.cInst.Col,
 			"Failed to declare export symbol, %s.",
 			err.Error(),
 		)
@@ -45,6 +46,7 @@ func (a *Assembler) handleImport(data pr.InstImport) error {
 				a.cInst.Col,
 				"Multiple symbol `%s` definitions."+
 					"\nFirst defined at (%v:%v).\n",
+				data.Name,
 				definedAt.Line, definedAt.Col,
 			)
 	}
@@ -59,8 +61,8 @@ func (a *Assembler) handleImport(data pr.InstImport) error {
 	}
 	if s, err := a.symbols.AddSymbol(sym); err != nil {
 		return errors.MakeAssemblerError(
-				a.cInst.Line,
-				a.cInst.Col,
+			a.cInst.Line,
+			a.cInst.Col,
 			"Failed to declare import symbol, %s.",
 			err.Error(),
 		)

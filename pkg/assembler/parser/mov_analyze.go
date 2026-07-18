@@ -526,6 +526,7 @@ func GetConcreteMovInst(
 				outer.Col,
 				"Bad mov instruction, destination parameter of unsupported type."+
 					" In expression `%s`.",
+				s,
 			)
 		},
 	)

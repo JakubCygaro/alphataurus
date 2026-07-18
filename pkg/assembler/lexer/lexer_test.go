@@ -385,7 +385,7 @@ func TestLitPrematureEndF(t *testing.T) {
 	}
 }
 func TestUnclosedSingleQuoteF(t *testing.T) {
-	const REGEX string = "(1:\\d+).*Unclosed single quote"
+	const REGEX string = "(1:\\d+).*Unclosed single-quote string."
 	input := "'This should fail"
 	reader := bufio.NewReader(strings.NewReader(string(input)))
 	l := NewLexer(reader)
@@ -399,7 +399,7 @@ func TestUnclosedSingleQuoteF(t *testing.T) {
 	}
 }
 func TestSingleQuoteNewLineF(t *testing.T) {
-	const REGEX string = "(2:\\d+).*Single quote broken by a newline"
+	const REGEX string = "(2:\\d+).*Single-quote string broken by newline character."
 	input := `'This should fail
 	'`
 	reader := bufio.NewReader(strings.NewReader(string(input)))

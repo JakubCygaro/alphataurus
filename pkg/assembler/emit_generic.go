@@ -229,6 +229,7 @@ func (a *Assembler) emitGenericJmp(
 				Variant: data.Variant,
 			},
 			Absolute: data.Absolute,
+			At:       Point{outer.Line, outer.Col},
 		}
 		a.emitNop(at)
 	} else if jmp, err := pr.GetConcreteJmpInst(data, outer); err != nil {
@@ -274,6 +275,7 @@ func (a *Assembler) emitGenericCall(
 			Expr:     data.Expr,
 			PatchTy:  PatchCall{},
 			Absolute: false,
+			At:       Point{outer.Line, outer.Col},
 		}
 		a.emitNop(at)
 	} else if call, err := pr.GetConcreteCallInst(data, outer); err != nil {

@@ -14,8 +14,13 @@ type AssemblerError struct {
 }
 
 func (e AssemblerError) Error() string {
-	return fmt.
-		Sprintf("(%v:%v): %s", e.Line, e.Col, e.construct())
+	if e.Line == 0 {
+		return fmt.
+			Sprintf("%s", e.construct())
+	} else {
+		return fmt.
+			Sprintf("(%v:%v): %s", e.Line, e.Col, e.construct())
+	}
 }
 func MakeAssemblerError(line, col int, format string, a... any) AssemblerError {
 	err := AssemblerError{
