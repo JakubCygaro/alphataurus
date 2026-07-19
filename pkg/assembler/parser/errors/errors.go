@@ -112,11 +112,13 @@ func UnknownIdentifier(
 }
 func MissingComma(
 	line, col int,
+	got lx.Token,
 ) ParserError {
 	return MakeParserError(
 		line,
 		col,
-		"Instruction missing a comma.",
+		"Instruction missing a comma, got `%s` instead.",
+		got.ForceValAsString(),
 	)
 }
 func PrematureEndOfInput(

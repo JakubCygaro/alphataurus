@@ -20,6 +20,10 @@ type Parser struct {
 	currentStartToken lx.Token
 	// pointer to a function that recieves warnings emitted by the parser
 	WarningSink func(ParserWarningData)
+	// when parsing instructions of Generic...Inst variant immediately attempt
+	// to coalesce them into proper non-generic Instructions, this makes it impossible
+	// for the assembler to later reparse them after expression evaluations
+	ForceCoalesceGenerics bool
 }
 
 func pInitialState() Parser {

@@ -20,7 +20,7 @@ func asInstErrP(inst, err string, col int) instErrP {
 
 var instWithError = []instErrP{
 	asInstErrP("mov r0, 100 these are extra tokens",
-		".*Extra tokens the on line `these`", 13),
+		".*Extra tokens on the line `these`", 13),
 	asInstErrP("zupaeaea",
 		".*Unknown identifier `zupaeaea`", 1),
 	asInstErrP("section '.nothing'",
@@ -31,8 +31,8 @@ var instWithError = []instErrP{
 		".*Expected a single quoted string parameter, got `123123`", 8),
 	asInstErrP("import 'asdasd asdasd'",
 		".*`asdasd asdasd` is not a valid identifier", 8),
-	asInstErrP("add 105",
-		".*First operand to instruction must be a valid register, got `105`", 5),
+	asInstErrP("add 105, r0",
+		".*Disallowed destination `105`", 5),
 	asInstErrP("add 'text'",
 		".*Disallowed token in expression `'text'`", 5),
 	asInstErrP("add ip, 100",
@@ -69,6 +69,7 @@ func TestParsingErrorsF(t *testing.T) {
 		errorLine += 3
 		asm := strings.Join(lines, "\n")
 		p := NewParser(bufio.NewReader(strings.NewReader(asm)))
+		p.ForceCoalesceGenerics = true
 		var err error
 		for {
 			var ok bool

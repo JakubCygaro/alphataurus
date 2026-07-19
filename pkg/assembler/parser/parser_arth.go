@@ -38,6 +38,7 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 	if comma.Ty != lx.TOKEN_TCOMMA {
 		return errors.MissingComma(
 			comma.Line, comma.Col,
+			comma,
 		)
 	}
 	if expr, err := p.parseExpression(0); err != nil {
@@ -59,6 +60,8 @@ func (p *Parser) parseAddOrSub(arthTy int) error {
 		p.currentInst = Instruction{
 			Data: concrete,
 		}
+	} else if err != nil && p.ForceCoalesceGenerics {
+		return err
 	} else {
 		p.currentInst = Instruction{
 			Data: genericArth,

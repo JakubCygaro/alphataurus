@@ -1,8 +1,8 @@
 package assembler
 
 import (
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 )
 
 func (p *Parser) parsePush() error {
@@ -15,7 +15,7 @@ func (p *Parser) parsePush() error {
 	if sz, ok := lx.TokenAsSize(&nextT); ok {
 		genericPush.DataSz = &DataSize{
 			Line: nextT.Line,
-			Col: nextT.Col,
+			Col:  nextT.Col,
 			Size: sz,
 		}
 	} else {
@@ -31,6 +31,8 @@ func (p *Parser) parsePush() error {
 		p.currentInst = Instruction{
 			Data: concrete,
 		}
+	} else if err != nil && p.ForceCoalesceGenerics {
+		return err
 	} else {
 		p.currentInst = Instruction{
 			Data: genericPush,

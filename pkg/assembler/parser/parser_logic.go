@@ -36,10 +36,9 @@ func (p *Parser) parseLogical(logTy int) error {
 	comma := p.lexer.CurrentToken()
 
 	if comma.Ty != lx.TOKEN_TCOMMA {
-		return errors.MakeParserError(
+		return errors.MissingComma(
 			comma.Line, comma.Col,
-			"Instruction missing a comma, got `%s`.",
-			comma.ForceValAsString(),
+			comma,
 		)
 	}
 	if expr, err := p.ParseExpression(); err != nil {
@@ -67,6 +66,8 @@ func (p *Parser) parseLogical(logTy int) error {
 		p.currentInst = Instruction{
 			Data: concrete,
 		}
+	} else if err != nil && p.ForceCoalesceGenerics {
+		return err
 	} else {
 		p.currentInst = Instruction{
 			Data: genericLogical,

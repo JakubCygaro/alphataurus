@@ -36,6 +36,7 @@ func (p *Parser) parseCmp() error {
 		t := p.lexer.CurrentToken()
 		return errors.MissingComma(
 			t.Line, t.Col,
+			p.lexer.CurrentToken(),
 		)
 	}
 	if expr, err := p.ParseExpression(); err != nil {
@@ -47,6 +48,8 @@ func (p *Parser) parseCmp() error {
 		p.currentInst = Instruction{
 			Data: concrete,
 		}
+	} else if err != nil && p.ForceCoalesceGenerics {
+		return err
 	} else {
 		p.currentInst = Instruction{
 			Data: genericCmp,
