@@ -50,6 +50,33 @@ var instWithError = []instErrP{
 	asInstErrP("call [r0+r0]",
 		".*Expected IP register in IP relative call instruction. "+
 			"Got `r0` and `r0` instead.", 6),
+	asInstErrP("add ip, 10",
+		".*Disallowed destination register `ip`", 5),
+	asInstErrP("add r0, ip",
+		".*Disallowed source register `ip`", 9),
+	asInstErrP("add r0, bad_source",
+		".*Disallowed source `bad_source`", 9),
+	asInstErrP("jmp 1.002",
+		".*Disallowed expression used as jump address `1.002`. Value is not an integer.",
+		5),
+	asInstErrP("call [r0]",
+		".*Expected IP register in IP relative call instruction. "+
+			"Got `r0` instead.", 6),
+	asInstErrP("call [ip+1.002]",
+		".*Bad offset value in IP relative call instruction. "+
+			"Got expressiom `1.002` which does not evaluate to a valid offset.", 6),
+	asInstErrP("call [ip+r0+1.002]",
+		".*Bad offset value in IP relative call instruction. "+
+			"Got expressiom `1.002` which does not evaluate to a valid offset.", 6),
+	asInstErrP("jmp [r0]",
+		".*Expected IP register in IP relative jump instruction. "+
+			"Got `r0` instead.", 6),
+	asInstErrP("jmp [ip+1.002]",
+		".*Bad offset value in IP relative jump instruction. "+
+			"Got expressiom `1.002` which does not evaluate to a valid offset.", 6),
+	asInstErrP("jmp [ip+r0+1.002]",
+		".*Bad offset value in IP relative jump instruction. "+
+			"Got expressiom `1.002` which does not evaluate to a valid offset.", 6),
 }
 
 func TestParsingErrorsF(t *testing.T) {
