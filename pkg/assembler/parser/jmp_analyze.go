@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -129,17 +130,17 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, err
 				"Invalid jump instruction address expression.",
 			)
 }
-func GetConcreteCallInst(genericCmp InstGenericCall, outer *Instruction) (any, error) {
-	switch addr := genericCmp.Expr.Val.(type) {
+func GetConcreteCallInst(genericCall InstGenericCall, outer *Instruction) (any, error) {
+	switch addr := genericCall.Expr.Val.(type) {
 	case ConstExpr:
 		if i, ok := addr.Val.(ConstExprILit); !ok {
 			return nil, MakeParserErrorWithExpr(
-				genericCmp.Expr,
+				genericCall.Expr,
 				func(s string) errors.ParserError {
 					return errors.
 						MakeParserError(
-							genericCmp.Expr.Line,
-							genericCmp.Expr.Col,
+							genericCall.Expr.Line,
+							genericCall.Expr.Col,
 							"Disallowed expression used as call address `%s`. "+
 								"Value is not an integer.",
 							s,
@@ -219,7 +220,7 @@ func GetConcreteCallInst(genericCmp InstGenericCall, outer *Instruction) (any, e
 				return nil, MakeParserErrorWithExpr(
 					deref.Offset,
 					func(s string) errors.ParserError {
-					return errors.
+						return errors.
 							MakeParserError(
 								addr.Inner.Line,
 								addr.Inner.Col,
@@ -231,8 +232,23 @@ func GetConcreteCallInst(genericCmp InstGenericCall, outer *Instruction) (any, e
 					},
 				)
 			} else {
+				var oReg lx.RegisterData
+				if deref.Reg2.Reg != vm.IP_IDX {
+					oReg = deref.Reg2
+				} else {
+					oReg = deref.Reg1
+				}
+				if oReg.Size != vm.SZ_64 {
+					return nil, errors.
+						MakeParserError(
+							genericCall.Expr.Line,
+							genericCall.Expr.Col,
+							"Bad register size `%s`, expected a WORD sized register.",
+							oReg.String(),
+						)
+				}
 				return InstCallIP1R{
-					Reg:    deref.Reg2,
+					Reg:    oReg,
 					Offset: off,
 					OpTy:   deref.RegOp,
 				}, nil
@@ -242,8 +258,8 @@ func GetConcreteCallInst(genericCmp InstGenericCall, outer *Instruction) (any, e
 	return nil,
 		errors.
 			MakeParserError(
-				genericCmp.Expr.Line,
-				genericCmp.Expr.Col,
+				genericCall.Expr.Line,
+				genericCall.Expr.Col,
 				"Invalid call instruction address expression.",
 			)
 }

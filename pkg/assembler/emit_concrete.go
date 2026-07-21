@@ -3,7 +3,6 @@ package assembler
 import (
 	"encoding/binary"
 
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	pr "github.com/JakubCygaro/alphataurus/pkg/assembler/parser"
 	pe "github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
@@ -72,14 +71,6 @@ func (a *Assembler) emitCallIP1R(data pr.InstCallIP1R, at int) error {
 	var reg byte
 	reg = byte(data.OpTy)
 	reg <<= 4
-	if data.Reg.Size != vm.SZ_64 {
-		return errors.
-			BadRegisterSize(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Reg,
-			)
-	}
 	reg |= byte(data.Reg.Reg & 0x0f)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
 	a.bytecode[at] = reg

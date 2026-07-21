@@ -45,6 +45,8 @@ var instWithError = []instErrP{
 		".*Disallowed source register `ip`", 9),
 	asInstErrP("add noncomptime, r0",
 		".*Disallowed destination `noncomptime`.", 5),
+	asInstErrP("call [ip+r0b]",
+		".*Bad register size `r0b`, expected a WORD sized register.", 6),
 
 }
 

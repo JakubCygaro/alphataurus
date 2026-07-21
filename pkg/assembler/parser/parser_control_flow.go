@@ -75,8 +75,17 @@ func (p *Parser) parseJmp(ty JmpVariant) error {
 	}
 	genericJmp.Absolute = absolute
 	genericJmp.Variant = ty
-	p.currentInst = Instruction{
-		Data: genericJmp,
+	if concrete, err :=
+		GetConcreteJmpInst(genericJmp, &p.currentInst); concrete != nil && err == nil {
+		p.currentInst = Instruction{
+			Data: concrete,
+		}
+	} else if err != nil && p.ForceCoalesceGenerics {
+		return err
+	} else {
+		p.currentInst = Instruction{
+			Data: genericJmp,
+		}
 	}
 	return nil
 }
@@ -87,8 +96,17 @@ func (p *Parser) parseCall() error {
 	} else {
 		genericCall.Expr = param
 	}
-	p.currentInst = Instruction{
-		Data: genericCall,
+	if concrete, err :=
+		GetConcreteCallInst(genericCall, &p.currentInst); concrete != nil && err == nil {
+		p.currentInst = Instruction{
+			Data: concrete,
+		}
+	} else if err != nil && p.ForceCoalesceGenerics {
+		return err
+	} else {
+		p.currentInst = Instruction{
+			Data: genericCall,
+		}
 	}
 	return nil
 }
