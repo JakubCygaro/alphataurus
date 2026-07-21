@@ -47,7 +47,9 @@ var instWithError = []instErrP{
 		".*Disallowed destination `noncomptime`.", 5),
 	asInstErrP("call [ip+r0b]",
 		".*Bad register size `r0b`, expected a WORD sized register.", 6),
-
+	asInstErrP("call [r0+r0]",
+		".*Expected IP register in IP relative call instruction. "+
+			"Got `r0` and `r0` instead.", 6),
 }
 
 func TestParsingErrorsF(t *testing.T) {

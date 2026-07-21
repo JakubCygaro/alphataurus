@@ -159,8 +159,8 @@ func GetConcreteCallInst(genericCall InstGenericCall, outer *Instruction) (any, 
 				return nil,
 					errors.
 						MakeParserError(
-							addr.Inner.Line,
-							addr.Inner.Col,
+							genericCall.Expr.Line,
+							genericCall.Expr.Col,
 							"Expected IP register in IP relative call instruction. "+
 								"Got `%s` instead.",
 							deref.Reg.String(),
@@ -175,8 +175,8 @@ func GetConcreteCallInst(genericCall InstGenericCall, outer *Instruction) (any, 
 				return nil,
 					errors.
 						MakeParserError(
-							addr.Inner.Line,
-							addr.Inner.Col,
+							genericCall.Expr.Line,
+							genericCall.Expr.Col,
 							"Expected IP register in IP relative call instruction. "+
 								"Got `%s` instead.",
 							deref.Reg.String(),
@@ -188,8 +188,8 @@ func GetConcreteCallInst(genericCall InstGenericCall, outer *Instruction) (any, 
 					func(s string) errors.ParserError {
 						return errors.
 							MakeParserError(
-								addr.Inner.Line,
-								addr.Inner.Col,
+							genericCall.Expr.Line,
+							genericCall.Expr.Col,
 								"Bad offset value in IP relative call instruction. "+
 									"Got expressiom `%s` which does not evaluate "+
 									"to a valid offset.",
@@ -208,8 +208,8 @@ func GetConcreteCallInst(genericCall InstGenericCall, outer *Instruction) (any, 
 				return nil,
 					errors.
 						MakeParserError(
-							addr.Inner.Line,
-							addr.Inner.Col,
+							genericCall.Expr.Line,
+							genericCall.Expr.Col,
 							"Expected IP register in IP relative call instruction. "+
 								"Got `%s` and `%s` instead.",
 							deref.Reg1.String(),
@@ -222,8 +222,8 @@ func GetConcreteCallInst(genericCall InstGenericCall, outer *Instruction) (any, 
 					func(s string) errors.ParserError {
 						return errors.
 							MakeParserError(
-								addr.Inner.Line,
-								addr.Inner.Col,
+							genericCall.Expr.Line,
+							genericCall.Expr.Col,
 								"Bad offset value in IP relative call instruction. "+
 									"Got expressiom `%s` which does not evaluate "+
 									"to a valid offset.",
