@@ -95,7 +95,7 @@ func main() {
 		objects = append(objects, linker.Bytes(bytecode))
 	}
 	ld := linker.NewLinker()
-	elf, err := ld.Link(objects)
+	elf, err := ld.Link(objects, linker.DefaultLinkingOpts())
 	os.WriteFile("dump", elf.Write(), os.FileMode(os.O_TRUNC))
 	if err != nil {
 		os.Stderr.WriteString("linking error\n")

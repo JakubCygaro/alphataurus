@@ -8,8 +8,36 @@ import (
 	"os"
 
 	aelf "github.com/JakubCygaro/alphataurus/pkg/vm/aelf"
+	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/obj"
 )
+
+type Option[T any] struct {
+	val T
+	has bool
+}
+
+// func (opt *Option[T]) HasValue() bool {
+// 	return opt.has
+// }
+// func (opt *Option[T]) Set(val T) {
+// 	opt.val, opt.has = val, true
+// }
+// func (opt *Option[T]) Get() T {
+// 	if !opt.has {
+// 		panic("called Get on empty Option[T]")
+// 	}
+// 	return opt.val
+// }
+
+type LinkingOptions struct {
+	EntryFile string
+	EntryLab  string
+}
+
+func DefaultLinkingOpts() LinkingOptions {
+	return LinkingOptions{}
+}
 
 type objFileData struct {
 	IsInMemory bool
@@ -86,6 +114,7 @@ type Linker struct {
 	objectFiles []objFileData
 	globals     globalSymbolTable
 	relocations map[objFileIdx]fileReloc
+	opts        LinkingOptions
 }
 
 func NewLinker() Linker {
@@ -109,8 +138,12 @@ func (l *Linker) readGlobalSymbols(objidx objFileIdx, obj *vm.ObjFile) error {
 }
 
 func (l *Linker) collectSources(sources []LinkerInput) error {
+	foundEntry := l.opts.EntryFile == ""
 	for _, src := range sources {
 		meta := src.GetMetadata()
+		if !foundEntry && meta.IsFile && meta.FilePath == l.opts.EntryFile {
+			foundEntry = true
+		}
 		source, err := src.ToBytes()
 		if err != nil {
 			return err
@@ -118,6 +151,10 @@ func (l *Linker) collectSources(sources []LinkerInput) error {
 		if err := l.collect(source, meta); err != nil {
 			return err
 		}
+	}
+	if !foundEntry {
+		return fmt.
+			Errorf("TODO: specified entry point file `%s` not found", l.opts.EntryFile)
 	}
 	return nil
 }
@@ -143,6 +180,7 @@ func (l *Linker) link() (aelf.AlphaELFFile, error) {
 	ret := aelf.AlphaELFFile{}
 	collectedCode := make([]byte, 0)
 	codeBaseOff := uint64(0)
+	overrideEntry := l.opts.EntryFile != ""
 	for idx, obj := range l.objectFiles {
 		if err := l.readGlobalSymbols(objFileIdx(idx),
 			&(l.objectFiles[idx].Loaded)); err != nil {
@@ -155,7 +193,27 @@ func (l *Linker) link() (aelf.AlphaELFFile, error) {
 		l.relocations[objFileIdx(idx)] = fileReloc{
 			CodeSecOff: codeBaseOff,
 		}
-		if obj.Loaded.Header.HasEntry && !ret.HasEntry {
+		if overrideEntry && obj.Path == l.opts.EntryFile {
+			if l.opts.EntryLab == "" && !obj.Loaded.Header.HasEntry {
+				return ret, fmt.
+					Errorf("TODO: File `%s` does not declare an entry point",
+						l.opts.EntryFile)
+			} else if obj.Loaded.Header.HasEntry {
+				ret.HasEntry = true
+				ret.Entry = obj.Loaded.Header.Entry + codeBaseOff
+			} else {
+				if s, _, ok :=
+					obj.Loaded.Symbols.GetByName(l.opts.EntryLab); !ok {
+					return ret, fmt.
+						Errorf("TODO: File `%s` does not declare symbol `%s`",
+							l.opts.EntryFile,
+							l.opts.EntryLab)
+				} else {
+					ret.HasEntry = true
+					ret.Entry = s.Loc + codeBaseOff + decls.INSTRUCTION_SIZE
+				}
+			}
+		} else if obj.Loaded.Header.HasEntry && !ret.HasEntry {
 			ret.HasEntry = true
 			ret.Entry = obj.Loaded.Header.Entry + codeBaseOff
 		} else if obj.Loaded.Header.HasEntry {
@@ -206,8 +264,12 @@ func (l *Linker) link() (aelf.AlphaELFFile, error) {
 	return ret, nil
 }
 
-func (l *Linker) Link(sources []LinkerInput) (aelf.AlphaELFFile, error) {
+func (l *Linker) Link(
+	sources []LinkerInput,
+	opts LinkingOptions,
+) (aelf.AlphaELFFile, error) {
 	ret := aelf.AlphaELFFile{}
+	l.opts = opts
 	if err := l.collectSources(sources); err != nil {
 		return ret, err
 	}

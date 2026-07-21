@@ -1,21 +1,8 @@
 - fix the bullshit that is col and line
-- add remaining jump instructions
-- better commutative expressions comp-time evalutaion wit fat trees,
- basically the Add and Mul Expression nodes keep a list of children expressions
- instead of being binary.
-
-    +
-   /|\
-  / | \
-  1 2 -
-      |\
-      | \
-      2 3
 - variables in the assembler, basically how its done in FASM
 - assignment statement, that can be used in any section
 ```
 thing = 1234
-
 
 ```
 - special variables like in FASM: $, ., etc.
