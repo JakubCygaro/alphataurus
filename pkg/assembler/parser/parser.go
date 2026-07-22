@@ -146,6 +146,8 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 		return p.parseMov()
 	case "movsx":
 		return p.parseSXMov()
+	case "movzx":
+		return p.parseZXMov()
 	case "add":
 		return p.parseAddOrSub(ARTH_TADD)
 	case "sub":

@@ -49,16 +49,20 @@ func (r *Register) CopyFromRegisterWithSizeSx(
 	src *Register,
 	sz, srcSz byte,
 ){
-	// dstBytes := DataSizeToByteCount(sz)
+	scratch := Register{}
 	srcBytes := DataSizeToByteCount(srcSz)
 	if ((*src)[8-srcBytes] & 0b1000_0000) != 0  {
-		r.PutValWithSize(sz, 0xffff_ffff_ffff_ffff)
+		scratch.PutValWithSize(sz, 0xffff_ffff_ffff_ffff)
 	} else {
-		r.PutValWithSize(sz, 0x0)
+		scratch.PutValWithSize(sz, 0x0)
 	}
 	copy(
-		(*r)[8-srcBytes:],
+		scratch[8-srcBytes:],
 		(*src)[8-srcBytes:],
+	)
+	copy(
+		(*r)[:],
+		scratch[:],
 	)
 }
 func (r *Register) CopyFromRegisterWithSize(other *Register, dataSz byte){

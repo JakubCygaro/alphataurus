@@ -4,14 +4,14 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
+	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/assembler"
+	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/linker"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 	aelf "github.com/JakubCygaro/alphataurus/pkg/vm/aelf"
-	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
-	"math"
-	tc "github.com/JakubCygaro/alphataurus/internal/pkg/tests_commons"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/decls"
+	"math"
 	"strings"
 )
 
@@ -53,7 +53,7 @@ func assembleAndLink(source ...string) (aelf.AlphaELFFile, error) {
 		}
 	}
 	ld := linker.NewLinker()
-	linked, err := ld.Link(assembled)
+	linked, err := ld.Link(assembled, linker.DefaultLinkingOpts())
 	if err != nil {
 		err = fmt.Errorf("Linking error: %v", err)
 	}

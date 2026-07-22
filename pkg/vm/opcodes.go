@@ -113,7 +113,8 @@ var (
 		12: handle(OP_RSHIR),
 		13: handle(OP_CMPIR),
 		14: handle(OP_MOVSXRR),
-		15: handle(OP_MOVSXDRI),
+		15: handle(OP_MOVZXRR),
+		16: handle(OP_MOVZXIR),
 	})
 	p01XX = nested(opCodeMap{
 		// stack manipulation, leave a byte for data size
@@ -129,7 +130,6 @@ var (
 		3: handle(OP_MOVRDO1),
 		4: handle(OP_MOVIDO1_NO),
 		5: handle(OP_MOVIDO1),
-		6: handle(OP_MOVSXDRO1),
 	})
 	p0XXX = nested(opCodeMap{
 		0: p00XX,
@@ -142,7 +142,6 @@ var (
 		2: handle(OP_MOVIDO2_NO),
 		3: handle(OP_MOVIDO2),
 		4: handle(OP_MOVDRO2),
-		5: handle(OP_MOVSXDRO2),
 	}
 )
 
@@ -183,9 +182,9 @@ const (
 	OP_MOVIDO2                     // move immediate value to deref with two offset registers
 	// move with sign expand
 	OP_MOVSXRR
-	OP_MOVSXDRI
-	OP_MOVSXDRO1
-	OP_MOVSXDRO2
+	// move with zero expand
+	OP_MOVZXRR
+	OP_MOVZXIR
 	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR

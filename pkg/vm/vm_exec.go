@@ -70,11 +70,15 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 	opcode := state.currentOpcode
 	switch opcode {
 	case OP_MOVRR:
-		err = state.movRR(opCodeBytes[0], param, false)
+		err = state.movRR(opCodeBytes[0], param, false, false)
 	case OP_MOVSXRR:
-		err = state.movRR(opCodeBytes[0], param, true)
+		err = state.movRR(opCodeBytes[0], param, true, false)
+	case OP_MOVZXRR:
+		err = state.movRR(opCodeBytes[0], param, false, true)
+	case OP_MOVZXIR:
+		err = state.movIR(opCodeBytes[0], param, true)
 	case OP_MOVIR:
-		err = state.movIR(opCodeBytes[0], param)
+		err = state.movIR(opCodeBytes[0], param, false)
 	case OP_MOVDRI:
 		err = state.movDRI(opCodeBytes[0], param)
 	case OP_MOVID:

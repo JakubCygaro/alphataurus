@@ -48,10 +48,14 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitGenericMov(i, a.cInst, at)
 	case pr.InstMovIR:
 		err = a.emitMovIR(i, at)
+	case pr.InstMovZXIR:
+		err = a.emitMovZXIR(i, at)
 	case pr.InstMovRR:
 		err = a.emitMovRR(i, at)
 	case pr.InstMovSXRR:
 		err = a.emitMovSXRR(i, at)
+	case pr.InstMovZXRR:
+		err = a.emitMovZXRR(i, at)
 	case pr.InstMovDR:
 		err = a.emitMovDRI(i, at)
 	case pr.InstMovDRO1:

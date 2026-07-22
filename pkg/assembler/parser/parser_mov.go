@@ -74,3 +74,27 @@ func (p *Parser) parseSXMov() error {
 	}
 	return nil
 }
+func (p *Parser) parseZXMov() error {
+	if err := p.parseMov(); err != nil {
+		return err
+	}
+	switch mov := p.currentInst.Data.(type) {
+	case InstMovRR:
+		p.currentInst.Data = InstMovZXRR{
+			Src:  mov.Src,
+			Dest: mov.Dest,
+		}
+	case InstMovIR:
+		p.currentInst.Data = InstMovZXIR{
+			Dest: mov.Dest,
+			Imm: mov.Imm,
+		}
+	default:
+		return errors.MakeParserError(
+			p.currentInst.Line,
+			p.currentInst.Col,
+			"Zero extend move not allowed for this type of data move.",
+		)
+	}
+	return nil
+}

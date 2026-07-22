@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
+
 type derefParamsO1 struct {
 	dest, reg1, opTy, r1sz, destSz byte
 }
@@ -40,6 +41,7 @@ func (state *VmState) movRR(
 	lastByte byte,
 	param []byte,
 	signExtend bool,
+	zeroExtend bool,
 ) error {
 	var src, dest byte
 	src |= (param[7] & 0xf0) >> 4
@@ -56,7 +58,10 @@ func (state *VmState) movRR(
 			destSz,
 			srcSz,
 		)
-	}else {
+	} else {
+		if zeroExtend {
+			state.regs.r[dest].PutValWithSize(SZ_64, 0)
+		}
 		state.regs.r[dest].CopyFromRegisterWithSize(
 			&state.regs.r[src],
 			srcSz,
@@ -64,7 +69,11 @@ func (state *VmState) movRR(
 	}
 	return nil
 }
-func (state *VmState) movIR(lastByte byte, param []byte) error {
+func (state *VmState) movIR(
+	lastByte byte,
+	param []byte,
+	zeroExtend bool,
+) error {
 	var dest, dataSz byte
 	dataSz |= (lastByte & 0b1100_0000) >> 6
 	dest |= (lastByte & 0b0000_1111)
@@ -72,6 +81,9 @@ func (state *VmState) movIR(lastByte byte, param []byte) error {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
 	bits := binary.BigEndian.Uint64(param)
+	if zeroExtend {
+		state.putValInRegWithSize(int(dest), SZ_64, 0)
+	}
 	state.putValInRegWithSize(int(dest), dataSz, bits)
 	return nil
 }
@@ -291,7 +303,7 @@ func (state *VmState) copyFromAddressToRegister(r *Register,
 	addr uint64, dataSz byte) error {
 	if inStack, e := state.isWithinStack(addr); e != nil {
 		return e
-	} else{
+	} else {
 		bytes := DataSizeToByteCount(dataSz)
 		if s, err := state.getStackSliceAt(inStack, bytes); err != nil {
 			return err

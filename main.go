@@ -48,8 +48,9 @@ const assembly = `
 section '.code'
 @entry
 _start:
-	mov   r0b, -10
-	movsx r1q, r0b
+	mov   r0, 0xffffffffffffffff
+	mov r1b, 1
+	movzx r0b, r1b
 	exit  0
 `
 

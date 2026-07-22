@@ -94,6 +94,13 @@ type InstMovRR struct {
 type InstMovSXRR struct {
 	Src, Dest lx.RegisterData
 }
+type InstMovZXRR struct {
+	Src, Dest lx.RegisterData
+}
+type InstMovZXIR struct {
+	Dest lx.RegisterData
+	Imm  uint64
+}
 type InstInc struct {
 	Reg lx.RegisterData
 }
@@ -149,13 +156,13 @@ type InstCmpIR struct {
 	Imm uint64
 }
 type InstGenericJmp struct {
-	Expr  *Expr
+	Expr     *Expr
 	Absolute bool
 	Variant  JmpVariant
 }
 type InstJmpI struct {
 	Address int64
-	JmpTy  JmpVariant
+	JmpTy   JmpVariant
 }
 type InstJmpIP0R struct {
 	Offset int64
@@ -187,7 +194,7 @@ type InstCallIPData struct {
 }
 type InstRet struct{}
 type InstLab struct {
-	LabelName      string
+	LabelName string
 }
 type InstGenericPush struct {
 	Expr   *Expr
@@ -267,7 +274,7 @@ type InstMovIDO2 struct {
 	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
 	// use lexer.TokenTToOpT to get the vm compatible OP type
 	RegOp int
-	NoOff        bool
+	NoOff bool
 }
 type InstMovRDO2 struct {
 	Src    lx.RegisterData
