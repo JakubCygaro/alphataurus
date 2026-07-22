@@ -56,3 +56,21 @@ func (p *Parser) parseMov() error {
 	}
 	return nil
 }
+func (p *Parser) parseSXMov() error {
+	if err := p.parseMov(); err != nil {
+		return err
+	}
+	if movRR, ok := p.currentInst.Data.(InstMovRR); !ok {
+		return errors.MakeParserError(
+			p.currentInst.Line,
+			p.currentInst.Col,
+			"Sign extend move allowed only for register to register data move.",
+		)
+	} else {
+		p.currentInst.Data = InstMovSXRR{
+			Src:  movRR.Src,
+			Dest: movRR.Dest,
+		}
+	}
+	return nil
+}

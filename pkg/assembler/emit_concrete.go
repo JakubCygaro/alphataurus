@@ -144,7 +144,34 @@ func (a *Assembler) emitMovIR(data pr.InstMovIR, at int) error {
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Imm))
 	return nil
 }
-
+func (a *Assembler) emitMovSXRR(data pr.InstMovSXRR, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_MOVSXRR)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
+		return pe.
+			DisallowedDestReg(
+				a.cInst.Line,
+				a.cInst.Col,
+				data.Dest,
+			)
+	}
+	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
+		return pe.
+			DisallowedSrcReg(
+				a.cInst.Line,
+				a.cInst.Col,
+				data.Src,
+			)
+	}
+	destsrc := 0b00001111 & byte(data.Dest.Reg)
+	destsrc |= (0b00001111 & byte(data.Src.Reg)) << 4
+	dataSz := (0b0000_0011 & data.Src.Size)
+	dataSz |= (0b0000_0011 & data.Dest.Size) << 2
+	a.bytecode[at] = dataSz
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
+	a.bytecode[at+decls.INSTRUCTION_SIZE-1] = destsrc
+	return nil
+}
 func (a *Assembler) emitMovRR(data pr.InstMovRR, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRR)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))

@@ -45,12 +45,12 @@ foo:
 	ret
 `
 const assembly = `
-import 'foo'
 section '.code'
 @entry
 _start:
-	call foo
-	exit r0b
+	mov   r0b, -10
+	movsx r1q, r0b
+	exit  0
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -115,8 +115,8 @@ func main() {
 	if rx, err := mach.GetGpRXAsS64(vm.R0_IDX); err == nil {
 		fmt.Printf("r0 = %+v\n", int8(rx))
 	}
-	if rx, err := mach.GetGpRXAsU64(vm.R1_IDX); err == nil {
-		fmt.Printf("r1 = %+v\n", rx)
+	if rx, err := mach.GetGpRXAsS64(vm.R1_IDX); err == nil {
+		fmt.Printf("r1 = %+v\n", int16(rx))
 	}
 	if rx, err := mach.GetGpRXAsS64(vm.R2_IDX); err == nil {
 		fmt.Printf("r2 = %+v\n", rx)

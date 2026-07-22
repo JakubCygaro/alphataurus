@@ -62,16 +62,16 @@ var (
 	//jumps
 	//direct jumps
 	p030X = nested(opCodeMap{
-		0: handle(OP_JMP),
-		1: handle(OP_JMPE),
-		2: handle(OP_JMPNE),
-		3: handle(OP_JMPZ),
-		4: handle(OP_JMPNZ),
-		5: handle(OP_JMPG),
-		6: handle(OP_JMPGE),
-		7: handle(OP_JMPL),
-		8: handle(OP_JMPLE),
-		9: handle(OP_JMPS),
+		0:  handle(OP_JMP),
+		1:  handle(OP_JMPE),
+		2:  handle(OP_JMPNE),
+		3:  handle(OP_JMPZ),
+		4:  handle(OP_JMPNZ),
+		5:  handle(OP_JMPG),
+		6:  handle(OP_JMPGE),
+		7:  handle(OP_JMPL),
+		8:  handle(OP_JMPLE),
+		9:  handle(OP_JMPS),
 		10: handle(OP_JMPNS),
 		11: handle(OP_JMPC),
 		12: handle(OP_JMPNC),
@@ -112,6 +112,8 @@ var (
 		11: handle(OP_LSHIR),
 		12: handle(OP_RSHIR),
 		13: handle(OP_CMPIR),
+		14: handle(OP_MOVSXRR),
+		15: handle(OP_MOVSXDRI),
 	})
 	p01XX = nested(opCodeMap{
 		// stack manipulation, leave a byte for data size
@@ -127,6 +129,7 @@ var (
 		3: handle(OP_MOVRDO1),
 		4: handle(OP_MOVIDO1_NO),
 		5: handle(OP_MOVIDO1),
+		6: handle(OP_MOVSXDRO1),
 	})
 	p0XXX = nested(opCodeMap{
 		0: p00XX,
@@ -139,6 +142,7 @@ var (
 		2: handle(OP_MOVIDO2_NO),
 		3: handle(OP_MOVIDO2),
 		4: handle(OP_MOVDRO2),
+		5: handle(OP_MOVSXDRO2),
 	}
 )
 
@@ -162,7 +166,6 @@ func (state *VmState) GetOpcode(opcodebytes []byte) (OpCodeVal, error) {
 
 }
 
-
 //go:generate stringer -type=OpCodeVal
 const (
 	OP_MOVIR      OpCodeVal = iota // move imediate value to register
@@ -178,7 +181,12 @@ const (
 	OP_MOVIDO1                     // move immediate value to deref with one offset register
 	OP_MOVIDO2_NO                  // move immediate value to deref with two offset registers, offset = 0
 	OP_MOVIDO2                     // move immediate value to deref with two offset registers
-	OP_ADDRR                       // add register to register and store into second register, singedness and registers passed in parameter
+	// move with sign expand
+	OP_MOVSXRR
+	OP_MOVSXDRI
+	OP_MOVSXDRO1
+	OP_MOVSXDRO2
+	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR
 	OP_SUBIR

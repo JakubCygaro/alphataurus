@@ -36,19 +36,30 @@ func (state *VmState) getDerefParamsO2(byte2, byte3, byte4 byte) derefParamsO2 {
 	return ret
 }
 
-func (state *VmState) movRR(lastByte byte, param []byte) error {
+func (state *VmState) movRR(
+	lastByte byte,
+	param []byte,
+	signExtend bool,
+) error {
 	var src, dest byte
 	src |= (param[7] & 0xf0) >> 4
 	dest |= (param[7] & 0x0f)
-	dataSz := (lastByte & 0b0000_0011)
+	srcSz := (lastByte & 0b0000_0011)
+	destSz := (lastByte & 0b0000_1100) >> 2
 	if !IsMovFromRAllowed(src) {
 		return errors.DisallowedSrcRegister(int(src), state.byteCodePos)
 	} else if !IsMovIntoRAllowed(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
-	} else {
+	} else if signExtend {
+		state.regs.r[dest].CopyFromRegisterWithSizeSx(
+			&state.regs.r[src],
+			destSz,
+			srcSz,
+		)
+	}else {
 		state.regs.r[dest].CopyFromRegisterWithSize(
 			&state.regs.r[src],
-			dataSz,
+			srcSz,
 		)
 	}
 	return nil

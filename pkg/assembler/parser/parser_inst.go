@@ -91,6 +91,9 @@ type InstMovIR struct {
 type InstMovRR struct {
 	Src, Dest lx.RegisterData
 }
+type InstMovSXRR struct {
+	Src, Dest lx.RegisterData
+}
 type InstInc struct {
 	Reg lx.RegisterData
 }

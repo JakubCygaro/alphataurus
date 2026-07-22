@@ -144,6 +144,8 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 	switch ident {
 	case "mov":
 		return p.parseMov()
+	case "movsx":
+		return p.parseSXMov()
 	case "add":
 		return p.parseAddOrSub(ARTH_TADD)
 	case "sub":
