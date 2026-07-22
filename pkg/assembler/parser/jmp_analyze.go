@@ -6,17 +6,17 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
-func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, error) {
-	switch addr := genericCmp.Expr.Val.(type) {
+func GetConcreteJmpInst(genericJmp InstGenericJmp, outer *Instruction) (any, error) {
+	switch addr := genericJmp.Expr.Val.(type) {
 	case ConstExpr:
 		if i, ok := addr.Val.(ConstExprILit); !ok {
 			return nil, MakeParserErrorWithExpr(
-				genericCmp.Expr,
+				genericJmp.Expr,
 				func(s string) errors.ParserError {
 					return errors.
 						MakeParserError(
-							genericCmp.Expr.Line,
-							genericCmp.Expr.Col,
+							genericJmp.Expr.Line,
+							genericJmp.Expr.Col,
 							"Disallowed expression used as jump address `%s`. "+
 								"Value is not an integer.",
 							s,
@@ -27,7 +27,7 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, err
 		} else {
 			return InstJmpI{
 				Address: i.Signed(),
-				JmpTy:   genericCmp.Variant,
+				JmpTy:   genericJmp.Variant,
 			}, nil
 		}
 	case DerefExpr:
@@ -37,8 +37,8 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, err
 				return nil,
 					errors.
 						MakeParserError(
-							addr.Inner.Line,
-							addr.Inner.Col,
+							genericJmp.Expr.Line,
+							genericJmp.Expr.Col,
 							"Expected IP register in IP relative jump instruction. "+
 								"Got `%s` instead.",
 							deref.Reg.String(),
@@ -47,7 +47,7 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, err
 			return InstJmpIP0R{
 				Offset: 0,
 				OpTy:   vm.OP_TADD,
-				JmpTy:  genericCmp.Variant,
+				JmpTy:  genericJmp.Variant,
 			}, nil
 		case OneRegOffsetExpr:
 			if deref.Reg.Reg != vm.IP_IDX {
@@ -67,8 +67,8 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, err
 					func(s string) errors.ParserError {
 						return errors.
 							MakeParserError(
-								addr.Inner.Line,
-								addr.Inner.Col,
+								genericJmp.Expr.Line,
+								genericJmp.Expr.Col,
 								"Bad offset value in IP relative jump instruction. "+
 									"Got expressiom `%s` which does not evaluate "+
 									"to a valid offset.",
@@ -81,7 +81,7 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, err
 				return InstJmpIP0R{
 					Offset: off,
 					OpTy:   vm.OP_TADD,
-					JmpTy:  genericCmp.Variant,
+					JmpTy:  genericJmp.Variant,
 				}, nil
 			}
 		case TwoRegOffsetExpr:
@@ -103,8 +103,8 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, err
 					func(s string) errors.ParserError {
 						return errors.
 							MakeParserError(
-								addr.Inner.Line,
-								addr.Inner.Col,
+								genericJmp.Expr.Line,
+								genericJmp.Expr.Col,
 								"Bad offset value in IP relative jump instruction. "+
 									"Got expressiom `%s` which does not evaluate "+
 									"to a valid offset.",
@@ -117,7 +117,7 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, err
 					Reg:    deref.Reg2,
 					Offset: off,
 					OpTy:   deref.RegOp,
-					JmpTy:  genericCmp.Variant,
+					JmpTy:  genericJmp.Variant,
 				}, nil
 			}
 		}
@@ -125,8 +125,8 @@ func GetConcreteJmpInst(genericCmp InstGenericJmp, outer *Instruction) (any, err
 	return nil,
 		errors.
 			MakeParserError(
-				genericCmp.Expr.Line,
-				genericCmp.Expr.Col,
+				genericJmp.Expr.Line,
+				genericJmp.Expr.Col,
 				"Invalid jump instruction address expression.",
 			)
 }
@@ -188,8 +188,8 @@ func GetConcreteCallInst(genericCall InstGenericCall, outer *Instruction) (any, 
 					func(s string) errors.ParserError {
 						return errors.
 							MakeParserError(
-							genericCall.Expr.Line,
-							genericCall.Expr.Col,
+								genericCall.Expr.Line,
+								genericCall.Expr.Col,
 								"Bad offset value in IP relative call instruction. "+
 									"Got expressiom `%s` which does not evaluate "+
 									"to a valid offset.",
@@ -222,8 +222,8 @@ func GetConcreteCallInst(genericCall InstGenericCall, outer *Instruction) (any, 
 					func(s string) errors.ParserError {
 						return errors.
 							MakeParserError(
-							genericCall.Expr.Line,
-							genericCall.Expr.Col,
+								genericCall.Expr.Line,
+								genericCall.Expr.Col,
 								"Bad offset value in IP relative call instruction. "+
 									"Got expressiom `%s` which does not evaluate "+
 									"to a valid offset.",

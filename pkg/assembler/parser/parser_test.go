@@ -70,13 +70,13 @@ var instWithError = []instErrP{
 			"Got expressiom `1.002` which does not evaluate to a valid offset.", 6),
 	asInstErrP("jmp [r0]",
 		".*Expected IP register in IP relative jump instruction. "+
-			"Got `r0` instead.", 6),
+			"Got `r0` instead.", 5),
 	asInstErrP("jmp [ip+1.002]",
 		".*Bad offset value in IP relative jump instruction. "+
-			"Got expressiom `1.002` which does not evaluate to a valid offset.", 6),
+			"Got expressiom `1.002` which does not evaluate to a valid offset.", 5),
 	asInstErrP("jmp [ip+r0+1.002]",
 		".*Bad offset value in IP relative jump instruction. "+
-			"Got expressiom `1.002` which does not evaluate to a valid offset.", 6),
+			"Got expressiom `1.002` which does not evaluate to a valid offset.", 5),
 }
 
 func TestParsingErrorsF(t *testing.T) {
