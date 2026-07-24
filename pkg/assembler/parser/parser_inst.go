@@ -101,6 +101,23 @@ type InstMovZXIR struct {
 	Dest lx.RegisterData
 	Imm  uint64
 }
+type InstMovZXDR struct {
+	Dest    lx.RegisterData
+	Address int64
+}
+type InstMovZXDRO1 struct {
+	Dest   lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	OffOp int
+}
+type InstMovZXDRO2 struct {
+	Dest   lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	OReg2  lx.RegisterData
+	RegOp int
+}
 type InstInc struct {
 	Reg lx.RegisterData
 }

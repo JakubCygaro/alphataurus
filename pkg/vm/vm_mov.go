@@ -88,17 +88,28 @@ func (state *VmState) movIR(
 	return nil
 }
 
-func (state *VmState) movDRI(lastByte byte, param []byte) error {
+func (state *VmState) movDR(
+	lastByte byte,
+	param []byte,
+	zeroExtend bool,
+) error {
 	dest := (lastByte & 0b0000_1111)
 	dataSz := (lastByte & 0b0011_0000) >> 4
 	if !IsMovIntoRAllowed(dest) {
 		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
 	}
+	if zeroExtend {
+		state.putValInRegWithSize(int(dest), SZ_64, 0)
+	}
 	addr := binary.BigEndian.Uint64(param)
 	return state.copyFromAddressToRegister(&state.regs.r[dest], addr, dataSz)
 }
 
-func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
+func (state *VmState) movDRO1(
+	byte3, byte4 byte,
+	param []byte,
+	zeroExtend bool,
+) error {
 	dParams := state.getDerefParamsO1(byte3, byte4)
 	if !IsMovIntoRAllowed(dParams.dest) {
 		return errors.DisallowedDestRegister(int(dParams.dest), state.byteCodePos)
@@ -111,6 +122,13 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 	if addr, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
 		return e
 	} else {
+		if zeroExtend {
+			state.putValInRegWithSize(
+				int(dParams.dest),
+				SZ_64,
+				0,
+			)
+		}
 		return state.copyFromAddressToRegister(
 			&state.regs.r[dParams.dest],
 			addr,
@@ -118,7 +136,11 @@ func (state *VmState) movDRO1(byte3, byte4 byte, param []byte) error {
 		)
 	}
 }
-func (state *VmState) movDRO2(byte2, byte3, byte4 byte, param []byte) error {
+func (state *VmState) movDRO2(
+	byte2, byte3, byte4 byte,
+	param []byte,
+	zeroExtend bool,
+) error {
 	dParams := state.getDerefParamsO2(byte2, byte3, byte4)
 	if !IsMovIntoRAllowed(dParams.dest) {
 		return errors.DisallowedDestRegister(int(dParams.dest), state.byteCodePos)
@@ -132,6 +154,13 @@ func (state *VmState) movDRO2(byte2, byte3, byte4 byte, param []byte) error {
 	if addr, e := state.movXDO2GetAddr(reg1V, reg2V, offset, dParams.opTy); e != nil {
 		return e
 	} else {
+		if zeroExtend {
+			state.putValInRegWithSize(
+				int(dParams.dest),
+				SZ_64,
+				0,
+			)
+		}
 		return state.copyFromAddressToRegister(
 			&state.regs.r[dParams.dest],
 			addr,

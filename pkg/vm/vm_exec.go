@@ -79,16 +79,22 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 		err = state.movIR(opCodeBytes[0], param, true)
 	case OP_MOVIR:
 		err = state.movIR(opCodeBytes[0], param, false)
-	case OP_MOVDRI:
-		err = state.movDRI(opCodeBytes[0], param)
+	case OP_MOVDR:
+		err = state.movDR(opCodeBytes[0], param, false)
+	case OP_MOVZXDR:
+		err = state.movDR(opCodeBytes[0], param, true)
 	case OP_MOVID:
 		err = state.movID(opCodeBytes[1], param)
 	case OP_MOVRD:
 		err = state.movRD(opCodeBytes[1], param)
 	case OP_MOVDRO1:
-		err = state.movDRO1(opCodeBytes[1], opCodeBytes[0], param)
+		err = state.movDRO1(opCodeBytes[1], opCodeBytes[0], param, false)
+	case OP_MOVZXDRO1:
+		err = state.movDRO1(opCodeBytes[1], opCodeBytes[0], param, true)
 	case OP_MOVDRO2:
-		err = state.movDRO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
+		err = state.movDRO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param, false)
+	case OP_MOVZXDRO2:
+		err = state.movDRO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param, true)
 	case OP_MOVRDO1:
 		err = state.movRDO1(opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVRDO2:

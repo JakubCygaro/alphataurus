@@ -105,7 +105,7 @@ var (
 		4:  handle(OP_CMPRR),
 		5:  handle(OP_ADDIR),
 		6:  handle(OP_SUBIR),
-		7:  handle(OP_MOVDRI),
+		7:  handle(OP_MOVDR),
 		8:  handle(OP_ORIR),
 		9:  handle(OP_ANDIR),
 		10: handle(OP_XORIR),
@@ -115,6 +115,7 @@ var (
 		14: handle(OP_MOVSXRR),
 		15: handle(OP_MOVZXRR),
 		16: handle(OP_MOVZXIR),
+		17: handle(OP_MOVZXDR),
 	})
 	p01XX = nested(opCodeMap{
 		// stack manipulation, leave a byte for data size
@@ -169,7 +170,7 @@ func (state *VmState) GetOpcode(opcodebytes []byte) (OpCodeVal, error) {
 const (
 	OP_MOVIR      OpCodeVal = iota // move imediate value to register
 	OP_MOVRR                       // move register to register
-	OP_MOVDRI                      // move dereference to register, [<address>]
+	OP_MOVDR                      // move dereference to register, [<address>]
 	OP_MOVDRO1                     // move dereference to register, like [rx + <signed offset>]
 	OP_MOVDRO2                     // move dereference to register, like [(rx + rx) +/- <signed offset>]
 	OP_MOVID                       // move immediate value to deref
@@ -180,11 +181,14 @@ const (
 	OP_MOVIDO1                     // move immediate value to deref with one offset register
 	OP_MOVIDO2_NO                  // move immediate value to deref with two offset registers, offset = 0
 	OP_MOVIDO2                     // move immediate value to deref with two offset registers
-	// move with sign expand
+	// move with sign extend
 	OP_MOVSXRR
-	// move with zero expand
+	// move with zero extend
 	OP_MOVZXRR
 	OP_MOVZXIR
+	OP_MOVZXDR
+	OP_MOVZXDRO1
+	OP_MOVZXDRO2
 	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR

@@ -44,14 +44,20 @@ foo:
 	pop bp
 	ret
 `
+// char a = -10;
+// short b = (short)a;
 const assembly = `
 section '.code'
 @entry
 _start:
-	mov   r0, 0xffffffffffffffff
-	mov r1b, 1
-	movzx r0b, r1b
-	exit  0
+	push bp
+	mov bp, sp
+	mov BYTE [bp+1], -10
+	xor r0, r0
+	mov r0b, [bp+1]
+	movsx r0q, r0b
+	mov QUARTER [bp+2], r0q
+	exit 0
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -114,7 +120,7 @@ func main() {
 		execError = err
 	}
 	if rx, err := mach.GetGpRXAsS64(vm.R0_IDX); err == nil {
-		fmt.Printf("r0 = %+v\n", int8(rx))
+		fmt.Printf("r0 = %+v\n", int16(rx))
 	}
 	if rx, err := mach.GetGpRXAsS64(vm.R1_IDX); err == nil {
 		fmt.Printf("r1 = %+v\n", int16(rx))

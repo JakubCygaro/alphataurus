@@ -87,7 +87,27 @@ func (p *Parser) parseZXMov() error {
 	case InstMovIR:
 		p.currentInst.Data = InstMovZXIR{
 			Dest: mov.Dest,
-			Imm: mov.Imm,
+			Imm:  mov.Imm,
+		}
+	case InstMovDR:
+		p.currentInst.Data = InstMovZXDR{
+			Dest:    mov.Dest,
+			Address: mov.Address,
+		}
+	case InstMovDRO1:
+		p.currentInst.Data = InstMovZXDRO1{
+			Dest:   mov.Dest,
+			Offset: mov.Offset,
+			OReg1:  mov.OReg1,
+			OffOp:  mov.OffOp,
+		}
+	case InstMovDRO2:
+		p.currentInst.Data = InstMovZXDRO2{
+			Dest:   mov.Dest,
+			Offset: mov.Offset,
+			OReg1:  mov.OReg1,
+			OReg2:  mov.OReg2,
+			RegOp:  mov.RegOp,
 		}
 	default:
 		return errors.MakeParserError(

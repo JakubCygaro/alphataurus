@@ -239,8 +239,25 @@ func (a *Assembler) emitMovRR(data pr.InstMovRR, at int) error {
 	return nil
 }
 
-func (a *Assembler) emitMovDRI(data pr.InstMovDR, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVDRI)
+func (a *Assembler) emitMovDR(data pr.InstMovDR, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_MOVDR)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
+		return pe.
+			DisallowedDestReg(
+				a.cInst.Line,
+				a.cInst.Col,
+				data.Dest,
+			)
+	}
+	lastByte := (0b0000_1111 & byte(data.Dest.Reg))
+	lastByte |= (0b0000_0011 & data.Dest.Size) << 4
+	a.bytecode[at] = lastByte
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Address))
+	return nil
+}
+func (a *Assembler) emitMovZXDR(data pr.InstMovZXDR, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_MOVZXDR)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
 		return pe.
