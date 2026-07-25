@@ -118,3 +118,62 @@ func (p *Parser) parseZXMov() error {
 	}
 	return nil
 }
+func (p *Parser) parseXChg() error {
+	if err := p.parseMov(); err != nil {
+		return err
+	}
+	switch mov := p.currentInst.Data.(type) {
+	case InstMovRR:
+		p.currentInst.Data = InstXCHGRR{
+			Src:  mov.Src,
+			Dest: mov.Dest,
+		}
+	case InstMovDR:
+		p.currentInst.Data = InstXCHGDR{
+			Dest:    mov.Dest,
+			Address: mov.Address,
+		}
+	case InstMovRD:
+		p.currentInst.Data = InstXCHGRD{
+			Src:     mov.Src,
+			Address: mov.Address,
+		}
+	case InstMovDRO1:
+		p.currentInst.Data = InstXCHGDRO1{
+			Dest:   mov.Dest,
+			Offset: mov.Offset,
+			OReg1:  mov.OReg1,
+			OffOp:  mov.OffOp,
+		}
+	case InstMovDRO2:
+		p.currentInst.Data = InstXCHGDRO2{
+			Dest:   mov.Dest,
+			Offset: mov.Offset,
+			OReg1:  mov.OReg1,
+			OReg2:  mov.OReg2,
+			RegOp:  mov.RegOp,
+		}
+	case InstMovRDO1:
+		p.currentInst.Data = InstXCHGRDO1{
+			Src:    mov.Src,
+			Offset: mov.Offset,
+			OReg1:  mov.OReg1,
+			OffOp:  mov.OffOp,
+		}
+	case InstMovRDO2:
+		p.currentInst.Data = InstXCHGRDO2{
+			Src:    mov.Src,
+			Offset: mov.Offset,
+			OReg1:  mov.OReg1,
+			OReg2:  mov.OReg2,
+			RegOp:  mov.RegOp,
+		}
+	default:
+		return errors.MakeParserError(
+			p.currentInst.Line,
+			p.currentInst.Col,
+			"Exchange not allowed for this type of data move.",
+		)
+	}
+	return nil
+}

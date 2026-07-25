@@ -172,7 +172,7 @@ func (state *VmState) GetOpcode(opcodebytes []byte) (OpCodeVal, error) {
 const (
 	OP_MOVIR      OpCodeVal = iota // move imediate value to register
 	OP_MOVRR                       // move register to register
-	OP_MOVDR                      // move dereference to register, [<address>]
+	OP_MOVDR                       // move dereference to register, [<address>]
 	OP_MOVDRO1                     // move dereference to register, like [rx + <signed offset>]
 	OP_MOVDRO2                     // move dereference to register, like [(rx + rx) +/- <signed offset>]
 	OP_MOVID                       // move immediate value to deref
@@ -191,6 +191,13 @@ const (
 	OP_MOVZXDR
 	OP_MOVZXDRO1
 	OP_MOVZXDRO2
+	OP_XCHGRR
+	OP_XCHDR
+	OP_XCHDRO1
+	OP_XCHDRO2
+	OP_XCHRD
+	OP_XCHRDO1
+	OP_XCHRDO2
 	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR

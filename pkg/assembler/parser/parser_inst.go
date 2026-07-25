@@ -118,6 +118,51 @@ type InstMovZXDRO2 struct {
 	OReg2  lx.RegisterData
 	RegOp int
 }
+type InstXCHGRR struct {
+	Src, Dest lx.RegisterData
+}
+type InstXCHGDR struct {
+	Dest    lx.RegisterData
+	Address int64
+}
+type InstXCHGRD struct {
+	Src     lx.RegisterData
+	Address int64
+}
+type InstXCHGDRO1 struct {
+	Dest   lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	OffOp int
+}
+type InstXCHGDRO2 struct {
+	Dest   lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	OReg2  lx.RegisterData
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	RegOp int
+}
+type InstXCHGRDO1 struct {
+	Src    lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	OffOp int
+}
+type InstXCHGRDO2 struct {
+	Src    lx.RegisterData
+	Offset int64
+	OReg1  lx.RegisterData
+	OReg2  lx.RegisterData
+	// Stored as Token type enum value ie TOKEN_TPLUS and so on,
+	// use lexer.TokenTToOpT to get the vm compatible OP type
+	RegOp, OffOp int
+}
 type InstInc struct {
 	Reg lx.RegisterData
 }

@@ -53,7 +53,6 @@ _start:
 	push bp
 	mov bp, sp
 	mov BYTE [bp+1], -10
-	xor r0, r0
 	movzx r0b, [bp+1]
 	movsx r0q, r0b
 	mov QUARTER [bp+2], r0q
