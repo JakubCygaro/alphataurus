@@ -51,21 +51,22 @@ func (p *Parser) CurrentInst() Instruction {
 }
 
 func (p *Parser) SkipCommentLine() error {
-	for {
-		if err := p.lexer.ReadNextToken(); err != nil {
-			return err
-		}
-		switch p.lexer.CurrentToken().Ty {
-		case lx.TOKEN_TNEWLINE:
-			p.lexer.UnreadCurrentToken()
-		case lx.TOKEN_TEOF:
-			p.lexer.UnreadCurrentToken()
-		default:
-			continue
-		}
-		break
-	}
-	return nil
+	return p.lexer.SkipLine()
+	// for {
+	// 	if err := p.lexer.ReadNextToken(); err != nil {
+	// 		return err
+	// 	}
+	// 	switch p.lexer.CurrentToken().Ty {
+	// 	case lx.TOKEN_TNEWLINE:
+	// 		p.lexer.UnreadCurrentToken()
+	// 	case lx.TOKEN_TEOF:
+	// 		p.lexer.UnreadCurrentToken()
+	// 	default:
+	// 		continue
+	// 	}
+	// 	break
+	// }
+	// return nil
 }
 
 func (p *Parser) ParseNext() (bool, error) {
@@ -106,8 +107,7 @@ func (p *Parser) ParseNext() (bool, error) {
 	err = p.lexer.ReadNextToken()
 	if p.lexer.CurrentToken().Ty == lx.TOKEN_TDOUBLESEMICOLON {
 		err = p.SkipCommentLine()
-	}
-	if p.lexer.CurrentToken().Ty != lx.TOKEN_TNEWLINE &&
+	} else if p.lexer.CurrentToken().Ty != lx.TOKEN_TNEWLINE &&
 		p.lexer.CurrentToken().Ty != lx.TOKEN_TEOF {
 
 		t := p.lexer.CurrentToken()

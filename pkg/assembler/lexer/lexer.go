@@ -349,6 +349,16 @@ func (l *Lexer) ReadNextTokenReturn() (Token, error) {
 		return l.currentToken, nil
 	}
 }
+func (l *Lexer) SkipLine() error {
+	for {
+		if b, ok := l.readByte(); !ok || b == '\n' {
+			// return l.unreadByte()
+			return l.unreadByte()
+		}
+	}
+	return nil
+	// return nil
+}
 
 // Reads the next token and returns a possible error
 //
