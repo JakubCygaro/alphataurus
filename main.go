@@ -44,17 +44,20 @@ foo:
 	pop bp
 	ret
 `
-
 // char a = -10;
 // short b = (short)a;
 const assembly = `
 section '.code'
-	;; loop counter
-	;; loop counter
-	mov r1, 8 ;; loop counter
-
-	;; loop counter
-	;; loop counter
+@entry
+_start:
+	push bp
+	mov bp, sp
+	mov BYTE [bp+1], -10
+	xor r0, r0
+	movzx r0b, [bp+1]
+	movsx r0q, r0b
+	mov QUARTER [bp+2], r0q
+	exit 0
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {

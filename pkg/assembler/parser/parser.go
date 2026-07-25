@@ -52,21 +52,6 @@ func (p *Parser) CurrentInst() Instruction {
 
 func (p *Parser) SkipCommentLine() error {
 	return p.lexer.SkipLine()
-	// for {
-	// 	if err := p.lexer.ReadNextToken(); err != nil {
-	// 		return err
-	// 	}
-	// 	switch p.lexer.CurrentToken().Ty {
-	// 	case lx.TOKEN_TNEWLINE:
-	// 		p.lexer.UnreadCurrentToken()
-	// 	case lx.TOKEN_TEOF:
-	// 		p.lexer.UnreadCurrentToken()
-	// 	default:
-	// 		continue
-	// 	}
-	// 	break
-	// }
-	// return nil
 }
 
 func (p *Parser) ParseNext() (bool, error) {

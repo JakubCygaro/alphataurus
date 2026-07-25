@@ -131,6 +131,7 @@ var (
 		3: handle(OP_MOVRDO1),
 		4: handle(OP_MOVIDO1_NO),
 		5: handle(OP_MOVIDO1),
+		6: handle(OP_MOVZXDRO1),
 	})
 	p0XXX = nested(opCodeMap{
 		0: p00XX,
@@ -143,6 +144,7 @@ var (
 		2: handle(OP_MOVIDO2_NO),
 		3: handle(OP_MOVIDO2),
 		4: handle(OP_MOVDRO2),
+		5: handle(OP_MOVZXDRO2),
 	}
 )
 
