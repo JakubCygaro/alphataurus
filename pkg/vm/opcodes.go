@@ -116,6 +116,8 @@ var (
 		15: handle(OP_MOVZXRR),
 		16: handle(OP_MOVZXIR),
 		17: handle(OP_MOVZXDR),
+		18: handle(OP_XCHGRR),
+		19: handle(OP_XCHGDR),
 	})
 	p01XX = nested(opCodeMap{
 		// stack manipulation, leave a byte for data size
@@ -132,6 +134,7 @@ var (
 		4: handle(OP_MOVIDO1_NO),
 		5: handle(OP_MOVIDO1),
 		6: handle(OP_MOVZXDRO1),
+		7: handle(OP_XCHGDRO1),
 	})
 	p0XXX = nested(opCodeMap{
 		0: p00XX,
@@ -145,6 +148,7 @@ var (
 		3: handle(OP_MOVIDO2),
 		4: handle(OP_MOVDRO2),
 		5: handle(OP_MOVZXDRO2),
+		6: handle(OP_XCHGDRO2),
 	}
 )
 
@@ -192,12 +196,9 @@ const (
 	OP_MOVZXDRO1
 	OP_MOVZXDRO2
 	OP_XCHGRR
-	OP_XCHDR
-	OP_XCHDRO1
-	OP_XCHDRO2
-	OP_XCHRD
-	OP_XCHRDO1
-	OP_XCHRDO2
+	OP_XCHGDR
+	OP_XCHGDRO1
+	OP_XCHGDRO2
 	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR

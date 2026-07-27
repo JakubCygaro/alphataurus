@@ -625,3 +625,94 @@ func (a *Assembler) emitCmpIR(data pr.InstCmpIR, at int) error {
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Imm))
 	return nil
 }
+func (a *Assembler) emitXCHGRR(data pr.InstXCHGRR, at int) error {
+	xchg := a.opCodes.GetBytes(vm.OP_XCHGRR)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(xchg))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
+		return pe.
+			DisallowedDestReg(
+				a.cInst.Line,
+				a.cInst.Col,
+				data.Dest,
+			)
+	}
+	if !vm.IsMovIntoRAllowed(byte(data.Src.Reg)) {
+		return pe.
+			DisallowedSrcReg(
+				a.cInst.Line,
+				a.cInst.Col,
+				data.Src,
+			)
+	}
+	destsrc := 0b00001111 & byte(data.Dest.Reg)
+	destsrc |= (0b00001111 & byte(data.Src.Reg)) << 4
+	dataSz := (0b0000_0011 & data.Dest.Size)
+	a.bytecode[at] = dataSz
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
+	a.bytecode[at+decls.INSTRUCTION_SIZE-1] = destsrc
+	return nil
+}
+func (a *Assembler) emitXCHGDR(data pr.InstXCHGDR, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_XCHGDR)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
+		return pe.
+			DisallowedDestReg(
+				a.cInst.Line,
+				a.cInst.Col,
+				data.Dest,
+			)
+	}
+	lastByte := (0b0000_1111 & byte(data.Dest.Reg))
+	lastByte |= (0b0000_0011 & data.Dest.Size) << 4
+	a.bytecode[at] = lastByte
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Address))
+	return nil
+}
+func (a *Assembler) emitXCHGDRO1(data pr.InstXCHGDRO1, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_XCHGDRO1)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
+		return pe.
+			DisallowedDestReg(
+				a.cInst.Line,
+				a.cInst.Col,
+				data.Dest,
+			)
+	}
+	lastByte := (0b0000_1111 & byte(data.Dest.Reg)) << 4
+	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
+	penultByte := (0b0000_0011 & byte(data.Dest.Size)) << 4
+	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
+	off, _ := lx.TokenTToOpT(data.OffOp)
+	penultByte |= (0b0000_0011 & byte(off))
+	a.bytecode[at] = lastByte
+	a.bytecode[at+1] = penultByte
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
+	return nil
+}
+func (a *Assembler) emitXCHGDRO2(data pr.InstXCHGDRO2, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_XCHGDRO2)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
+	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
+		return pe.
+			DisallowedDestReg(
+				a.cInst.Line,
+				a.cInst.Col,
+				data.Dest,
+			)
+	}
+	byte4 := (0b0000_1111 & byte(data.Dest.Reg)) << 4
+	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
+	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
+	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
+	off, _ := lx.TokenTToOpT(data.RegOp)
+	byte3 |= (0b0000_0011 & byte(off))
+	byte2 := (data.Dest.Size & 0b0000_0011)
+	a.bytecode[at] = byte4
+	a.bytecode[at+1] = byte3
+	a.bytecode[at+2] = byte2
+	param := uint64(data.Offset)
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], param)
+	return nil
+}

@@ -105,6 +105,14 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 		err = state.movIDO1(opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVIDO2_NO:
 		err = state.movIDO2NoOffset(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
+	case OP_XCHGRR:
+		err = state.xchgRR(opCodeBytes[0], param)
+	case OP_XCHGDR:
+		err = state.xchgDR(opCodeBytes[0], param)
+	case OP_XCHGDRO1:
+		err = state.xchgDRO1(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_XCHGDRO2:
+		err = state.xchgDRO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVIDO2:
 		err = state.movIDO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
 	case OP_ADDRR:

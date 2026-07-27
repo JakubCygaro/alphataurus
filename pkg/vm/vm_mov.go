@@ -362,3 +362,129 @@ func (state *VmState) copyFromRegisterToAddress(r *Register,
 	}
 	return nil
 }
+func (state *VmState) xchgRR(
+	lastByte byte,
+	param []byte,
+) error {
+	var src, dest byte
+	src |= (param[7] & 0xf0) >> 4
+	dest |= (param[7] & 0x0f)
+	sz := (lastByte & 0b0000_0011)
+	if !IsMovIntoRAllowed(src) {
+		return errors.DisallowedSrcRegister(int(src), state.byteCodePos)
+	} else if !IsMovIntoRAllowed(dest) {
+		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
+	} else {
+		tmp := Register{}
+		// dest into tmp
+		tmp.CopyFromRegisterWithSize(
+			&state.regs.r[dest],
+			sz,
+		)
+		// src into dest
+		state.regs.r[dest].CopyFromRegisterWithSize(
+			&state.regs.r[src],
+			sz,
+		)
+		// tmp into src
+		state.regs.r[src].CopyFromRegisterWithSize(
+			&tmp,
+			sz,
+		)
+	}
+	return nil
+}
+func (state *VmState) xchgDR(
+	lastByte byte,
+	param []byte,
+) error {
+	dest := (lastByte & 0b0000_1111)
+	dataSz := (lastByte & 0b0011_0000) >> 4
+	if !IsMovIntoRAllowed(dest) {
+		return errors.DisallowedDestRegister(int(dest), state.byteCodePos)
+	}
+	addr := binary.BigEndian.Uint64(param)
+	tmp := Register{}
+	tmp.CopyFromRegisterWithSize(
+		&state.regs.r[dest],
+		dataSz,
+	)
+	if err :=
+		state.copyFromAddressToRegister(&state.regs.r[dest], addr, dataSz); err != nil {
+		return err
+	}
+	return state.copyFromRegisterToAddress(&tmp, addr, dataSz)
+}
+func (state *VmState) xchgDRO1(
+	byte3, byte4 byte,
+	param []byte,
+) error {
+	dParams := state.getDerefParamsO1(byte3, byte4)
+	if !IsMovIntoRAllowed(dParams.dest) {
+		return errors.DisallowedDestRegister(int(dParams.dest), state.byteCodePos)
+	}
+	if !IsMovRRAllowed(dParams.reg1) {
+		return errors.DisallowedOp2Register(int(dParams.reg1), state.byteCodePos)
+	}
+	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
+	offset := int64(binary.BigEndian.Uint64(param))
+	if addr, e := state.movXDO1GetAddr(regV, offset, dParams.opTy); e != nil {
+		return e
+	} else {
+		tmp := Register{}
+		tmp.CopyFromRegisterWithSize(
+			&state.regs.r[dParams.dest],
+			dParams.destSz,
+		)
+		if err :=
+			state.copyFromAddressToRegister(
+				&state.regs.r[dParams.dest],
+				addr,
+				dParams.destSz,
+			); err != nil {
+			return err
+		}
+		return state.copyFromRegisterToAddress(
+			&tmp,
+			addr,
+			dParams.destSz,
+		)
+	}
+}
+func (state *VmState) xchgDRO2(
+	byte2, byte3, byte4 byte,
+	param []byte,
+) error {
+	dParams := state.getDerefParamsO2(byte2, byte3, byte4)
+	if !IsMovIntoRAllowed(dParams.dest) {
+		return errors.DisallowedDestRegister(int(dParams.dest), state.byteCodePos)
+	}
+	if err := state.isMovXRO2Allowed(dParams); err != nil {
+		return err
+	}
+	reg1V := int64(state.GetRegVAsU64(int(dParams.reg1), dParams.r1_2sz))
+	reg2V := int64(state.GetRegVAsU64(int(dParams.reg2), dParams.r1_2sz))
+	offset := int64(binary.BigEndian.Uint64(param))
+	if addr, e := state.movXDO2GetAddr(reg1V, reg2V, offset, dParams.opTy); e != nil {
+		return e
+	} else {
+		tmp := Register{}
+		tmp.CopyFromRegisterWithSize(
+			&state.regs.r[dParams.dest],
+			dParams.destSz,
+		)
+		if err :=
+			state.copyFromAddressToRegister(
+				&state.regs.r[dParams.dest],
+				addr,
+				dParams.destSz,
+			); err != nil {
+			return err
+		}
+		return state.copyFromRegisterToAddress(
+			&tmp,
+			addr,
+			dParams.destSz,
+		)
+	}
+}

@@ -50,12 +50,12 @@ const assembly = `
 section '.code'
 @entry
 _start:
-	push bp
-	mov bp, sp
-	mov BYTE [bp+1], -10
-	movzx r0b, [bp+1]
-	movsx r0q, r0b
-	mov QUARTER [bp+2], r0q
+	mov r0, 69
+	mov r1, 420
+	xchg r0, r1
+	push WORD 64
+	xchg r0, [sp]
+	xchg r1, [sp]
 	exit 0
 `
 

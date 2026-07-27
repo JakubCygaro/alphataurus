@@ -122,8 +122,24 @@ func (p *Parser) parseXChg() error {
 	if err := p.parseMov(); err != nil {
 		return err
 	}
+	helpErr := func() error {
+		return errors.
+			MakeParserError(
+				p.currentInst.Line,
+				p.currentInst.Col,
+				"Exchange with deference only allowed when the address is the source",
+			)
+	}
 	switch mov := p.currentInst.Data.(type) {
 	case InstMovRR:
+		if mov.Src.Size != mov.Dest.Size {
+			return errors.
+				MakeParserError(
+					p.currentInst.Line,
+					p.currentInst.Col,
+					"Exchange between registers of different sizes is not allowed",
+				)
+		}
 		p.currentInst.Data = InstXCHGRR{
 			Src:  mov.Src,
 			Dest: mov.Dest,
@@ -134,10 +150,7 @@ func (p *Parser) parseXChg() error {
 			Address: mov.Address,
 		}
 	case InstMovRD:
-		p.currentInst.Data = InstXCHGRD{
-			Src:     mov.Src,
-			Address: mov.Address,
-		}
+		return helpErr()
 	case InstMovDRO1:
 		p.currentInst.Data = InstXCHGDRO1{
 			Dest:   mov.Dest,
@@ -154,20 +167,9 @@ func (p *Parser) parseXChg() error {
 			RegOp:  mov.RegOp,
 		}
 	case InstMovRDO1:
-		p.currentInst.Data = InstXCHGRDO1{
-			Src:    mov.Src,
-			Offset: mov.Offset,
-			OReg1:  mov.OReg1,
-			OffOp:  mov.OffOp,
-		}
+		return helpErr()
 	case InstMovRDO2:
-		p.currentInst.Data = InstXCHGRDO2{
-			Src:    mov.Src,
-			Offset: mov.Offset,
-			OReg1:  mov.OReg1,
-			OReg2:  mov.OReg2,
-			RegOp:  mov.RegOp,
-		}
+		return helpErr()
 	default:
 		return errors.MakeParserError(
 			p.currentInst.Line,
