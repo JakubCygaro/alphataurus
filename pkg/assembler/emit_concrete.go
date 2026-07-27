@@ -49,6 +49,18 @@ func (a *Assembler) emitClr(at int) error {
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
+func (a *Assembler) emitSDF(at int) error {
+	sdf := a.opCodes.GetBytes(vm.OP_SDF)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(sdf))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
+	return nil
+}
+func (a *Assembler) emitCDF(at int) error {
+	cdf := a.opCodes.GetBytes(vm.OP_CDF)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(cdf))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
+	return nil
+}
 func (a *Assembler) emitCallI(data pr.InstCallI, at int) error {
 	call := a.opCodes.GetBytes(vm.OP_CALL)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
@@ -714,5 +726,42 @@ func (a *Assembler) emitXCHGDRO2(data pr.InstXCHGDRO2, at int) error {
 	a.bytecode[at+2] = byte2
 	param := uint64(data.Offset)
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], param)
+	return nil
+}
+
+func (a *Assembler) emitMovSB(data pr.InstMovSB, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_MOVSB)
+	if data.Rep {
+		mov = a.opCodes.GetBytes(vm.OP_MOVREPSB)
+	}
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
+	return nil
+}
+func (a *Assembler) emitMovSQ(data pr.InstMovSQ, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_MOVSQ)
+	if data.Rep {
+		mov = a.opCodes.GetBytes(vm.OP_MOVREPSQ)
+	}
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
+	return nil
+}
+func (a *Assembler) emitMovSH(data pr.InstMovSH, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_MOVSH)
+	if data.Rep {
+		mov = a.opCodes.GetBytes(vm.OP_MOVREPSH)
+	}
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
+	return nil
+}
+func (a *Assembler) emitMovSW(data pr.InstMovSW, at int) error {
+	mov := a.opCodes.GetBytes(vm.OP_MOVSW)
+	if data.Rep {
+		mov = a.opCodes.GetBytes(vm.OP_MOVREPSW)
+	}
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }

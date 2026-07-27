@@ -115,6 +115,22 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 		err = state.xchgDRO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVIDO2:
 		err = state.movIDO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
+	case OP_MOVSB:
+		err = state.movSingle(SZ_8)
+	case OP_MOVSQ:
+		err = state.movSingle(SZ_16)
+	case OP_MOVSH:
+		err = state.movSingle(SZ_32)
+	case OP_MOVSW:
+		err = state.movSingle(SZ_64)
+	case OP_MOVREPSB:
+		err = state.movSingleRep(SZ_8)
+	case OP_MOVREPSQ:
+		err = state.movSingleRep(SZ_16)
+	case OP_MOVREPSH:
+		err = state.movSingleRep(SZ_32)
+	case OP_MOVREPSW:
+		err = state.movSingleRep(SZ_64)
 	case OP_ADDRR:
 		err = state.arthRR(int(opcode), param)
 	case OP_SUBRR:
@@ -226,6 +242,10 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 	case OP_NOP:
 	case OP_CLR:
 		err = state.clr()
+	case OP_SDF:
+		err = state.sdf()
+	case OP_CDF:
+		err = state.cdf()
 	case OP_CALL:
 		err = state.call(param)
 	case OP_CALLIP:

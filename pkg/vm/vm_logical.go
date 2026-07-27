@@ -61,6 +61,14 @@ func (state *VmState) clr() error {
 	state.flags = Flags{}
 	return nil
 }
+func (state *VmState) cdf() error {
+	state.flags.Df = false
+	return nil
+}
+func (state *VmState) sdf() error {
+	state.flags.Df = true
+	return nil
+}
 func (state *VmState) cmpRR(lastByte byte, param []byte) error {
 	var subtrahend, minuend, dataSz, ty byte
 	subtrahend |= (lastByte & 0b1111_0000) >> 4

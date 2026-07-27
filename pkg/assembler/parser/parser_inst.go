@@ -109,14 +109,14 @@ type InstMovZXDRO1 struct {
 	Dest   lx.RegisterData
 	Offset int64
 	OReg1  lx.RegisterData
-	OffOp int
+	OffOp  int
 }
 type InstMovZXDRO2 struct {
 	Dest   lx.RegisterData
 	Offset int64
 	OReg1  lx.RegisterData
 	OReg2  lx.RegisterData
-	RegOp int
+	RegOp  int
 }
 type InstXCHGRR struct {
 	Src, Dest lx.RegisterData
@@ -254,6 +254,10 @@ type InstCallIPData struct {
 	Offset int64
 	OpTy   int
 }
+type InstMovSB struct{ Rep bool }
+type InstMovSQ struct{ Rep bool }
+type InstMovSH struct{ Rep bool }
+type InstMovSW struct{ Rep bool }
 type InstRet struct{}
 type InstLab struct {
 	LabelName string
@@ -369,4 +373,6 @@ type InstExitR struct {
 }
 type InstEntry struct{}
 type InstClr struct{}
+type InstSDF struct{}
+type InstCDF struct{}
 type InstSecCode struct{}

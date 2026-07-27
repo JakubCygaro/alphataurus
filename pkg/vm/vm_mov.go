@@ -362,6 +362,26 @@ func (state *VmState) copyFromRegisterToAddress(r *Register,
 	}
 	return nil
 }
+func (state *VmState) copyFromAddressToAddress(src, dest uint64, dataSz byte) error {
+	if srcInStack, e := state.isWithinStack(src); e != nil {
+		return e
+	} else if destInStack, e := state.isWithinStack(dest); e != nil {
+		return e
+	} else {
+		bytes := DataSizeToByteCount(dataSz)
+		if s, err := state.getStackSliceAt(srcInStack, bytes); err != nil {
+			return err
+		} else if d, err := state.getStackSliceAt(destInStack, bytes); err != nil {
+			return err
+		} else {
+			copy(
+				d,
+				s,
+			)
+		}
+	}
+	return nil
+}
 func (state *VmState) xchgRR(
 	lastByte byte,
 	param []byte,
@@ -487,4 +507,27 @@ func (state *VmState) xchgDRO2(
 			dParams.destSz,
 		)
 	}
+}
+func (state *VmState) movSingle(sz byte) error {
+	src := state.GetRegVAsU64(R5_IDX, SZ_64)
+	dest := state.GetRegVAsU64(R6_IDX, SZ_64)
+	return state.copyFromAddressToAddress(src, dest, sz)
+}
+func (state *VmState) movSingleRep(sz byte) error {
+	src := state.GetRegVAsU64(R5_IDX, SZ_64)
+	dest := state.GetRegVAsU64(R6_IDX, SZ_64)
+	for c := state.GetRegVAsU64(R7_IDX, SZ_64); c != 0; c-- {
+		if err := state.copyFromAddressToAddress(src, dest, sz); err != nil {
+			return err
+		}
+		if !state.flags.Df {
+			src += 1
+			dest += 1
+		} else {
+			src -= 1
+			dest -= 1
+		}
+		state.regs.r[R7_IDX].PutValWithSize(SZ_64, c)
+	}
+	return nil
 }

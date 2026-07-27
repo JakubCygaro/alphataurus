@@ -58,6 +58,15 @@ var (
 		15: handle(OP_RSHRR),
 		16: handle(OP_EXITI),
 		17: handle(OP_EXITR),
+		19: handle(OP_MOVSB),
+		20: handle(OP_MOVREPSB),
+		21: handle(OP_MOVSQ),
+		22: handle(OP_MOVREPSQ),
+		23: handle(OP_MOVSH),
+		24: handle(OP_MOVREPSH),
+		25: handle(OP_MOVSW),
+		26: handle(OP_SDF),
+		27: handle(OP_CDF),
 	})
 	//jumps
 	//direct jumps
@@ -195,6 +204,14 @@ const (
 	OP_MOVZXDR
 	OP_MOVZXDRO1
 	OP_MOVZXDRO2
+	OP_MOVSB
+	OP_MOVREPSB
+	OP_MOVSQ
+	OP_MOVREPSQ
+	OP_MOVSH
+	OP_MOVREPSH
+	OP_MOVSW
+	OP_MOVREPSW
 	OP_XCHGRR
 	OP_XCHGDR
 	OP_XCHGDRO1
@@ -261,6 +278,8 @@ const (
 	OP_RET    // return from a procedure
 	OP_EXITI  // exit with code
 	OP_EXITR
+	OP_SDF
+	OP_CDF
 	OP_NOP // NOP
 )
 

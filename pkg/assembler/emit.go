@@ -88,6 +88,14 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitXCHGDRO1(i, at)
 	case pr.InstXCHGDRO2:
 		err = a.emitXCHGDRO2(i, at)
+	case pr.InstMovSB:
+		err = a.emitMovSB(i, at)
+	case pr.InstMovSQ:
+		err = a.emitMovSQ(i, at)
+	case pr.InstMovSH:
+		err = a.emitMovSH(i, at)
+	case pr.InstMovSW:
+		err = a.emitMovSW(i, at)
 	case pr.InstGenericArth:
 		err = a.emitGenericArth(i, a.cInst, at)
 	case pr.InstArthRR:
@@ -164,6 +172,10 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		}
 	case pr.InstClr:
 		err = a.emitClr(at)
+	case pr.InstSDF:
+		err = a.emitSDF(at)
+	case pr.InstCDF:
+		err = a.emitCDF(at)
 	default:
 		a.lastInst = inst
 		return err

@@ -135,6 +135,28 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 		return p.parseZXMov()
 	case "xchg":
 		return p.parseXChg()
+	case "movsb":
+		p.currentInst = Instruction{
+			Data: InstMovSB{},
+		}
+		return nil
+	case "movsq":
+		p.currentInst = Instruction{
+			Data: InstMovSQ{},
+		}
+		return nil
+	case "movsh":
+		p.currentInst = Instruction{
+			Data: InstMovSH{},
+		}
+		return nil
+	case "movsw":
+		p.currentInst = Instruction{
+			Data: InstMovSW{},
+		}
+		return nil
+	case "rep":
+		return p.parseStartRep(t)
 	case "add":
 		return p.parseAddOrSub(ARTH_TADD)
 	case "sub":
@@ -203,6 +225,16 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 	case "clr":
 		p.currentInst = Instruction{
 			Data: InstClr{},
+		}
+		return nil
+	case "sdf":
+		p.currentInst = Instruction{
+			Data: InstSDF{},
+		}
+		return nil
+	case "cdf":
+		p.currentInst = Instruction{
+			Data: InstCDF{},
 		}
 		return nil
 	case "call":
@@ -380,5 +412,35 @@ func (p *Parser) parseExit() error {
 			},
 		}
 	}
+	return nil
+}
+func (p *Parser) parseStartRep(rep lx.Token) error {
+	if ok, err := p.ParseNext(); !ok {
+		return errors.PrematureEndOfInput(rep.Line, rep.Col)
+	} else if err != nil {
+		return err
+	}
+	p.lexer.UnreadCurrentToken()
+	switch inst := p.currentInst.Data.(type) {
+	case InstMovSB:
+		inst.Rep = true
+		p.currentInst.Data = inst
+	case InstMovSQ:
+		inst.Rep = true
+		p.currentInst.Data = inst
+	case InstMovSH:
+		inst.Rep = true
+		p.currentInst.Data = inst
+	case InstMovSW:
+		inst.Rep = true
+		p.currentInst.Data = inst
+	default:
+		return errors.MakeParserError(
+			p.currentInst.Line,
+			p.currentInst.Col,
+			"Operation not allowed with rep",
+		)
+	}
+
 	return nil
 }

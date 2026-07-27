@@ -26,7 +26,7 @@ type dbgAdapters struct {
 	opcodeTrace OpCodeTraceFn
 }
 type Flags struct {
-	Cf, Pf, Zf, Sf, Of bool
+	Cf, Pf, Zf, Sf, Of, Df bool
 }
 
 func CreateVmState(stackSize uint64) VmState {
