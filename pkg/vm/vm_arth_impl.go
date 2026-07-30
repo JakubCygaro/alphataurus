@@ -13,8 +13,9 @@ func (state *VmState) incR(param []byte) error {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
 	r := &state.regs.r[reg]
-	r.IncrementRegU64(1)
-	return nil
+	return state.addValues(r.GetValAsU64(), 1,
+		TY_UINT, SZ_64,
+		r[:])
 }
 func (state *VmState) decR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
@@ -22,8 +23,12 @@ func (state *VmState) decR(param []byte) error {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
 	r := &state.regs.r[reg]
-	r.DecrementRegU64(1)
-	return nil
+	return state.subValues(r.GetValAsU64(), 1,
+		TY_UINT, SZ_64,
+		r[:])
+	// state.
+	// r.DecrementRegU64(1)
+	// return nil
 }
 
 func (state *VmState) arthRR(opType int, param []byte) error {
@@ -224,19 +229,20 @@ func mulUint(a, b uint64, dataSz byte, out []byte) {
 		binary.BigEndian.PutUint64(out[8-offset:], uint64(a)*uint64(b))
 	}
 }
-// func mulSint(a, b uint64, dataSz byte, out []byte) {
-// 	offset := DataSizeToByteCount(dataSz)
-// 	switch dataSz {
-// 	case SZ_8:
-// 		out[8-offset] = byte(int8(a) * int8(b))
-// 	case SZ_16:
-// 		binary.BigEndian.PutUint16(out[8-offset:], uint16(int16(a)*int16(b)))
-// 	case SZ_32:
-// 		binary.BigEndian.PutUint32(out[8-offset:], uint32(int32(a)*int32(b)))
-// 	case SZ_64:
-// 		binary.BigEndian.PutUint64(out[8-offset:], uint64(int64(a)*int64(b)))
-// 	}
-// }
+
+//	func mulSint(a, b uint64, dataSz byte, out []byte) {
+//		offset := DataSizeToByteCount(dataSz)
+//		switch dataSz {
+//		case SZ_8:
+//			out[8-offset] = byte(int8(a) * int8(b))
+//		case SZ_16:
+//			binary.BigEndian.PutUint16(out[8-offset:], uint16(int16(a)*int16(b)))
+//		case SZ_32:
+//			binary.BigEndian.PutUint32(out[8-offset:], uint32(int32(a)*int32(b)))
+//		case SZ_64:
+//			binary.BigEndian.PutUint64(out[8-offset:], uint64(int64(a)*int64(b)))
+//		}
+//	}
 func (state *VmState) mulValues(a, b uint64, ty, dataSz byte, out []byte) error {
 	switch ty {
 	case TY_UINT:
