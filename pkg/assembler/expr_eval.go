@@ -284,31 +284,51 @@ func (ev *ExpressionEvaluator) tryEvaluateExpression(e *pr.Expr) (*pr.Expr, erro
 			return pr.MakeDeref(inner), nil
 		}
 	case pr.OneRegOffsetExpr:
-		if expr.Offset != nil {
-			if offset, err := ev.tryEvaluateExpression(expr.Offset); err != nil {
+		if expr.Disp != nil {
+			if offset, err := ev.tryEvaluateExpression(expr.Disp); err != nil {
 				return nil, err
 			} else if offset == nil {
 				return nil, nil
 			} else {
-				expr.Offset = offset
+				expr.Disp = offset
 				return &pr.Expr{Val: expr}, nil
 			}
 		} else {
 			return &pr.Expr{Val: expr}, nil
 		}
 	case pr.TwoRegOffsetExpr:
-		if expr.Offset != nil {
-			if offset, err := ev.tryEvaluateExpression(expr.Offset); err != nil {
+		if expr.Disp != nil {
+			if offset, err := ev.tryEvaluateExpression(expr.Disp); err != nil {
 				return nil, err
 			} else if offset == nil {
 				return nil, nil
 			} else {
-				expr.Offset = offset
+				expr.Disp = offset
 				return &pr.Expr{Val: expr}, nil
 			}
 		} else {
 			return &pr.Expr{Val: expr}, nil
 		}
+	case pr.MemExpr:
+		if expr.Disp != nil {
+			if offset, err := ev.tryEvaluateExpression(expr.Disp); err != nil {
+				return nil, err
+			} else if offset == nil {
+				return nil, nil
+			} else {
+				expr.Disp = offset
+			}
+		}
+		if expr.ScaleF != nil {
+			if scale, err := ev.tryEvaluateExpression(expr.ScaleF); err != nil {
+				return nil, err
+			} else if scale == nil {
+				return nil, nil
+			} else {
+				expr.ScaleF = scale
+			}
+		}
+		return &pr.Expr{Val: expr}, nil
 	}
 	return nil, fmt.Errorf("TODO: expression cannot be evaluated")
 }

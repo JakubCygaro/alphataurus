@@ -68,8 +68,7 @@ func (p *Parser) parseSXMov() error {
 		)
 	} else {
 		p.currentInst.Data = InstMovSXRR{
-			Src:  movRR.Src,
-			Dest: movRR.Dest,
+			Mov: movRR,
 		}
 	}
 	return nil
@@ -81,33 +80,23 @@ func (p *Parser) parseZXMov() error {
 	switch mov := p.currentInst.Data.(type) {
 	case InstMovRR:
 		p.currentInst.Data = InstMovZXRR{
-			Src:  mov.Src,
-			Dest: mov.Dest,
+			Mov: mov,
 		}
 	case InstMovIR:
 		p.currentInst.Data = InstMovZXIR{
-			Dest: mov.Dest,
-			Imm:  mov.Imm,
+			Mov: mov,
 		}
 	case InstMovDR:
 		p.currentInst.Data = InstMovZXDR{
-			Dest:    mov.Dest,
-			Address: mov.Address,
+			Mov: mov,
 		}
 	case InstMovDRO1:
 		p.currentInst.Data = InstMovZXDRO1{
-			Dest:   mov.Dest,
-			Offset: mov.Offset,
-			OReg1:  mov.OReg1,
-			OffOp:  mov.OffOp,
+			Mov: mov,
 		}
 	case InstMovDRO2:
 		p.currentInst.Data = InstMovZXDRO2{
-			Dest:   mov.Dest,
-			Offset: mov.Offset,
-			OReg1:  mov.OReg1,
-			OReg2:  mov.OReg2,
-			RegOp:  mov.RegOp,
+			Mov: mov,
 		}
 	default:
 		return errors.MakeParserError(
@@ -141,30 +130,21 @@ func (p *Parser) parseXChg() error {
 				)
 		}
 		p.currentInst.Data = InstXCHGRR{
-			Src:  mov.Src,
-			Dest: mov.Dest,
+			Mov: mov,
 		}
 	case InstMovDR:
 		p.currentInst.Data = InstXCHGDR{
-			Dest:    mov.Dest,
-			Address: mov.Address,
+			Mov: mov,
 		}
 	case InstMovRD:
 		return helpErr()
 	case InstMovDRO1:
 		p.currentInst.Data = InstXCHGDRO1{
-			Dest:   mov.Dest,
-			Offset: mov.Offset,
-			OReg1:  mov.OReg1,
-			OffOp:  mov.OffOp,
+			Mov: mov,
 		}
 	case InstMovDRO2:
 		p.currentInst.Data = InstXCHGDRO2{
-			Dest:   mov.Dest,
-			Offset: mov.Offset,
-			OReg1:  mov.OReg1,
-			OReg2:  mov.OReg2,
-			RegOp:  mov.RegOp,
+			Mov: mov,
 		}
 	case InstMovRDO1:
 		return helpErr()

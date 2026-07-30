@@ -1,9 +1,8 @@
 package assembler
 
 import (
-
-	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
+	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 )
 
 var Void void = void{}
@@ -112,16 +111,21 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 			t := p.lexer.CurrentToken()
 			return inner, errors.
 				MakeParserError(
-				t.Line, t.Col,
-				"Unclosed bracket in dereference expression, got `%s` instead.",
-				t.ForceValAsString(),
-			)
+					t.Line, t.Col,
+					"Unclosed bracket in dereference expression, got `%s` instead.",
+					t.ForceValAsString(),
+				)
 		}
 		deref := MakeDeref(inner)
 		return deref, nil
 	case lx.TOKEN_TREG:
 		regData := lhsToken.Val.(lx.RegisterData)
-		lhs = MakeRegexpr(byte(regData.Reg), regData.Size)
+		// lhs = MakeRegexpr(byte(regData.Reg), regData.Size)
+		var err error
+		lhs, err = p.parserRegExpr(regData)
+		if err != nil {
+			return nil, err
+		}
 	case lx.TOKEN_TINTEGER_LIT:
 		lhs = MakeConstexprU64(lhsToken.Val.(uint64))
 	case lx.TOKEN_TFLOAT_LIT:
@@ -141,11 +145,11 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 				)
 			default:
 				return lhs, errors.
-				MakeParserError(
-					lhsToken.Line, lhsToken.Col,
-					"Prefix operator TODO `%s`.",
-					lhsToken.ForceValAsString(),
-				)
+					MakeParserError(
+						lhsToken.Line, lhsToken.Col,
+						"Prefix operator TODO `%s`.",
+						lhsToken.ForceValAsString(),
+					)
 			}
 		} else {
 			return nil, errors.MakeParserError(
@@ -188,33 +192,219 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 	return lhs, nil
 }
 
+// func (p *Parser) parserIpDisp() (*Expr, error) {
+// 	var ret MemIPExpr
+// 	n, e := p.lexer.ReadNextTokenReturn()
+// 	if e != nil {
+// 		return nil, e
+// 	}
+// 	opReg := allowedBetweenRegs(n.Ty)
+// 	sf := n.Ty == lx.TOKEN_TASTERISK
+// 	if sf {
+// 		return nil, errors.
+// 			MakeParserError(
+// 				n.Line,
+// 				n.Col,
+// 				"Ip relative addressing with "+
+// 					"scale factor is not allowed",
+// 			)
+// 	}
+// 	if !opReg {
+// 		return nil, errors.
+// 			MakeParserError(
+// 				n.Line,
+// 				n.Col,
+// 				"Ip relative addressing without "+
+// 					"displacement parameter is not allowed",
+// 			)
+// 	}
+// 	if e, err := p.parseExpression(0); err != nil {
+// 		return nil, err
+// 	} else {
+// 		ret.Disp = e
+// 		ret.DispOp = n.Ty
+// 	}
+// 	return &Expr{Val: ret}, nil
+// }
+
+func (p *Parser) parserRegExpr(start lx.RegisterData) (*Expr, error) {
+	var ret MemExpr
+	n, e := p.lexer.ReadNextTokenReturn()
+	if e != nil {
+		return nil, e
+	}
+	opReg := allowedBetweenRegs(n.Ty)
+	sf := n.Ty == lx.TOKEN_TASTERISK
+	ret.Base = start
+	// plain register
+	if !opReg && !sf {
+		p.lexer.UnreadCurrentToken()
+		return &Expr{
+			Val: RegExpr{
+				Reg: start,
+			},
+		}, nil
+	}
+	if sf {
+		// check if sf is a simple integer literal or an ident expression
+		n, e = p.lexer.ReadNextTokenReturn()
+		if e != nil {
+			return nil, e
+		}
+		if n.Ty == lx.TOKEN_TINTEGER_LIT {
+			ret.ScaleF = MakeConstexprU64(n.Val.(uint64))
+		} else if n.Ty == lx.TOKEN_TIDENT {
+			ret.ScaleF = MakeConstexprIdent(n.Val.(string))
+		} else {
+			// if not, then unread parse this as an expression
+			p.lexer.UnreadCurrentToken()
+			if e, err := p.parseExpression(0); err != nil {
+				return nil, err
+			} else {
+				ret.ScaleF = e
+			}
+		}
+		// the next register has to be an operand for either the displacement
+		// or another register
+		n, e = p.lexer.ReadNextTokenReturn()
+		if e != nil {
+			return nil, e
+		}
+		opReg = allowedBetweenRegs(n.Ty)
+		if !opReg {
+			p.lexer.UnreadCurrentToken()
+			return &Expr{
+				Val: ret,
+			}, nil
+		}
+	}
+	op := n.Ty
+	n, e = p.lexer.ReadNextTokenReturn()
+	if e != nil {
+		return nil, e
+	}
+	//check for index
+	if n.Ty == lx.TOKEN_TREG {
+		ret.RegOp = op
+		ret.Index.Set(n.Val.(lx.RegisterData))
+		n, e = p.lexer.ReadNextTokenReturn()
+		if e != nil {
+			return nil, e
+		}
+	} else {
+		p.lexer.UnreadCurrentToken()
+		if e, err := p.parseExpression(0); err != nil {
+			return nil, err
+		} else {
+			ret.Disp = e
+			ret.DispOp = op
+			return &Expr{
+				Val: ret,
+			}, nil
+		}
+	}
+	opReg = allowedBetweenRegs(n.Ty)
+	sf = n.Ty == lx.TOKEN_TASTERISK
+	// end of memory addressing expression
+	if !opReg && !sf {
+		p.lexer.UnreadCurrentToken()
+		return &Expr{
+			Val: ret,
+		}, nil
+	}
+	if sf && ret.ScaleF == nil {
+		// check if sf is a simple integer literal or an ident expression
+		n, e = p.lexer.ReadNextTokenReturn()
+		if e != nil {
+			return nil, e
+		}
+		if n.Ty == lx.TOKEN_TINTEGER_LIT {
+			ret.ScaleF = MakeConstexprU64(n.Val.(uint64))
+		} else if n.Ty == lx.TOKEN_TIDENT {
+			ret.ScaleF = MakeConstexprIdent(n.Val.(string))
+		} else {
+			// if not, then unread parse this as an expression
+			p.lexer.UnreadCurrentToken()
+			if e, err := p.parseExpression(0); err != nil {
+				return nil, err
+			} else {
+				ret.ScaleF = e
+			}
+		}
+		// the next expression has to be an operand for either the displacement
+		// or another register
+		n, e = p.lexer.ReadNextTokenReturn()
+		if e != nil {
+			return nil, e
+		}
+		opReg = allowedBetweenRegs(n.Ty)
+		if !opReg {
+			p.lexer.UnreadCurrentToken()
+			return &Expr{
+				Val: ret,
+			}, nil
+		}
+	} else if ret.ScaleF != nil {
+		return nil, errors.
+			MakeParserError(
+				n.Line,
+				n.Col,
+				"Too many scale factors "+
+					"",
+			)
+	}
+	op = n.Ty
+	n, e = p.lexer.ReadNextTokenReturn()
+	if e != nil {
+		return nil, e
+	}
+	if e, err := p.parseExpression(0); err != nil {
+		return nil, err
+	} else {
+		ret.Disp = e
+		ret.DispOp = op
+		return &Expr{
+			Val: ret,
+		}, nil
+	}
+}
+
 func makeBinop(lhs, rhs *Expr, opToken lx.Token) (*Expr, error) {
-	if lhs.IsRegexpr() || rhs.IsRegexpr() {
-		if e, err := opTyToRegOffExpr(lhs, rhs, opToken); err != nil {
-			return nil, err
-		} else {
-			return &Expr{
-				Val: e,
-			}, nil
-		}
-	}
-	if lhs.IsOneRegOffsetExpr() {
-		if e, err := opTyWithOneOffRegExpr(lhs, rhs, opToken); err != nil {
-			return nil, err
-		} else {
-			return &Expr{
-				Val: e,
-			}, nil
-		}
-	}
-	if lhs.IsTwoRegOffsetExpr() {
-		if e, err := opTyWithTwoOffRegExpr(lhs, rhs, opToken); err != nil {
-			return nil, err
-		} else {
-			return &Expr{
-				Val: e,
-			}, nil
-		}
+	// if lhs.IsRegexpr() || rhs.IsRegexpr() {
+	// 	if e, err := opTyToRegOffExpr(lhs, rhs, opToken); err != nil {
+	// 		return nil, err
+	// 	} else {
+	// 		return &Expr{
+	// 			Val: e,
+	// 		}, nil
+	// 	}
+	// }
+	// if lhs.IsOneRegOffsetExpr() {
+	// 	if e, err := opTyWithOneOffRegExpr(lhs, rhs, opToken); err != nil {
+	// 		return nil, err
+	// 	} else {
+	// 		return &Expr{
+	// 			Val: e,
+	// 		}, nil
+	// 	}
+	// }
+	// if lhs.IsTwoRegOffsetExpr() {
+	// 	if e, err := opTyWithTwoOffRegExpr(lhs, rhs, opToken); err != nil {
+	// 		return nil, err
+	// 	} else {
+	// 		return &Expr{
+	// 			Val: e,
+	// 		}, nil
+	// 	}
+	// }
+	if !lhs.IsConstexpr() && !rhs.IsConstexpr() &&
+		!lhs.IsArthexpr() && !rhs.IsArthexpr() {
+		return nil, errors.
+			MakeParserError(
+				lhs.Line,
+				lhs.Col,
+				"Disallowed binary expression",
+			)
 	}
 	return &Expr{
 		Val: ArthExpr{
@@ -235,134 +425,135 @@ func arthOrPass(lhs, rhs *Expr, ty int) *Expr {
 		}
 	}
 }
-func opTyWithTwoOffRegExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
-	switch a := lhs.Val.(type) {
-	case TwoRegOffsetExpr:
-		if !allowedBetweenRegs(op.Ty) || a.Offset != nil {
-			return nil, errors.MakeParserError(
-				rhs.Line, rhs.Col,
-				"Disallowed operation for two register offset expression `%s`.",
-				op.ForceValAsString(),
-			)
-		}
-		switch rhs.Val.(type) {
-		case ConstExpr:
-			return TwoRegOffsetExpr{
-				Reg1:     a.Reg1,
-				Reg2:     a.Reg2,
-				RegOp:    a.RegOp,
-				OffsetOp: op.Ty,
-				Offset:   rhs,
-			}, nil
-		case ArthExpr:
-			return TwoRegOffsetExpr{
-				Reg1:     a.Reg1,
-				Reg2:     a.Reg2,
-				RegOp:    a.RegOp,
-				OffsetOp: op.Ty,
-				Offset:   rhs,
-			}, nil
-		}
-	}
-	return nil, errors.MakeParserError(
-		rhs.Line, rhs.Col,
-		"Bad expression.",
-	)
-}
 
-func opTyWithOneOffRegExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
-	switch a := lhs.Val.(type) {
-	case OneRegOffsetExpr:
-		switch b := rhs.Val.(type) {
-		case RegExpr:
-			if allowedBetweenRegs(op.Ty) && a.Offset == nil {
-				return TwoRegOffsetExpr{
-					Reg1:  a.Reg,
-					Reg2:  b.Reg,
-					RegOp: op.Ty,
-				}, nil
-			}
-			// r0 + 1 +/- r1
-			if a.Offset != nil &&
-				allowedBetweenRegs(op.Ty) &&
-				allowedBetweenRegs(a.OffsetOp) {
-				/* && a.OffsetOp == lx.TOKEN_TPLUS */
-				return TwoRegOffsetExpr{
-					Reg1:     a.Reg,
-					Reg2:     b.Reg,
-					RegOp:    op.Ty,
-					OffsetOp: a.OffsetOp,
-					Offset:   a.Offset,
-				}, nil
-			}
-		case OneRegOffsetExpr:
-			if allowedBetweenRegs(op.Ty) &&
-				a.Offset == nil {
-				return TwoRegOffsetExpr{
-					Reg1:     a.Reg,
-					Reg2:     b.Reg,
-					RegOp:    op.Ty,
-					OffsetOp: b.OffsetOp,
-					Offset:   b.Offset,
-				}, nil
-			}
-			// (r1 + 1) +/- (r2 + 2)
-			if allowedBetweenRegs(op.Ty) &&
-				allowedBetweenRegs(a.OffsetOp) &&
-				allowedBetweenRegs(b.OffsetOp) &&
-				a.Offset != nil {
-				return TwoRegOffsetExpr{
-					Reg1:     a.Reg,
-					Reg2:     b.Reg,
-					RegOp:    op.Ty,
-					OffsetOp: b.OffsetOp,
-					Offset:   arthOrPass(a.Offset, b.Offset, b.OffsetOp),
-				}, nil
-			}
-		}
-		return nil, errors.MakeParserError(
-			rhs.Line, rhs.Col,
-			"Disallowed operation between registers `%s`.",
-			op.ForceValAsString(),
-		)
-	}
-	return nil, errors.MakeParserError(
-		rhs.Line, rhs.Col,
-		"Bad expression.",
-	)
-}
-
-func opTyToRegOffExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
-	switch a := lhs.Val.(type) {
-	case RegExpr:
-		if rhs.IsRegexpr() {
-			if !allowedBetweenRegs(op.Ty) {
-				return nil, errors.MakeParserError(
-					rhs.Line, rhs.Col,
-					"Disallowed operation between registers `%s`.",
-					op.ForceValAsString(),
-				)
-			}
-			return TwoRegOffsetExpr{
-				Reg1:   a.Reg,
-				Reg2:   rhs.Val.(RegExpr).Reg,
-				RegOp:  op.Ty,
-				Offset: nil,
-			}, nil
-		} else {
-			return OneRegOffsetExpr{
-				Reg:      a.Reg,
-				OffsetOp: op.Ty,
-				Offset:   rhs,
-			}, nil
-		}
-	default:
-		return nil, errors.MakeParserError(
-			lhs.Line, lhs.Col,
-			"Bad expression.",
-		)
-	}
-}
+// func opTyWithTwoOffRegExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
+// 	switch a := lhs.Val.(type) {
+// 	case TwoRegOffsetExpr:
+// 		if !allowedBetweenRegs(op.Ty) || a.Disp != nil {
+// 			return nil, errors.MakeParserError(
+// 				rhs.Line, rhs.Col,
+// 				"Disallowed operation for two register offset expression `%s`.",
+// 				op.ForceValAsString(),
+// 			)
+// 		}
+// 		switch rhs.Val.(type) {
+// 		case ConstExpr:
+// 			return TwoRegOffsetExpr{
+// 				Reg1:     a.Reg1,
+// 				Reg2:     a.Reg2,
+// 				RegOp:    a.RegOp,
+// 				OffsetOp: op.Ty,
+// 				Disp:     rhs,
+// 			}, nil
+// 		case ArthExpr:
+// 			return TwoRegOffsetExpr{
+// 				Reg1:     a.Reg1,
+// 				Reg2:     a.Reg2,
+// 				RegOp:    a.RegOp,
+// 				OffsetOp: op.Ty,
+// 				Disp:     rhs,
+// 			}, nil
+// 		}
+// 	}
+// 	return nil, errors.MakeParserError(
+// 		rhs.Line, rhs.Col,
+// 		"Bad expression.",
+// 	)
+// }
+//
+// func opTyWithOneOffRegExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
+// 	switch a := lhs.Val.(type) {
+// 	case OneRegOffsetExpr:
+// 		switch b := rhs.Val.(type) {
+// 		case RegExpr:
+// 			if allowedBetweenRegs(op.Ty) && a.Disp == nil {
+// 				return TwoRegOffsetExpr{
+// 					Reg1:  a.Reg,
+// 					Reg2:  b.Reg,
+// 					RegOp: op.Ty,
+// 				}, nil
+// 			}
+// 			// r0 + 1 +/- r1
+// 			if a.Disp != nil &&
+// 				allowedBetweenRegs(op.Ty) &&
+// 				allowedBetweenRegs(a.OffsetOp) {
+// 				/* && a.OffsetOp == lx.TOKEN_TPLUS */
+// 				return TwoRegOffsetExpr{
+// 					Reg1:     a.Reg,
+// 					Reg2:     b.Reg,
+// 					RegOp:    op.Ty,
+// 					OffsetOp: a.OffsetOp,
+// 					Disp:     a.Disp,
+// 				}, nil
+// 			}
+// 		case OneRegOffsetExpr:
+// 			if allowedBetweenRegs(op.Ty) &&
+// 				a.Disp == nil {
+// 				return TwoRegOffsetExpr{
+// 					Reg1:     a.Reg,
+// 					Reg2:     b.Reg,
+// 					RegOp:    op.Ty,
+// 					OffsetOp: b.OffsetOp,
+// 					Disp:     b.Disp,
+// 				}, nil
+// 			}
+// 			// (r1 + 1) +/- (r2 + 2)
+// 			if allowedBetweenRegs(op.Ty) &&
+// 				allowedBetweenRegs(a.OffsetOp) &&
+// 				allowedBetweenRegs(b.OffsetOp) &&
+// 				a.Disp != nil {
+// 				return TwoRegOffsetExpr{
+// 					Reg1:     a.Reg,
+// 					Reg2:     b.Reg,
+// 					RegOp:    op.Ty,
+// 					OffsetOp: b.OffsetOp,
+// 					Disp:     arthOrPass(a.Disp, b.Disp, b.OffsetOp),
+// 				}, nil
+// 			}
+// 		}
+// 		return nil, errors.MakeParserError(
+// 			rhs.Line, rhs.Col,
+// 			"Disallowed operation between registers `%s`.",
+// 			op.ForceValAsString(),
+// 		)
+// 	}
+// 	return nil, errors.MakeParserError(
+// 		rhs.Line, rhs.Col,
+// 		"Bad expression.",
+// 	)
+// }
+//
+// func opTyToRegOffExpr(lhs, rhs *Expr, op lx.Token) (any, error) {
+// 	switch a := lhs.Val.(type) {
+// 	case RegExpr:
+// 		if rhs.IsRegexpr() {
+// 			if !allowedBetweenRegs(op.Ty) {
+// 				return nil, errors.MakeParserError(
+// 					rhs.Line, rhs.Col,
+// 					"Disallowed operation between registers `%s`.",
+// 					op.ForceValAsString(),
+// 				)
+// 			}
+// 			return TwoRegOffsetExpr{
+// 				Reg1:  a.Reg,
+// 				Reg2:  rhs.Val.(RegExpr).Reg,
+// 				RegOp: op.Ty,
+// 				Disp:  nil,
+// 			}, nil
+// 		} else {
+// 			return OneRegOffsetExpr{
+// 				Reg:      a.Reg,
+// 				OffsetOp: op.Ty,
+// 				Disp:     rhs,
+// 			}, nil
+// 		}
+// 	default:
+// 		return nil, errors.MakeParserError(
+// 			lhs.Line, lhs.Col,
+// 			"Bad expression.",
+// 		)
+// 	}
+// }
 
 func opTyToArthExpr(lhs, rhs *Expr, ty int) any {
 	switch ty {

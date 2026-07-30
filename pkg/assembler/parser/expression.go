@@ -5,6 +5,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/JakubCygaro/alphataurus/internal/pkg/opt"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 )
 
@@ -42,6 +43,14 @@ type Expr struct {
 	Val       any
 	Line, Col int
 }
+type MemExpr struct {
+	Base   lx.RegisterData
+	Index  opt.Opt[lx.RegisterData]
+	ScaleF *Expr
+	Disp   *Expr
+	RegOp  int
+	DispOp int
+}
 
 type ConstExpr struct {
 	Val any
@@ -49,15 +58,27 @@ type ConstExpr struct {
 type RegExpr struct {
 	Reg lx.RegisterData
 }
+
+type Scale byte
+
+const (
+	SCALE_0 Scale = iota
+	SCALE_2
+	SCALE_4
+	SCALE_8
+)
+
 type OneRegOffsetExpr struct {
-	Reg      lx.RegisterData
-	OffsetOp int
-	Offset   *Expr
+	Reg lx.RegisterData
+	// OffsetOp int
+	Disp   *Expr
+	Scalef Scale
 }
 type TwoRegOffsetExpr struct {
-	Reg1, Reg2      lx.RegisterData
-	OffsetOp, RegOp int
-	Offset          *Expr
+	Reg1, Reg2 lx.RegisterData
+	RegOp      int
+	Scalef     Scale
+	Disp       *Expr
 }
 type ConstExprILit struct {
 	Integer uint64
@@ -378,21 +399,20 @@ func (e *Expr) Emit() (string, error) {
 	case OneRegOffsetExpr:
 		em := [3]string{}
 		em[0] = v.Reg.String()
-		switch v.OffsetOp {
-		case lx.TOKEN_TPLUS:
-			em[1] = "+"
-		case lx.TOKEN_TMINUS:
-			em[1] = "-"
-		case lx.TOKEN_TASTERISK:
-			em[1] = "*"
-		case lx.TOKEN_TSLASH:
-			em[1] = "/"
-		default:
-			em[1] = "?"
-		}
-		if v.Offset == nil {
+		// switch v.OffsetOp {
+		// case lx.TOKEN_TPLUS:
+		// case lx.TOKEN_TMINUS:
+		// 	em[1] = "-"
+		// case lx.TOKEN_TASTERISK:
+		// 	em[1] = "*"
+		// case lx.TOKEN_TSLASH:
+		// 	em[1] = "/"
+		// default:
+		// 	em[1] = "?"
+		// }
+		if v.Disp == nil {
 			em[1] = ""
-		} else if oem, err := v.Offset.Emit(); err != nil {
+		} else if oem, err := v.Disp.Emit(); err != nil {
 			return "", err
 		} else {
 			em[2] = oem
@@ -415,17 +435,17 @@ func (e *Expr) Emit() (string, error) {
 			em[1] = "?"
 		}
 		em[2] = v.Reg2.String()
-		switch v.OffsetOp {
-		case lx.TOKEN_TPLUS:
-			em[3] = "+"
-		case lx.TOKEN_TMINUS:
-			em[3] = "-"
-		default:
-			em[3] = "?"
-		}
-		if v.Offset == nil {
+		// switch v.OffsetOp {
+		// case lx.TOKEN_TPLUS:
+		// 	em[3] = "+"
+		// case lx.TOKEN_TMINUS:
+		// 	em[3] = "-"
+		// default:
+		// 	em[3] = "?"
+		// }
+		if v.Disp == nil {
 			em[3] = ""
-		} else if oem, err := v.Offset.Emit(); err != nil {
+		} else if oem, err := v.Disp.Emit(); err != nil {
 			return "", err
 		} else {
 			em[4] = oem
@@ -436,6 +456,42 @@ func (e *Expr) Emit() (string, error) {
 					" ",
 				),
 			nil
+	case MemExpr:
+		em := [5]string{}
+		em[0] = v.Base.String()
+		switch v.RegOp {
+		case lx.TOKEN_TPLUS:
+			em[1] = "+"
+		case lx.TOKEN_TMINUS:
+			em[1] = "-"
+		default:
+			em[1] = "?"
+		}
+		if i, ok := v.Index.TryGet(); ok {
+			em[2] = i.String()
+		}
+		switch v.DispOp {
+		case lx.TOKEN_TPLUS:
+			em[3] = "+"
+		case lx.TOKEN_TMINUS:
+			em[3] = "-"
+		default:
+			em[3] = "?"
+		}
+		if v.Disp == nil {
+			em[3] = ""
+		} else if oem, err := v.Disp.Emit(); err != nil {
+			return "", err
+		} else {
+			em[4] = oem
+		}
+		return strings.
+				Join(
+					em[:],
+					" ",
+				),
+			nil
+
 	default:
 		return "", fmt.Errorf("<INVALID EXPRESSION TYPE>")
 	}

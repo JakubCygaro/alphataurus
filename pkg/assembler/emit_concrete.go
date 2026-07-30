@@ -158,70 +158,21 @@ func (a *Assembler) emitMovIR(data pr.InstMovIR, at int) error {
 }
 func (a *Assembler) emitMovZXIR(data pr.InstMovZXIR, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVIR)
+	err := a.emitMovIR(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	lastByte :=
-		(0b0000_1111 & byte(data.Dest.Reg)) |
-			(0b0011_0000 & (byte(0) << 4)) |
-			(0b1100_0000 & (byte(vm.SZ_64) << 6))
-	a.bytecode[at] = lastByte
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Imm))
-	return nil
+	return err
 }
 func (a *Assembler) emitMovZXRR(data pr.InstMovZXRR, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVZXRR)
+	err := a.emitMovRR(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
-		return pe.
-			DisallowedDestReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Dest,
-			)
-	}
-	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
-		return pe.
-			DisallowedSrcReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Src,
-			)
-	}
-	destsrc := 0b00001111 & byte(data.Dest.Reg)
-	destsrc |= (0b00001111 & byte(data.Src.Reg)) << 4
-	dataSz := (0b0000_0011 & data.Src.Size)
-	dataSz |= (0b0000_0011 & data.Dest.Size) << 2
-	a.bytecode[at] = dataSz
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
-	a.bytecode[at+decls.INSTRUCTION_SIZE-1] = destsrc
-	return nil
+	return err
 }
 func (a *Assembler) emitMovSXRR(data pr.InstMovSXRR, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVSXRR)
+	err := a.emitMovRR(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
-		return pe.
-			DisallowedDestReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Dest,
-			)
-	}
-	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
-		return pe.
-			DisallowedSrcReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Src,
-			)
-	}
-	destsrc := 0b00001111 & byte(data.Dest.Reg)
-	destsrc |= (0b00001111 & byte(data.Src.Reg)) << 4
-	dataSz := (0b0000_0011 & data.Src.Size)
-	dataSz |= (0b0000_0011 & data.Dest.Size) << 2
-	a.bytecode[at] = dataSz
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
-	a.bytecode[at+decls.INSTRUCTION_SIZE-1] = destsrc
-	return nil
+	return err
 }
 func (a *Assembler) emitMovRR(data pr.InstMovRR, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRR)
@@ -270,37 +221,30 @@ func (a *Assembler) emitMovDR(data pr.InstMovDR, at int) error {
 }
 func (a *Assembler) emitMovZXDR(data pr.InstMovZXDR, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVZXDR)
+	err := a.emitMovDR(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
-		return pe.
-			DisallowedDestReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Dest,
-			)
-	}
-	lastByte := (0b0000_1111 & byte(data.Dest.Reg))
-	lastByte |= (0b0000_0011 & data.Dest.Size) << 4
-	a.bytecode[at] = lastByte
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Address))
-	return nil
+	return err
 }
 func (a *Assembler) emitMovDRO1(data pr.InstMovDRO1, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRO1)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
+	if !vm.IsMovIntoRAllowed(byte(data.Base.Reg)) {
 		return pe.
 			DisallowedDestReg(
 				a.cInst.Line,
 				a.cInst.Col,
-				data.Dest,
+				data.Base,
 			)
 	}
 	lastByte := (0b0000_1111 & byte(data.Dest.Reg)) << 4
-	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
+	lastByte |= (0b0000_1111 & byte(data.Base.Reg))
 	penultByte := (0b0000_0011 & byte(data.Dest.Size)) << 4
-	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.OffOp)
+	penultByte |= (0b0000_0011 & byte(data.Base.Size)) << 2
+	off, ok := lx.TokenTToOpT(data.DispOp)
+	if !ok {
+		panic(
+			"bad internal assembler state - displacement operator of invalid type")
+	}
 	penultByte |= (0b0000_0011 & byte(off))
 	a.bytecode[at] = lastByte
 	a.bytecode[at+1] = penultByte
@@ -309,25 +253,9 @@ func (a *Assembler) emitMovDRO1(data pr.InstMovDRO1, at int) error {
 }
 func (a *Assembler) emitMovZXDRO1(data pr.InstMovZXDRO1, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVZXDRO1)
+	err := a.emitMovDRO1(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
-		return pe.
-			DisallowedDestReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Dest,
-			)
-	}
-	lastByte := (0b0000_1111 & byte(data.Dest.Reg)) << 4
-	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
-	penultByte := (0b0000_0011 & byte(data.Dest.Size)) << 4
-	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.OffOp)
-	penultByte |= (0b0000_0011 & byte(off))
-	a.bytecode[at] = lastByte
-	a.bytecode[at+1] = penultByte
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
-	return nil
+	return err
 }
 func (a *Assembler) emitMovDRO2(data pr.InstMovDRO2, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVDRO2)
@@ -341,43 +269,28 @@ func (a *Assembler) emitMovDRO2(data pr.InstMovDRO2, at int) error {
 			)
 	}
 	byte4 := (0b0000_1111 & byte(data.Dest.Reg)) << 4
-	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
-	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
-	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.RegOp)
+	byte4 |= (0b0000_1111 & byte(data.Base.Reg))
+	byte3 := (0b0000_1111 & byte(data.Index.Reg)) << 4
+	byte3 |= (0b0000_0011 & byte(data.Base.Size)) << 2
+	off, ok := lx.TokenTToOpT(data.RegOp)
+	if !ok {
+		panic(
+			"bad internal assembler state - register operator of invalid type")
+	}
 	byte3 |= (0b0000_0011 & byte(off))
 	byte2 := (data.Dest.Size & 0b0000_0011)
 	a.bytecode[at] = byte4
 	a.bytecode[at+1] = byte3
 	a.bytecode[at+2] = byte2
-	param := uint64(data.Offset)
+	param := uint64(data.Disp)
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], param)
 	return nil
 }
 func (a *Assembler) emitMovZXDRO2(data pr.InstMovZXDRO2, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVZXDRO2)
+	err := a.emitMovDRO2(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
-		return pe.
-			DisallowedDestReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Dest,
-			)
-	}
-	byte4 := (0b0000_1111 & byte(data.Dest.Reg)) << 4
-	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
-	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
-	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.RegOp)
-	byte3 |= (0b0000_0011 & byte(off))
-	byte2 := (data.Dest.Size & 0b0000_0011)
-	a.bytecode[at] = byte4
-	a.bytecode[at+1] = byte3
-	a.bytecode[at+2] = byte2
-	param := uint64(data.Offset)
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], param)
-	return nil
+	return err
 }
 func (a *Assembler) emitMovID(data pr.InstMovID, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVID)
@@ -402,10 +315,15 @@ func (a *Assembler) emitMovRD(data pr.InstMovRD, at int) error {
 }
 func (a *Assembler) emitMovIDO1(data pr.InstMovIDO1, at int) error {
 	lastByte := byte(0)
-	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
+	lastByte |= (0b0000_1111 & byte(data.Base.Reg))
 	penultByte := (0b0000_0011 & byte(data.DataSize)) << 4
-	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.OffOp)
+	penultByte |= (0b0000_0011 & byte(data.Base.Size)) << 2
+	penultByte |= (0b0000_0011 & byte(data.SF)) << 6
+	off, ok := lx.TokenTToOpT(data.DispOp)
+	if !ok {
+		panic(
+			"bad internal assembler state - displacement operator of invalid type")
+	}
 	penultByte |= (0b0000_0011 & byte(off))
 	param := uint64(0)
 	var mov uint32
@@ -414,7 +332,7 @@ func (a *Assembler) emitMovIDO1(data pr.InstMovIDO1, at int) error {
 		param = data.Imm
 	} else {
 		mov = a.opCodes.GetBytes(vm.OP_MOVIDO1)
-		param = uint64(data.Offset) << 32
+		param = uint64(data.Disp) << 32
 		param |= 0x0000_0000_ffff_ffff & uint64(data.Imm)
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
@@ -430,24 +348,34 @@ func (a *Assembler) emitMovRDO1(data pr.InstMovRDO1, at int) error {
 		return pe.DisallowedSrcReg(a.cInst.Line, a.cInst.Col, data.Src)
 	}
 	lastByte := (0b0000_1111 & byte(data.Src.Reg)) << 4
-	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
+	lastByte |= (0b0000_1111 & byte(data.Base.Reg))
 	penultByte := (0b0000_0011 & byte(data.Src.Size)) << 4
-	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.OffOp)
+	penultByte |= (0b0000_0011 & byte(data.Base.Size)) << 2
+	penultByte |= (0b0000_0011 & byte(data.SF)) << 6
+	off, ok := lx.TokenTToOpT(data.DispOp)
+	if !ok {
+		panic(
+			"bad internal assembler state - displacement operator of invalid type")
+	}
 	penultByte |= (0b0000_0011 & byte(off))
 	a.bytecode[at] = lastByte
 	a.bytecode[at+1] = penultByte
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Disp))
 	return nil
 }
 func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, at int) error {
 	byte4 := (0b0000_1111 & byte(0)) << 4
-	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
-	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
-	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.RegOp)
+	byte4 |= (0b0000_1111 & byte(data.Base.Reg))
+	byte3 := (0b0000_1111 & byte(data.Index.Reg)) << 4
+	byte3 |= (0b0000_0011 & byte(data.Base.Size)) << 2
+	off, ok := lx.TokenTToOpT(data.RegOp)
+	if !ok {
+		panic(
+			"bad internal assembler state - register operator of invalid type")
+	}
 	byte3 |= (0b0000_0011 & byte(off))
 	byte2 := (0b0000_0011 & byte(data.DataSize))
+	byte2 |= (0b0000_0011 & byte(data.SF)) << 2
 	var mov uint32
 	var param uint64
 	if data.NoOff {
@@ -455,7 +383,7 @@ func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, at int) error {
 		param = uint64(data.Imm)
 	} else {
 		mov = a.opCodes.GetBytes(vm.OP_MOVIDO2)
-		param |= uint64(data.Offset) << 32
+		param |= uint64(data.Disp) << 32
 		param |= 0x0000_0000_ffff_ffff & uint64(data.Imm)
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
@@ -469,15 +397,16 @@ func (a *Assembler) emitMovRDO2(data pr.InstMovRDO2, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_MOVRDO1)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	byte4 := (0b0000_1111 & byte(data.Src.Reg)) << 4
-	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
-	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
-	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
+	byte4 |= (0b0000_1111 & byte(data.Base.Reg))
+	byte3 := (0b0000_1111 & byte(data.Index.Reg)) << 4
+	byte3 |= (0b0000_0011 & byte(data.Base.Size)) << 2
 	byte3 |= (0b0000_0011 & byte(data.RegOp))
 	byte2 := (0b0000_0011 & data.Src.Size)
+	byte2 |= (0b0000_0011 & byte(data.SF)) << 2
 	a.bytecode[at] = byte4
 	a.bytecode[at+1] = byte3
 	a.bytecode[at+2] = byte2
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Disp))
 	return nil
 }
 func (a *Assembler) emitArthRR(data pr.InstArthRR, at int) error {
@@ -639,94 +568,27 @@ func (a *Assembler) emitCmpIR(data pr.InstCmpIR, at int) error {
 }
 func (a *Assembler) emitXCHGRR(data pr.InstXCHGRR, at int) error {
 	xchg := a.opCodes.GetBytes(vm.OP_XCHGRR)
+	err := a.emitMovRR(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(xchg))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
-		return pe.
-			DisallowedDestReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Dest,
-			)
-	}
-	if !vm.IsMovIntoRAllowed(byte(data.Src.Reg)) {
-		return pe.
-			DisallowedSrcReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Src,
-			)
-	}
-	destsrc := 0b00001111 & byte(data.Dest.Reg)
-	destsrc |= (0b00001111 & byte(data.Src.Reg)) << 4
-	dataSz := (0b0000_0011 & data.Dest.Size)
-	a.bytecode[at] = dataSz
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
-	a.bytecode[at+decls.INSTRUCTION_SIZE-1] = destsrc
-	return nil
+	return err
 }
 func (a *Assembler) emitXCHGDR(data pr.InstXCHGDR, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_XCHGDR)
+	err := a.emitMovDR(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
-		return pe.
-			DisallowedDestReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Dest,
-			)
-	}
-	lastByte := (0b0000_1111 & byte(data.Dest.Reg))
-	lastByte |= (0b0000_0011 & data.Dest.Size) << 4
-	a.bytecode[at] = lastByte
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Address))
-	return nil
+	return err
 }
 func (a *Assembler) emitXCHGDRO1(data pr.InstXCHGDRO1, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_XCHGDRO1)
+	err := a.emitMovDRO1(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
-		return pe.
-			DisallowedDestReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Dest,
-			)
-	}
-	lastByte := (0b0000_1111 & byte(data.Dest.Reg)) << 4
-	lastByte |= (0b0000_1111 & byte(data.OReg1.Reg))
-	penultByte := (0b0000_0011 & byte(data.Dest.Size)) << 4
-	penultByte |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.OffOp)
-	penultByte |= (0b0000_0011 & byte(off))
-	a.bytecode[at] = lastByte
-	a.bytecode[at+1] = penultByte
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Offset))
-	return nil
+	return err
 }
 func (a *Assembler) emitXCHGDRO2(data pr.InstXCHGDRO2, at int) error {
 	mov := a.opCodes.GetBytes(vm.OP_XCHGDRO2)
+	err := a.emitMovDRO2(data.Mov, at)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
-	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
-		return pe.
-			DisallowedDestReg(
-				a.cInst.Line,
-				a.cInst.Col,
-				data.Dest,
-			)
-	}
-	byte4 := (0b0000_1111 & byte(data.Dest.Reg)) << 4
-	byte4 |= (0b0000_1111 & byte(data.OReg1.Reg))
-	byte3 := (0b0000_1111 & byte(data.OReg2.Reg)) << 4
-	byte3 |= (0b0000_0011 & byte(data.OReg1.Size)) << 2
-	off, _ := lx.TokenTToOpT(data.RegOp)
-	byte3 |= (0b0000_0011 & byte(off))
-	byte2 := (data.Dest.Size & 0b0000_0011)
-	a.bytecode[at] = byte4
-	a.bytecode[at+1] = byte3
-	a.bytecode[at+2] = byte2
-	param := uint64(data.Offset)
-	binary.BigEndian.PutUint64(a.bytecode[at+4:], param)
-	return nil
+	return err
 }
 
 func (a *Assembler) emitMovSB(data pr.InstMovSB, at int) error {

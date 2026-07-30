@@ -44,25 +44,36 @@ foo:
 	pop bp
 	ret
 `
+
 // char a = -10;
 // short b = (short)a;
 const assembly = `
 section '.code'
 @entry
-_start:
-	push BYTE 1
+	push WORD 0
 	mov bp, sp
-	push BYTE 2
-	push BYTE 3
-	push BYTE 4
-	push BYTE 5
-	mov r5, bp ;; src
-	add sp, 1
-	mov r6, sp ;; dest
-	mov r7, 5  ;; counter
-	;; rep movsb
-	movsw
-	exit 0
+	mov r6, 0
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], -28
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], 47
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], 9
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], -25
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], 15
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], 14
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], -32
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], 27
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], -16
+	add UNSIGNED r6, 8
+	mov WORD [bp+r6], -42
+	add UNSIGNED r6, 8
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -75,7 +86,7 @@ func logWarnings(awd assembler.AssemblerWarningData) {
 }
 
 func main() {
-	sources := []string{assembly, assembly2, assembly3}
+	sources := []string{assembly}
 	objects := make([]linker.LinkerInput, 0)
 	for _, s := range sources {
 		asm := assembler.NewAssembler(bufio.NewReader(strings.NewReader(s)))
