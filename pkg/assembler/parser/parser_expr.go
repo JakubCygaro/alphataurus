@@ -192,41 +192,6 @@ func (p *Parser) parseExpression(minBp int) (*Expr, error) {
 	return lhs, nil
 }
 
-// func (p *Parser) parserIpDisp() (*Expr, error) {
-// 	var ret MemIPExpr
-// 	n, e := p.lexer.ReadNextTokenReturn()
-// 	if e != nil {
-// 		return nil, e
-// 	}
-// 	opReg := allowedBetweenRegs(n.Ty)
-// 	sf := n.Ty == lx.TOKEN_TASTERISK
-// 	if sf {
-// 		return nil, errors.
-// 			MakeParserError(
-// 				n.Line,
-// 				n.Col,
-// 				"Ip relative addressing with "+
-// 					"scale factor is not allowed",
-// 			)
-// 	}
-// 	if !opReg {
-// 		return nil, errors.
-// 			MakeParserError(
-// 				n.Line,
-// 				n.Col,
-// 				"Ip relative addressing without "+
-// 					"displacement parameter is not allowed",
-// 			)
-// 	}
-// 	if e, err := p.parseExpression(0); err != nil {
-// 		return nil, err
-// 	} else {
-// 		ret.Disp = e
-// 		ret.DispOp = n.Ty
-// 	}
-// 	return &Expr{Val: ret}, nil
-// }
-
 func (p *Parser) parserRegExpr(start lx.RegisterData) (*Expr, error) {
 	var ret MemExpr
 	n, e := p.lexer.ReadNextTokenReturn()

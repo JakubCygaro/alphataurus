@@ -17,19 +17,6 @@ type Option[T any] struct {
 	has bool
 }
 
-// func (opt *Option[T]) HasValue() bool {
-// 	return opt.has
-// }
-// func (opt *Option[T]) Set(val T) {
-// 	opt.val, opt.has = val, true
-// }
-// func (opt *Option[T]) Get() T {
-// 	if !opt.has {
-// 		panic("called Get on empty Option[T]")
-// 	}
-// 	return opt.val
-// }
-
 type LinkingOptions struct {
 	EntryFile string
 	EntryLab  string
