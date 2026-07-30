@@ -283,32 +283,6 @@ func (ev *ExpressionEvaluator) tryEvaluateExpression(e *pr.Expr) (*pr.Expr, erro
 		} else {
 			return pr.MakeDeref(inner), nil
 		}
-	case pr.OneRegOffsetExpr:
-		if expr.Disp != nil {
-			if offset, err := ev.tryEvaluateExpression(expr.Disp); err != nil {
-				return nil, err
-			} else if offset == nil {
-				return nil, nil
-			} else {
-				expr.Disp = offset
-				return &pr.Expr{Val: expr}, nil
-			}
-		} else {
-			return &pr.Expr{Val: expr}, nil
-		}
-	case pr.TwoRegOffsetExpr:
-		if expr.Disp != nil {
-			if offset, err := ev.tryEvaluateExpression(expr.Disp); err != nil {
-				return nil, err
-			} else if offset == nil {
-				return nil, nil
-			} else {
-				expr.Disp = offset
-				return &pr.Expr{Val: expr}, nil
-			}
-		} else {
-			return &pr.Expr{Val: expr}, nil
-		}
 	case pr.MemExpr:
 		if expr.Disp != nil {
 			if offset, err := ev.tryEvaluateExpression(expr.Disp); err != nil {

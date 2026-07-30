@@ -240,6 +240,7 @@ func (a *Assembler) emitMovDRO1(data pr.InstMovDRO1, at int) error {
 	lastByte |= (0b0000_1111 & byte(data.Base.Reg))
 	penultByte := (0b0000_0011 & byte(data.Dest.Size)) << 4
 	penultByte |= (0b0000_0011 & byte(data.Base.Size)) << 2
+	penultByte |= (0b0000_0011 & byte(data.SF)) << 6
 	off, ok := lx.TokenTToOpT(data.DispOp)
 	if !ok {
 		panic(
@@ -272,13 +273,14 @@ func (a *Assembler) emitMovDRO2(data pr.InstMovDRO2, at int) error {
 	byte4 |= (0b0000_1111 & byte(data.Base.Reg))
 	byte3 := (0b0000_1111 & byte(data.Index.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.Base.Size)) << 2
-	off, ok := lx.TokenTToOpT(data.RegOp)
+	off, ok := lx.TokenTToOpT(data.DispOp)
 	if !ok {
 		panic(
 			"bad internal assembler state - register operator of invalid type")
 	}
 	byte3 |= (0b0000_0011 & byte(off))
 	byte2 := (data.Dest.Size & 0b0000_0011)
+	byte2 |= (byte(data.SF) & 0b0000_0011) << 2
 	a.bytecode[at] = byte4
 	a.bytecode[at+1] = byte3
 	a.bytecode[at+2] = byte2
@@ -368,7 +370,7 @@ func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, at int) error {
 	byte4 |= (0b0000_1111 & byte(data.Base.Reg))
 	byte3 := (0b0000_1111 & byte(data.Index.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.Base.Size)) << 2
-	off, ok := lx.TokenTToOpT(data.RegOp)
+	off, ok := lx.TokenTToOpT(data.DispOp)
 	if !ok {
 		panic(
 			"bad internal assembler state - register operator of invalid type")
@@ -400,7 +402,7 @@ func (a *Assembler) emitMovRDO2(data pr.InstMovRDO2, at int) error {
 	byte4 |= (0b0000_1111 & byte(data.Base.Reg))
 	byte3 := (0b0000_1111 & byte(data.Index.Reg)) << 4
 	byte3 |= (0b0000_0011 & byte(data.Base.Size)) << 2
-	byte3 |= (0b0000_0011 & byte(data.RegOp))
+	byte3 |= (0b0000_0011 & byte(data.DispOp))
 	byte2 := (0b0000_0011 & data.Src.Size)
 	byte2 |= (0b0000_0011 & byte(data.SF)) << 2
 	a.bytecode[at] = byte4

@@ -50,7 +50,12 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	mov WORD [r5+r7+0x0], 14
+	push WORD 69
+	mov bp, sp
+	push WORD 420
+	push WORD 2137
+	mov r1, 1
+	mov r2, [bp+r1*8+8]
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {

@@ -68,18 +68,6 @@ const (
 	SCALE_8
 )
 
-type OneRegOffsetExpr struct {
-	Reg lx.RegisterData
-	// OffsetOp int
-	Disp   *Expr
-	Scalef Scale
-}
-type TwoRegOffsetExpr struct {
-	Reg1, Reg2 lx.RegisterData
-	RegOp      int
-	Scalef     Scale
-	Disp       *Expr
-}
 type ConstExprILit struct {
 	Integer uint64
 }
@@ -157,14 +145,6 @@ func (e *Expr) IsRegexpr() bool {
 }
 func (e *Expr) IsMemexpr() bool {
 	_, ok := e.Val.(MemExpr)
-	return ok
-}
-func (e *Expr) IsOneRegOffsetExpr() bool {
-	_, ok := e.Val.(OneRegOffsetExpr)
-	return ok
-}
-func (e *Expr) IsTwoRegOffsetExpr() bool {
-	_, ok := e.Val.(TwoRegOffsetExpr)
 	return ok
 }
 func IsExpr[E any](e *Expr) bool {
@@ -400,66 +380,6 @@ func (e *Expr) Emit() (string, error) {
 		} else {
 			return fmt.Sprintf("(%s)", inner), nil
 		}
-	case OneRegOffsetExpr:
-		em := [3]string{}
-		em[0] = v.Reg.String()
-		// switch v.OffsetOp {
-		// case lx.TOKEN_TPLUS:
-		// case lx.TOKEN_TMINUS:
-		// 	em[1] = "-"
-		// case lx.TOKEN_TASTERISK:
-		// 	em[1] = "*"
-		// case lx.TOKEN_TSLASH:
-		// 	em[1] = "/"
-		// default:
-		// 	em[1] = "?"
-		// }
-		if v.Disp == nil {
-			em[1] = ""
-		} else if oem, err := v.Disp.Emit(); err != nil {
-			return "", err
-		} else {
-			em[2] = oem
-		}
-		return strings.
-				Join(
-					em[:],
-					" ",
-				),
-			nil
-	case TwoRegOffsetExpr:
-		em := [5]string{}
-		em[0] = v.Reg1.String()
-		switch v.RegOp {
-		case lx.TOKEN_TPLUS:
-			em[1] = "+"
-		case lx.TOKEN_TMINUS:
-			em[1] = "-"
-		default:
-			em[1] = "?"
-		}
-		em[2] = v.Reg2.String()
-		// switch v.OffsetOp {
-		// case lx.TOKEN_TPLUS:
-		// 	em[3] = "+"
-		// case lx.TOKEN_TMINUS:
-		// 	em[3] = "-"
-		// default:
-		// 	em[3] = "?"
-		// }
-		if v.Disp == nil {
-			em[3] = ""
-		} else if oem, err := v.Disp.Emit(); err != nil {
-			return "", err
-		} else {
-			em[4] = oem
-		}
-		return strings.
-				Join(
-					em[:],
-					" ",
-				),
-			nil
 	case MemExpr:
 		em := [5]string{}
 		em[0] = v.Base.String()
@@ -497,6 +417,6 @@ func (e *Expr) Emit() (string, error) {
 			nil
 
 	default:
-		return "", fmt.Errorf("<INVALID EXPRESSION TYPE>")
+		return "", fmt.Errorf("<UNEMITABLE EXPRESSION>")
 	}
 }
