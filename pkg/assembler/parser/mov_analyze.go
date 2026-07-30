@@ -329,7 +329,7 @@ func movRDO1_NO(
 				Imm:      imm.Integer,
 				Disp:     0,
 				Base:     innerDest.Reg,
-				DispOp:   vm.OP_TADD,
+				DispOp:   lx.TOKEN_TPLUS,
 				DataSize: mov.DataSize.Size,
 				NoOff:    true,
 			}, nil

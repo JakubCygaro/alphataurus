@@ -155,6 +155,10 @@ func (e *Expr) IsRegexpr() bool {
 	_, ok := e.Val.(RegExpr)
 	return ok
 }
+func (e *Expr) IsMemexpr() bool {
+	_, ok := e.Val.(MemExpr)
+	return ok
+}
 func (e *Expr) IsOneRegOffsetExpr() bool {
 	_, ok := e.Val.(OneRegOffsetExpr)
 	return ok

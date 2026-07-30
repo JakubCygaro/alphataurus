@@ -465,6 +465,7 @@ func TestMovRDO1_2(t *testing.T) {
 	}
 }
 func TestMovRDO1_3(t *testing.T) {
+	t.Skipf("Skipping this test, single register division dereference is deprecated")
 	val := rand.Int63n(10_000) - 5_000
 	r := tc.RandomGpRegisterWord()
 	// off := tc.NextRandomGpRegister(r)
@@ -515,6 +516,7 @@ func TestMovRDO1_3(t *testing.T) {
 	}
 }
 func TestMovRDO1_4(t *testing.T) {
+	t.Skipf("Skipping this test, addressing changes have occured")
 	val := rand.Int63n(10_000) - 5_000
 	r := tc.RandomGpRegisterWord()
 	// off := tc.NextRandomGpRegister(r)

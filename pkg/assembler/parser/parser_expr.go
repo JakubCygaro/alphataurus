@@ -233,6 +233,8 @@ func (p *Parser) parserRegExpr(start lx.RegisterData) (*Expr, error) {
 	if e != nil {
 		return nil, e
 	}
+	// addition by default, so that the downstream code does not shit itself
+	ret.DispOp = lx.TOKEN_TPLUS
 	opReg := allowedBetweenRegs(n.Ty)
 	sf := n.Ty == lx.TOKEN_TASTERISK
 	ret.Base = start
@@ -354,10 +356,6 @@ func (p *Parser) parserRegExpr(start lx.RegisterData) (*Expr, error) {
 			)
 	}
 	op = n.Ty
-	n, e = p.lexer.ReadNextTokenReturn()
-	if e != nil {
-		return nil, e
-	}
 	if e, err := p.parseExpression(0); err != nil {
 		return nil, err
 	} else {
@@ -397,14 +395,17 @@ func makeBinop(lhs, rhs *Expr, opToken lx.Token) (*Expr, error) {
 	// 		}, nil
 	// 	}
 	// }
-	if !lhs.IsConstexpr() && !rhs.IsConstexpr() &&
-		!lhs.IsArthexpr() && !rhs.IsArthexpr() {
+	if lhs.IsRegexpr() ||
+		rhs.IsRegexpr() ||
+		lhs.IsMemexpr() ||
+		rhs.IsMemexpr() {
 		return nil, errors.
 			MakeParserError(
 				lhs.Line,
 				lhs.Col,
 				"Disallowed binary expression",
 			)
+
 	}
 	return &Expr{
 		Val: ArthExpr{
