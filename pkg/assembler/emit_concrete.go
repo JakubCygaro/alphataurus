@@ -334,8 +334,8 @@ func (a *Assembler) emitMovIDO1(data pr.InstMovIDO1, at int) error {
 		param = data.Imm
 	} else {
 		mov = a.opCodes.GetBytes(vm.OP_MOVIDO1)
-		param = uint64(data.Disp) << 32
-		param |= 0x0000_0000_ffff_ffff & uint64(data.Imm)
+		param = uint64(int64(data.Disp) << 32)
+		param |= 0x0000_0000_ffff_ffff & uint64(int32(data.Imm))
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	a.bytecode[at] = lastByte

@@ -215,7 +215,7 @@ func (state *VmState) movIDO1(byte3, byte4 byte, param []byte) error {
 	}
 	p := binary.BigEndian.Uint64(param)
 	imm := uint64(int32((p & 0x0000_0000_ffff_ffff)))
-	offset := int64((p & 0xffff_ffff_0000_0000) >> 32)
+	offset := int64(int32((p & 0xffff_ffff_0000_0000) >> 32))
 	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
 	if addr, e :=
 		state.movXDO1GetAddr(regV, offset, dParams.opTy, dParams.sf); e != nil {
@@ -280,7 +280,7 @@ func (state *VmState) movIDO2(byte2, byte3, byte4 byte, param []byte) error {
 	}
 	p := binary.BigEndian.Uint64(param)
 	imm := uint64(p & 0x0000_0000_ffff_ffff)
-	offset := int64((p & 0xffff_ffff_0000_0000) >> 32)
+	offset := int64(int32((p & 0xffff_ffff_0000_0000) >> 32))
 	reg1V := state.GetRegVAsS64(int(dParams.reg1), dParams.r1_2sz)
 	reg2V := state.GetRegVAsS64(int(dParams.reg2), dParams.r1_2sz)
 	if inStack, e :=

@@ -367,6 +367,9 @@ func (e *ConstExpr) Emit() string {
 }
 func (e *Expr) Emit() (string, error) {
 	switch v := e.Val.(type) {
+	case NegExpr:
+		emit, err := v.Inner.Emit()
+		return fmt.Sprintf("- %s", emit), err
 	case RegExpr:
 		return v.Reg.String(), nil
 	case ConstExpr:

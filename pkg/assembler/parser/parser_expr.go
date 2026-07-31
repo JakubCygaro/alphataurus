@@ -259,12 +259,17 @@ func (p *Parser) parserRegExpr(start lx.RegisterData) (*Expr, error) {
 			return nil, e
 		}
 	} else {
+		// // if minus then also unread it so the first expression value is negative
+		if op == lx.TOKEN_TMINUS {
+			p.lexer.UnreadToken(lx.Token{ Ty: lx.TOKEN_TMINUS })
+		}
+		// expression start
 		p.lexer.UnreadCurrentToken()
 		if e, err := p.parseExpression(0); err != nil {
 			return nil, err
 		} else {
 			ret.Disp = e
-			ret.DispOp = op
+			// ret.DispOp = op
 			return &Expr{
 				Val: ret,
 			}, nil
@@ -298,8 +303,7 @@ func (p *Parser) parserRegExpr(start lx.RegisterData) (*Expr, error) {
 				ret.ScaleF = e
 			}
 		}
-		// the next expression has to be an operand for either the displacement
-		// or another register
+		// the next expression has to be an operand for the displacement
 		n, e = p.lexer.ReadNextTokenReturn()
 		if e != nil {
 			return nil, e
@@ -321,11 +325,15 @@ func (p *Parser) parserRegExpr(start lx.RegisterData) (*Expr, error) {
 			)
 	}
 	op = n.Ty
+	// if minus then also unread it so the first expression value is negative
+	if op == lx.TOKEN_TMINUS {
+		p.lexer.UnreadToken(lx.Token{ Ty: lx.TOKEN_TMINUS })
+	}
 	if e, err := p.parseExpression(0); err != nil {
 		return nil, err
 	} else {
 		ret.Disp = e
-		ret.DispOp = op
+		// ret.DispOp = op
 		return &Expr{
 			Val: ret,
 		}, nil
