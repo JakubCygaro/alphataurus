@@ -540,3 +540,10 @@ func (state *VmState) movSingleRep(sz byte) error {
 	}
 	return nil
 }
+func (state *VmState) leaDRO1() error {
+
+	return nil
+}
+func (state *VmState) leaDRO2() error {
+	return nil
+}
