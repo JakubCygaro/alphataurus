@@ -216,7 +216,8 @@ const (
 	OP_XCHGDR
 	OP_XCHGDRO1
 	OP_XCHGDRO2
-	OP_LEA
+	OP_LEAO1
+	OP_LEAO2
 	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR
