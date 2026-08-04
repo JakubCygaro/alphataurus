@@ -75,3 +75,30 @@ func (p *Parser) parseLogical(logTy int) error {
 	}
 	return nil
 }
+func (p *Parser) parseNeg() error {
+	float := false
+	if err := p.lexer.ReadNextToken(); err != nil {
+		return err
+	}
+	if p.lexer.CurrentToken().Ty != lx.TOKEN_TFLOAT {
+		p.lexer.UnreadCurrentToken()
+	} else {
+		float = true
+	}
+	if r, ok := p.lexer.Expect(lx.TOKEN_TREG); !ok{
+		return errors.MakeParserError(
+			r.Line,
+			r.Col,
+			"Expected register got '%s'",
+			r.ForceValAsString(),
+		)
+	} else {
+		p.currentInst = Instruction {
+			Data: InstNegR {
+				Arg: r.Val.(lx.RegisterData),
+				Float: float,
+			},
+		}
+	}
+	return nil
+}

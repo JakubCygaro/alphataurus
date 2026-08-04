@@ -104,6 +104,8 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitArthIR(i, at)
 	case pr.InstNotR:
 		err = a.emitNot(i, at)
+	case pr.InstNegR:
+		err = a.emitNegR(i, at)
 	case pr.InstGenericLogical:
 		err = a.emitGenericLogical(i, a.cInst, at)
 	case pr.InstLogicalRR:

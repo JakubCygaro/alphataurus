@@ -67,6 +67,7 @@ var (
 		25: handle(OP_MOVSW),
 		26: handle(OP_SDF),
 		27: handle(OP_CDF),
+		28: handle(OP_NEG),
 	})
 	//jumps
 	//direct jumps
@@ -225,6 +226,7 @@ const (
 	OP_MULRR
 	OP_DIVRR
 	OP_NOT
+	OP_NEG
 	OP_ANDRR
 	OP_ANDIR
 	OP_ORRR

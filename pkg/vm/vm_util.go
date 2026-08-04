@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
@@ -96,6 +97,11 @@ func (state *VmState) GetRegVAsS64(reg int, dataSz byte) int64 {
 	case SZ_64:
 		ret = int64(r.GetValAsU64())
 	}
+	return ret
+}
+func (state *VmState) GetRegVAsF64(reg int) float64 {
+	r := &state.regs.r[reg]
+	ret := math.Float64frombits(r.GetValAsU64())
 	return ret
 }
 func (state *VmState) putValInRegWithSize(reg int, dataSz byte, val uint64) {

@@ -145,6 +145,8 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 		err = state.arthIR(int(opcode), opCodeBytes[0], param)
 	case OP_NOT:
 		err = state.not(param)
+	case OP_NEG:
+		err = state.neg(param)
 	case OP_ORRR:
 		err = state.logRR(int(opcode), param)
 	case OP_ANDRR:

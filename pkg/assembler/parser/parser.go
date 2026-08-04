@@ -167,6 +167,8 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 		return p.parseDivOrMul(ARTH_TMUL)
 	case "not":
 		return p.parseLogical(LOG_TNOT)
+	case "neg":
+		return p.parseNeg()
 	case "or":
 		return p.parseLogical(LOG_TOR)
 	case "and":

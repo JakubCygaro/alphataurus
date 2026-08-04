@@ -2,6 +2,7 @@ package vm
 
 import (
 	"encoding/binary"
+	"math"
 	// "math"
 
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
@@ -55,6 +56,23 @@ func (state *VmState) not(param []byte) error {
 	}
 	regV := ^state.GetRegVAsU64(int(reg), dataSz)
 	state.putValInRegWithSize(int(reg), dataSz, regV)
+	return nil
+}
+func (state *VmState) neg(param []byte) error {
+	reg := param[0]
+	dataSz := param[1]
+	ty := param[2]
+	if !IsGpReg(byte(reg)) {
+		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
+	}
+	switch ty {
+	case TY_FLOAT:
+		regV := -state.GetRegVAsF64(int(reg))
+		state.putValInRegWithSize(int(reg), dataSz, math.Float64bits(regV))
+	default:
+		regV := -state.GetRegVAsU64(int(reg), dataSz)
+		state.putValInRegWithSize(int(reg), dataSz, regV)
+	}
 	return nil
 }
 func (state *VmState) clr() error {

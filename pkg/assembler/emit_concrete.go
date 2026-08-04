@@ -532,6 +532,23 @@ func (a *Assembler) emitNot(data pr.InstNotR, at int) error {
 		binary.BigEndian.Uint64(param[:]))
 	return nil
 }
+func (a *Assembler) emitNegR(data pr.InstNegR, at int) error {
+	opCode := a.opCodes.GetBytes(vm.OP_NEG)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
+	ty := byte(vm.TY_SINT)
+	if data.Float {
+		ty = vm.TY_FLOAT
+	}
+	param := [8]byte{
+		byte(data.Arg.Reg),
+		data.Arg.Size,
+		ty,
+		0, 0, 0, 0, 0,
+	}
+	binary.BigEndian.PutUint64(a.bytecode[at+4:],
+		binary.BigEndian.Uint64(param[:]))
+	return nil
+}
 func (a *Assembler) emitInc(data pr.InstInc, at int) error {
 	inc := a.opCodes.GetBytes(vm.OP_INCR)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(inc))

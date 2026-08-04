@@ -152,6 +152,10 @@ type InstArthIR struct {
 type InstNotR struct {
 	First lx.RegisterData
 }
+type InstNegR struct {
+	Arg lx.RegisterData
+	Float bool
+}
 type InstGenericLogical struct {
 	First, Second *Expr
 	LogTy         LogTy
