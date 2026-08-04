@@ -128,6 +128,8 @@ var (
 		17: handle(OP_MOVZXDR),
 		18: handle(OP_XCHGRR),
 		19: handle(OP_XCHGDR),
+		20: handle(OP_ROL),
+		21: handle(OP_ROR),
 	})
 	p01XX = nested(opCodeMap{
 		// stack manipulation, leave a byte for data size
@@ -227,6 +229,8 @@ const (
 	OP_DIVRR
 	OP_NOT
 	OP_NEG
+	OP_ROL
+	OP_ROR
 	OP_ANDRR
 	OP_ANDIR
 	OP_ORRR

@@ -156,6 +156,11 @@ type InstNegR struct {
 	Arg lx.RegisterData
 	Float bool
 }
+type InstRotate struct {
+	Arg lx.RegisterData
+	Left bool
+	RotateBy uint64
+}
 type InstGenericLogical struct {
 	First, Second *Expr
 	LogTy         LogTy

@@ -3,6 +3,8 @@ package vm
 import (
 	"encoding/binary"
 	"math"
+	"math/bits"
+
 	// "math"
 
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
@@ -120,4 +122,58 @@ func (state *VmState) cmpImpl(minV, subV uint64, ty, dataSz byte) error {
 		ty, dataSz,
 		diff[:])
 	return err
+}
+func (state *VmState) rol(lastByte byte, param []byte) error {
+	reg := (lastByte & 0xf0) >> 4
+	dataSz := (lastByte & 0x0f)
+	rotateBy := binary.BigEndian.Uint64(param)
+	if !IsGpReg(byte(reg)) {
+		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
+	}
+	switch dataSz {
+	case SZ_8:
+		regV := bits.RotateLeft8(
+			uint8(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
+		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	case SZ_16:
+		regV := bits.RotateLeft16(
+			uint16(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
+		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	case SZ_32:
+		regV := bits.RotateLeft32(
+			uint32(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
+		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	case SZ_64:
+		regV := bits.RotateLeft64(
+			uint64(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
+		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	}
+	return nil
+}
+func (state *VmState) ror(lastByte byte, param []byte) error {
+	reg := (lastByte & 0xf0) >> 4
+	dataSz := (lastByte & 0x0f)
+	rotateBy := binary.BigEndian.Uint64(param)
+	if !IsGpReg(byte(reg)) {
+		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
+	}
+	switch dataSz {
+	case SZ_8:
+		regV := bits.RotateLeft8(
+			uint8(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
+		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	case SZ_16:
+		regV := bits.RotateLeft16(
+			uint16(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
+		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	case SZ_32:
+		regV := bits.RotateLeft32(
+			uint32(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
+		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	case SZ_64:
+		regV := bits.RotateLeft64(
+			uint64(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
+		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	}
+	return nil
 }

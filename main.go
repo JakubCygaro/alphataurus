@@ -50,8 +50,8 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	mov r0, 1.0
-	neg FLOAT r0
+	mov r0b, 0b11001101
+	rol r0b, 1
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -114,7 +114,7 @@ func main() {
 		execError = err
 	}
 	if rx, err := mach.GetGpRXAsS64(vm.R0_IDX); err == nil {
-		fmt.Printf("r0 = %+v\n", int16(rx))
+		fmt.Printf("r0b = %08b\n", uint8(rx))
 	}
 	if rx, err := mach.GetGpRXAsS64(vm.R1_IDX); err == nil {
 		fmt.Printf("r1 = %+v\n", int16(rx))

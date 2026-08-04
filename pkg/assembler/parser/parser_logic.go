@@ -85,20 +85,61 @@ func (p *Parser) parseNeg() error {
 	} else {
 		float = true
 	}
-	if r, ok := p.lexer.Expect(lx.TOKEN_TREG); !ok{
+	if r, ok := p.lexer.Expect(lx.TOKEN_TREG); !ok {
 		return errors.MakeParserError(
 			r.Line,
 			r.Col,
-			"Expected register got '%s'",
+			"Expected register, got '%s'",
 			r.ForceValAsString(),
 		)
 	} else {
-		p.currentInst = Instruction {
-			Data: InstNegR {
-				Arg: r.Val.(lx.RegisterData),
+		p.currentInst = Instruction{
+			Data: InstNegR{
+				Arg:   r.Val.(lx.RegisterData),
 				Float: float,
 			},
 		}
 	}
+	return nil
+}
+func (p *Parser) parseRotate(left bool) error {
+	var reg lx.RegisterData
+	var rotateBy uint64
+	if r, ok := p.lexer.Expect(lx.TOKEN_TREG); !ok {
+		return errors.MakeParserError(
+			r.Line,
+			r.Col,
+			"Expected register, got '%s'",
+			r.ForceValAsString(),
+		)
+	} else {
+		reg = r.Val.(lx.RegisterData)
+	}
+	if r, ok := p.lexer.Expect(lx.TOKEN_TCOMMA); !ok {
+		return errors.MissingComma(
+			r.Line,
+			r.Col,
+			r,
+		)
+	}
+	if r, ok := p.lexer.Expect(lx.TOKEN_TINTEGER_LIT); !ok {
+		return errors.MakeParserError(
+			r.Line,
+			r.Col,
+			"Expected integer literal, got '%s'",
+			r.ForceValAsString(),
+		)
+	} else {
+		rotateBy = r.Val.(uint64)
+	}
+
+	p.currentInst = Instruction{
+		Data: InstRotate{
+			Arg: reg,
+			Left: left,
+			RotateBy: rotateBy,
+		},
+	}
+
 	return nil
 }

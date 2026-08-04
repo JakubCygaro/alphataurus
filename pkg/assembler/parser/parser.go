@@ -169,6 +169,10 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 		return p.parseLogical(LOG_TNOT)
 	case "neg":
 		return p.parseNeg()
+	case "ror":
+		return p.parseRotate(false)
+	case "rol":
+		return p.parseRotate(true)
 	case "or":
 		return p.parseLogical(LOG_TOR)
 	case "and":

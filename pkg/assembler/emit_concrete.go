@@ -532,6 +532,20 @@ func (a *Assembler) emitNot(data pr.InstNotR, at int) error {
 		binary.BigEndian.Uint64(param[:]))
 	return nil
 }
+func (a *Assembler) emitRotate(data pr.InstRotate, at int) error {
+	var opCode uint32
+	if data.Left {
+		opCode = a.opCodes.GetBytes(vm.OP_ROL)
+	} else {
+		opCode = a.opCodes.GetBytes(vm.OP_ROR)
+	}
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
+	regSz := (byte(data.Arg.Reg) << 4)
+	regSz |= (byte(data.Arg.Reg) & 0x0f)
+	a.bytecode[at] = regSz
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], data.RotateBy)
+	return nil
+}
 func (a *Assembler) emitNegR(data pr.InstNegR, at int) error {
 	opCode := a.opCodes.GetBytes(vm.OP_NEG)
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
