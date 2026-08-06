@@ -159,3 +159,37 @@ func (p *Parser) parseXChg() error {
 	}
 	return nil
 }
+func (p *Parser) parseLea() error {
+	if err := p.parseMov(); err != nil {
+		return err
+	}
+	switch mov := p.currentInst.Data.(type) {
+	case InstMovRR:
+		p.currentInst.Data = InstMovZXRR{
+			Mov: mov,
+		}
+	case InstMovIR:
+		p.currentInst.Data = InstMovZXIR{
+			Mov: mov,
+		}
+	case InstMovDR:
+		p.currentInst.Data = InstMovZXDR{
+			Mov: mov,
+		}
+	case InstMovDRO1:
+		p.currentInst.Data = InstMovZXDRO1{
+			Mov: mov,
+		}
+	case InstMovDRO2:
+		p.currentInst.Data = InstMovZXDRO2{
+			Mov: mov,
+		}
+	default:
+		return errors.MakeParserError(
+			p.currentInst.Line,
+			p.currentInst.Col,
+			"Zero extend move not allowed for this type of data move.",
+		)
+	}
+	return nil
+}

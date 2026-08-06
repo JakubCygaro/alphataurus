@@ -155,6 +155,8 @@ func (p *Parser) parseStartIdent(t lx.Token) error {
 			Data: InstMovSW{},
 		}
 		return nil
+	case "lea":
+		return p.parseLea()
 	case "rep":
 		return p.parseStartRep(t)
 	case "add":

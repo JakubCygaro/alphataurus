@@ -184,8 +184,14 @@ func (state *VmState) GetOpcode(opcodebytes []byte) (OpCodeVal, error) {
 
 }
 
+var _mp = map[uint32]OpCodeVal{
+	0x00000001: OP_MOVIR,
+}
+
 //go:generate stringer -type=OpCodeVal
+//makedec -type=OpCodeVal
 const (
+	//makedec: arg(1)
 	OP_MOVIR      OpCodeVal = iota // move imediate value to register
 	OP_MOVRR                       // move register to register
 	OP_MOVDR                       // move dereference to register, [<address>]

@@ -352,3 +352,12 @@ type InstClr struct{}
 type InstSDF struct{}
 type InstCDF struct{}
 type InstSecCode struct{}
+type InstGenericLea struct {
+	Address *Expr
+}
+type InstLeaO1 struct {
+	InstMovDRO1
+}
+type InstLeaO2 struct {
+	InstMovDRO2
+}
