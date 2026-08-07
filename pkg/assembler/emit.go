@@ -92,6 +92,12 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitXCHGDRO1(i, at)
 	case pr.InstXCHGDRO2:
 		err = a.emitXCHGDRO2(i, at)
+	case pr.InstGenericLea:
+		err = a.emitGenericLea(i, a.cInst, at)
+	case pr.InstLeaO1:
+		err = a.emitLeaO1(i, at)
+	case pr.InstLeaO2:
+		err = a.emitLeaO2(i, at)
 	case pr.InstMovSB:
 		err = a.emitMovSB(i, at)
 	case pr.InstMovSQ:

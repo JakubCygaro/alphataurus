@@ -147,6 +147,7 @@ var (
 		5: handle(OP_MOVIDO1),
 		6: handle(OP_MOVZXDRO1),
 		7: handle(OP_XCHGDRO1),
+		8: handle(OP_LEADRO1),
 	})
 	p0XXX = nested(opCodeMap{
 		0: p00XX,
@@ -161,6 +162,7 @@ var (
 		4: handle(OP_MOVDRO2),
 		5: handle(OP_MOVZXDRO2),
 		6: handle(OP_XCHGDRO2),
+		7: handle(OP_LEADRO2),
 	}
 )
 
@@ -225,8 +227,8 @@ const (
 	OP_XCHGDR
 	OP_XCHGDRO1
 	OP_XCHGDRO2
-	OP_LEAO1
-	OP_LEAO2
+	OP_LEADRO1
+	OP_LEADRO2
 	OP_ADDRR // add register to register and store into second register, singedness and registers passed in parameter
 	OP_ADDIR
 	OP_SUBRR

@@ -374,3 +374,39 @@ func (a *Assembler) emitGenericXCHG(
 
 	return nil
 }
+func (a *Assembler) emitGenericLea(
+	data pr.InstGenericLea,
+	outer *pr.Instruction,
+	at int,
+) error {
+	if ok, err := evalAll(a, &data,
+		func(i *pr.InstGenericLea) **pr.Expr {
+			return &(i.Mov.Src)
+		},
+		func(i *pr.InstGenericLea) **pr.Expr {
+			return &(i.Mov.Dest)
+		},
+	); err != nil {
+		return err
+	} else if !ok {
+		a.unevalInsts[at] = pr.Instruction{
+			Line: outer.Line,
+			Col:  outer.Col,
+			Data: data,
+		}
+		a.emitNop(at)
+	} else if mov, err := pr.GetConcreteLeaInst(data, outer); err != nil {
+		return err
+	} else if mov == nil {
+		return fmt.Errorf(
+			"TODO: bad lea instruction cannot be deduced to concrete lea")
+	} else {
+		return a.emitInst(pr.Instruction{
+			Line: outer.Line,
+			Col:  outer.Col,
+			Data: mov,
+		}, at)
+	}
+
+	return nil
+}

@@ -660,3 +660,19 @@ func (a *Assembler) emitMovSW(data pr.InstMovSW, at int) error {
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
+func (a *Assembler) emitLeaO1(data pr.InstLeaO1, at int) error {
+	if err := a.emitMovDRO1(data.Mov, at); err != nil {
+		return err
+	}
+	lea := a.opCodes.GetBytes(vm.OP_LEADRO1)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(lea))
+	return nil
+}
+func (a *Assembler) emitLeaO2(data pr.InstLeaO2, at int) error {
+	if err := a.emitMovDRO2(data.Mov, at); err != nil {
+		return err
+	}
+	lea := a.opCodes.GetBytes(vm.OP_LEADRO2)
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(lea))
+	return nil
+}

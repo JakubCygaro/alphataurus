@@ -115,6 +115,10 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 		err = state.xchgDRO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVIDO2:
 		err = state.movIDO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
+	case OP_LEADRO1:
+		err = state.leaDRO1(opCodeBytes[1], opCodeBytes[0], param)
+	case OP_LEADRO2:
+		err = state.leaDRO2(opCodeBytes[2], opCodeBytes[1], opCodeBytes[0], param)
 	case OP_MOVSB:
 		err = state.movSingle(SZ_8)
 	case OP_MOVSQ:

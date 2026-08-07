@@ -2,6 +2,7 @@ package assembler
 
 import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
+	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
 func GetConcreteLeaInst(
@@ -14,10 +15,26 @@ func GetConcreteLeaInst(
 	}
 	switch mov := innerMov.(type) {
 	case InstMovDRO1:
+		if mov.Dest.Size != vm.SZ_64 {
+			return nil, errors.
+				MakeParserError(
+					outer.Line,
+					outer.Col,
+					"Destination registed size must be 64-bits wide",
+				)
+		}
 		return InstLeaO1{
 			Mov: mov,
 		}, nil
 	case InstMovDRO2:
+		if mov.Dest.Size != vm.SZ_64 {
+			return nil, errors.
+				MakeParserError(
+					outer.Line,
+					outer.Col,
+					"Destination registed size must be 64-bits wide",
+				)
+		}
 		return InstLeaO2{
 			Mov: mov,
 		}, nil

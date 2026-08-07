@@ -545,12 +545,50 @@ func (state *VmState) leaDRO1(
 	byte3, byte4 byte,
 	param []byte,
 ) error {
-
+	dParams := state.getDerefParamsO1(byte3, byte4)
+	if !IsMovIntoRAllowed(dParams.dest) {
+		return errors.DisallowedDestRegister(int(dParams.dest), state.byteCodePos)
+	}
+	if !IsMovRRAllowed(dParams.reg1) {
+		return errors.DisallowedOp2Register(int(dParams.reg1), state.byteCodePos)
+	}
+	if dParams.destSz != SZ_64 {
+		return errors.BadOpcode(uint32(state.currentOpcode), state.byteCodePos)
+	}
+	regV := state.GetRegVAsS64(int(dParams.reg1), dParams.r1sz)
+	offset := int64(binary.BigEndian.Uint64(param))
+	if addr, e :=
+		state.movXDO1GetAddr(regV, offset, dParams.opTy, dParams.sf); e != nil {
+		return e
+	} else {
+		state.regs.r[dParams.dest].
+			PutValWithSize(SZ_64, addr)
+	}
 	return nil
 }
 func (state *VmState) leaDRO2(
 	byte2, byte3, byte4 byte,
 	param []byte,
 ) error {
+	dParams := state.getDerefParamsO2(byte2, byte3, byte4)
+	if !IsMovIntoRAllowed(dParams.dest) {
+		return errors.DisallowedDestRegister(int(dParams.dest), state.byteCodePos)
+	}
+	if err := state.isMovXRO2Allowed(dParams); err != nil {
+		return err
+	}
+	if dParams.destSz != SZ_64 {
+		return errors.BadOpcode(uint32(state.currentOpcode), state.byteCodePos)
+	}
+	reg1V := int64(state.GetRegVAsU64(int(dParams.reg1), dParams.r1_2sz))
+	reg2V := int64(state.GetRegVAsU64(int(dParams.reg2), dParams.r1_2sz))
+	offset := int64(binary.BigEndian.Uint64(param))
+	if addr, e :=
+		state.movXDO2GetAddr(reg1V, reg2V, offset, dParams.opTy, dParams.sf); e != nil {
+		return e
+	} else {
+		state.regs.r[dParams.dest].
+			PutValWithSize(SZ_64, addr)
+	}
 	return nil
 }
