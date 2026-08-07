@@ -5,7 +5,7 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/assembler/parser/errors"
 )
 
-func (p *Parser) parseMov() error {
+func (p *Parser) parseMov(forceGeneric bool) error {
 	genericMov := InstGenericMov{}
 	var op1 lx.Token
 	if err := p.lexer.ReadNextToken(); err != nil {
@@ -42,7 +42,11 @@ func (p *Parser) parseMov() error {
 	} else {
 		genericMov.Src = expr
 	}
-	if concrete, err :=
+	if forceGeneric {
+		p.currentInst = Instruction{
+			Data: genericMov,
+		}
+	} else if concrete, err :=
 		GetConcreteMovInst(genericMov, &p.currentInst); concrete != nil && err == nil {
 		p.currentInst = Instruction{
 			Data: concrete,
@@ -57,7 +61,7 @@ func (p *Parser) parseMov() error {
 	return nil
 }
 func (p *Parser) parseSXMov() error {
-	if err := p.parseMov(); err != nil {
+	if err := p.parseMov(false); err != nil {
 		return err
 	}
 	if movRR, ok := p.currentInst.Data.(InstMovRR); !ok {
@@ -74,122 +78,65 @@ func (p *Parser) parseSXMov() error {
 	return nil
 }
 func (p *Parser) parseZXMov() error {
-	if err := p.parseMov(); err != nil {
+	if err := p.parseMov(true); err != nil {
 		return err
 	}
-	switch mov := p.currentInst.Data.(type) {
-	case InstMovRR:
-		p.currentInst.Data = InstMovZXRR{
-			Mov: mov,
+	gen := InstGenericMovZX{
+		Mov: p.currentInst.Data.(InstGenericMov),
+	}
+	if concrete, err :=
+		GetConcreteMovZXInst(gen, &p.currentInst); concrete != nil && err == nil {
+		p.currentInst = Instruction{
+			Data: concrete,
 		}
-	case InstMovIR:
-		p.currentInst.Data = InstMovZXIR{
-			Mov: mov,
+	} else if err != nil && p.ForceCoalesceGenerics {
+		return err
+	} else {
+		p.currentInst = Instruction{
+			Data: gen,
 		}
-	case InstMovDR:
-		p.currentInst.Data = InstMovZXDR{
-			Mov: mov,
-		}
-	case InstMovDRO1:
-		p.currentInst.Data = InstMovZXDRO1{
-			Mov: mov,
-		}
-	case InstMovDRO2:
-		p.currentInst.Data = InstMovZXDRO2{
-			Mov: mov,
-		}
-	default:
-		return errors.MakeParserError(
-			p.currentInst.Line,
-			p.currentInst.Col,
-			"Zero extend move not allowed for this type of data move.",
-		)
 	}
 	return nil
 }
 func (p *Parser) parseXChg() error {
-	if err := p.parseMov(); err != nil {
+	if err := p.parseMov(true); err != nil {
 		return err
 	}
-	helpErr := func() error {
-		return errors.
-			MakeParserError(
-				p.currentInst.Line,
-				p.currentInst.Col,
-				"Exchange with deference only allowed when the address is the source",
-			)
+	gen := InstGenericXCHG{
+		Mov: p.currentInst.Data.(InstGenericMov),
 	}
-	switch mov := p.currentInst.Data.(type) {
-	case InstMovRR:
-		if mov.Src.Size != mov.Dest.Size {
-			return errors.
-				MakeParserError(
-					p.currentInst.Line,
-					p.currentInst.Col,
-					"Exchange between registers of different sizes is not allowed",
-				)
+	if concrete, err :=
+		GetConcreteXChgInst(gen, &p.currentInst); concrete != nil && err == nil {
+		p.currentInst = Instruction{
+			Data: concrete,
 		}
-		p.currentInst.Data = InstXCHGRR{
-			Mov: mov,
+	} else if err != nil && p.ForceCoalesceGenerics {
+		return err
+	} else {
+		p.currentInst = Instruction{
+			Data: gen,
 		}
-	case InstMovDR:
-		p.currentInst.Data = InstXCHGDR{
-			Mov: mov,
-		}
-	case InstMovRD:
-		return helpErr()
-	case InstMovDRO1:
-		p.currentInst.Data = InstXCHGDRO1{
-			Mov: mov,
-		}
-	case InstMovDRO2:
-		p.currentInst.Data = InstXCHGDRO2{
-			Mov: mov,
-		}
-	case InstMovRDO1:
-		return helpErr()
-	case InstMovRDO2:
-		return helpErr()
-	default:
-		return errors.MakeParserError(
-			p.currentInst.Line,
-			p.currentInst.Col,
-			"Exchange not allowed for this type of data move.",
-		)
 	}
 	return nil
 }
 func (p *Parser) parseLea() error {
-	if err := p.parseMov(); err != nil {
+	if err := p.parseMov(true); err != nil {
 		return err
 	}
-	switch mov := p.currentInst.Data.(type) {
-	case InstMovRR:
-		p.currentInst.Data = InstMovZXRR{
-			Mov: mov,
+	gen := InstGenericLea{
+		Mov: p.currentInst.Data.(InstGenericMov),
+	}
+	if concrete, err :=
+		GetConcreteLeaInst(gen, &p.currentInst); concrete != nil && err == nil {
+		p.currentInst = Instruction{
+			Data: concrete,
 		}
-	case InstMovIR:
-		p.currentInst.Data = InstMovZXIR{
-			Mov: mov,
+	} else if err != nil && p.ForceCoalesceGenerics {
+		return err
+	} else {
+		p.currentInst = Instruction{
+			Data: gen,
 		}
-	case InstMovDR:
-		p.currentInst.Data = InstMovZXDR{
-			Mov: mov,
-		}
-	case InstMovDRO1:
-		p.currentInst.Data = InstMovZXDRO1{
-			Mov: mov,
-		}
-	case InstMovDRO2:
-		p.currentInst.Data = InstMovZXDRO2{
-			Mov: mov,
-		}
-	default:
-		return errors.MakeParserError(
-			p.currentInst.Line,
-			p.currentInst.Col,
-			"Zero extend move not allowed for this type of data move.",
-		)
 	}
 	return nil
 }

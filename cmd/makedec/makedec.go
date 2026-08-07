@@ -5,8 +5,8 @@ import (
 	"go/ast"
 	"go/constant"
 	// "go/format"
-	"go/parser"
-	"go/token"
+	// "go/parser"
+	// "go/token"
 	// "go/types"
 	// "io/fs"
 	"os"
@@ -17,7 +17,7 @@ import (
 	//
 	// "github.com/JakubCygaro/alphataurus/pkg/linker"
 	arg "github.com/alexflint/go-arg"
-	"golang.org/x/tools/go/packages"
+	// "golang.org/x/tools/go/packages"
 )
 
 var args struct {
@@ -55,17 +55,17 @@ func main() {
 	// 	exitWithErr("%s\n", err.Error())
 	// }
 	// ast.Print(fset, f)
-	cfg := &packages.Config{
-		Mode: packages.NeedName |
-			packages.NeedTypes |
-			packages.NeedTypesInfo |
-			packages.NeedSyntax | packages.NeedFiles,
-		Tests:      false,
-		BuildFlags: []string{},
-		Logf:       nil,
-	}
-	pkgs, err := packages.Load(cfg, fmt.Sprintf("file=%s", args.InputFile))
-	if err != nil {
-		exitWithErr("%s\n", err.Error())
-	}
+	// cfg := &packages.Config{
+	// 	Mode: packages.NeedName |
+	// 		packages.NeedTypes |
+	// 		packages.NeedTypesInfo |
+	// 		packages.NeedSyntax | packages.NeedFiles,
+	// 	Tests:      false,
+	// 	BuildFlags: []string{},
+	// 	Logf:       nil,
+	// }
+	// pkgs, err := packages.Load(cfg, fmt.Sprintf("file=%s", args.InputFile))
+	// if err != nil {
+	// 	exitWithErr("%s\n", err.Error())
+	// }
 }

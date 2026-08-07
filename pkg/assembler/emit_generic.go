@@ -302,3 +302,75 @@ func (a *Assembler) emitGenericCall(
 	}
 	return nil
 }
+func (a *Assembler) emitGenericMovZX(
+	data pr.InstGenericMovZX,
+	outer *pr.Instruction,
+	at int,
+) error {
+	if ok, err := evalAll(a, &data,
+		func(i *pr.InstGenericMovZX) **pr.Expr {
+			return &(i.Mov.Src)
+		},
+		func(i *pr.InstGenericMovZX) **pr.Expr {
+			return &(i.Mov.Dest)
+		},
+	); err != nil {
+		return err
+	} else if !ok {
+		a.unevalInsts[at] = pr.Instruction{
+			Line: outer.Line,
+			Col:  outer.Col,
+			Data: data,
+		}
+		a.emitNop(at)
+	} else if mov, err := pr.GetConcreteMovZXInst(data, outer); err != nil {
+		return err
+	} else if mov == nil {
+		return fmt.Errorf(
+			"TODO: bad movzx instruction cannot be deduced to concrete movzx")
+	} else {
+		return a.emitInst(pr.Instruction{
+			Line: outer.Line,
+			Col:  outer.Col,
+			Data: mov,
+		}, at)
+	}
+
+	return nil
+}
+func (a *Assembler) emitGenericXCHG(
+	data pr.InstGenericXCHG,
+	outer *pr.Instruction,
+	at int,
+) error {
+	if ok, err := evalAll(a, &data,
+		func(i *pr.InstGenericXCHG) **pr.Expr {
+			return &(i.Mov.Src)
+		},
+		func(i *pr.InstGenericXCHG) **pr.Expr {
+			return &(i.Mov.Dest)
+		},
+	); err != nil {
+		return err
+	} else if !ok {
+		a.unevalInsts[at] = pr.Instruction{
+			Line: outer.Line,
+			Col:  outer.Col,
+			Data: data,
+		}
+		a.emitNop(at)
+	} else if mov, err := pr.GetConcreteXChgInst(data, outer); err != nil {
+		return err
+	} else if mov == nil {
+		return fmt.Errorf(
+			"TODO: bad xchg instruction cannot be deduced to concrete xchg")
+	} else {
+		return a.emitInst(pr.Instruction{
+			Line: outer.Line,
+			Col:  outer.Col,
+			Data: mov,
+		}, at)
+	}
+
+	return nil
+}

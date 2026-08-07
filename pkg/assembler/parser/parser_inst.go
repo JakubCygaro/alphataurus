@@ -94,6 +94,9 @@ type InstMovRR struct {
 type InstMovSXRR struct {
 	Mov InstMovRR
 }
+type InstGenericMovZX struct {
+	Mov InstGenericMov
+}
 type InstMovZXRR struct {
 	Mov InstMovRR
 }
@@ -108,6 +111,9 @@ type InstMovZXDRO1 struct {
 }
 type InstMovZXDRO2 struct {
 	Mov InstMovDRO2
+}
+type InstGenericXCHG struct {
+	Mov InstGenericMov
 }
 type InstXCHGRR struct {
 	Mov InstMovRR
@@ -353,11 +359,11 @@ type InstSDF struct{}
 type InstCDF struct{}
 type InstSecCode struct{}
 type InstGenericLea struct {
-	Address *Expr
+	Mov InstGenericMov
 }
 type InstLeaO1 struct {
-	InstMovDRO1
+	Mov InstMovDRO1
 }
 type InstLeaO2 struct {
-	InstMovDRO2
+	Mov InstMovDRO2
 }

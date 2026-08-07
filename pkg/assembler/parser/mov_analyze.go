@@ -604,16 +604,6 @@ func movIntoDeref(
 				}, nil
 			}
 		}
-		// case OneRegOffsetExpr:
-		// 	if innerDest.Disp == nil {
-		// 		return movRDO1_NO(RegExpr{
-		// 			Reg: innerDest.Reg,
-		// 		}, mov, outer)
-		// 	} else {
-		// 		return movRDO1(innerDest, mov, outer)
-		// 	}
-		// case TwoRegOffsetExpr:
-		// 	return movRDO2(innerDest, mov, outer)
 	}
 	return nil, MakeParserErrorWithExpr(
 		dest.Inner,
@@ -650,4 +640,96 @@ func GetConcreteMovInst(
 			)
 		},
 	)
+}
+func GetConcreteMovZXInst(
+	genericMovZX InstGenericMovZX,
+	outer *Instruction,
+) (any, error) {
+	innerMov, err := GetConcreteMovInst(genericMovZX.Mov, outer)
+	if err != nil {
+		return nil, err
+	}
+	switch mov := innerMov.(type) {
+	case InstMovRR:
+		return InstMovZXRR{
+			Mov: mov,
+		}, nil
+	case InstMovIR:
+		return InstMovZXIR{
+			Mov: mov,
+		}, nil
+	case InstMovDR:
+		return InstMovZXDR{
+			Mov: mov,
+		}, nil
+	case InstMovDRO1:
+		return InstMovZXDRO1{
+			Mov: mov,
+		}, nil
+	case InstMovDRO2:
+		return InstMovZXDRO2{
+			Mov: mov,
+		}, nil
+	default:
+		return nil, errors.MakeParserError(
+			outer.Line,
+			outer.Col,
+			"Zero extend move not allowed for this type of data move.",
+		)
+	}
+}
+func GetConcreteXChgInst(
+	genericMovZX InstGenericXCHG,
+	outer *Instruction,
+) (any, error) {
+	helpErr := func() error {
+		return errors.
+			MakeParserError(
+				outer.Line,
+				outer.Col,
+				"Exchange with deference only allowed when the address is the source",
+			)
+	}
+	innerMov, err := GetConcreteMovInst(genericMovZX.Mov, outer)
+	if err != nil {
+		return nil, err
+	}
+	switch mov := innerMov.(type) {
+	case InstMovRR:
+		if mov.Src.Size != mov.Dest.Size {
+			return nil, errors.
+				MakeParserError(
+					outer.Line,
+					outer.Col,
+					"Exchange between registers of different sizes is not allowed",
+				)
+		}
+		return InstXCHGRR{
+			Mov: mov,
+		}, nil
+	case InstMovDR:
+		return InstXCHGDR{
+			Mov: mov,
+		}, nil
+	case InstMovRD:
+		return nil, helpErr()
+	case InstMovDRO1:
+		return InstXCHGDRO1{
+			Mov: mov,
+		}, nil
+	case InstMovDRO2:
+		return InstXCHGDRO2{
+			Mov: mov,
+		}, nil
+	case InstMovRDO1:
+		return nil, helpErr()
+	case InstMovRDO2:
+		return nil, helpErr()
+	default:
+		return nil, errors.MakeParserError(
+			outer.Line,
+			outer.Col,
+			"Exchange not allowed for this type of data move.",
+		)
+	}
 }
