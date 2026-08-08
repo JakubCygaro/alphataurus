@@ -47,3 +47,156 @@ param = [
     }
 
 ]
+[op.MOVDR]
+desc = "Move a value from an address to a register"
+reserve.size = 1
+reserve.doc = [
+    {
+        bits = 4,
+        desc = "Destination register"
+    },
+    {
+        bits = 2,
+        desc = "Destination size"
+    },
+    {
+        bits = 2,
+        desc = "Unused"
+    }
+]
+param = [
+    {
+        bits = 64,
+        desc = "Immediate address value"
+    }
+]
+[op.MOVDRO1]                     
+desc = "Move a value from an address to a register with the address being based in a register"
+reserve.size = 2
+reserve.doc = [
+    {
+        bits = 2,
+        desc = "Type of arthmetic operation between the offset and the register"
+    },
+    {
+        bits = 2,
+        desc = "Size of the base register"
+    },
+    {
+        bits = 2,
+        desc = "Size of the destination register"
+    },
+    {
+        bits = 2,
+        desc = "Scale factor type"
+    },
+    {
+        bits = 4,
+        desc = "Base register"
+    },
+    {
+        bits = 4,
+        desc = "Destination register"
+    }
+]
+param = [
+    {
+        bits = 64,
+        desc = "Immediate value offset"
+    }
+]
+# [op.MOVDRO2]
+# [op.MOVID]
+# [op.MOVRD]
+# [op.MOVRDO1]
+# [op.MOVRDO2]
+# [op.MOVIDO1_NO]
+# [op.MOVIDO1]
+# [op.MOVIDO2_NO]
+# [op.MOVIDO2]
+# [op.MOVSXRR]
+# [op.MOVZXRR]
+# [op.MOVZXIR]
+# [op.MOVZXDR]
+# [op.MOVZXDRO1]
+# [op.MOVZXDRO2]
+# [op.MOVSB]
+# [op.MOVREPSB]
+# [op.MOVSQ]
+# [op.MOVREPSQ]
+# [op.MOVSH]
+# [op.MOVREPSH]
+# [op.MOVSW]
+# [op.MOVREPSW]
+# [op.XCHGRR]
+# [op.XCHGDR]
+# [op.XCHGDRO1]
+# [op.XCHGDRO2]
+# [op.LEADRO1]
+# [op.LEADRO2]
+# [op.ADDRR] 
+# [op.ADDIR]
+# [op.SUBRR]
+# [op.SUBIR]
+# [op.MULRR]
+# [op.DIVRR]
+# [op.NOT]
+# [op.NEG]
+# [op.ROL]
+# [op.ROR]
+# [op.ANDRR]
+# [op.ANDIR]
+# [op.ORRR]
+# [op.ORIR]
+# [op.XORRR]
+# [op.XORIR]
+# [op.LSHRR]
+# [op.LSHIR]
+# [op.RSHRR]
+# [op.RSHIR]
+# [op.INCR]
+# [op.DECR]
+# [op.PUSHR]
+# [op.PUSHI]
+# [op.POP]
+# [op.JMP]   
+# [op.JMPE]  
+# [op.JMPZ]  
+# [op.JMPNE] 
+# [op.JMPNZ] 
+# [op.JMPG]  
+# [op.JMPGE] 
+# [op.JMPL]  
+# [op.JMPLE] 
+# [op.JMPS]
+# [op.JMPNS]
+# [op.JMPC]
+# [op.JMPNC]
+# [op.JMPO]
+# [op.JMPNO]
+# [op.JMPIP]   
+# [op.JMPEIP]  
+# [op.JMPZIP]  
+# [op.JMPNEIP] 
+# [op.JMPNZIP] 
+# [op.JMPGIP]  
+# [op.JMPGEIP] 
+# [op.JMPLIP]  
+# [op.JMPLEIP] 
+# [op.JMPSIP]
+# [op.JMPNSIP]
+# [op.JMPCIP]
+# [op.JMPNCIP]
+# [op.JMPOIP]
+# [op.JMPNOIP]
+# [op.CMPRR]  
+# [op.CMPIR]  
+# [op.CLR]    
+# [op.CALL]   
+# [op.CALLIP] 
+# [op.RET]    
+# [op.EXITI]  
+# [op.EXITR]
+# [op.SDF]
+# [op.CDF]
+# [op.NOP] 
