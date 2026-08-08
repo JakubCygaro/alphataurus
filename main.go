@@ -53,6 +53,7 @@ section '.code'
 	mov r0b, 0b11001101
 	rol r0b, 1
 	push WORD 69
+	movzx r0, [sp]
 	lea r0, [sp]
 `
 
