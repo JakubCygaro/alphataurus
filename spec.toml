@@ -1,0 +1,49 @@
+[op.MOVIR]
+desc = "Move immediate value into a register"
+reserve.size = 1
+reserve.doc = [
+    {
+        bits = 4,
+        desc = "Destination register"
+    },
+    {
+        bits = 2,
+        desc = "Unused"
+    },
+    {
+        bits = 2,
+        desc = "Size of the destination register"
+    }
+]
+param = [
+    {
+        bits = 64,
+        desc = "Immediate value, will be truncated to fit destination size"
+    }
+]
+[op.MOVRR]
+desc = "Move a value from one register to another register"
+reserve.size = 0
+param = [
+    {
+        bits = 4,
+        desc = "Destination register"
+    },
+    {
+        bits = 4,
+        desc = "Source register"
+    },
+    {
+        bits = 2,
+        desc = "Source size"
+    },
+    {
+        bits = 2,
+        desc = "Destination size"
+    },
+    {
+        bits = 52,
+        desc = "Unused"
+    }
+
+]

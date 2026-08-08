@@ -159,5 +159,7 @@ func main() {
 		os.Stderr.WriteString("\n")
 		os.Exit(1)
 	}
+	m := vm.GenerateOpcodeMap()
+	fmt.Printf("0x%08x\n", m.GetBytes(vm.OP_MOVIR))
 	os.Exit(int(mach.GetExitCode()))
 }
