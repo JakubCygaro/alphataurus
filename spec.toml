@@ -167,7 +167,31 @@ param = [
         desc = "Immediate value offset"
     }
 ]
-# [op.MOVID]
+[op.MOVID]
+desc = '''
+Move immediate value into an address
+'''
+reserve.size = 1
+reserve.doc = [
+    {
+        bits = 2,
+        desc = '''Data size'''
+    },
+    {
+        bits = 6,
+        desc = '''Unused '''
+    },
+]
+param = [
+    {
+        bits = 32,
+        desc = "Immediate value, 32-bit signed integer"
+    },
+    {
+        bits = 32,
+        desc = "Address, 32-bit unsigned integer"
+    }
+]
 # [op.MOVRD]
 # [op.MOVRDO1]
 # [op.MOVRDO2]
