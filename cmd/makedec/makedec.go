@@ -89,7 +89,6 @@ package %s
 			args.PackageName,
 			built,
 		)
-		return
 	}
 	if args.OutputFile == "" {
 		return
@@ -310,14 +309,23 @@ func writeOpcodeVals(sb *strings.Builder, code uint32, s OpcodeVal) {
 func writeOpcodeDecls(sb *strings.Builder, s OpcodeVal) {
 	fmt.Fprintf(
 		sb,
-		"    // %s\n"+
-			"    //\n",
-		s.Spec.Desc,
+		"    // Description:\n",
+	)
+	for l := range strings.Lines(s.Spec.Desc) {
+		fmt.Fprintf(
+			sb,
+			"    // %s\n",
+			strings.Trim(l, "\r\n "),
+		)
+	}
+	fmt.Fprintf(
+		sb,
+		"    //\n",
 	)
 	if len(s.Spec.Reserve.Doc) > 0 {
 		fmt.Fprintf(
 			sb,
-			"    // Reserved bits:\n",
+			"    // Reserved bits:\n    //\n",
 		)
 
 	}
@@ -325,13 +333,18 @@ func writeOpcodeDecls(sb *strings.Builder, s OpcodeVal) {
 	for _, bit := range s.Spec.Reserve.Doc {
 		fmt.Fprintf(
 			sb,
-			"    // %d-%d\n"+
-				"    // %s\n"+
-				"    //\n",
+			"    // %d-%d\n",
 			rangeStart,
 			rangeStart+bit.Bits-1,
-			bit.Desc,
 		)
+		for l := range strings.Lines(bit.Desc) {
+			fmt.Fprintf(
+				sb,
+				"    // %s\n"+
+					"    //\n",
+				strings.Trim(l, "\r\n "),
+			)
+		}
 		rangeStart += bit.Bits
 	}
 	fmt.Fprintf(
@@ -343,12 +356,17 @@ func writeOpcodeDecls(sb *strings.Builder, s OpcodeVal) {
 		fmt.Fprintf(
 			sb,
 			"    // %d-%d\n"+
-				"    // %s\n"+
 				"    //\n",
 			rangeStart,
 			rangeStart+bit.Bits-1,
-			bit.Desc,
 		)
+		for l := range strings.Lines(bit.Desc) {
+			fmt.Fprintf(
+				sb,
+				"    // %s\n",
+				strings.Trim(l, "\r\n "),
+			)
+		}
 		rangeStart += bit.Bits
 	}
 	fmt.Fprintf(
