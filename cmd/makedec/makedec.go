@@ -18,7 +18,7 @@ import (
 var args struct {
 	InputFile   string `arg:"positional,required"`
 	PackageName string `arg:"-p,--package,required"`
-	OutputFile  string `arg:"-o,--output, required"`
+	OutputFile  string `arg:"-o,--output"`
 	Print       bool   `arg:"--print,"`
 }
 
@@ -89,6 +89,9 @@ package %s
 			args.PackageName,
 			built,
 		)
+		return
+	}
+	if args.OutputFile == "" {
 		return
 	}
 	if f, err := os.Create(args.OutputFile); err != nil {
@@ -174,22 +177,24 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 }
 
 type OpcodeVal struct {
-	Name string
-	Spec Spec
+	Prefix int
+	Name   string
+	Spec   Spec
 }
-type LayerEntry opt.Either[*OpcodeMap, OpcodeVal]
+
+const OPCODE_MAP_MAX_LAYER = 256
 
 type OpcodeMap struct {
 	Prefix       uint8
 	Prev         *OpcodeMap
-	Layer        [256]opt.Either[*OpcodeMap, OpcodeVal]
+	Layer        [OPCODE_MAP_MAX_LAYER]opt.Either[*OpcodeMap, OpcodeVal]
 	next         int
 	depth        int
 	LastNewLayer *OpcodeMap
 }
 
 func (om *OpcodeMap) HasSpace() bool {
-	return om.next < 256
+	return om.next < OPCODE_MAP_MAX_LAYER
 }
 
 func (om *OpcodeMap) PushLayer(layer *OpcodeMap) error {
@@ -197,7 +202,7 @@ func (om *OpcodeMap) PushLayer(layer *OpcodeMap) error {
 		return fmt.
 			Errorf("Maximum map depth reached")
 	}
-	if om.next >= 256 {
+	if om.next >= OPCODE_MAP_MAX_LAYER {
 		return fmt.
 			Errorf("Maximum layer size reached")
 	}
@@ -211,12 +216,12 @@ func (om *OpcodeMap) PushLayer(layer *OpcodeMap) error {
 	return nil
 }
 func (om *OpcodeMap) PushSpec(name string, s Spec) error {
-	if om.next >= 256 {
+	if om.next >= OPCODE_MAP_MAX_LAYER {
 		return fmt.
-			Errorf("Maximum layer size reached")
+			Errorf("Maximum layer size reached with `%s`", name)
 	}
 	om.Layer[om.next] =
-		opt.MakeRight[*OpcodeMap](OpcodeVal{name, s})
+		opt.MakeRight[*OpcodeMap](OpcodeVal{om.next, name, s})
 	om.next++
 	return nil
 }
@@ -244,7 +249,7 @@ func insertIntoMap(m *OpcodeMap, name string, spec Spec) error {
 		if !m.HasSpace() {
 			if m.depth == 3 {
 				return fmt.
-					Errorf("Instruction opcode space exhausted")
+					Errorf("Instruction opcode space exhausted with `%s`", name)
 			}
 			m.Prev.LastNewLayer = nil
 			return insertIntoMap(m.Prev, name, spec)
@@ -262,11 +267,11 @@ func insertIntoMap(m *OpcodeMap, name string, spec Spec) error {
 	return nil
 }
 
-var assigned = map[uint32]OpcodeVal{}
+var assignedOpcodes = map[uint32]OpcodeVal{}
 
 func recurseUp(layer *OpcodeMap, bytes []byte) {
 	if layer.Prev != nil {
-		bytes[layer.depth] = layer.Prefix
+		bytes[layer.depth+1] = layer.Prefix
 		recurseUp(layer.Prev, bytes)
 	}
 }
@@ -279,9 +284,10 @@ func assignLayer(ll LayerList) {
 			}
 			val := layer.Layer[i].GetRight()
 			b := [4]byte{}
-			b[layer.depth] = byte(i)
+			b[layer.depth] = byte(val.Prefix)
 			recurseUp(layer, b[:])
-			assigned[binary.BigEndian.Uint32(b[:])] = val
+			code := binary.BigEndian.Uint32(b[:])
+			assignedOpcodes[code] = val
 		}
 	}
 }
@@ -397,8 +403,8 @@ func buildSource(spec OpSpec) (string, error) {
 		"type uint32 OpCodeVal\n" +
 			"const (\n",
 	)
-	for _, code := range slices.Sorted(maps.Keys(assigned)) {
-		writeOpcodeDecls(&builder, assigned[code])
+	for _, code := range slices.Sorted(maps.Keys(assignedOpcodes)) {
+		writeOpcodeDecls(&builder, assignedOpcodes[code])
 	}
 	builder.WriteString(
 		")\n",
@@ -406,8 +412,8 @@ func buildSource(spec OpSpec) (string, error) {
 	builder.WriteString(
 		"var _makedec_opcodeMap = map[uint32]OpCodeVal {\n",
 	)
-	for _, code := range slices.Sorted(maps.Keys(assigned)) {
-		writeOpcodeMap(&builder, code, assigned[code])
+	for _, code := range slices.Sorted(maps.Keys(assignedOpcodes)) {
+		writeOpcodeMap(&builder, code, assignedOpcodes[code])
 	}
 	builder.WriteString(
 		"}\n",
@@ -416,8 +422,8 @@ func buildSource(spec OpSpec) (string, error) {
 	builder.WriteString(
 		"const (\n",
 	)
-	for _, code := range slices.Sorted(maps.Keys(assigned)) {
-		writeOpcodeVals(&builder, code, assigned[code])
+	for _, code := range slices.Sorted(maps.Keys(assignedOpcodes)) {
+		writeOpcodeVals(&builder, code, assignedOpcodes[code])
 	}
 	builder.WriteString(
 		")\n",
