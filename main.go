@@ -160,6 +160,7 @@ func main() {
 		os.Exit(1)
 	}
 	m := vm.GenerateOpcodeMap()
+	//0x00010000
 	fmt.Printf("0x%08x\n", m.GetBytes(vm.OP_MOVIR))
 	os.Exit(int(mach.GetExitCode()))
 }

@@ -105,7 +105,68 @@ param = [
         desc = "Immediate value offset"
     }
 ]
-# [op.MOVDRO2]
+[op.MOVDRO2]
+desc = '''
+Move a value from an address to a register with the address being derived from
+a base register being offset by an index register and immediate value offset
+'''
+reserve.size = 3
+reserve.doc = [
+    {
+        bits = 2,
+        desc = '''
+            Destination register size
+        '''
+    },
+    {
+        bits = 2,
+        desc = '''
+            Scale factor
+        '''
+    },
+    {
+        bits = 4,
+        desc = '''
+            Unused
+        '''
+    },
+    {
+        bits = 2,
+        desc = '''
+            Offset operator (addition or subtraction)
+        '''
+    },
+    {
+        bits = 2,
+        desc = '''
+            Size of base and index registers (both at once)
+        '''
+    },
+    {
+        bits = 4,
+        desc = '''
+            Index register
+        '''
+    },
+    {
+        bits = 4,
+        desc = '''
+            Base register
+        '''
+    },
+    {
+        bits = 4,
+        desc = '''
+            Destination register
+        '''
+    },
+]
+param = [
+    {
+        bits = 64,
+        desc = "Immediate value offset"
+    }
+]
 # [op.MOVID]
 # [op.MOVRD]
 # [op.MOVRDO1]

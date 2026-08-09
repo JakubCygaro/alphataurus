@@ -284,6 +284,9 @@ func assignLayer(ll LayerList) {
 			}
 			val := layer.Layer[i].GetRight()
 			b := [4]byte{}
+			if val.Name == "MOVIR" {
+				fmt.Printf("MOVIR: Prefix %d depth %d\n", val.Prefix, layer.depth)
+			}
 			b[layer.depth] = byte(val.Prefix)
 			recurseUp(layer, b[:])
 			code := binary.BigEndian.Uint32(b[:])
@@ -292,10 +295,15 @@ func assignLayer(ll LayerList) {
 	}
 }
 func writeOpcodeVals(sb *strings.Builder, code uint32, s OpcodeVal) {
+	maxWidth := 25
+	opV := fmt.Sprintf("OP_%s_VAL", s.Name)
+	pad := maxWidth - len(opV)
 	fmt.Fprintf(
 		sb,
-		"    OP_%s_VAL uint32 = 0x%08x\n",
-		s.Name,
+		"    %s %*suint32 = 0x%08x\n",
+		opV,
+		pad,
+		"",
 		code,
 	)
 }
@@ -388,7 +396,20 @@ func Decode(code uint32) (bool, OpCodeVal) {
 func buildSource(spec OpSpec) (string, error) {
 	builder := strings.Builder{}
 	layers[3] = append(layers[3], &m)
-	for opcode, spec := range spec.Op {
+	type pair struct {
+		Opcode string
+		Spec   Spec
+	}
+	sortedSpecs := make([]pair, 0)
+	for _, code := range slices.Sorted(maps.Keys(spec.Op)) {
+		sortedSpecs = append(sortedSpecs, pair{
+			Opcode: code,
+			Spec:   spec.Op[code],
+		})
+	}
+	for _, s := range sortedSpecs {
+		opcode := s.Opcode
+		spec := s.Spec
 		if err := verifyOpSpec(opcode, &spec); err != nil {
 			return "", err
 		}
@@ -403,6 +424,12 @@ func buildSource(spec OpSpec) (string, error) {
 		"type uint32 OpCodeVal\n" +
 			"const (\n",
 	)
+	if len(assignedOpcodes) != len(sortedSpecs) {
+		return "", fmt.Errorf(
+			"Failed to assign all opcodes, input does not match output " +
+				"(this should not happen)",
+		)
+	}
 	for _, code := range slices.Sorted(maps.Keys(assignedOpcodes)) {
 		writeOpcodeDecls(&builder, assignedOpcodes[code])
 	}
