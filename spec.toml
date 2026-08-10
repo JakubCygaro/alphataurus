@@ -1,197 +1,170 @@
+# Each instruction is comprised of an opcode section and a parameter section
+# The opcode section is 4 bytes and the parameter section is 8 bytes
+# Those sizes are fixed, every instruction is the same size
+# Some instructions store parameter information in the opcode section
+# For example the MOVIR instruction puts in the last byte of its opcode
+# the destination register and its size.
+# This is important when it comes to decoding the instructions since
+# parts of the opcode are variable and can be different yet still map to the same
+# instruction. An opcode for MOVIR with destination register r0 will look different
+# then the same instruction where the destination register is r1. The first 3 bytes will
+# be the same for both but the last byte will be different. The decoder is aware of this
+# and will disregard that last byte which will be analyzed by the virtual machine instead.
+
+# defines an instruction in the instruction set
 [op.MOVIR]
+# describes the instruction
 desc = "Move immediate value into a register"
+# describes how many bytes in the opcode are reserved for parameters to the instruction
 reserve.size = 1
-reserve.doc = [
-    {
-        bits = 4,
-        desc = "Destination register"
-    },
-    {
-        bits = 2,
-        desc = "Unused"
-    },
-    {
-        bits = 2,
-        desc = "Size of the destination register"
-    }
-]
-param = [
-    {
-        bits = 64,
-        desc = "Immediate value, will be truncated to fit destination size"
-    }
-]
+# describes the function of each bit in the reserved bytes
+# from right to left, since the system is big endian
+[[op.MOVIR.reserve.doc]]
+# bits 0-3
+bits = 4
+desc = "Destination register"
+[[op.MOVIR.reserve.doc]]
+# bits 4-5
+bits = 2
+desc = "Unused"
+[[op.MOVIR.reserve.doc]]
+# bits 6-7
+bits = 2
+desc = "Size of the destination register"
+# describes the function of the bits in the parameter section of the instruction
+[[op.MOVIR.param]]
+bits = 64
+desc = "Immediate value, will be truncated to fit destination size"
+
+
 [op.MOVRR]
 desc = "Move a value from one register to another register"
 reserve.size = 0
-param = [
-    {
-        bits = 4,
-        desc = "Destination register"
-    },
-    {
-        bits = 4,
-        desc = "Source register"
-    },
-    {
-        bits = 2,
-        desc = "Source size"
-    },
-    {
-        bits = 2,
-        desc = "Destination size"
-    },
-    {
-        bits = 52,
-        desc = "Unused"
-    }
+[[op.MOVRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.MOVRR.param]]
+bits = 4
+desc = "Source register"
+[[op.MOVRR.param]]
+bits = 2
+desc = "Source size"
+[[op.MOVRR.param]]
+bits = 2
+desc = "Destination size"
+[[op.MOVRR.param]]
+bits = 52
+desc = "Unused"
 
-]
 [op.MOVDR]
 desc = "Move a value from an address to a register"
 reserve.size = 1
-reserve.doc = [
-    {
-        bits = 4,
-        desc = "Destination register"
-    },
-    {
-        bits = 2,
-        desc = "Destination size"
-    },
-    {
-        bits = 2,
-        desc = "Unused"
-    }
-]
-param = [
-    {
-        bits = 64,
-        desc = "Immediate address value"
-    }
-]
+[[op.MOVDR.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.MOVDR.reserve.doc]]
+bits = 2
+desc = "Destination size"
+[[op.MOVDR.reserve.doc]]
+bits = 2
+desc = "Unused"
+[[op.MOVDR.param]]
+bits = 64
+desc = "Immediate address value"
+
 [op.MOVDRO1]
 desc = "Move a value from an address to a register with the address being based in a register"
 reserve.size = 2
-reserve.doc = [
-    {
-        bits = 2,
-        desc = "Type of arthmetic operation between the offset and the register"
-    },
-    {
-        bits = 2,
-        desc = "Size of the base register"
-    },
-    {
-        bits = 2,
-        desc = "Size of the destination register"
-    },
-    {
-        bits = 2,
-        desc = "Scale factor type"
-    },
-    {
-        bits = 4,
-        desc = "Base register"
-    },
-    {
-        bits = 4,
-        desc = "Destination register"
-    }
-]
-param = [
-    {
-        bits = 64,
-        desc = "Immediate value offset"
-    }
-]
+[[op.MOVDRO1.reserve.doc]]
+bits = 2
+desc = "Type of arthmetic operation between the offset and the register"
+[[op.MOVDRO1.reserve.doc]]
+bits = 2
+desc = "Size of the base register"
+[[op.MOVDRO1.reserve.doc]]
+bits = 2
+desc = "Size of the destination register"
+[[op.MOVDRO1.reserve.doc]]
+bits = 2
+desc = "Scale factor type"
+[[op.MOVDRO1.reserve.doc]]
+bits = 4
+desc = "Base register"
+[[op.MOVDRO1.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.MOVDRO1.param]]
+bits = 64
+desc = "Immediate value offset"
+
 [op.MOVDRO2]
 desc = '''
 Move a value from an address to a register with the address being derived from
 a base register being offset by an index register and immediate value offset
 '''
 reserve.size = 3
-reserve.doc = [
-    {
-        bits = 2,
-        desc = '''
-            Destination register size
-        '''
-    },
-    {
-        bits = 2,
-        desc = '''
-            Scale factor
-        '''
-    },
-    {
-        bits = 4,
-        desc = '''
-            Unused
-        '''
-    },
-    {
-        bits = 2,
-        desc = '''
-            Offset operator (addition or subtraction)
-        '''
-    },
-    {
-        bits = 2,
-        desc = '''
-            Size of base and index registers (both at once)
-        '''
-    },
-    {
-        bits = 4,
-        desc = '''
-            Index register
-        '''
-    },
-    {
-        bits = 4,
-        desc = '''
-            Base register
-        '''
-    },
-    {
-        bits = 4,
-        desc = '''
-            Destination register
-        '''
-    },
-]
-param = [
-    {
-        bits = 64,
-        desc = "Immediate value offset"
-    }
-]
+[[op.MOVDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Destination register size
+'''
+[[op.MOVDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Scale factor
+'''
+[[op.MOVDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Unused
+'''
+[[op.MOVDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Offset operator (addition or subtraction)
+'''
+[[op.MOVDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Size of base and index registers (both at once)
+'''
+[[op.MOVDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Index register
+'''
+[[op.MOVDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Base register
+'''
+[[op.MOVDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Destination register
+'''
+[[op.MOVDRO2.param]]
+bits = 64
+desc = "Immediate value offset"
+
 [op.MOVID]
 desc = '''
 Move immediate value into an address
 '''
 reserve.size = 1
-reserve.doc = [
-    {
-        bits = 2,
-        desc = '''Data size'''
-    },
-    {
-        bits = 6,
-        desc = '''Unused '''
-    },
-]
-param = [
-    {
-        bits = 32,
-        desc = "Immediate value, 32-bit signed integer"
-    },
-    {
-        bits = 32,
-        desc = "Address, 32-bit unsigned integer"
-    }
-]
+[[op.MOVID.reserve.doc]]
+bits = 2
+desc = '''Data size'''
+[[op.MOVID.reserve.doc]]
+bits = 6
+desc = '''Unused '''
+[[op.MOVID.param]]
+bits = 32
+desc = "Immediate value, 32-bit signed integer"
+[[op.MOVID.param]]
+bits = 32
+desc = "Address, 32-bit unsigned integer"
+
 # [op.MOVRD]
 # [op.MOVRDO1]
 # [op.MOVRDO2]
