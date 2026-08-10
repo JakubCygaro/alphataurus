@@ -127,13 +127,13 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 			unicode.IsPunct(r)
 	}) {
 		return fmt.Errorf(
-			"Spec for opcode `%s` contains disallowed characters",
+			"Spec for opcode `%s` contains disallowed characters.",
 			opcode,
 		)
 	}
 	if spec.Reserve.Size < 0 || spec.Reserve.Size > 3 {
 		return fmt.Errorf(
-			"Spec for opcode `%s` reserves a disallowed amount of bytes (%d)",
+			"Spec for opcode `%s` reserves a disallowed amount of bytes (%d).",
 			opcode,
 			spec.Reserve.Size,
 		)
@@ -145,7 +145,7 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 			return fmt.Errorf(
 				"Bit doc %d `%s` for opcode `%s` uses "+
 					"more bits than are reserved in the spec (%d). "+
-					"%d bits over the reserved %d",
+					"%d bits over the reserved %d.",
 				i,
 				bitDoc.Desc,
 				opcode,
@@ -154,11 +154,19 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 				spec.Reserve.Size*8,
 			)
 		}
+		if bitDoc.Desc == "" {
+			return fmt.Errorf(
+				"Bit doc %d for opcode `%s` provides no usage description (desc). "+
+					"Please provide a usage description for these bits.",
+				i,
+				opcode,
+			)
+		}
 	}
 	if reserved > 0 {
 		return fmt.Errorf(
 			"Spec for opcode `%s` does not document all reserved bits."+
-				" %d undocumented bits remain",
+				" %d undocumented bits remain.",
 			opcode,
 			reserved,
 		)
@@ -170,18 +178,26 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 			return fmt.Errorf(
 				"Param doc %d `%s` for opcode `%s` uses "+
 					"more bits than are allowed for an instruction parameter (64). "+
-					"%d bits over the maximum",
+					"%d bits over the maximum.",
 				i,
 				paramDoc.Desc,
 				opcode,
 				-paramReserved,
 			)
 		}
+		if paramDoc.Desc == "" {
+			return fmt.Errorf(
+				"Param doc %d for opcode `%s` provides no usage description (desc). "+
+					"Please provide a description for these bits.",
+				i,
+				opcode,
+			)
+		}
 	}
 	if paramReserved > 0 {
 		return fmt.Errorf(
 			"Spec for opcode `%s` does not document all parameter bits."+
-				" %d undocumented bits remain",
+				" %d undocumented bits remain.",
 			opcode,
 			paramReserved,
 		)
