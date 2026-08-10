@@ -16,10 +16,11 @@ import (
 )
 
 var args struct {
-	InputFile   string `arg:"positional,required"`
-	PackageName string `arg:"-p,--package,required"`
-	OutputFile  string `arg:"-o,--output"`
-	Print       bool   `arg:"--print,"`
+	InputFile   string `arg:"positional,required" help:"Input instruction specification .toml file path"`
+	PackageName string `arg:"-p,--package,required" help:"Name of the package the output file should belong to"`
+	OutputFile  string `arg:"-o,--output" help:"Path and name of the output file, .go will be appended to it"`
+	Print       bool   `arg:"--print," help:"Print out the generated output file to stdout"`
+	WriteTest   bool   `arg:"-t,--test," help:"Write a test file along with the output file with _test appended to the name"`
 }
 
 func exitWithErr(format string, a ...any) {
@@ -70,7 +71,7 @@ func main() {
 	if err := toml.Unmarshal(read, &spec); err != nil {
 		exitWithErr("%s\n", err.Error())
 	}
-	built, err := buildSource(spec)
+	built, test, err := buildSourceAndTest(spec, args.WriteTest)
 	if err != nil {
 		exitWithErr("%s\n", err.Error())
 	}
@@ -93,7 +94,7 @@ package %s
 	if args.OutputFile == "" {
 		return
 	}
-	if f, err := os.Create(args.OutputFile); err != nil {
+	if f, err := os.Create(args.OutputFile + ".go"); err != nil {
 		exitWithErr("%s\n", err.Error())
 	} else {
 		defer f.Close()
@@ -103,6 +104,19 @@ package %s
 			args.PackageName,
 			built,
 		)
+	}
+	if args.WriteTest {
+		if f, err := os.Create(args.OutputFile + "_test.go"); err != nil {
+			exitWithErr("%s\n", err.Error())
+		} else {
+			defer f.Close()
+			fmt.Fprintf(
+				f,
+				template,
+				args.PackageName,
+				test,
+			)
+		}
 	}
 }
 
@@ -401,7 +415,7 @@ func Decode(code uint32) (bool, OpCodeVal) {
 	if o, ok := _makedec_opcodeMap[(code & 0x000000ff)]; ok {
 		return ok, o
 	}
-	return false, OpcodeVal(0)
+	return false, OpCodeVal(0)
 }
 `
 	fmt.Fprintf(
@@ -411,8 +425,12 @@ func Decode(code uint32) (bool, OpCodeVal) {
 	)
 }
 
-func buildSource(spec OpSpec) (string, error) {
-	builder := strings.Builder{}
+func buildSourceAndTest(
+	spec OpSpec,
+	buildTest bool,
+) (src string, tst string, err error) {
+	source := strings.Builder{}
+	test := strings.Builder{}
 	layers[3] = append(layers[3], &m)
 	type pair struct {
 		Opcode string
@@ -429,50 +447,80 @@ func buildSource(spec OpSpec) (string, error) {
 		opcode := s.Opcode
 		spec := s.Spec
 		if err := verifyOpSpec(opcode, &spec); err != nil {
-			return "", err
+			return "", "", err
 		}
 		if err := insertIntoMap(&m, opcode, spec); err != nil {
-			return "", nil
+			return "", "", err
 		}
 	}
 	for _, ll := range layers {
 		assignLayer(ll)
 	}
-	builder.WriteString(
-		"type uint32 OpCodeVal\n" +
+	source.WriteString(
+		"type OpCodeVal uint32\n" +
 			"const (\n",
 	)
 	if len(assignedOpcodes) != len(sortedSpecs) {
-		return "", fmt.Errorf(
+		return "", "", fmt.Errorf(
 			"Failed to assign all opcodes, input does not match output " +
 				"(this should not happen)",
 		)
 	}
 	for _, code := range slices.Sorted(maps.Keys(assignedOpcodes)) {
-		writeOpcodeDecls(&builder, assignedOpcodes[code])
+		writeOpcodeDecls(&source, assignedOpcodes[code])
 	}
-	builder.WriteString(
+	source.WriteString(
 		")\n",
 	)
-	builder.WriteString(
+	source.WriteString(
 		"var _makedec_opcodeMap = map[uint32]OpCodeVal {\n",
 	)
 	for _, code := range slices.Sorted(maps.Keys(assignedOpcodes)) {
-		writeOpcodeMap(&builder, code, assignedOpcodes[code])
+		writeOpcodeMap(&source, code, assignedOpcodes[code])
 	}
-	builder.WriteString(
+	source.WriteString(
 		"}\n",
 	)
-	writeOpcodeDecodeFunc(&builder)
-	builder.WriteString(
+	writeOpcodeDecodeFunc(&source)
+	source.WriteString(
 		"const (\n",
 	)
 	for _, code := range slices.Sorted(maps.Keys(assignedOpcodes)) {
-		writeOpcodeVals(&builder, code, assignedOpcodes[code])
+		writeOpcodeVals(&source, code, assignedOpcodes[code])
 	}
-	builder.WriteString(
+	source.WriteString(
 		")\n",
 	)
-	return builder.String(), nil
+	if buildTest {
+		fmt.Fprintf(
+			&test,
+			`
+import ("testing")
+func TestDecoder(t* testing.T){
+`,
+		)
+		for _, code := range slices.Sorted(maps.Keys(assignedOpcodes)) {
+			writeDecoderTest(&test, code, assignedOpcodes[code])
+		}
+		fmt.Fprintf(&test, "\n}\n")
+	}
+	return source.String(), test.String(), nil
 
+}
+
+func writeDecoderTest(sb *strings.Builder, code uint32, op OpcodeVal) {
+	fmt.Fprintf(
+		sb,
+		`
+	if ok, v := Decode(0x%08x); !ok {
+		t.Error("Failed to decode opcode OP_%s")
+	} else if v != OP_%s {
+		t.Errorf("Decoded wrong opcode, wanted OP_%s_VAL, got '0x%%08x'", v)
+	}
+`,
+		code,
+		op.Name,
+		op.Name,
+		op.Name,
+	)
 }
