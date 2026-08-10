@@ -131,6 +131,13 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 			opcode,
 		)
 	}
+	if spec.Desc == "" {
+		return fmt.Errorf(
+			"Spec for opcode `%s` provides no description, "+
+				"please provide a description for this opcode.",
+			opcode,
+		)
+	}
 	if spec.Reserve.Size < 0 || spec.Reserve.Size > 3 {
 		return fmt.Errorf(
 			"Spec for opcode `%s` reserves a disallowed amount of bytes (%d).",
