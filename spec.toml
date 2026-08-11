@@ -165,7 +165,8 @@ desc = "Immediate value, 32-bit signed integer"
 bits = 32
 desc = "Address, 32-bit unsigned integer"
 
-# [op.MOVRD]
+[op.MOVRD]
+desc = "Move a value from a register into an address"
 # [op.MOVRDO1]
 # [op.MOVRDO2]
 # [op.MOVIDO1_NO]

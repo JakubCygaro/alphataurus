@@ -5,6 +5,12 @@
 thing = 1234
 
 ```
+- logical and possibly other instructions setting status flags
+ Nearly all arithmetic, logical, and shift instructions set the status flags to indicate the
+ results of an operation.
+- cwd, cdq, cqo
+- mul should output a result of double the size of its operands,
+ multiplying 2 halfwords yields a word
 - special variables like in FASM: $, ., etc.
 - lea
 - syscall
