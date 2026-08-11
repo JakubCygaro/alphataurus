@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"maps"
+	"math/rand"
 	"os"
 	"slices"
 	"strings"
@@ -532,6 +533,16 @@ func TestDecoder(t* testing.T){
 }
 
 func writeDecoderTest(sb *strings.Builder, code uint32, op OpcodeVal) {
+	noise := uint32(rand.Int31())
+	testCode := code
+	switch op.Spec.Reserve.Size {
+	case 1:
+		testCode |= (noise & 0xff000000)
+	case 2:
+		testCode |= (noise & 0xffff0000)
+	case 3:
+		testCode |= (noise & 0xffffff00)
+	}
 	fmt.Fprintf(
 		sb,
 		`
@@ -541,7 +552,7 @@ func writeDecoderTest(sb *strings.Builder, code uint32, op OpcodeVal) {
 		t.Errorf("Decoded wrong opcode, wanted OP_%s_VAL, got '0x%%08x'", v)
 	}
 `,
-		code,
+		testCode,
 		op.Name,
 		op.Name,
 		op.Name,
