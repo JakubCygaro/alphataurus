@@ -124,8 +124,8 @@ package %s
 func verifyOpSpec(opcode string, spec *Spec) error {
 	if strings.ContainsFunc(opcode, func(r rune) bool {
 		return unicode.IsSpace(r) ||
-			unicode.IsControl(r) ||
-			unicode.IsPunct(r)
+			(unicode.IsPunct(r) && r != '_') ||
+			unicode.IsControl(r)
 	}) {
 		return fmt.Errorf(
 			"Spec for opcode `%s` contains disallowed characters.",

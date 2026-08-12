@@ -165,12 +165,141 @@ desc = "Immediate value, 32-bit signed integer"
 bits = 32
 desc = "Address, 32-bit unsigned integer"
 
-# [op.MOVRD]
-# desc = "Move a value from a register into an address"
-# [op.MOVRDO1]
-# [op.MOVRDO2]
-# [op.MOVIDO1_NO]
-# [op.MOVIDO1]
+[op.MOVRD]
+desc = "Move a value from a register into an address"
+reserve.size = 1
+[[op.MOVRD.reserve.doc]]
+bits = 4
+desc = '''Source register'''
+[[op.MOVRD.reserve.doc]]
+bits = 2
+desc = '''Source register size'''
+[[op.MOVRD.reserve.doc]]
+bits = 2
+desc = '''Unused'''
+
+[[op.MOVRD.param]]
+bits = 64
+desc = '''Address as 64-bit immediate value unsigned integer'''
+
+[op.MOVRDO1]
+desc = "Move a value from a register into an address with a base register and an offset"
+reserve.size = 2
+
+[[op.MOVRDO1.reserve.doc]]
+bits = 2
+desc = 'Offset operand type'
+[[op.MOVRDO1.reserve.doc]]
+bits = 2
+desc = 'Base register size'
+[[op.MOVRDO1.reserve.doc]]
+bits = 2
+desc = 'Destination register size'
+[[op.MOVRDO1.reserve.doc]]
+bits = 2
+desc = 'Scale factor'
+[[op.MOVRDO1.reserve.doc]]
+bits = 4
+desc = 'Base register'
+[[op.MOVRDO1.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.MOVRDO1.param]]
+bits = 64
+desc = 'Unsigned 64-bit immediate value offset'
+
+[op.MOVRDO2]
+desc = "Move a value from a register into an address with a base register, index register and an offset"
+reserve.size = 3
+
+[[op.MOVRDO2.reserve.doc]]
+bits = 2
+desc = 'Destination register size'
+[[op.MOVRDO2.reserve.doc]]
+bits = 2
+desc = 'Size factor'
+[[op.MOVRDO2.reserve.doc]]
+bits = 4
+desc = 'Unused'
+[[op.MOVRDO2.reserve.doc]]
+bits = 2
+desc = 'Offset operator type'
+[[op.MOVRDO2.reserve.doc]]
+bits = 2
+desc = 'Base and index register size'
+[[op.MOVRDO2.reserve.doc]]
+bits = 4
+desc = 'Index register'
+[[op.MOVRDO2.reserve.doc]]
+bits = 4
+desc = 'Base register'
+[[op.MOVRDO2.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.MOVRDO2.param]]
+bits = 64
+desc = 'Unsigned 64-bit immediate value offset'
+
+[op.MOVIDO1_NO]
+desc = "Move immediate value into an address with a base register and NO offset"
+reserve.size = 2
+
+[[op.MOVIDO1_NO.reserve.doc]]
+bits = 2
+desc = 'Offset operand type'
+[[op.MOVIDO1_NO.reserve.doc]]
+bits = 2
+desc = 'Base register size'
+[[op.MOVIDO1_NO.reserve.doc]]
+bits = 2
+desc = 'Destination address size'
+[[op.MOVIDO1_NO.reserve.doc]]
+bits = 2
+desc = 'Scale factor'
+[[op.MOVIDO1_NO.reserve.doc]]
+bits = 4
+desc = 'Base register'
+[[op.MOVIDO1_NO.reserve.doc]]
+bits = 4
+desc = 'Unused'
+
+[[op.MOVIDO1_NO.param]]
+bits = 64
+desc = "Unsigned 64-bit integer immediate value"
+
+
+[op.MOVIDO1]
+desc = "Move immediate value into an address with a base register and NO offset"
+reserve.size = 2
+
+[[op.MOVIDO1.reserve.doc]]
+bits = 2
+desc = 'Offset operand type'
+[[op.MOVIDO1.reserve.doc]]
+bits = 2
+desc = 'Base register size'
+[[op.MOVIDO1.reserve.doc]]
+bits = 2
+desc = 'Destination address size'
+[[op.MOVIDO1.reserve.doc]]
+bits = 2
+desc = 'Scale factor'
+[[op.MOVIDO1.reserve.doc]]
+bits = 4
+desc = 'Base register'
+[[op.MOVIDO1.reserve.doc]]
+bits = 4
+desc = 'Unused'
+
+[[op.MOVIDO1.param]]
+bits = 32
+desc = "Unsigned 32-bit integer immediate value"
+[[op.MOVIDO1.param]]
+bits = 32
+desc = "Signed 32-bit integer immediate value offset"
+
 # [op.MOVIDO2_NO]
 # [op.MOVIDO2]
 # [op.MOVSXRR]
