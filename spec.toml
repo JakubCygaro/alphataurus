@@ -300,10 +300,114 @@ desc = "Unsigned 32-bit integer immediate value"
 bits = 32
 desc = "Signed 32-bit integer immediate value offset"
 
-# [op.MOVIDO2_NO]
-# [op.MOVIDO2]
-# [op.MOVSXRR]
-# [op.MOVZXRR]
+[op.MOVIDO2_NO]
+desc = "Move immediate value into an address with a base register, index register and NO offset"
+reserve.size = 3
+
+[[op.MOVIDO2_NO.reserve.doc]]
+bits = 2
+desc = 'Unused'
+[[op.MOVIDO2_NO.reserve.doc]]
+bits = 2
+desc = 'Size factor'
+[[op.MOVIDO2_NO.reserve.doc]]
+bits = 4
+desc = 'Unused'
+[[op.MOVIDO2_NO.reserve.doc]]
+bits = 2
+desc = 'Offset operator type'
+[[op.MOVIDO2_NO.reserve.doc]]
+bits = 2
+desc = 'Base and index register size'
+[[op.MOVIDO2_NO.reserve.doc]]
+bits = 4
+desc = 'Index register'
+[[op.MOVIDO2_NO.reserve.doc]]
+bits = 4
+desc = 'Base register'
+[[op.MOVIDO2_NO.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.MOVIDO2_NO.param]]
+bits = 64
+desc = '64-bit immediate value'
+
+
+[op.MOVIDO2]
+desc = "Move immediate value into an address with a base register, index register and NO offset"
+reserve.size = 3
+
+[[op.MOVIDO2.reserve.doc]]
+bits = 2
+desc = 'Unused'
+[[op.MOVIDO2.reserve.doc]]
+bits = 2
+desc = 'Size factor'
+[[op.MOVIDO2.reserve.doc]]
+bits = 4
+desc = 'Unused'
+[[op.MOVIDO2.reserve.doc]]
+bits = 2
+desc = 'Offset operator type'
+[[op.MOVIDO2.reserve.doc]]
+bits = 2
+desc = 'Base and index register size'
+[[op.MOVIDO2.reserve.doc]]
+bits = 4
+desc = 'Index register'
+[[op.MOVIDO2.reserve.doc]]
+bits = 4
+desc = 'Base register'
+[[op.MOVIDO2.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.MOVIDO2.param]]
+bits = 32
+desc = '32-bit immediate value'
+[[op.MOVIDO2.param]]
+bits = 32
+desc = 'Signed 32-bit immediate value'
+
+[op.MOVSXRR]
+desc = "Move a value from one register to another register with sign extension"
+reserve.size = 0
+[[op.MOVSXRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.MOVSXRR.param]]
+bits = 4
+desc = "Source register"
+[[op.MOVSXRR.param]]
+bits = 2
+desc = "Source size"
+[[op.MOVSXRR.param]]
+bits = 2
+desc = "Destination size"
+[[op.MOVSXRR.param]]
+bits = 52
+desc = "Unused"
+
+[op.MOVZXRR]
+desc = "Move a value from one register to another register with zero extension"
+reserve.size = 0
+[[op.MOVZXRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.MOVZXRR.param]]
+bits = 4
+desc = "Source register"
+[[op.MOVZXRR.param]]
+bits = 2
+desc = "Source size"
+[[op.MOVZXRR.param]]
+bits = 2
+desc = "Destination size"
+[[op.MOVZXRR.param]]
+bits = 52
+desc = "Unused"
+
 # [op.MOVZXIR]
 # [op.MOVZXDR]
 # [op.MOVZXDRO1]
