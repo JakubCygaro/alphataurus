@@ -408,12 +408,128 @@ desc = "Destination size"
 bits = 52
 desc = "Unused"
 
-# [op.MOVZXIR]
-# [op.MOVZXDR]
-# [op.MOVZXDRO1]
-# [op.MOVZXDRO2]
-# [op.MOVSB]
-# [op.MOVREPSB]
+[op.MOVZXIR]
+desc = "Move immediate value into a register with zero extension"
+reserve.size = 1
+[[op.MOVZXIR.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.MOVZXIR.reserve.doc]]
+bits = 2
+desc = "Unused"
+[[op.MOVZXIR.reserve.doc]]
+bits = 2
+desc = "Size of the destination register"
+[[op.MOVZXIR.param]]
+bits = 64
+desc = "Immediate value"
+
+[op.MOVZXDR]
+desc = "Move a value from an address to a register with zero extension"
+reserve.size = 1
+[[op.MOVZXDR.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.MOVZXDR.reserve.doc]]
+bits = 2
+desc = "Destination size"
+[[op.MOVZXDR.reserve.doc]]
+bits = 2
+desc = "Unused"
+[[op.MOVZXDR.param]]
+bits = 64
+desc = "Immediate address value"
+
+[op.MOVZXDRO1]
+desc = "Move a value from an address to a register with the address being based in a register with zero extension"
+reserve.size = 2
+[[op.MOVZXDRO1.reserve.doc]]
+bits = 2
+desc = "Type of arthmetic operation between the offset and the register"
+[[op.MOVZXDRO1.reserve.doc]]
+bits = 2
+desc = "Size of the base register"
+[[op.MOVZXDRO1.reserve.doc]]
+bits = 2
+desc = "Size of the destination register"
+[[op.MOVZXDRO1.reserve.doc]]
+bits = 2
+desc = "Scale factor type"
+[[op.MOVZXDRO1.reserve.doc]]
+bits = 4
+desc = "Base register"
+[[op.MOVZXDRO1.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.MOVZXDRO1.param]]
+bits = 64
+desc = "Immediate value offset"
+
+[op.MOVZXDRO2]
+desc = '''
+Move a value from an address to a register with the address being derived from
+a base register being offset by an index register and immediate value offset with zero extension
+'''
+reserve.size = 3
+[[op.MOVZXDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Destination register size
+'''
+[[op.MOVZXDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Scale factor
+'''
+[[op.MOVZXDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Unused
+'''
+[[op.MOVZXDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Offset operator (addition or subtraction)
+'''
+[[op.MOVZXDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Size of base and index registers (both at once)
+'''
+[[op.MOVZXDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Index register
+'''
+[[op.MOVZXDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Base register
+'''
+[[op.MOVZXDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Destination register
+'''
+[[op.MOVZXDRO2.param]]
+bits = 64
+desc = "Immediate value offset"
+
+[op.MOVSB]
+desc = "Move single byte from r5 to r6"
+reserve.size = 0
+[[op.MOVSB.param]]
+bits = 64
+desc = 'Unused'
+
+[op.MOVREPSB]
+desc = "Move single byte from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6."
+reserve.size = 0
+[[op.MOVREPSB.param]]
+bits = 64
+desc = 'Unused'
+
+
 # [op.MOVSQ]
 # [op.MOVREPSQ]
 # [op.MOVSH]
