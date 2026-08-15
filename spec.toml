@@ -529,26 +529,352 @@ reserve.size = 0
 bits = 64
 desc = 'Unused'
 
+[op.MOVSQ]
+desc = "Move single quarter-word from r5 to r6"
+reserve.size = 0
+[[op.MOVSQ.param]]
+bits = 64
+desc = 'Unused'
 
-# [op.MOVSQ]
-# [op.MOVREPSQ]
-# [op.MOVSH]
-# [op.MOVREPSH]
-# [op.MOVSW]
-# [op.MOVREPSW]
-# [op.XCHGRR]
-# [op.XCHGDR]
-# [op.XCHGDRO1]
-# [op.XCHGDRO2]
-# [op.LEADRO1]
-# [op.LEADRO2]
-# [op.ADDRR]
-# [op.ADDIR]
-# [op.SUBRR]
-# [op.SUBIR]
-# [op.MULRR]
-# [op.DIVRR]
-# [op.NOT]
+[op.MOVREPSQ]
+desc = "Move single quarter-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6."
+reserve.size = 0
+[[op.MOVREPSQ.param]]
+bits = 64
+desc = 'Unused'
+
+[op.MOVSH]
+desc = "Move single half-from r5 to r6"
+reserve.size = 0
+[[op.MOVSH.param]]
+bits = 64
+desc = 'Unused'
+
+[op.MOVREPSH]
+desc = "Move single half-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6."
+reserve.size = 0
+[[op.MOVREPSH.param]]
+bits = 64
+desc = 'Unused'
+
+[op.MOVSW]
+desc = "Move single word r5 to r6"
+reserve.size = 0
+[[op.MOVSW.param]]
+bits = 64
+desc = 'Unused'
+
+[op.MOVREPSW]
+desc = "Move single word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6."
+reserve.size = 0
+[[op.MOVREPSW.param]]
+bits = 64
+desc = 'Unused'
+
+[op.XCHGRR]
+desc = "Exchange values between one register and another"
+reserve.size = 0
+[[op.XCHGRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.XCHGRR.param]]
+bits = 4
+desc = "Source register"
+[[op.XCHGRR.param]]
+bits = 2
+desc = "Source size"
+[[op.XCHGRR.param]]
+bits = 2
+desc = "Destination size"
+[[op.XCHGRR.param]]
+bits = 52
+desc = "Unused"
+
+[op.XCHGDR]
+desc = "Exchange values between an address and a register"
+reserve.size = 1
+[[op.XCHGDR.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.XCHGDR.reserve.doc]]
+bits = 2
+desc = "Destination size"
+[[op.XCHGDR.reserve.doc]]
+bits = 2
+desc = "Unused"
+[[op.XCHGDR.param]]
+bits = 64
+desc = "Immediate address value"
+
+[op.XCHGDRO1]
+desc = "Exchange values between an address and a register with the address being based in a register"
+reserve.size = 2
+[[op.XCHGDRO1.reserve.doc]]
+bits = 2
+desc = "Type of arthmetic operation between the offset and the register"
+[[op.XCHGDRO1.reserve.doc]]
+bits = 2
+desc = "Size of the base register"
+[[op.XCHGDRO1.reserve.doc]]
+bits = 2
+desc = "Size of the destination register"
+[[op.XCHGDRO1.reserve.doc]]
+bits = 2
+desc = "Scale factor type"
+[[op.XCHGDRO1.reserve.doc]]
+bits = 4
+desc = "Base register"
+[[op.XCHGDRO1.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.XCHGDRO1.param]]
+bits = 64
+desc = "Immediate value offset"
+
+[op.XCHGDRO2]
+desc = '''
+Exchange values between an address and a register with the address being derived from
+a base register being offset by an index register and immediate value offset with zero extension
+'''
+reserve.size = 3
+[[op.XCHGDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Destination register size
+'''
+[[op.XCHGDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Scale factor
+'''
+[[op.XCHGDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Unused
+'''
+[[op.XCHGDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Offset operator (addition or subtraction)
+'''
+[[op.XCHGDRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Size of base and index registers (both at once)
+'''
+[[op.XCHGDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Index register
+'''
+[[op.XCHGDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Base register
+'''
+[[op.XCHGDRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Destination register
+'''
+[[op.XCHGDRO2.param]]
+bits = 64
+desc = "Immediate value offset"
+
+[op.LEADRO1]
+desc = "Load effective address into a register with the address being based in a register"
+reserve.size = 2
+[[op.LEADRO1.reserve.doc]]
+bits = 2
+desc = "Type of arthmetic operation between the offset and the register"
+[[op.LEADRO1.reserve.doc]]
+bits = 2
+desc = "Size of the base register"
+[[op.LEADRO1.reserve.doc]]
+bits = 2
+desc = "Size of the destination register"
+[[op.LEADRO1.reserve.doc]]
+bits = 2
+desc = "Scale factor type"
+[[op.LEADRO1.reserve.doc]]
+bits = 4
+desc = "Base register"
+[[op.LEADRO1.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.LEADRO1.param]]
+bits = 64
+desc = "Immediate value offset"
+
+[op.LEADRO2]
+desc = '''
+Load effective address to a register with the address being derived from
+a base register being offset by an index register and immediate value offset
+'''
+reserve.size = 3
+[[op.LEADRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Destination register size
+'''
+[[op.LEADRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Scale factor
+'''
+[[op.LEADRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Unused
+'''
+[[op.LEADRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Offset operator (addition or subtraction)
+'''
+[[op.LEADRO2.reserve.doc]]
+bits = 2
+desc = '''
+    Size of base and index registers (both at once)
+'''
+[[op.LEADRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Index register
+'''
+[[op.LEADRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Base register
+'''
+[[op.LEADRO2.reserve.doc]]
+bits = 4
+desc = '''
+    Destination register
+'''
+[[op.LEADRO2.param]]
+bits = 64
+desc = "Immediate value offset"
+
+[op.ADDRR]
+desc = "Add value from the source register into the destination register"
+reserve.size = 0
+
+[[op.ADDRR.param]]
+bits = 40
+desc = "Unused"
+[[op.ADDRR.param]]
+bits = 2
+desc = "Data type: singed integer, unsigned integer or 64-bit float"
+[[op.ADDRR.param]]
+bits = 2
+desc = "Size of source register"
+[[op.ADDRR.param]]
+bits = 2
+desc = "Size of destination register"
+[[op.ADDRR.param]]
+bits = 2
+desc = "Unused"
+[[op.ADDRR.param]]
+bits = 4
+desc = "Source register"
+[[op.ADDRR.param]]
+bits = 4
+desc = "Unused"
+[[op.ADDRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.ADDRR.param]]
+bits = 4
+desc = "Unused"
+
+[op.ADDIR]
+desc = "Add immediate value into the destination register"
+reserve.size = 1
+[[op.ADDIR.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.ADDIR.reserve.doc]]
+bits = 2
+desc = "Destination register size"
+[[op.ADDIR.reserve.doc]]
+bits = 2
+desc = "Data type - refer to ADDRR documentation"
+
+[op.SUBRR]
+desc = "Subtract source register value from destination register and store in destination"
+reserve.size = 0
+
+[[op.SUBRR.param]]
+bits = 40
+desc = "Unused"
+[[op.SUBRR.param]]
+bits = 2
+desc = "Data type: singed integer, unsigned integer or 64-bit float"
+[[op.SUBRR.param]]
+bits = 2
+desc = "Size of source register"
+[[op.SUBRR.param]]
+bits = 2
+desc = "Size of destination register"
+[[op.SUBRR.param]]
+bits = 2
+desc = "Unused"
+[[op.SUBRR.param]]
+bits = 4
+desc = "Source register"
+[[op.SUBRR.param]]
+bits = 4
+desc = "Unused"
+[[op.SUBRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.SUBRR.param]]
+bits = 4
+desc = "Unused"
+
+[op.SUBIR]
+desc = "Subtract immediate value from the destination register and store in destination"
+reserve.size = 1
+[[op.SUBIR.reserve.doc]]
+bits = 4
+desc = "Destination register"
+[[op.SUBIR.reserve.doc]]
+bits = 2
+desc = "Destination register size"
+[[op.SUBIR.reserve.doc]]
+bits = 2
+desc = "Data type - refer to ADDRR documentation"
+
+[op.MULRR]
+desc = "Multiply r0 by r1 and store the product into r2"
+reserve.size = 0
+[[op.MULRR.param]]
+bits = 56
+desc = "Unused"
+[[op.MULRR.param]]
+bits = 4
+desc = "Size of operands and r2"
+[[op.MULRR.param]]
+bits = 4
+desc = "Unused"
+
+[op.DIVRR]
+desc = "Divide r0 by r1 and store the quotient into r2 and the remainder into r3"
+reserve.size = 0
+[[op.DIVRR.param]]
+bits = 56
+desc = "Unused"
+[[op.DIVRR.param]]
+bits = 4
+desc = "Size of operands and r2"
+[[op.DIVRR.param]]
+bits = 4
+desc = "Unused"
+
+[op.NOT]
+desc = "Bitwise NOT on register value"
+
 # [op.NEG]
 # [op.ROL]
 # [op.ROR]
