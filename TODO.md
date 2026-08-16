@@ -5,6 +5,7 @@
 thing = 1234
 
 ```
+- rol and ror by other register!!!
 - logical and possibly other instructions setting status flags
  Nearly all arithmetic, logical, and shift instructions set the status flags to indicate the
  results of an operation.

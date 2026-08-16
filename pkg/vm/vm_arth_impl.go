@@ -15,9 +15,6 @@ func (state *VmState) incR(param []byte) error {
 	r := &state.regs.r[reg]
 	r.IncrementRegU64(1);
 	return nil
-	// return state.addValues(r.GetValAsU64(), 1,
-	// 	TY_UINT, SZ_64,
-	// 	r[:])
 }
 func (state *VmState) decR(param []byte) error {
 	reg := binary.BigEndian.Uint64(param)
@@ -26,9 +23,6 @@ func (state *VmState) decR(param []byte) error {
 	}
 	r := &state.regs.r[reg]
 	r.DecrementRegU64(1)
-	// return state.subValues(r.GetValAsU64(), 1,
-	// 	TY_UINT, SZ_64,
-	// 	r[:])
 	return nil
 }
 

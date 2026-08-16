@@ -800,6 +800,9 @@ desc = "Destination register size"
 [[op.ADDIR.reserve.doc]]
 bits = 2
 desc = "Data type - refer to ADDRR documentation"
+[[op.ADDIR.param]]
+bits = 64
+desc = "Immediate value"
 
 [op.SUBRR]
 desc = "Subtract source register value from destination register and store in destination"
@@ -845,6 +848,9 @@ desc = "Destination register size"
 [[op.SUBIR.reserve.doc]]
 bits = 2
 desc = "Data type - refer to ADDRR documentation"
+[[op.SUBIR.param]]
+bits = 64
+desc = "Immediate value"
 
 [op.MULRR]
 desc = "Multiply r0 by r1 and store the product into r2"
@@ -874,25 +880,372 @@ desc = "Unused"
 
 [op.NOT]
 desc = "Bitwise NOT on register value"
+reserve.size = 0
+[[op.NOT.param]]
+bits = 48
+desc = "Unused"
+[[op.NOT.param]]
+bits = 4
+desc = "Data size"
+[[op.NOT.param]]
+bits = 4
+desc = "Unused"
+[[op.NOT.param]]
+bits = 4
+desc = "Operand register"
+[[op.NOT.param]]
+bits = 4
+desc = "Unused"
 
-# [op.NEG]
-# [op.ROL]
-# [op.ROR]
-# [op.ANDRR]
-# [op.ANDIR]
-# [op.ORRR]
-# [op.ORIR]
-# [op.XORRR]
-# [op.XORIR]
-# [op.LSHRR]
-# [op.LSHIR]
-# [op.RSHRR]
-# [op.RSHIR]
-# [op.INCR]
-# [op.DECR]
-# [op.PUSHR]
-# [op.PUSHI]
-# [op.POP]
+[op.NEG]
+desc = "Negation (two's complement) of register value"
+reserve.size = 0
+[[op.NEG.param]]
+bits = 40
+desc = "Unused"
+[[op.NEG.param]]
+bits = 4
+desc = "Data type"
+[[op.NEG.param]]
+bits = 4
+desc = "Unused"
+[[op.NEG.param]]
+bits = 4
+desc = "Data size"
+[[op.NEG.param]]
+bits = 4
+desc = "Unused"
+[[op.NEG.param]]
+bits = 4
+desc = "Operand register"
+[[op.NEG.param]]
+bits = 4
+desc = "Unused"
+
+[op.ROL]
+desc = "Rotate left the bits in a register"
+reserve.size = 1
+[[op.ROL.reserve.doc]]
+desc = "Operand register size"
+bits = 4
+[[op.ROL.reserve.doc]]
+desc = "Operand register"
+bits = 4
+[[op.ROL.param]]
+desc = "Unsigned 64-bit integer rotation amount immediate value"
+bits = 64
+
+[op.ROR]
+desc = "Rotate right the bits in a register"
+reserve.size = 1
+[[op.ROR.reserve.doc]]
+desc = "Operand register size"
+bits = 4
+[[op.ROR.reserve.doc]]
+desc = "Operand register"
+bits = 4
+[[op.ROR.param]]
+desc = "Unsigned 64-bit integer rotation amount immediate value"
+bits = 64
+
+[op.ANDRR]
+desc = "Perform a logical bitwise AND operation between the values of source and destination registers and store the result into the destination register"
+reserve.size = 0
+
+[[op.ANDRR.param]]
+bits = 40
+desc = "Unused"
+[[op.ANDRR.param]]
+bits = 2
+desc = "Unused"
+[[op.ANDRR.param]]
+bits = 2
+desc = "Size of source register"
+[[op.ANDRR.param]]
+bits = 2
+desc = "Size of destination register"
+[[op.ANDRR.param]]
+bits = 2
+desc = "Unused"
+[[op.ANDRR.param]]
+bits = 4
+desc = "Source register"
+[[op.ANDRR.param]]
+bits = 4
+desc = "Unused"
+[[op.ANDRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.ANDRR.param]]
+bits = 4
+desc = "Unused"
+
+[op.ANDIR]
+desc = "Perform a logical bitwise AND operation between the values of source register and immediate value and store the result into the destination register"
+reserve.size = 1
+[[op.ANDIR.reserve.doc]]
+bits = 4
+desc = "Source register"
+[[op.ANDIR.reserve.doc]]
+bits = 2
+desc = "Data size"
+[[op.ANDIR.reserve.doc]]
+bits = 2
+desc = "Unused"
+[[op.ANDIR.param]]
+bits = 64
+desc = "Immediate value"
+
+[op.ORRR]
+desc = "Perform a logical bitwise OR operation between the values of source and destination registers and store the result into the destination register"
+reserve.size = 0
+[[op.ORRR.param]]
+bits = 40
+desc = "Unused"
+[[op.ORRR.param]]
+bits = 2
+desc = "Unused"
+[[op.ORRR.param]]
+bits = 2
+desc = "Size of source register"
+[[op.ORRR.param]]
+bits = 2
+desc = "Size of destination register"
+[[op.ORRR.param]]
+bits = 2
+desc = "Unused"
+[[op.ORRR.param]]
+bits = 4
+desc = "Source register"
+[[op.ORRR.param]]
+bits = 4
+desc = "Unused"
+[[op.ORRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.ORRR.param]]
+bits = 4
+desc = "Unused"
+
+[op.ORIR]
+desc = "Perform a logical bitwise OR operation between the values of source register and immediate value and store the result into the destination register"
+reserve.size = 1
+[[op.ORIR.reserve.doc]]
+bits = 4
+desc = "Source register"
+[[op.ORIR.reserve.doc]]
+bits = 2
+desc = "Data size"
+[[op.ORIR.reserve.doc]]
+bits = 2
+desc = "Unused"
+[[op.ORIR.param]]
+bits = 64
+desc = "Immediate value"
+
+[op.XORRR]
+desc = "Perform a logical bitwise XOR operation between the values of source and destination registers and store the result into the destination register"
+reserve.size = 0
+[[op.XORRR.param]]
+bits = 40
+desc = "Unused"
+[[op.XORRR.param]]
+bits = 2
+desc = "Unused"
+[[op.XORRR.param]]
+bits = 2
+desc = "Size of source register"
+[[op.XORRR.param]]
+bits = 2
+desc = "Size of destination register"
+[[op.XORRR.param]]
+bits = 2
+desc = "Unused"
+[[op.XORRR.param]]
+bits = 4
+desc = "Source register"
+[[op.XORRR.param]]
+bits = 4
+desc = "Unused"
+[[op.XORRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.XORRR.param]]
+bits = 4
+desc = "Unused"
+
+[op.XORIR]
+desc = "Perform a logical bitwise XOR operation between the values of source register and immediate value and store the result into the destination register"
+reserve.size = 1
+[[op.XORIR.reserve.doc]]
+bits = 4
+desc = "Source register"
+[[op.XORIR.reserve.doc]]
+bits = 2
+desc = "Data size"
+[[op.XORIR.reserve.doc]]
+bits = 2
+desc = "Unused"
+[[op.XORIR.param]]
+bits = 64
+desc = "Immediate value"
+
+[op.LSHRR]
+desc = "Perform a logical bitwise LSH operation between the values of source and destination registers and store the result into the destination register"
+reserve.size = 0
+[[op.LSHRR.param]]
+bits = 40
+desc = "Unused"
+[[op.LSHRR.param]]
+bits = 2
+desc = "Unused"
+[[op.LSHRR.param]]
+bits = 2
+desc = "Size of source register"
+[[op.LSHRR.param]]
+bits = 2
+desc = "Size of destination register"
+[[op.LSHRR.param]]
+bits = 2
+desc = "Unused"
+[[op.LSHRR.param]]
+bits = 4
+desc = "Source register"
+[[op.LSHRR.param]]
+bits = 4
+desc = "Unused"
+[[op.LSHRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.LSHRR.param]]
+bits = 4
+desc = "Unused"
+
+[op.LSHIR]
+desc = "Perform a logical bitwise LSH operation between the values of source register and immediate value and store the result into the destination register"
+reserve.size = 1
+[[op.LSHIR.reserve.doc]]
+bits = 4
+desc = "Source register"
+[[op.LSHIR.reserve.doc]]
+bits = 2
+desc = "Data size"
+[[op.LSHIR.reserve.doc]]
+bits = 2
+desc = "Unused"
+[[op.LSHIR.param]]
+bits = 64
+desc = "Immediate value"
+
+[op.RSHRR]
+desc = "Perform a logical bitwise RSH operation between the values of source and destination registers and store the result into the destination register"
+reserve.size = 0
+[[op.RSHRR.param]]
+bits = 40
+desc = "Unused"
+[[op.RSHRR.param]]
+bits = 2
+desc = "Unused"
+[[op.RSHRR.param]]
+bits = 2
+desc = "Size of source register"
+[[op.RSHRR.param]]
+bits = 2
+desc = "Size of destination register"
+[[op.RSHRR.param]]
+bits = 2
+desc = "Unused"
+[[op.RSHRR.param]]
+bits = 4
+desc = "Source register"
+[[op.RSHRR.param]]
+bits = 4
+desc = "Unused"
+[[op.RSHRR.param]]
+bits = 4
+desc = "Destination register"
+[[op.RSHRR.param]]
+bits = 4
+desc = "Unused"
+
+[op.RSHIR]
+desc = "Perform a logical bitwise RSH operation between the values of source register and immediate value and store the result into the destination register"
+reserve.size = 1
+[[op.RSHIR.reserve.doc]]
+bits = 4
+desc = "Source register"
+[[op.RSHIR.reserve.doc]]
+bits = 2
+desc = "Data size"
+[[op.RSHIR.reserve.doc]]
+bits = 2
+desc = "Unused"
+[[op.RSHIR.param]]
+bits = 64
+desc = "Immediate value"
+
+[op.INCR]
+desc = "Increase the value of a register by one"
+reserve.size = 0
+[[op.INCR.param]]
+bits = 4
+desc = "Operand register"
+[[op.INCR.param]]
+bits = 60
+desc = "Unused"
+
+[op.DECR]
+desc = "Decrease the value of a register by one"
+reserve.size = 0
+[[op.DECR.param]]
+bits = 4
+desc = "Operand register"
+[[op.DECR.param]]
+bits = 60
+desc = "Unused"
+
+[op.PUSHR]
+desc = "Push value of a register onto the stack"
+reserve.size = 1
+[[op.PUSHR.reserve.doc]]
+bits = 2
+desc = "Data size"
+[[op.PUSHR.reserve.doc]]
+bits = 6
+desc = "Unused"
+[[op.PUSHR.param]]
+bits = 64
+desc = "Immediate value"
+
+[op.PUSHI]
+desc = "Push immediate value onto the stack"
+reserve.size = 1
+[[op.PUSHI.reserve.doc]]
+bits = 2
+desc = "Data size"
+[[op.PUSHI.reserve.doc]]
+bits = 6
+desc = "Unused"
+[[op.PUSHI.param]]
+bits = 64
+desc = "Immediate value"
+
+[op.POP]
+desc = "Pop a value from the stack, possibly into a register"
+reserve.size = 1
+[[op.POP.reserve.doc]]
+bits = 2
+desc = "Data size"
+[[op.POP.reserve.doc]]
+bits = 6
+desc = "Unused"
+[[op.POP.param]]
+bits = 4
+desc = "Destination register, 0x0f if none"
+[[op.POP.param]]
+bits = 60
+desc = "Unused"
+
 # [op.JMP]
 # [op.JMPE]
 # [op.JMPZ]
