@@ -1246,44 +1246,469 @@ desc = "Destination register, 0x0f if none"
 bits = 60
 desc = "Unused"
 
-# [op.JMP]
-# [op.JMPE]
-# [op.JMPZ]
-# [op.JMPNE]
-# [op.JMPNZ]
-# [op.JMPG]
-# [op.JMPGE]
-# [op.JMPL]
-# [op.JMPLE]
-# [op.JMPS]
-# [op.JMPNS]
-# [op.JMPC]
-# [op.JMPNC]
-# [op.JMPO]
-# [op.JMPNO]
-# [op.JMPIP]
-# [op.JMPEIP]
-# [op.JMPZIP]
-# [op.JMPNEIP]
-# [op.JMPNZIP]
-# [op.JMPGIP]
-# [op.JMPGEIP]
-# [op.JMPLIP]
-# [op.JMPLEIP]
-# [op.JMPSIP]
-# [op.JMPNSIP]
-# [op.JMPCIP]
-# [op.JMPNCIP]
-# [op.JMPOIP]
-# [op.JMPNOIP]
-# [op.CMPRR]
-# [op.CMPIR]
-# [op.CLR]
-# [op.CALL]
-# [op.CALLIP]
-# [op.RET]
-# [op.EXITI]
-# [op.EXITR]
-# [op.SDF]
-# [op.CDF]
-# [op.NOP]
+[op.JMP]
+desc = "Unconditional jump to an address"
+reserve.size = 0
+[[op.JMP.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPE]
+desc = "Jump to an address if ZF is set"
+reserve.size = 0
+[[op.JMPE.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPZ]
+desc = "Jump to an address if ZF is set"
+reserve.size = 0
+[[op.JMPZ.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPNE]
+desc = "Jump to an address if ZF is not set"
+reserve.size = 0
+[[op.JMPNE.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPNZ]
+desc = "Jump to an address if ZF is not set"
+reserve.size = 0
+[[op.JMPNZ.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPG]
+desc = "Jump to an address if ZF and SF are not set"
+reserve.size = 0
+[[op.JMPG.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPGE]
+desc = "Jump to an address if ZF is set and SF is not set"
+reserve.size = 0
+[[op.JMPGE.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPL]
+desc = "Jump to an address if ZF is not set and SF is set"
+reserve.size = 0
+[[op.JMPL.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPLE]
+desc = "Jump to an address if ZF is set and SF is set"
+reserve.size = 0
+[[op.JMPLE.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPS]
+desc = "Jump to an address if SF is set"
+reserve.size = 0
+[[op.JMPS.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPNS]
+desc = "Jump to an address if SF is not set"
+reserve.size = 0
+[[op.JMPNS.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPC]
+desc = "Jump to an address if CF is set"
+reserve.size = 0
+[[op.JMPC.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPNC]
+desc = "Jump to an address if CF is not set"
+reserve.size = 0
+[[op.JMPNC.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPO]
+desc = "Jump to an address if OF is set"
+reserve.size = 0
+[[op.JMPO.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPNO]
+desc = "Jump to an address if OF is not set"
+reserve.size = 0
+[[op.JMPNO.param]]
+bits = 64
+desc = "Immediate value address"
+
+[op.JMPIP]
+desc = "IP-relative unconditional jump to an address"
+reserve.size = 1
+[[op.JMPIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPEIP]
+desc = "IP-relative jump to an address if ZF is set"
+reserve.size = 1
+[[op.JMPEIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPEIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPEIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPEIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPZIP]
+desc = "IP-relative jump to an address if ZF is set"
+reserve.size = 1
+[[op.JMPZIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPZIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPZIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPZIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPNEIP]
+desc = "IP-relative jump to an address if ZF is not set"
+reserve.size = 1
+[[op.JMPNEIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPNEIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPNEIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPNEIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPNZIP]
+desc = "IP-relative jump to an address if ZF is not set"
+reserve.size = 1
+[[op.JMPNZIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPNZIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPNZIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPNZIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPGIP]
+desc = "IP-relative jump to an address if ZF is not set and SF is not set"
+reserve.size = 1
+[[op.JMPGIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPGIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPGIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPGIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPGEIP]
+desc = "IP-relative jump to an address if ZF is set and SF is not set"
+reserve.size = 1
+[[op.JMPGEIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPGEIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPGEIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPGEIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPLIP]
+desc = "IP-relative jump to an address if ZF is not set and SF is set"
+reserve.size = 1
+[[op.JMPLIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPLIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPLIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPLIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPLEIP]
+desc = "IP-relative jump to an address if ZF is set and SF is set"
+reserve.size = 1
+[[op.JMPLEIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPLEIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPLEIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPLEIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPSIP]
+desc = "IP-relative jump to an address if SF is set"
+reserve.size = 1
+[[op.JMPSIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPSIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPSIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPSIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPNSIP]
+desc = "IP-relative jump to an address if SF is not set"
+reserve.size = 1
+[[op.JMPNSIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPNSIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPNSIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPNSIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPCIP]
+desc = "IP-relative jump to an address if CF is set"
+reserve.size = 1
+[[op.JMPCIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPCIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPCIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPCIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPNCIP]
+desc = "IP-relative jump to an address if CF not is set"
+reserve.size = 1
+[[op.JMPNCIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPNCIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPNCIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPNCIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPOIP]
+desc = "IP-relative jump to an address if OF is set"
+reserve.size = 1
+[[op.JMPOIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPOIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPOIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPOIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.JMPNOIP]
+desc = "IP-relative jump to an address if OF not is set"
+reserve.size = 1
+[[op.JMPNOIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.JMPNOIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.JMPNOIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.JMPNOIP.param]]
+bits = 64
+desc = "Signed 64-bit integer immediate value offset"
+
+[op.CMPRR]
+desc = "Compare values in registers by subtracting the subtrahent register from the minuend and setting flags"
+reserve.size = 1
+[[op.CMPRR.reserve.doc]]
+bits = 4
+desc = "Minuend register"
+[[op.CMPRR.reserve.doc]]
+bits = 4
+desc = "Subtrahent register"
+[[op.CMPRR.param]]
+bits = 2
+desc = "Data type"
+[[op.CMPRR.param]]
+bits = 6
+desc = "Unused"
+[[op.CMPRR.param]]
+bits = 2
+desc = "Data size"
+[[op.CMPRR.param]]
+bits = 54
+desc = "Unused"
+
+[op.CMPIR]
+desc = "Compare values in registers by subtracting the immediate value subtrahent register from the minuend and setting flags"
+reserve.size = 1
+[[op.CMPIR.reserve.doc]]
+bits = 2
+desc = "Data type"
+[[op.CMPIR.reserve.doc]]
+bits = 2
+desc = "Data size"
+[[op.CMPIR.reserve.doc]]
+bits = 4
+desc = "Minuend register"
+[[op.CMPIR.param]]
+bits = 64
+desc = "Immediate value subtrahent"
+
+[op.CLR]
+desc = "Clear all flags (set them to false)"
+reserve.size = 0
+[[op.CLR.param]]
+bits = 64
+desc = "Unused"
+
+[op.CALL]
+desc = "Call function at absolute address - push next instruction address onto the stack and jump to procedure"
+reserve.size = 0
+[[op.CALL.param]]
+bits = 64
+desc = "Callee address"
+
+[op.CALLIP]
+desc = "Call function at IP-relative address - push next instruction address onto the stack and jump to procedure"
+reserve.size = 1
+[[op.CALLIP.reserve.doc]]
+bits = 4
+desc = "Index register"
+[[op.CALLIP.reserve.doc]]
+bits = 2
+desc = "Index register size"
+[[op.CALLIP.reserve.doc]]
+bits = 2
+desc = "Offset operator"
+[[op.CALLIP.param]]
+bits = 64
+desc = "Signed immediate value address offset"
+
+[op.RET]
+desc = "Pops return address from the stack and jumps to the instruction that it points to"
+reserve.size = 0
+[[op.RET.param]]
+bits = 64
+desc = "Unused"
+
+[op.EXITI]
+desc = "Halts with immediate value as the exit code"
+reserve.size = 0
+[[op.EXITI.param]]
+bits = 64
+desc = "Exit code, unsigned"
+
+[op.EXITR]
+desc = "Halts with register value as the exit code"
+reserve.size = 0
+[[op.EXITR.param]]
+bits = 4
+desc = "Exit code register"
+[[op.EXITR.param]]
+bits = 4
+desc = "Unused"
+[[op.EXITR.param]]
+bits = 2
+desc = "Data size"
+[[op.EXITR.param]]
+bits = 6
+desc = "Data size"
+[[op.EXITR.param]]
+bits = 48
+desc = "Unused"
+
+[op.SDF]
+desc = "Set direction flag DF"
+reserve.size = 0
+[[op.SDF.param]]
+bits = 64
+desc = "Unused"
+
+[op.CDF]
+desc = "Clear direction flag DF"
+reserve.size = 0
+[[op.CDF.param]]
+bits = 64
+desc = "Unused"
+
+[op.NOP]
+desc = "NO OP"
+reserve.size = 0
+[[op.NOP.param]]
+bits = 64
+desc = "Unused"
