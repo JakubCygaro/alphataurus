@@ -11,64 +11,65 @@ import (
 )
 
 func (a *Assembler) emitPushR(data pr.InstPushR, at int) error {
-	push := a.opCodes.GetBytes(vm.OP_PUSHR)
+	// push := vm.OP_PUSHR_VAL
+	push := vm.OP_PUSHR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(push))
 	a.bytecode[at] = 0b0000_0011 & data.Reg.Size
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Reg.Reg))
 	return nil
 }
 func (a *Assembler) emitPushI(data pr.InstPushI, at int) error {
-	push := a.opCodes.GetBytes(vm.OP_PUSHI)
+	push := vm.OP_PUSHI_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(push))
 	a.bytecode[at] = 0b0000_0011 & data.DataSz
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Imm))
 	return nil
 }
 func (a *Assembler) emitPop(data pr.InstPop, at int) error {
-	pop := a.opCodes.GetBytes(vm.OP_POP)
+	pop := vm.OP_POP_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(pop))
 	a.bytecode[at] = 0b0000_0011 & data.DataSz
 	return nil
 }
 func (a *Assembler) emitPopR(data pr.InstPopR, at int) error {
-	pop := a.opCodes.GetBytes(vm.OP_POP)
+	pop := vm.OP_POP_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(pop))
 	a.bytecode[at] = 0b0000_0011 & data.DataSz
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Reg))
 	return nil
 }
 func (a *Assembler) emitNop(at int) error {
-	nop := a.opCodes.GetBytes(vm.OP_NOP)
+	nop := vm.OP_NOP_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(nop))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
 func (a *Assembler) emitClr(at int) error {
-	clr := a.opCodes.GetBytes(vm.OP_CLR)
+	clr := vm.OP_CLR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(clr))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
 func (a *Assembler) emitSDF(at int) error {
-	sdf := a.opCodes.GetBytes(vm.OP_SDF)
+	sdf := vm.OP_SDF_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(sdf))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
 func (a *Assembler) emitCDF(at int) error {
-	cdf := a.opCodes.GetBytes(vm.OP_CDF)
+	cdf := vm.OP_CDF_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(cdf))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
 func (a *Assembler) emitCallI(data pr.InstCallI, at int) error {
-	call := a.opCodes.GetBytes(vm.OP_CALL)
+	call := vm.OP_CALL_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(call))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Address))
 	return nil
 }
 func (a *Assembler) emitCallIP0R(data pr.InstCallIP0R, at int) error {
-	call := a.opCodes.GetBytes(vm.OP_CALLIP)
+	call := vm.OP_CALLIP_VAL
 	var reg byte
 	reg = byte(data.OpTy)
 	reg <<= 4
@@ -79,7 +80,7 @@ func (a *Assembler) emitCallIP0R(data pr.InstCallIP0R, at int) error {
 	return nil
 }
 func (a *Assembler) emitCallIP1R(data pr.InstCallIP1R, at int) error {
-	call := a.opCodes.GetBytes(vm.OP_CALLIP)
+	call := vm.OP_CALLIP_VAL
 	var reg byte
 	reg = byte(data.OpTy)
 	reg <<= 4
@@ -91,19 +92,19 @@ func (a *Assembler) emitCallIP1R(data pr.InstCallIP1R, at int) error {
 }
 
 func (a *Assembler) emitRet(at int) error {
-	ret := a.opCodes.GetBytes(vm.OP_RET)
+	ret := vm.OP_RET_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(ret))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
 func (a *Assembler) emitExitI(data pr.InstExitI, at int) error {
-	exit := a.opCodes.GetBytes(vm.OP_EXITI)
+	exit := vm.OP_EXITI_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(exit))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Val))
 	return nil
 }
 func (a *Assembler) emitExitR(data pr.InstExitR, at int) error {
-	exit := a.opCodes.GetBytes(vm.OP_EXITR)
+	exit := vm.OP_EXITR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(exit))
 	param := [8]byte{
 		byte(data.Reg.Reg),
@@ -147,7 +148,7 @@ func (a *Assembler) emitJmpI(data pr.InstJmpI, at int) error {
 }
 func (a *Assembler) emitMovIR(data pr.InstMovIR, at int, omitOpcode bool) error {
 	if !omitOpcode {
-		mov := a.opCodes.GetBytes(vm.OP_MOVIR)
+		mov := vm.OP_MOVIR_VAL
 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	}
 	lastByte :=
@@ -159,26 +160,26 @@ func (a *Assembler) emitMovIR(data pr.InstMovIR, at int, omitOpcode bool) error 
 	return nil
 }
 func (a *Assembler) emitMovZXIR(data pr.InstMovZXIR, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVIR)
+	mov := vm.OP_MOVIR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	err := a.emitMovIR(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitMovZXRR(data pr.InstMovZXRR, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVZXRR)
+	mov := vm.OP_MOVZXRR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	err := a.emitMovRR(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitMovSXRR(data pr.InstMovSXRR, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVSXRR)
+	mov := vm.OP_MOVSXRR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	err := a.emitMovRR(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitMovRR(data pr.InstMovRR, at int, omitOpcode bool) error {
 	if !omitOpcode{
-		mov := a.opCodes.GetBytes(vm.OP_MOVRR)
+		mov := vm.OP_MOVRR_VAL
 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	}
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
@@ -208,7 +209,7 @@ func (a *Assembler) emitMovRR(data pr.InstMovRR, at int, omitOpcode bool) error 
 
 func (a *Assembler) emitMovDR(data pr.InstMovDR, at int, omitOpcode bool) error {
 	if !omitOpcode {
-		mov := a.opCodes.GetBytes(vm.OP_MOVDR)
+		mov := vm.OP_MOVDR_VAL
 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	}
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
@@ -226,14 +227,14 @@ func (a *Assembler) emitMovDR(data pr.InstMovDR, at int, omitOpcode bool) error 
 	return nil
 }
 func (a *Assembler) emitMovZXDR(data pr.InstMovZXDR, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVZXDR)
+	mov := vm.OP_MOVZXDR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	err := a.emitMovDR(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitMovDRO1(data pr.InstMovDRO1, at int, omitOpcode bool) error {
 	if !omitOpcode {
-		mov := a.opCodes.GetBytes(vm.OP_MOVDRO1)
+		mov := vm.OP_MOVDRO1_VAL
 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	}
 	if !vm.IsMovIntoRAllowed(byte(data.Base.Reg)) {
@@ -261,14 +262,14 @@ func (a *Assembler) emitMovDRO1(data pr.InstMovDRO1, at int, omitOpcode bool) er
 	return nil
 }
 func (a *Assembler) emitMovZXDRO1(data pr.InstMovZXDRO1, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVZXDRO1)
+	mov := vm.OP_MOVZXDRO1_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	err := a.emitMovDRO1(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitMovDRO2(data pr.InstMovDRO2, at int, omitOpcode bool) error {
 	if !omitOpcode {
-		mov := a.opCodes.GetBytes(vm.OP_MOVDRO2)
+		mov := vm.OP_MOVDRO2_VAL
 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	}
 	if !vm.IsMovIntoRAllowed(byte(data.Dest.Reg)) {
@@ -299,13 +300,13 @@ func (a *Assembler) emitMovDRO2(data pr.InstMovDRO2, at int, omitOpcode bool) er
 	return nil
 }
 func (a *Assembler) emitMovZXDRO2(data pr.InstMovZXDRO2, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVZXDRO2)
+	mov := vm.OP_MOVZXDRO2_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	err := a.emitMovDRO2(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitMovID(data pr.InstMovID, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVID)
+	mov := vm.OP_MOVID_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	lastByte := 0b0000_0011 & data.DataSize
 	a.bytecode[at] = lastByte
@@ -314,7 +315,7 @@ func (a *Assembler) emitMovID(data pr.InstMovID, at int) error {
 	return nil
 }
 func (a *Assembler) emitMovRD(data pr.InstMovRD, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVRD)
+	mov := vm.OP_MOVRD_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
 		return pe.DisallowedSrcReg(a.cInst.Line, a.cInst.Col, data.Src)
@@ -340,10 +341,10 @@ func (a *Assembler) emitMovIDO1(data pr.InstMovIDO1, at int) error {
 	param := uint64(0)
 	var mov uint32
 	if data.NoOff {
-		mov = a.opCodes.GetBytes(vm.OP_MOVIDO1_NO)
+		mov = vm.OP_MOVIDO1_NO_VAL
 		param = data.Imm
 	} else {
-		mov = a.opCodes.GetBytes(vm.OP_MOVIDO1)
+		mov = vm.OP_MOVIDO1_VAL
 		param = uint64(int64(data.Disp) << 32)
 		param |= 0x0000_0000_ffff_ffff & uint64(int32(data.Imm))
 	}
@@ -354,7 +355,7 @@ func (a *Assembler) emitMovIDO1(data pr.InstMovIDO1, at int) error {
 	return nil
 }
 func (a *Assembler) emitMovRDO1(data pr.InstMovRDO1, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVRDO1)
+	mov := vm.OP_MOVRDO1_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	if !vm.IsMovFromRAllowed(byte(data.Src.Reg)) {
 		return pe.DisallowedSrcReg(a.cInst.Line, a.cInst.Col, data.Src)
@@ -391,10 +392,10 @@ func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, at int) error {
 	var mov uint32
 	var param uint64
 	if data.NoOff {
-		mov = a.opCodes.GetBytes(vm.OP_MOVIDO2_NO)
+		mov = vm.OP_MOVIDO2_NO_VAL
 		param = uint64(data.Imm)
 	} else {
-		mov = a.opCodes.GetBytes(vm.OP_MOVIDO2)
+		mov = vm.OP_MOVIDO2_VAL
 		param |= uint64(data.Disp) << 32
 		param |= 0x0000_0000_ffff_ffff & uint64(data.Imm)
 	}
@@ -406,7 +407,7 @@ func (a *Assembler) emitMovIDO2(data pr.InstMovIDO2, at int) error {
 	return nil
 }
 func (a *Assembler) emitMovRDO2(data pr.InstMovRDO2, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVRDO1)
+	mov := vm.OP_MOVRDO1_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	byte4 := (0b0000_1111 & byte(data.Src.Reg)) << 4
 	byte4 |= (0b0000_1111 & byte(data.Base.Reg))
@@ -426,14 +427,14 @@ func (a *Assembler) emitArthRR(data pr.InstArthRR, at int) error {
 	sized := false
 	switch data.ArthTy {
 	case pr.ADD:
-		opCode = a.opCodes.GetBytes(vm.OP_ADDRR)
+		opCode = vm.OP_ADDRR_VAL
 	case pr.SUB:
-		opCode = a.opCodes.GetBytes(vm.OP_SUBRR)
+		opCode = vm.OP_SUBRR_VAL
 	case pr.DIV:
-		opCode = a.opCodes.GetBytes(vm.OP_DIVRR)
+		opCode = vm.OP_DIVRR_VAL
 		sized = true
 	case pr.MUL:
-		opCode = a.opCodes.GetBytes(vm.OP_MULRR)
+		opCode = vm.OP_MULRR_VAL
 		sized = true
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
@@ -464,15 +465,15 @@ func (a *Assembler) emitLogRR(data pr.InstLogicalRR, at int) error {
 	var opCode uint32
 	switch data.LogTy {
 	case pr.AND:
-		opCode = a.opCodes.GetBytes(vm.OP_ANDRR)
+		opCode = vm.OP_ANDRR_VAL
 	case pr.OR:
-		opCode = a.opCodes.GetBytes(vm.OP_ORRR)
+		opCode = vm.OP_ORRR_VAL
 	case pr.XOR:
-		opCode = a.opCodes.GetBytes(vm.OP_XORRR)
+		opCode = vm.OP_XORRR_VAL
 	case pr.LSH:
-		opCode = a.opCodes.GetBytes(vm.OP_LSHRR)
+		opCode = vm.OP_LSHRR_VAL
 	case pr.RSH:
-		opCode = a.opCodes.GetBytes(vm.OP_RSHRR)
+		opCode = vm.OP_RSHRR_VAL
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
 	sizesByte := (0b0000_0011&byte(data.First.Size))<<2 |
@@ -495,15 +496,15 @@ func (a *Assembler) emitLogIR(data pr.InstLogicalIR, at int) error {
 	var opCode uint32
 	switch data.LogTy {
 	case pr.AND:
-		opCode = a.opCodes.GetBytes(vm.OP_ANDIR)
+		opCode = vm.OP_ANDIR_VAL
 	case pr.OR:
-		opCode = a.opCodes.GetBytes(vm.OP_ORIR)
+		opCode = vm.OP_ORIR_VAL
 	case pr.XOR:
-		opCode = a.opCodes.GetBytes(vm.OP_XORIR)
+		opCode = vm.OP_XORIR_VAL
 	case pr.LSH:
-		opCode = a.opCodes.GetBytes(vm.OP_LSHIR)
+		opCode = vm.OP_LSHIR_VAL
 	case pr.RSH:
-		opCode = a.opCodes.GetBytes(vm.OP_RSHIR)
+		opCode = vm.OP_RSHIR_VAL
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
 	lastByte := byte(0)
@@ -517,9 +518,9 @@ func (a *Assembler) emitArthIR(data pr.InstArthIR, at int) error {
 	var opCode uint32
 	switch data.ArthTy {
 	case pr.ADD:
-		opCode = a.opCodes.GetBytes(vm.OP_ADDIR)
+		opCode = vm.OP_ADDIR_VAL
 	case pr.SUB:
-		opCode = a.opCodes.GetBytes(vm.OP_SUBIR)
+		opCode = vm.OP_SUBIR_VAL
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
 	lastByte := byte(0)
@@ -531,7 +532,7 @@ func (a *Assembler) emitArthIR(data pr.InstArthIR, at int) error {
 	return nil
 }
 func (a *Assembler) emitNot(data pr.InstNotR, at int) error {
-	opCode := a.opCodes.GetBytes(vm.OP_NOT)
+	opCode := vm.OP_NOT_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
 	param := [8]byte{
 		byte(data.First.Reg),
@@ -545,9 +546,9 @@ func (a *Assembler) emitNot(data pr.InstNotR, at int) error {
 func (a *Assembler) emitRotate(data pr.InstRotate, at int) error {
 	var opCode uint32
 	if data.Left {
-		opCode = a.opCodes.GetBytes(vm.OP_ROL)
+		opCode = vm.OP_ROL_VAL
 	} else {
-		opCode = a.opCodes.GetBytes(vm.OP_ROR)
+		opCode = vm.OP_ROR_VAL
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
 	regSz := (byte(data.Arg.Reg) << 4)
@@ -557,7 +558,7 @@ func (a *Assembler) emitRotate(data pr.InstRotate, at int) error {
 	return nil
 }
 func (a *Assembler) emitNegR(data pr.InstNegR, at int) error {
-	opCode := a.opCodes.GetBytes(vm.OP_NEG)
+	opCode := vm.OP_NEG_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
 	ty := byte(vm.TY_SINT)
 	if data.Float {
@@ -574,19 +575,19 @@ func (a *Assembler) emitNegR(data pr.InstNegR, at int) error {
 	return nil
 }
 func (a *Assembler) emitInc(data pr.InstInc, at int) error {
-	inc := a.opCodes.GetBytes(vm.OP_INCR)
+	inc := vm.OP_INCR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(inc))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Reg.Reg))
 	return nil
 }
 func (a *Assembler) emitDec(data pr.InstDec, at int) error {
-	dec := a.opCodes.GetBytes(vm.OP_DECR)
+	dec := vm.OP_DECR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(dec))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(data.Reg.Reg))
 	return nil
 }
 func (a *Assembler) emitCmpRR(data pr.InstCmpRR, at int) error {
-	cmp := a.opCodes.GetBytes(vm.OP_CMPRR)
+	cmp := vm.OP_CMPRR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(cmp))
 	regs := (0b0000_1111 & byte(data.Sub.Reg)) << 4
 	regs |= 0b0000_1111 & byte(data.Min.Reg)
@@ -598,7 +599,7 @@ func (a *Assembler) emitCmpRR(data pr.InstCmpRR, at int) error {
 	return nil
 }
 func (a *Assembler) emitCmpIR(data pr.InstCmpIR, at int) error {
-	cmp := a.opCodes.GetBytes(vm.OP_CMPIR)
+	cmp := vm.OP_CMPIR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(cmp))
 	// subtrahend |= (lastByte & 0xf0) >> 4
 	// minuend |= (lastByte & 0x0f)
@@ -610,74 +611,74 @@ func (a *Assembler) emitCmpIR(data pr.InstCmpIR, at int) error {
 	return nil
 }
 func (a *Assembler) emitXCHGRR(data pr.InstXCHGRR, at int) error {
-	xchg := a.opCodes.GetBytes(vm.OP_XCHGRR)
+	xchg := vm.OP_XCHGRR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(xchg))
 	err := a.emitMovRR(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitXCHGDR(data pr.InstXCHGDR, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_XCHGDR)
+	mov := vm.OP_XCHGDR_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	err := a.emitMovDR(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitXCHGDRO1(data pr.InstXCHGDRO1, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_XCHGDRO1)
+	mov := vm.OP_XCHGDRO1_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	err := a.emitMovDRO1(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitXCHGDRO2(data pr.InstXCHGDRO2, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_XCHGDRO2)
+	mov := vm.OP_XCHGDRO2_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	err := a.emitMovDRO2(data.Mov, at, true)
 	return err
 }
 
 func (a *Assembler) emitMovSB(data pr.InstMovSB, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVSB)
+	mov := vm.OP_MOVSB_VAL
 	if data.Rep {
-		mov = a.opCodes.GetBytes(vm.OP_MOVREPSB)
+		mov = vm.OP_MOVREPSB_VAL
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
 func (a *Assembler) emitMovSQ(data pr.InstMovSQ, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVSQ)
+	mov := vm.OP_MOVSQ_VAL
 	if data.Rep {
-		mov = a.opCodes.GetBytes(vm.OP_MOVREPSQ)
+		mov = vm.OP_MOVREPSQ_VAL
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
 func (a *Assembler) emitMovSH(data pr.InstMovSH, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVSH)
+	mov := vm.OP_MOVSH_VAL
 	if data.Rep {
-		mov = a.opCodes.GetBytes(vm.OP_MOVREPSH)
+		mov = vm.OP_MOVREPSH_VAL
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
 func (a *Assembler) emitMovSW(data pr.InstMovSW, at int) error {
-	mov := a.opCodes.GetBytes(vm.OP_MOVSW)
+	mov := vm.OP_MOVSW_VAL
 	if data.Rep {
-		mov = a.opCodes.GetBytes(vm.OP_MOVREPSW)
+		mov = vm.OP_MOVREPSW_VAL
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], uint64(0))
 	return nil
 }
 func (a *Assembler) emitLeaO1(data pr.InstLeaO1, at int) error {
-	lea := a.opCodes.GetBytes(vm.OP_LEADRO1)
+	lea := vm.OP_LEADRO1_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(lea))
 	err := a.emitMovDRO1(data.Mov, at, true)
 	return err
 }
 func (a *Assembler) emitLeaO2(data pr.InstLeaO2, at int) error {
-	lea := a.opCodes.GetBytes(vm.OP_LEADRO2)
+	lea := vm.OP_LEADRO2_VAL
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(lea))
 	err := a.emitMovDRO2(data.Mov, at, true)
 	return err

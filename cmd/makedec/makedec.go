@@ -22,6 +22,7 @@ var args struct {
 	OutputFile  string `arg:"-o,--output" help:"Path and name of the output file, .go will be appended to it"`
 	Print       bool   `arg:"--print," help:"Print out the generated output file to stdout"`
 	WriteTest   bool   `arg:"-t,--test," help:"Write a test file along with the output file with _test appended to the name"`
+	Stringer    bool   `arg:"--stringer" help:"Add a go:generate comment to output that uses stringer to implement String() for OpCodeVal"`
 }
 
 func exitWithErr(format string, a ...any) {
@@ -72,7 +73,7 @@ func main() {
 	if err := toml.Unmarshal(read, &spec); err != nil {
 		exitWithErr("%s\n", err.Error())
 	}
-	built, test, err := buildSourceAndTest(spec, args.WriteTest)
+	built, test, err := buildSourceAndTest(spec, args.WriteTest, args.Stringer)
 	if err != nil {
 		exitWithErr("%s\n", err.Error())
 	}
@@ -321,9 +322,6 @@ func assignLayer(ll LayerList) {
 			}
 			val := layer.Layer[i].GetRight()
 			b := [4]byte{}
-			if val.Name == "MOVIR" {
-				fmt.Printf("MOVIR: Prefix %d depth %d\n", val.Prefix, layer.depth)
-			}
 			b[layer.depth] = byte(val.Prefix)
 			recurseUp(layer, b[:])
 			code := binary.BigEndian.Uint32(b[:])
@@ -452,6 +450,7 @@ func Decode(code uint32) (bool, OpCodeVal) {
 func buildSourceAndTest(
 	spec OpSpec,
 	buildTest bool,
+	stringer bool,
 ) (src string, tst string, err error) {
 	source := strings.Builder{}
 	test := strings.Builder{}
@@ -479,6 +478,10 @@ func buildSourceAndTest(
 	}
 	for _, ll := range layers {
 		assignLayer(ll)
+	}
+	if stringer {
+		source.WriteString("//go:")
+		source.WriteString("generate stringer -type=OpCodeVal\n")
 	}
 	source.WriteString(
 		"type OpCodeVal uint32\n" +

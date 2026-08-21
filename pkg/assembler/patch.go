@@ -9,7 +9,7 @@ import (
 )
 
 func (a *Assembler) patchCall(pos int, address uint64) error {
-	opcode := a.opCodes.GetBytes(vm.OP_CALL)
+	opcode := vm.OP_CALL_VAL
 	binary.BigEndian.PutUint32(a.bytecode[pos:], uint32(opcode))
 	binary.BigEndian.PutUint64(a.bytecode[pos+decls.OPCODE_SIZE:], uint64(address))
 	return nil
@@ -21,7 +21,7 @@ func (a *Assembler) patchJmp(data PatchJmp, pos int, address uint64) error {
 	return nil
 }
 func (a *Assembler) patchCallIP(sym *aobj.SymbolData, pos int) error {
-	opcode := a.opCodes.GetBytes(vm.OP_CALLIP)
+	opcode := vm.OP_CALLIP_VAL
 	var reg byte
 	reg = vm.OP_TADD
 	reg <<= 4

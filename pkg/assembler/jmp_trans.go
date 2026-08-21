@@ -9,35 +9,35 @@ func (a *Assembler) jmpInstToOpCode(ty pr.JmpVariant) uint32 {
 	var opcode uint32
 	switch ty {
 	case pr.JMP:
-		opcode = a.opCodes.GetBytes(vm.OP_JMP)
+		opcode = vm.OP_JMP_VAL
 	case pr.JMPE:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPE)
+		opcode = vm.OP_JMPE_VAL
 	case pr.JMPNE:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNE)
+		opcode = vm.OP_JMPNE_VAL
 	case pr.JMPZ:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPZ)
+		opcode = vm.OP_JMPZ_VAL
 	case pr.JMPNZ:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNZ)
+		opcode = vm.OP_JMPNZ_VAL
 	case pr.JMPG:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPG)
+		opcode = vm.OP_JMPG_VAL
 	case pr.JMPGE:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPGE)
+		opcode = vm.OP_JMPGE_VAL
 	case pr.JMPL:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPL)
+		opcode = vm.OP_JMPL_VAL
 	case pr.JMPLE:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPLE)
+		opcode = vm.OP_JMPLE_VAL
 	case pr.JMPS:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPS)
+		opcode = vm.OP_JMPS_VAL
 	case pr.JMPNS:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNS)
+		opcode = vm.OP_JMPNS_VAL
 	case pr.JMPC:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPC)
+		opcode = vm.OP_JMPC_VAL
 	case pr.JMPNC:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNC)
+		opcode = vm.OP_JMPNC_VAL
 	case pr.JMPO:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPO)
+		opcode = vm.OP_JMPO_VAL
 	case pr.JMPNO:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNO)
+		opcode = vm.OP_JMPNO_VAL
 	}
 	return opcode
 }
@@ -45,35 +45,35 @@ func (a *Assembler) jmpInstToOpCode(ty pr.JmpVariant) uint32 {
 func (a *Assembler) absoluteJmpToIPJmp(instTy pr.JmpVariant) (opcode uint32) {
 	switch instTy {
 	case pr.JMP:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPIP)
+		opcode = vm.OP_JMPIP_VAL
 	case pr.JMPE:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPEIP)
+		opcode = vm.OP_JMPEIP_VAL
 	case pr.JMPNE:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNEIP)
+		opcode = vm.OP_JMPNEIP_VAL
 	case pr.JMPZ:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPZIP)
+		opcode = vm.OP_JMPZIP_VAL
 	case pr.JMPNZ:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNZIP)
+		opcode = vm.OP_JMPNZIP_VAL
 	case pr.JMPG:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPGIP)
+		opcode = vm.OP_JMPGIP_VAL
 	case pr.JMPGE:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPGEIP)
+		opcode = vm.OP_JMPGEIP_VAL
 	case pr.JMPL:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPLIP)
+		opcode = vm.OP_JMPLIP_VAL
 	case pr.JMPLE:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPLEIP)
+		opcode = vm.OP_JMPLEIP_VAL
 	case pr.JMPS:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPSIP)
+		opcode = vm.OP_JMPSIP_VAL
 	case pr.JMPNS:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNSIP)
+		opcode = vm.OP_JMPNSIP_VAL
 	case pr.JMPC:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPCIP)
+		opcode = vm.OP_JMPCIP_VAL
 	case pr.JMPNC:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNCIP)
+		opcode = vm.OP_JMPNCIP_VAL
 	case pr.JMPO:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPOIP)
+		opcode = vm.OP_JMPOIP_VAL
 	case pr.JMPNO:
-		opcode = a.opCodes.GetBytes(vm.OP_JMPNOIP)
+		opcode = vm.OP_JMPNOIP_VAL
 	}
 	return opcode
 }

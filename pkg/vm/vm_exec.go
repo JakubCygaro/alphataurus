@@ -58,12 +58,16 @@ func (state *VmState) fetch() (instAddr uint64, opCodeBytes, param []byte) {
 	return instAddr, opCodeBytes, param
 }
 func (state *VmState) decode(opCodeBytes []byte) error {
-	opcode, err := state.GetOpcode(opCodeBytes)
-	state.currentOpcode = opcode
+	o := binary.BigEndian.Uint32(opCodeBytes)
+	if ok, opcode := Decode(o); !ok {
+		return errors.BadOpcode(o, state.byteCodePos)
+	} else {
+		state.currentOpcode = opcode
+	}
 	if state.dbgAd.opcodeTrace != nil {
 		state.dbgAd.opcodeTrace(state.currentOpcode)
 	}
-	return err
+	return nil
 }
 func (state *VmState) exec(opCodeBytes, param []byte) error {
 	var err error

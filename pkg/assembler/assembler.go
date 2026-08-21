@@ -36,7 +36,6 @@ type definedAtMap map[any]Point
 
 type Assembler struct {
 	parser          *pr.Parser
-	opCodes         vm.OpCodeMap
 	unresolvedJumps unresolvedJumpMap
 	// instructions that depend on expressions that have yet to be evaluated
 	unevalInsts unevaledInstMap
@@ -93,7 +92,6 @@ func (a *Assembler) InstructionCount() int {
 
 func aInitialState() Assembler {
 	a := Assembler{
-		opCodes:         vm.GenerateOpcodeMap(),
 		unresolvedJumps: make(unresolvedJumpMap),
 		unevalInsts:     make(unevaledInstMap),
 		bytecode:        make([]byte, 0, 64),
