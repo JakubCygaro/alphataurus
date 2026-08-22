@@ -39,7 +39,16 @@ desc = "Immediate value, will be truncated to fit destination size"
 
 [op.MOVRR]
 desc = "Move a value from one register to another register"
-reserve.size = 0
+reserve.size = 1
+[[op.MOVRR.reserve.doc]]
+bits = 2
+desc = "Source size"
+[[op.MOVRR.reserve.doc]]
+bits = 2
+desc = "Destination size"
+[[op.MOVRR.reserve.doc]]
+bits = 4
+desc = "Unused"
 [[op.MOVRR.param]]
 bits = 4
 desc = "Destination register"

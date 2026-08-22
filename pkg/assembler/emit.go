@@ -59,7 +59,7 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 	case pr.InstMovZXRR:
 		err = a.emitMovZXRR(i, at)
 	case pr.InstMovDR:
-		err = a.emitMovDR(i, at, true)
+		err = a.emitMovDR(i, at, false)
 	case pr.InstMovZXDR:
 		err = a.emitMovZXDR(i, at)
 	case pr.InstMovDRO1:
