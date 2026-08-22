@@ -7,27 +7,40 @@ package vm
 type OpCodeVal uint32
 const (
     // Description:
-    // Add immediate value into the destination register
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Destination register
-    //
-    // 4-5
-    // Destination register size
-    //
-    // 6-7
-    // Data type - refer to ADDRR documentation
+    // Subtract source register value from destination register and store in destination
     //
     // Parameter bits:
-    // 0-63
+    // 0-39
     //
-    // Immediate value
-    OP_ADDIR OpCodeVal = iota
+    // Unused
+    // 40-41
+    //
+    // Data type: singed integer, unsigned integer or 64-bit float
+    // 42-43
+    //
+    // size of source register
+    // 44-45
+    //
+    // size of destination register
+    // 46-47
+    //
+    // Unused
+    // 48-51
+    //
+    // Source register
+    // 52-55
+    //
+    // Unused
+    // 56-59
+    //
+    // Destination register
+    // 60-63
+    //
+    // Unused
+    OP_SUBRR OpCodeVal = iota
     // Description:
-    // Load effective address to a register with the address being derived from
-    // a base register being offset by an index register and immediate value offset
+    // Move a value from an address to a register with the address being derived from
+    // a base register being offset by an index register and immediate value offset with zero extension
     //
     // Reserved bits:
     //
@@ -44,7 +57,7 @@ const (
     // Offset operator (addition or subtraction)
     //
     // 10-11
-    // Size of base and index registers (both at once)
+    // size of base and index registers (both at once)
     //
     // 12-15
     // Index register
@@ -59,7 +72,7 @@ const (
     // 0-63
     //
     // Immediate value offset
-    OP_LEADRO2 OpCodeVal = iota
+    OP_MOVZXDRO2 OpCodeVal = iota
     // Description:
     // Move a value from an address to a register with the address being derived from
     // a base register being offset by an index register and immediate value offset
@@ -79,7 +92,7 @@ const (
     // Offset operator (addition or subtraction)
     //
     // 10-11
-    // Size of base and index registers (both at once)
+    // size of base and index registers (both at once)
     //
     // 12-15
     // Index register
@@ -96,6 +109,75 @@ const (
     // Immediate value offset
     OP_MOVDRO2 OpCodeVal = iota
     // Description:
+    // Load effective address to a register with the address being derived from
+    // a base register being offset by an index register and immediate value offset
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Destination register size
+    //
+    // 2-3
+    // Scale factor
+    //
+    // 4-7
+    // Unused
+    //
+    // 8-9
+    // Offset operator (addition or subtraction)
+    //
+    // 10-11
+    // size of base and index registers (both at once)
+    //
+    // 12-15
+    // Index register
+    //
+    // 16-19
+    // Base register
+    //
+    // 20-23
+    // Destination register
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value offset
+    OP_LEADRO2 OpCodeVal = iota
+    // Description:
+    // Move a value from a register into an address with a base register, index register and an offset
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Destination register size
+    //
+    // 2-3
+    // size factor
+    //
+    // 4-7
+    // Unused
+    //
+    // 8-9
+    // Offset operator type
+    //
+    // 10-11
+    // Base and index register size
+    //
+    // 12-15
+    // Index register
+    //
+    // 16-19
+    // Base register
+    //
+    // 20-23
+    // Destination register
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unsigned 64-bit immediate value offset
+    OP_MOVRDO2 OpCodeVal = iota
+    // Description:
     // Move immediate value into an address with a base register, index register and NO offset
     //
     // Reserved bits:
@@ -104,7 +186,41 @@ const (
     // Unused
     //
     // 2-3
-    // Size factor
+    // size factor
+    //
+    // 4-7
+    // Unused
+    //
+    // 8-9
+    // Offset operator type
+    //
+    // 10-11
+    // Base and index register size
+    //
+    // 12-15
+    // Index register
+    //
+    // 16-19
+    // Base register
+    //
+    // 20-23
+    // Destination register
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // 64-bit immediate value
+    OP_MOVIDO2_NO OpCodeVal = iota
+    // Description:
+    // Move immediate value into an address with a base register, index register and NO offset
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Unused
+    //
+    // 2-3
+    // size factor
     //
     // 4-7
     // Unused
@@ -133,109 +249,6 @@ const (
     // Signed 32-bit immediate value
     OP_MOVIDO2 OpCodeVal = iota
     // Description:
-    // Move immediate value into an address with a base register, index register and NO offset
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Unused
-    //
-    // 2-3
-    // Size factor
-    //
-    // 4-7
-    // Unused
-    //
-    // 8-9
-    // Offset operator type
-    //
-    // 10-11
-    // Base and index register size
-    //
-    // 12-15
-    // Index register
-    //
-    // 16-19
-    // Base register
-    //
-    // 20-23
-    // Destination register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // 64-bit immediate value
-    OP_MOVIDO2_NO OpCodeVal = iota
-    // Description:
-    // Move a value from a register into an address with a base register, index register and an offset
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Destination register size
-    //
-    // 2-3
-    // Size factor
-    //
-    // 4-7
-    // Unused
-    //
-    // 8-9
-    // Offset operator type
-    //
-    // 10-11
-    // Base and index register size
-    //
-    // 12-15
-    // Index register
-    //
-    // 16-19
-    // Base register
-    //
-    // 20-23
-    // Destination register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unsigned 64-bit immediate value offset
-    OP_MOVRDO2 OpCodeVal = iota
-    // Description:
-    // Move a value from an address to a register with the address being derived from
-    // a base register being offset by an index register and immediate value offset with zero extension
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Destination register size
-    //
-    // 2-3
-    // Scale factor
-    //
-    // 4-7
-    // Unused
-    //
-    // 8-9
-    // Offset operator (addition or subtraction)
-    //
-    // 10-11
-    // Size of base and index registers (both at once)
-    //
-    // 12-15
-    // Index register
-    //
-    // 16-19
-    // Base register
-    //
-    // 20-23
-    // Destination register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value offset
-    OP_MOVZXDRO2 OpCodeVal = iota
-    // Description:
     // Exchange values between an address and a register with the address being derived from
     // a base register being offset by an index register and immediate value offset with zero extension
     //
@@ -254,7 +267,7 @@ const (
     // Offset operator (addition or subtraction)
     //
     // 10-11
-    // Size of base and index registers (both at once)
+    // size of base and index registers (both at once)
     //
     // 12-15
     // Index register
@@ -271,7 +284,35 @@ const (
     // Immediate value offset
     OP_XCHGDRO2 OpCodeVal = iota
     // Description:
-    // Load effective address into a register with the address being based in a register
+    // Move a value from a register into an address with a base register and an offset
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Offset operand type
+    //
+    // 2-3
+    // Base register size
+    //
+    // 4-5
+    // Destination register size
+    //
+    // 6-7
+    // Scale factor
+    //
+    // 8-11
+    // Base register
+    //
+    // 12-15
+    // Destination register
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unsigned 64-bit immediate value offset
+    OP_MOVRDO1 OpCodeVal = iota
+    // Description:
+    // Move a value from an address to a register with the address being based in a register with zero extension
     //
     // Reserved bits:
     //
@@ -279,10 +320,10 @@ const (
     // Type of arthmetic operation between the offset and the register
     //
     // 2-3
-    // Size of the base register
+    // size of the base register
     //
     // 4-5
-    // Size of the destination register
+    // size of the destination register
     //
     // 6-7
     // Scale factor type
@@ -297,7 +338,7 @@ const (
     // 0-63
     //
     // Immediate value offset
-    OP_LEADRO1 OpCodeVal = iota
+    OP_MOVZXDRO1 OpCodeVal = iota
     // Description:
     // Move a value from an address to a register with the address being based in a register
     //
@@ -307,10 +348,10 @@ const (
     // Type of arthmetic operation between the offset and the register
     //
     // 2-3
-    // Size of the base register
+    // size of the base register
     //
     // 4-5
-    // Size of the destination register
+    // size of the destination register
     //
     // 6-7
     // Scale factor type
@@ -358,6 +399,62 @@ const (
     // Signed 32-bit integer immediate value offset
     OP_MOVIDO1 OpCodeVal = iota
     // Description:
+    // Exchange values between an address and a register with the address being based in a register
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Type of arthmetic operation between the offset and the register
+    //
+    // 2-3
+    // size of the base register
+    //
+    // 4-5
+    // size of the destination register
+    //
+    // 6-7
+    // Scale factor type
+    //
+    // 8-11
+    // Base register
+    //
+    // 12-15
+    // Destination register
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value offset
+    OP_XCHGDRO1 OpCodeVal = iota
+    // Description:
+    // Load effective address into a register with the address being based in a register
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Type of arthmetic operation between the offset and the register
+    //
+    // 2-3
+    // size of the base register
+    //
+    // 4-5
+    // size of the destination register
+    //
+    // 6-7
+    // Scale factor type
+    //
+    // 8-11
+    // Base register
+    //
+    // 12-15
+    // Destination register
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value offset
+    OP_LEADRO1 OpCodeVal = iota
+    // Description:
     // Move immediate value into an address with a base register and NO offset
     //
     // Reserved bits:
@@ -386,122 +483,6 @@ const (
     // Unsigned 64-bit integer immediate value
     OP_MOVIDO1_NO OpCodeVal = iota
     // Description:
-    // Move a value from a register into an address with a base register and an offset
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Offset operand type
-    //
-    // 2-3
-    // Base register size
-    //
-    // 4-5
-    // Destination register size
-    //
-    // 6-7
-    // Scale factor
-    //
-    // 8-11
-    // Base register
-    //
-    // 12-15
-    // Destination register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unsigned 64-bit immediate value offset
-    OP_MOVRDO1 OpCodeVal = iota
-    // Description:
-    // Move a value from an address to a register with the address being based in a register with zero extension
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Type of arthmetic operation between the offset and the register
-    //
-    // 2-3
-    // Size of the base register
-    //
-    // 4-5
-    // Size of the destination register
-    //
-    // 6-7
-    // Scale factor type
-    //
-    // 8-11
-    // Base register
-    //
-    // 12-15
-    // Destination register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value offset
-    OP_MOVZXDRO1 OpCodeVal = iota
-    // Description:
-    // Exchange values between an address and a register with the address being based in a register
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Type of arthmetic operation between the offset and the register
-    //
-    // 2-3
-    // Size of the base register
-    //
-    // 4-5
-    // Size of the destination register
-    //
-    // 6-7
-    // Scale factor type
-    //
-    // 8-11
-    // Base register
-    //
-    // 12-15
-    // Destination register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value offset
-    OP_XCHGDRO1 OpCodeVal = iota
-    // Description:
-    // Add value from the source register into the destination register
-    //
-    // Parameter bits:
-    // 0-39
-    //
-    // Unused
-    // 40-41
-    //
-    // Data type: singed integer, unsigned integer or 64-bit float
-    // 42-43
-    //
-    // Size of source register
-    // 44-45
-    //
-    // Size of destination register
-    // 46-47
-    //
-    // Unused
-    // 48-51
-    //
-    // Source register
-    // 52-55
-    //
-    // Unused
-    // 56-59
-    //
-    // Destination register
-    // 60-63
-    //
-    // Unused
-    OP_ADDRR OpCodeVal = iota
-    // Description:
     // Perform a logical bitwise AND operation between the values of source register and immediate value and store the result into the destination register
     //
     // Reserved bits:
@@ -521,7 +502,7 @@ const (
     // Immediate value
     OP_ANDIR OpCodeVal = iota
     // Description:
-    // Call function at IP-relative address - push next instruction address onto the stack and jump to procedure
+    // IP-relative jump to an address if ZF is not set
     //
     // Reserved bits:
     //
@@ -537,166 +518,27 @@ const (
     // Parameter bits:
     // 0-63
     //
-    // Signed immediate value address offset
-    OP_CALLIP OpCodeVal = iota
+    // Signed 64-bit integer immediate value offset
+    OP_JMPNEIP OpCodeVal = iota
     // Description:
-    // Compare values in registers by subtracting the immediate value subtrahent register from the minuend and setting flags
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Data type
-    //
-    // 2-3
-    // Data size
-    //
-    // 4-7
-    // Minuend register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value subtrahent
-    OP_CMPIR OpCodeVal = iota
-    // Description:
-    // Compare values in registers by subtracting the subtrahent register from the minuend and setting flags
+    // Move a value from a register into an address
     //
     // Reserved bits:
     //
     // 0-3
-    // Minuend register
+    // Source register
     //
-    // 4-7
-    // Subtrahent register
+    // 4-5
+    // Source register size
     //
-    // Parameter bits:
-    // 0-1
-    //
-    // Data type
-    // 2-7
-    //
+    // 6-7
     // Unused
-    // 8-9
-    //
-    // Data size
-    // 10-63
-    //
-    // Unused
-    OP_CMPRR OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if CF is set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
     //
     // Parameter bits:
     // 0-63
     //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPCIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if ZF is set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPEIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if ZF is set and SF is not set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPGEIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if ZF is not set and SF is not set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPGIP OpCodeVal = iota
-    // Description:
-    // IP-relative unconditional jump to an address
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if ZF is set and SF is set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPLEIP OpCodeVal = iota
+    // Address as 64-bit immediate value unsigned integer
+    OP_MOVRD OpCodeVal = iota
     // Description:
     // IP-relative jump to an address if ZF is not set and SF is set
     //
@@ -736,233 +578,24 @@ const (
     // Signed 64-bit integer immediate value offset
     OP_JMPNCIP OpCodeVal = iota
     // Description:
-    // IP-relative jump to an address if ZF is not set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPNEIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if OF not is set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPNOIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if SF is not set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPNSIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if ZF is not set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPNZIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if OF is set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPOIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if SF is set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPSIP OpCodeVal = iota
-    // Description:
-    // IP-relative jump to an address if ZF is set
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Index register
-    //
-    // 4-5
-    // Index register size
-    //
-    // 6-7
-    // Offset operator
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Signed 64-bit integer immediate value offset
-    OP_JMPZIP OpCodeVal = iota
-    // Description:
-    // Perform a logical bitwise LSH operation between the values of source register and immediate value and store the result into the destination register
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Source register
-    //
-    // 4-5
-    // Data size
-    //
-    // 6-7
-    // Unused
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value
-    OP_LSHIR OpCodeVal = iota
-    // Description:
-    // Move a value from an address to a register
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Destination register
-    //
-    // 4-5
-    // Destination size
-    //
-    // 6-7
-    // Unused
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate address value
-    OP_MOVDR OpCodeVal = iota
-    // Description:
-    // Move immediate value into an address
+    // Compare values in registers by subtracting the immediate value subtrahent register from the minuend and setting flags
     //
     // Reserved bits:
     //
     // 0-1
+    // Data type
+    //
+    // 2-3
     // Data size
     //
-    // 2-7
-    // Unused
-    //
-    // Parameter bits:
-    // 0-31
-    //
-    // Immediate value, 32-bit signed integer
-    // 32-63
-    //
-    // Address, 32-bit unsigned integer
-    OP_MOVID OpCodeVal = iota
-    // Description:
-    // Move immediate value into a register
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Destination register
-    //
-    // 4-5
-    // Unused
-    //
-    // 6-7
-    // Size of the destination register
+    // 4-7
+    // Minuend register
     //
     // Parameter bits:
     // 0-63
     //
-    // Immediate value, will be truncated to fit destination size
-    OP_MOVIR OpCodeVal = iota
-    // Description:
-    // Move a value from a register into an address
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Source register
-    //
-    // 4-5
-    // Source register size
-    //
-    // 6-7
-    // Unused
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Address as 64-bit immediate value unsigned integer
-    OP_MOVRD OpCodeVal = iota
+    // Immediate value subtrahent
+    OP_CMPIR OpCodeVal = iota
     // Description:
     // Move a value from one register to another register
     //
@@ -995,7 +628,7 @@ const (
     // Unused
     OP_MOVRR OpCodeVal = iota
     // Description:
-    // Move a value from an address to a register with zero extension
+    // Move a value from an address to a register
     //
     // Reserved bits:
     //
@@ -1012,166 +645,7 @@ const (
     // 0-63
     //
     // Immediate address value
-    OP_MOVZXDR OpCodeVal = iota
-    // Description:
-    // Move immediate value into a register with zero extension
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Destination register
-    //
-    // 4-5
-    // Unused
-    //
-    // 6-7
-    // Size of the destination register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value
-    OP_MOVZXIR OpCodeVal = iota
-    // Description:
-    // Perform a logical bitwise OR operation between the values of source register and immediate value and store the result into the destination register
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Source register
-    //
-    // 4-5
-    // Data size
-    //
-    // 6-7
-    // Unused
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value
-    OP_ORIR OpCodeVal = iota
-    // Description:
-    // Pop a value from the stack, possibly into a register
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Data size
-    //
-    // 2-7
-    // Unused
-    //
-    // Parameter bits:
-    // 0-3
-    //
-    // Destination register, 0x0f if none
-    // 4-63
-    //
-    // Unused
-    OP_POP OpCodeVal = iota
-    // Description:
-    // Push immediate value onto the stack
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Data size
-    //
-    // 2-7
-    // Unused
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value
-    OP_PUSHI OpCodeVal = iota
-    // Description:
-    // Push value of a register onto the stack
-    //
-    // Reserved bits:
-    //
-    // 0-1
-    // Data size
-    //
-    // 2-7
-    // Unused
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value
-    OP_PUSHR OpCodeVal = iota
-    // Description:
-    // Rotate left the bits in a register
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Operand register size
-    //
-    // 4-7
-    // Operand register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unsigned 64-bit integer rotation amount immediate value
-    OP_ROL OpCodeVal = iota
-    // Description:
-    // Rotate right the bits in a register
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Operand register size
-    //
-    // 4-7
-    // Operand register
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unsigned 64-bit integer rotation amount immediate value
-    OP_ROR OpCodeVal = iota
-    // Description:
-    // Perform a logical bitwise RSH operation between the values of source register and immediate value and store the result into the destination register
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Source register
-    //
-    // 4-5
-    // Data size
-    //
-    // 6-7
-    // Unused
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value
-    OP_RSHIR OpCodeVal = iota
-    // Description:
-    // Subtract immediate value from the destination register and store in destination
-    //
-    // Reserved bits:
-    //
-    // 0-3
-    // Destination register
-    //
-    // 4-5
-    // Destination register size
-    //
-    // 6-7
-    // Data type - refer to ADDRR documentation
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value
-    OP_SUBIR OpCodeVal = iota
+    OP_MOVDR OpCodeVal = iota
     // Description:
     // Exchange values between an address and a register
     //
@@ -1192,6 +666,145 @@ const (
     // Immediate address value
     OP_XCHGDR OpCodeVal = iota
     // Description:
+    // Move a value from an address to a register with zero extension
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Destination register
+    //
+    // 4-5
+    // Destination size
+    //
+    // 6-7
+    // Unused
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate address value
+    OP_MOVZXDR OpCodeVal = iota
+    // Description:
+    // Perform a logical bitwise RSH operation between the values of source register and immediate value and store the result into the destination register
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Source register
+    //
+    // 4-5
+    // Data size
+    //
+    // 6-7
+    // Unused
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value
+    OP_RSHIR OpCodeVal = iota
+    // Description:
+    // IP-relative unconditional jump to an address
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPIP OpCodeVal = iota
+    // Description:
+    // IP-relative jump to an address if ZF is set and SF is not set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPGEIP OpCodeVal = iota
+    // Description:
+    // IP-relative jump to an address if SF is set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPSIP OpCodeVal = iota
+    // Description:
+    // Compare values in registers by subtracting the subtrahent register from the minuend and setting flags
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Minuend register
+    //
+    // 4-7
+    // Subtrahent register
+    //
+    // Parameter bits:
+    // 0-1
+    //
+    // Data type
+    // 2-7
+    //
+    // Unused
+    // 8-9
+    //
+    // Data size
+    // 10-63
+    //
+    // Unused
+    OP_CMPRR OpCodeVal = iota
+    // Description:
+    // Add immediate value into the destination register
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Destination register
+    //
+    // 4-5
+    // Destination register size
+    //
+    // 6-7
+    // Data type - refer to ADDRR documentation
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value
+    OP_ADDIR OpCodeVal = iota
+    // Description:
     // Perform a logical bitwise XOR operation between the values of source register and immediate value and store the result into the destination register
     //
     // Reserved bits:
@@ -1211,317 +824,403 @@ const (
     // Immediate value
     OP_XORIR OpCodeVal = iota
     // Description:
-    // Perform a logical bitwise AND operation between the values of source and destination registers and store the result into the destination register
+    // Move immediate value into a register
     //
-    // Parameter bits:
-    // 0-39
+    // Reserved bits:
     //
-    // Unused
-    // 40-41
-    //
-    // Unused
-    // 42-43
-    //
-    // Size of source register
-    // 44-45
-    //
-    // Size of destination register
-    // 46-47
-    //
-    // Unused
-    // 48-51
-    //
-    // Source register
-    // 52-55
-    //
-    // Unused
-    // 56-59
-    //
+    // 0-3
     // Destination register
-    // 60-63
     //
+    // 4-5
     // Unused
-    OP_ANDRR OpCodeVal = iota
-    // Description:
-    // Call function at absolute address - push next instruction address onto the stack and jump to procedure
+    //
+    // 6-7
+    // size of the destination register
     //
     // Parameter bits:
     // 0-63
     //
-    // Callee address
-    OP_CALL OpCodeVal = iota
+    // Immediate value, will be truncated to fit destination size
+    OP_MOVIR OpCodeVal = iota
     // Description:
-    // Clear direction flag DF
+    // Move immediate value into a register with zero extension
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Destination register
+    //
+    // 4-5
+    // Unused
+    //
+    // 6-7
+    // size of the destination register
     //
     // Parameter bits:
     // 0-63
     //
-    // Unused
-    OP_CDF OpCodeVal = iota
+    // Immediate value
+    OP_MOVZXIR OpCodeVal = iota
     // Description:
-    // Clear all flags (set them to false)
+    // Rotate left the bits in a register
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // operand register size
+    //
+    // 4-7
+    // operand register
     //
     // Parameter bits:
     // 0-63
     //
-    // Unused
-    OP_CLR OpCodeVal = iota
+    // Unsigned 64-bit integer rotation amount immediate value
+    OP_ROL OpCodeVal = iota
     // Description:
-    // Decrease the value of a register by one
+    // IP-relative jump to an address if ZF is set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPEIP OpCodeVal = iota
+    // Description:
+    // IP-relative jump to an address if ZF is set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPZIP OpCodeVal = iota
+    // Description:
+    // IP-relative jump to an address if ZF is not set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPNZIP OpCodeVal = iota
+    // Description:
+    // IP-relative jump to an address if ZF is not set and SF is not set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPGIP OpCodeVal = iota
+    // Description:
+    // Move immediate value into an address
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Data size
+    //
+    // 2-7
+    // Unused
+    //
+    // Parameter bits:
+    // 0-31
+    //
+    // Immediate value, 32-bit signed integer
+    // 32-63
+    //
+    // Address, 32-bit unsigned integer
+    OP_MOVID OpCodeVal = iota
+    // Description:
+    // IP-relative jump to an address if OF not is set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPNOIP OpCodeVal = iota
+    // Description:
+    // Subtract immediate value from the destination register and store in destination
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Destination register
+    //
+    // 4-5
+    // Destination register size
+    //
+    // 6-7
+    // Data type - refer to ADDRR documentation
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value
+    OP_SUBIR OpCodeVal = iota
+    // Description:
+    // Push immediate value onto the stack
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Data size
+    //
+    // 2-7
+    // Unused
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value
+    OP_PUSHI OpCodeVal = iota
+    // Description:
+    // IP-relative jump to an address if ZF is set and SF is set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPLEIP OpCodeVal = iota
+    // Description:
+    // IP-relative jump to an address if SF is not set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPNSIP OpCodeVal = iota
+    // Description:
+    // Call function at IP-relative address - push next instruction address onto the stack and jump to procedure
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed immediate value address offset
+    OP_CALLIP OpCodeVal = iota
+    // Description:
+    // Rotate right the bits in a register
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // operand register size
+    //
+    // 4-7
+    // operand register
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unsigned 64-bit integer rotation amount immediate value
+    OP_ROR OpCodeVal = iota
+    // Description:
+    // Perform a logical bitwise OR operation between the values of source register and immediate value and store the result into the destination register
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Source register
+    //
+    // 4-5
+    // Data size
+    //
+    // 6-7
+    // Unused
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value
+    OP_ORIR OpCodeVal = iota
+    // Description:
+    // IP-relative jump to an address if OF is set
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Index register
+    //
+    // 4-5
+    // Index register size
+    //
+    // 6-7
+    // Offset operator
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Signed 64-bit integer immediate value offset
+    OP_JMPOIP OpCodeVal = iota
+    // Description:
+    // Perform a logical bitwise LSH operation between the values of source register and immediate value and store the result into the destination register
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Source register
+    //
+    // 4-5
+    // Data size
+    //
+    // 6-7
+    // Unused
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value
+    OP_LSHIR OpCodeVal = iota
+    // Description:
+    // Pop a value from the stack, possibly into a register
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Data size
+    //
+    // 2-7
+    // Unused
     //
     // Parameter bits:
     // 0-3
     //
-    // Operand register
+    // Destination register, 0x0f if none
     // 4-63
     //
     // Unused
-    OP_DECR OpCodeVal = iota
+    OP_POP OpCodeVal = iota
     // Description:
-    // Divide r0 by r1 and store the quotient into r2 and the remainder into r3
+    // IP-relative jump to an address if CF is set
     //
-    // Parameter bits:
-    // 0-55
+    // Reserved bits:
     //
-    // Unused
-    // 56-59
+    // 0-3
+    // Index register
     //
-    // Size of operands and r2
-    // 60-63
+    // 4-5
+    // Index register size
     //
-    // Unused
-    OP_DIVRR OpCodeVal = iota
-    // Description:
-    // Halts with immediate value as the exit code
+    // 6-7
+    // Offset operator
     //
     // Parameter bits:
     // 0-63
     //
-    // Exit code, unsigned
-    OP_EXITI OpCodeVal = iota
+    // Signed 64-bit integer immediate value offset
+    OP_JMPCIP OpCodeVal = iota
     // Description:
-    // Halts with register value as the exit code
+    // Push value of a register onto the stack
+    //
+    // Reserved bits:
+    //
+    // 0-1
+    // Data size
+    //
+    // 2-7
+    // Unused
     //
     // Parameter bits:
-    // 0-3
+    // 0-63
     //
-    // Exit code register
-    // 4-7
-    //
-    // Unused
-    // 8-9
-    //
-    // Data size
-    // 10-15
-    //
-    // Data size
-    // 16-63
-    //
-    // Unused
-    OP_EXITR OpCodeVal = iota
+    // Immediate value
+    OP_PUSHR OpCodeVal = iota
     // Description:
     // Increase the value of a register by one
     //
     // Parameter bits:
     // 0-3
     //
-    // Operand register
+    // operand register
     // 4-63
     //
     // Unused
     OP_INCR OpCodeVal = iota
-    // Description:
-    // Unconditional jump to an address
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMP OpCodeVal = iota
-    // Description:
-    // Jump to an address if CF is set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPC OpCodeVal = iota
-    // Description:
-    // Jump to an address if ZF is set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPE OpCodeVal = iota
-    // Description:
-    // Jump to an address if ZF and SF are not set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPG OpCodeVal = iota
-    // Description:
-    // Jump to an address if ZF is set and SF is not set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPGE OpCodeVal = iota
-    // Description:
-    // Jump to an address if ZF is not set and SF is set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPL OpCodeVal = iota
-    // Description:
-    // Jump to an address if ZF is set and SF is set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPLE OpCodeVal = iota
-    // Description:
-    // Jump to an address if CF is not set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPNC OpCodeVal = iota
-    // Description:
-    // Jump to an address if ZF is not set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPNE OpCodeVal = iota
-    // Description:
-    // Jump to an address if OF is not set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPNO OpCodeVal = iota
-    // Description:
-    // Jump to an address if SF is not set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPNS OpCodeVal = iota
-    // Description:
-    // Jump to an address if ZF is not set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPNZ OpCodeVal = iota
-    // Description:
-    // Jump to an address if OF is set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPO OpCodeVal = iota
-    // Description:
-    // Jump to an address if SF is set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPS OpCodeVal = iota
-    // Description:
-    // Jump to an address if ZF is set
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Immediate value address
-    OP_JMPZ OpCodeVal = iota
-    // Description:
-    // Perform a logical bitwise LSH operation between the values of source and destination registers and store the result into the destination register
-    //
-    // Parameter bits:
-    // 0-39
-    //
-    // Unused
-    // 40-41
-    //
-    // Unused
-    // 42-43
-    //
-    // Size of source register
-    // 44-45
-    //
-    // Size of destination register
-    // 46-47
-    //
-    // Unused
-    // 48-51
-    //
-    // Source register
-    // 52-55
-    //
-    // Unused
-    // 56-59
-    //
-    // Destination register
-    // 60-63
-    //
-    // Unused
-    OP_LSHRR OpCodeVal = iota
-    // Description:
-    // Move single byte from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_MOVREPSB OpCodeVal = iota
-    // Description:
-    // Move single half-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_MOVREPSH OpCodeVal = iota
-    // Description:
-    // Move single quarter-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_MOVREPSQ OpCodeVal = iota
-    // Description:
-    // Move single word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_MOVREPSW OpCodeVal = iota
-    // Description:
-    // Move single byte from r5 to r6
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_MOVSB OpCodeVal = iota
     // Description:
     // Move single half-from r5 to r6
     //
@@ -1530,242 +1229,6 @@ const (
     //
     // Unused
     OP_MOVSH OpCodeVal = iota
-    // Description:
-    // Move single quarter-word from r5 to r6
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_MOVSQ OpCodeVal = iota
-    // Description:
-    // Move single word r5 to r6
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_MOVSW OpCodeVal = iota
-    // Description:
-    // Move a value from one register to another register with sign extension
-    //
-    // Parameter bits:
-    // 0-3
-    //
-    // Destination register
-    // 4-7
-    //
-    // Source register
-    // 8-9
-    //
-    // Source size
-    // 10-11
-    //
-    // Destination size
-    // 12-63
-    //
-    // Unused
-    OP_MOVSXRR OpCodeVal = iota
-    // Description:
-    // Move a value from one register to another register with zero extension
-    //
-    // Parameter bits:
-    // 0-3
-    //
-    // Destination register
-    // 4-7
-    //
-    // Source register
-    // 8-9
-    //
-    // Source size
-    // 10-11
-    //
-    // Destination size
-    // 12-63
-    //
-    // Unused
-    OP_MOVZXRR OpCodeVal = iota
-    // Description:
-    // Multiply r0 by r1 and store the product into r2
-    //
-    // Parameter bits:
-    // 0-55
-    //
-    // Unused
-    // 56-59
-    //
-    // Size of operands and r2
-    // 60-63
-    //
-    // Unused
-    OP_MULRR OpCodeVal = iota
-    // Description:
-    // Negation (two's complement) of register value
-    //
-    // Parameter bits:
-    // 0-39
-    //
-    // Unused
-    // 40-43
-    //
-    // Data type
-    // 44-47
-    //
-    // Unused
-    // 48-51
-    //
-    // Data size
-    // 52-55
-    //
-    // Unused
-    // 56-59
-    //
-    // Operand register
-    // 60-63
-    //
-    // Unused
-    OP_NEG OpCodeVal = iota
-    // Description:
-    // NO OP
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_NOP OpCodeVal = iota
-    // Description:
-    // Bitwise NOT on register value
-    //
-    // Parameter bits:
-    // 0-47
-    //
-    // Unused
-    // 48-51
-    //
-    // Data size
-    // 52-55
-    //
-    // Unused
-    // 56-59
-    //
-    // Operand register
-    // 60-63
-    //
-    // Unused
-    OP_NOT OpCodeVal = iota
-    // Description:
-    // Perform a logical bitwise OR operation between the values of source and destination registers and store the result into the destination register
-    //
-    // Parameter bits:
-    // 0-39
-    //
-    // Unused
-    // 40-41
-    //
-    // Unused
-    // 42-43
-    //
-    // Size of source register
-    // 44-45
-    //
-    // Size of destination register
-    // 46-47
-    //
-    // Unused
-    // 48-51
-    //
-    // Source register
-    // 52-55
-    //
-    // Unused
-    // 56-59
-    //
-    // Destination register
-    // 60-63
-    //
-    // Unused
-    OP_ORRR OpCodeVal = iota
-    // Description:
-    // Pops return address from the stack and jumps to the instruction that it points to
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_RET OpCodeVal = iota
-    // Description:
-    // Perform a logical bitwise RSH operation between the values of source and destination registers and store the result into the destination register
-    //
-    // Parameter bits:
-    // 0-39
-    //
-    // Unused
-    // 40-41
-    //
-    // Unused
-    // 42-43
-    //
-    // Size of source register
-    // 44-45
-    //
-    // Size of destination register
-    // 46-47
-    //
-    // Unused
-    // 48-51
-    //
-    // Source register
-    // 52-55
-    //
-    // Unused
-    // 56-59
-    //
-    // Destination register
-    // 60-63
-    //
-    // Unused
-    OP_RSHRR OpCodeVal = iota
-    // Description:
-    // Set direction flag DF
-    //
-    // Parameter bits:
-    // 0-63
-    //
-    // Unused
-    OP_SDF OpCodeVal = iota
-    // Description:
-    // Subtract source register value from destination register and store in destination
-    //
-    // Parameter bits:
-    // 0-39
-    //
-    // Unused
-    // 40-41
-    //
-    // Data type: singed integer, unsigned integer or 64-bit float
-    // 42-43
-    //
-    // Size of source register
-    // 44-45
-    //
-    // Size of destination register
-    // 46-47
-    //
-    // Unused
-    // 48-51
-    //
-    // Source register
-    // 52-55
-    //
-    // Unused
-    // 56-59
-    //
-    // Destination register
-    // 60-63
-    //
-    // Unused
-    OP_SUBRR OpCodeVal = iota
     // Description:
     // Exchange values between one register and another
     //
@@ -1787,6 +1250,465 @@ const (
     // Unused
     OP_XCHGRR OpCodeVal = iota
     // Description:
+    // Jump to an address if OF is not set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPNO OpCodeVal = iota
+    // Description:
+    // Move single byte from r5 to r6
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_MOVSB OpCodeVal = iota
+    // Description:
+    // Jump to an address if ZF is set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPZ OpCodeVal = iota
+    // Description:
+    // Jump to an address if ZF is set and SF is set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPLE OpCodeVal = iota
+    // Description:
+    // Jump to an address if SF is not set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPNS OpCodeVal = iota
+    // Description:
+    // Jump to an address if CF is not set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPNC OpCodeVal = iota
+    // Description:
+    // Move single word r5 to r6
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_MOVSW OpCodeVal = iota
+    // Description:
+    // Perform a logical bitwise AND operation between the values of source and destination registers and store the result into the destination register
+    //
+    // Parameter bits:
+    // 0-39
+    //
+    // Unused
+    // 40-41
+    //
+    // Unused
+    // 42-43
+    //
+    // size of source register
+    // 44-45
+    //
+    // size of destination register
+    // 46-47
+    //
+    // Unused
+    // 48-51
+    //
+    // Source register
+    // 52-55
+    //
+    // Unused
+    // 56-59
+    //
+    // Destination register
+    // 60-63
+    //
+    // Unused
+    OP_ANDRR OpCodeVal = iota
+    // Description:
+    // Jump to an address if ZF is not set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPNZ OpCodeVal = iota
+    // Description:
+    // Set direction flag DF
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_SDF OpCodeVal = iota
+    // Description:
+    // Move a value from one register to another register with zero extension
+    //
+    // Parameter bits:
+    // 0-3
+    //
+    // Destination register
+    // 4-7
+    //
+    // Source register
+    // 8-9
+    //
+    // Source size
+    // 10-11
+    //
+    // Destination size
+    // 12-63
+    //
+    // Unused
+    OP_MOVZXRR OpCodeVal = iota
+    // Description:
+    // Move single word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_MOVREPSW OpCodeVal = iota
+    // Description:
+    // Negation (two's complement) of register value
+    //
+    // Parameter bits:
+    // 0-39
+    //
+    // Unused
+    // 40-43
+    //
+    // Data type
+    // 44-47
+    //
+    // Unused
+    // 48-51
+    //
+    // Data size
+    // 52-55
+    //
+    // Unused
+    // 56-59
+    //
+    // operand register
+    // 60-63
+    //
+    // Unused
+    OP_NEG OpCodeVal = iota
+    // Description:
+    // Jump to an address if ZF is not set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPNE OpCodeVal = iota
+    // Description:
+    // Jump to an address if ZF is set and SF is not set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPGE OpCodeVal = iota
+    // Description:
+    // Jump to an address if ZF is not set and SF is set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPL OpCodeVal = iota
+    // Description:
+    // Move single quarter-word from r5 to r6
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_MOVSQ OpCodeVal = iota
+    // Description:
+    // Move single quarter-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_MOVREPSQ OpCodeVal = iota
+    // Description:
+    // Perform a logical bitwise LSH operation between the values of source and destination registers and store the result into the destination register
+    //
+    // Parameter bits:
+    // 0-39
+    //
+    // Unused
+    // 40-41
+    //
+    // Unused
+    // 42-43
+    //
+    // size of source register
+    // 44-45
+    //
+    // size of destination register
+    // 46-47
+    //
+    // Unused
+    // 48-51
+    //
+    // Source register
+    // 52-55
+    //
+    // Unused
+    // 56-59
+    //
+    // Destination register
+    // 60-63
+    //
+    // Unused
+    OP_LSHRR OpCodeVal = iota
+    // Description:
+    // Decrease the value of a register by one
+    //
+    // Parameter bits:
+    // 0-3
+    //
+    // operand register
+    // 4-63
+    //
+    // Unused
+    OP_DECR OpCodeVal = iota
+    // Description:
+    // Jump to an address if ZF is set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPE OpCodeVal = iota
+    // Description:
+    // Jump to an address if OF is set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPO OpCodeVal = iota
+    // Description:
+    // Bitwise NOT on register value
+    //
+    // Parameter bits:
+    // 0-47
+    //
+    // Unused
+    // 48-51
+    //
+    // Data size
+    // 52-55
+    //
+    // Unused
+    // 56-59
+    //
+    // operand register
+    // 60-63
+    //
+    // Unused
+    OP_NOT OpCodeVal = iota
+    // Description:
+    // Perform a logical bitwise OR operation between the values of source and destination registers and store the result into the destination register
+    //
+    // Parameter bits:
+    // 0-39
+    //
+    // Unused
+    // 40-41
+    //
+    // Unused
+    // 42-43
+    //
+    // size of source register
+    // 44-45
+    //
+    // size of destination register
+    // 46-47
+    //
+    // Unused
+    // 48-51
+    //
+    // Source register
+    // 52-55
+    //
+    // Unused
+    // 56-59
+    //
+    // Destination register
+    // 60-63
+    //
+    // Unused
+    OP_ORRR OpCodeVal = iota
+    // Description:
+    // Perform a logical bitwise RSH operation between the values of source and destination registers and store the result into the destination register
+    //
+    // Parameter bits:
+    // 0-39
+    //
+    // Unused
+    // 40-41
+    //
+    // Unused
+    // 42-43
+    //
+    // size of source register
+    // 44-45
+    //
+    // size of destination register
+    // 46-47
+    //
+    // Unused
+    // 48-51
+    //
+    // Source register
+    // 52-55
+    //
+    // Unused
+    // 56-59
+    //
+    // Destination register
+    // 60-63
+    //
+    // Unused
+    OP_RSHRR OpCodeVal = iota
+    // Description:
+    // Jump to an address if SF is set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPS OpCodeVal = iota
+    // Description:
+    // Halts with register value as the exit code
+    //
+    // Parameter bits:
+    // 0-3
+    //
+    // Exit code register
+    // 4-7
+    //
+    // Unused
+    // 8-9
+    //
+    // Data size
+    // 10-15
+    //
+    // Data size
+    // 16-63
+    //
+    // Unused
+    OP_EXITR OpCodeVal = iota
+    // Description:
+    // Move single half-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_MOVREPSH OpCodeVal = iota
+    // Description:
+    // Jump to an address if ZF and SF are not set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPG OpCodeVal = iota
+    // Description:
+    // Clear all flags (set them to false)
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_CLR OpCodeVal = iota
+    // Description:
+    // Add value from the source register into the destination register
+    //
+    // Parameter bits:
+    // 0-39
+    //
+    // Unused
+    // 40-41
+    //
+    // Data type: singed integer, unsigned integer or 64-bit float
+    // 42-43
+    //
+    // size of source register
+    // 44-45
+    //
+    // size of destination register
+    // 46-47
+    //
+    // Unused
+    // 48-51
+    //
+    // Source register
+    // 52-55
+    //
+    // Unused
+    // 56-59
+    //
+    // Destination register
+    // 60-63
+    //
+    // Unused
+    OP_ADDRR OpCodeVal = iota
+    // Description:
+    // Move a value from one register to another register with sign extension
+    //
+    // Parameter bits:
+    // 0-3
+    //
+    // Destination register
+    // 4-7
+    //
+    // Source register
+    // 8-9
+    //
+    // Source size
+    // 10-11
+    //
+    // Destination size
+    // 12-63
+    //
+    // Unused
+    OP_MOVSXRR OpCodeVal = iota
+    // Description:
+    // Multiply r0 by r1 and store the product into r2
+    //
+    // Parameter bits:
+    // 0-55
+    //
+    // Unused
+    // 56-59
+    //
+    // size of operands and r2
+    // 60-63
+    //
+    // Unused
+    OP_MULRR OpCodeVal = iota
+    // Description:
     // Perform a logical bitwise XOR operation between the values of source and destination registers and store the result into the destination register
     //
     // Parameter bits:
@@ -1798,10 +1720,10 @@ const (
     // Unused
     // 42-43
     //
-    // Size of source register
+    // size of source register
     // 44-45
     //
-    // Size of destination register
+    // size of destination register
     // 46-47
     //
     // Unused
@@ -1818,107 +1740,185 @@ const (
     //
     // Unused
     OP_XORRR OpCodeVal = iota
+    // Description:
+    // Pops return address from the stack and jumps to the instruction that it points to
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_RET OpCodeVal = iota
+    // Description:
+    // Move single byte from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_MOVREPSB OpCodeVal = iota
+    // Description:
+    // Divide r0 by r1 and store the quotient into r2 and the remainder into r3
+    //
+    // Parameter bits:
+    // 0-55
+    //
+    // Unused
+    // 56-59
+    //
+    // size of operands and r2
+    // 60-63
+    //
+    // Unused
+    OP_DIVRR OpCodeVal = iota
+    // Description:
+    // Call function at absolute address - push next instruction address onto the stack and jump to procedure
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Callee address
+    OP_CALL OpCodeVal = iota
+    // Description:
+    // Halts with immediate value as the exit code
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Exit code, unsigned
+    OP_EXITI OpCodeVal = iota
+    // Description:
+    // Unconditional jump to an address
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMP OpCodeVal = iota
+    // Description:
+    // Jump to an address if CF is set
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Immediate value address
+    OP_JMPC OpCodeVal = iota
+    // Description:
+    // Clear direction flag DF
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_CDF OpCodeVal = iota
+    // Description:
+    // NO OP
+    //
+    // Parameter bits:
+    // 0-63
+    //
+    // Unused
+    OP_NOP OpCodeVal = iota
 )
 var _makedec_opcodeMap = map[uint32]OpCodeVal {
-    0x00000000 : OP_ADDIR,
-    0x00000001 : OP_LEADRO2,
+    0x00000000 : OP_SUBRR,
+    0x00000001 : OP_MOVZXDRO2,
     0x00000002 : OP_MOVDRO2,
-    0x00000003 : OP_MOVIDO2,
-    0x00000004 : OP_MOVIDO2_NO,
-    0x00000005 : OP_MOVRDO2,
-    0x00000006 : OP_MOVZXDRO2,
+    0x00000003 : OP_LEADRO2,
+    0x00000004 : OP_MOVRDO2,
+    0x00000005 : OP_MOVIDO2_NO,
+    0x00000006 : OP_MOVIDO2,
     0x00000007 : OP_XCHGDRO2,
-    0x00000100 : OP_LEADRO1,
-    0x00000200 : OP_MOVDRO1,
-    0x00000300 : OP_MOVIDO1,
-    0x00000400 : OP_MOVIDO1_NO,
-    0x00000500 : OP_MOVRDO1,
-    0x00000600 : OP_MOVZXDRO1,
-    0x00000700 : OP_XCHGDRO1,
-    0x00010000 : OP_ADDRR,
-    0x00020000 : OP_ANDIR,
-    0x00030000 : OP_CALLIP,
-    0x00040000 : OP_CMPIR,
-    0x00050000 : OP_CMPRR,
-    0x00060000 : OP_JMPCIP,
-    0x00070000 : OP_JMPEIP,
-    0x00080000 : OP_JMPGEIP,
-    0x00090000 : OP_JMPGIP,
-    0x000a0000 : OP_JMPIP,
-    0x000b0000 : OP_JMPLEIP,
-    0x000c0000 : OP_JMPLIP,
-    0x000d0000 : OP_JMPNCIP,
-    0x000e0000 : OP_JMPNEIP,
-    0x000f0000 : OP_JMPNOIP,
-    0x00100000 : OP_JMPNSIP,
-    0x00110000 : OP_JMPNZIP,
-    0x00120000 : OP_JMPOIP,
-    0x00130000 : OP_JMPSIP,
-    0x00140000 : OP_JMPZIP,
-    0x00150000 : OP_LSHIR,
-    0x00160000 : OP_MOVDR,
-    0x00170000 : OP_MOVID,
-    0x00180000 : OP_MOVIR,
-    0x00190000 : OP_MOVRD,
-    0x001a0000 : OP_MOVRR,
-    0x001b0000 : OP_MOVZXDR,
-    0x001c0000 : OP_MOVZXIR,
-    0x001d0000 : OP_ORIR,
-    0x001e0000 : OP_POP,
-    0x001f0000 : OP_PUSHI,
-    0x00200000 : OP_PUSHR,
-    0x00210000 : OP_ROL,
-    0x00220000 : OP_ROR,
-    0x00230000 : OP_RSHIR,
-    0x00240000 : OP_SUBIR,
-    0x00250000 : OP_XCHGDR,
-    0x00260000 : OP_XORIR,
-    0x01010000 : OP_ANDRR,
-    0x02010000 : OP_CALL,
-    0x03010000 : OP_CDF,
-    0x04010000 : OP_CLR,
-    0x05010000 : OP_DECR,
-    0x06010000 : OP_DIVRR,
-    0x07010000 : OP_EXITI,
-    0x08010000 : OP_EXITR,
-    0x09010000 : OP_INCR,
-    0x0a010000 : OP_JMP,
-    0x0b010000 : OP_JMPC,
-    0x0c010000 : OP_JMPE,
-    0x0d010000 : OP_JMPG,
-    0x0e010000 : OP_JMPGE,
-    0x0f010000 : OP_JMPL,
-    0x10010000 : OP_JMPLE,
-    0x11010000 : OP_JMPNC,
-    0x12010000 : OP_JMPNE,
-    0x13010000 : OP_JMPNO,
-    0x14010000 : OP_JMPNS,
-    0x15010000 : OP_JMPNZ,
-    0x16010000 : OP_JMPO,
-    0x17010000 : OP_JMPS,
-    0x18010000 : OP_JMPZ,
-    0x19010000 : OP_LSHRR,
-    0x1a010000 : OP_MOVREPSB,
-    0x1b010000 : OP_MOVREPSH,
-    0x1c010000 : OP_MOVREPSQ,
-    0x1d010000 : OP_MOVREPSW,
-    0x1e010000 : OP_MOVSB,
-    0x1f010000 : OP_MOVSH,
-    0x20010000 : OP_MOVSQ,
-    0x21010000 : OP_MOVSW,
-    0x22010000 : OP_MOVSXRR,
-    0x23010000 : OP_MOVZXRR,
-    0x24010000 : OP_MULRR,
-    0x25010000 : OP_NEG,
-    0x26010000 : OP_NOP,
-    0x27010000 : OP_NOT,
-    0x28010000 : OP_ORRR,
-    0x29010000 : OP_RET,
-    0x2a010000 : OP_RSHRR,
-    0x2b010000 : OP_SDF,
-    0x2c010000 : OP_SUBRR,
-    0x2d010000 : OP_XCHGRR,
-    0x2e010000 : OP_XORRR,
+    0x00000100 : OP_MOVRDO1,
+    0x00000200 : OP_MOVZXDRO1,
+    0x00000300 : OP_MOVDRO1,
+    0x00000400 : OP_MOVIDO1,
+    0x00000500 : OP_XCHGDRO1,
+    0x00000600 : OP_LEADRO1,
+    0x00000700 : OP_MOVIDO1_NO,
+    0x00010000 : OP_ANDIR,
+    0x00020000 : OP_JMPNEIP,
+    0x00030000 : OP_MOVRD,
+    0x00040000 : OP_JMPLIP,
+    0x00050000 : OP_JMPNCIP,
+    0x00060000 : OP_CMPIR,
+    0x00070000 : OP_MOVRR,
+    0x00080000 : OP_MOVDR,
+    0x00090000 : OP_XCHGDR,
+    0x000a0000 : OP_MOVZXDR,
+    0x000b0000 : OP_RSHIR,
+    0x000c0000 : OP_JMPIP,
+    0x000d0000 : OP_JMPGEIP,
+    0x000e0000 : OP_JMPSIP,
+    0x000f0000 : OP_CMPRR,
+    0x00100000 : OP_ADDIR,
+    0x00110000 : OP_XORIR,
+    0x00120000 : OP_MOVIR,
+    0x00130000 : OP_MOVZXIR,
+    0x00140000 : OP_ROL,
+    0x00150000 : OP_JMPEIP,
+    0x00160000 : OP_JMPZIP,
+    0x00170000 : OP_JMPNZIP,
+    0x00180000 : OP_JMPGIP,
+    0x00190000 : OP_MOVID,
+    0x001a0000 : OP_JMPNOIP,
+    0x001b0000 : OP_SUBIR,
+    0x001c0000 : OP_PUSHI,
+    0x001d0000 : OP_JMPLEIP,
+    0x001e0000 : OP_JMPNSIP,
+    0x001f0000 : OP_CALLIP,
+    0x00200000 : OP_ROR,
+    0x00210000 : OP_ORIR,
+    0x00220000 : OP_JMPOIP,
+    0x00230000 : OP_LSHIR,
+    0x00240000 : OP_POP,
+    0x00250000 : OP_JMPCIP,
+    0x00260000 : OP_PUSHR,
+    0x01000000 : OP_INCR,
+    0x02000000 : OP_MOVSH,
+    0x03000000 : OP_XCHGRR,
+    0x04000000 : OP_JMPNO,
+    0x05000000 : OP_MOVSB,
+    0x06000000 : OP_JMPZ,
+    0x07000000 : OP_JMPLE,
+    0x08000000 : OP_JMPNS,
+    0x09000000 : OP_JMPNC,
+    0x0a000000 : OP_MOVSW,
+    0x0b000000 : OP_ANDRR,
+    0x0c000000 : OP_JMPNZ,
+    0x0d000000 : OP_SDF,
+    0x0e000000 : OP_MOVZXRR,
+    0x0f000000 : OP_MOVREPSW,
+    0x10000000 : OP_NEG,
+    0x11000000 : OP_JMPNE,
+    0x12000000 : OP_JMPGE,
+    0x13000000 : OP_JMPL,
+    0x14000000 : OP_MOVSQ,
+    0x15000000 : OP_MOVREPSQ,
+    0x16000000 : OP_LSHRR,
+    0x17000000 : OP_DECR,
+    0x18000000 : OP_JMPE,
+    0x19000000 : OP_JMPO,
+    0x1a000000 : OP_NOT,
+    0x1b000000 : OP_ORRR,
+    0x1c000000 : OP_RSHRR,
+    0x1d000000 : OP_JMPS,
+    0x1e000000 : OP_EXITR,
+    0x1f000000 : OP_MOVREPSH,
+    0x20000000 : OP_JMPG,
+    0x21000000 : OP_CLR,
+    0x22000000 : OP_ADDRR,
+    0x23000000 : OP_MOVSXRR,
+    0x24000000 : OP_MULRR,
+    0x25000000 : OP_XORRR,
+    0x26000000 : OP_RET,
+    0x27000000 : OP_MOVREPSB,
+    0x28000000 : OP_DIVRR,
+    0x29000000 : OP_CALL,
+    0x2a000000 : OP_EXITI,
+    0x2b000000 : OP_JMP,
+    0x2c000000 : OP_JMPC,
+    0x2d000000 : OP_CDF,
+    0x2e000000 : OP_NOP,
 }
 
 func Decode(code uint32) (bool, OpCodeVal) {
@@ -1937,105 +1937,105 @@ func Decode(code uint32) (bool, OpCodeVal) {
 	return false, OpCodeVal(0)
 }
 const (
-    OP_ADDIR_VAL              uint32 = 0x00000000
-    OP_LEADRO2_VAL            uint32 = 0x00000001
+    OP_SUBRR_VAL              uint32 = 0x00000000
+    OP_MOVZXDRO2_VAL          uint32 = 0x00000001
     OP_MOVDRO2_VAL            uint32 = 0x00000002
-    OP_MOVIDO2_VAL            uint32 = 0x00000003
-    OP_MOVIDO2_NO_VAL         uint32 = 0x00000004
-    OP_MOVRDO2_VAL            uint32 = 0x00000005
-    OP_MOVZXDRO2_VAL          uint32 = 0x00000006
+    OP_LEADRO2_VAL            uint32 = 0x00000003
+    OP_MOVRDO2_VAL            uint32 = 0x00000004
+    OP_MOVIDO2_NO_VAL         uint32 = 0x00000005
+    OP_MOVIDO2_VAL            uint32 = 0x00000006
     OP_XCHGDRO2_VAL           uint32 = 0x00000007
-    OP_LEADRO1_VAL            uint32 = 0x00000100
-    OP_MOVDRO1_VAL            uint32 = 0x00000200
-    OP_MOVIDO1_VAL            uint32 = 0x00000300
-    OP_MOVIDO1_NO_VAL         uint32 = 0x00000400
-    OP_MOVRDO1_VAL            uint32 = 0x00000500
-    OP_MOVZXDRO1_VAL          uint32 = 0x00000600
-    OP_XCHGDRO1_VAL           uint32 = 0x00000700
-    OP_ADDRR_VAL              uint32 = 0x00010000
-    OP_ANDIR_VAL              uint32 = 0x00020000
-    OP_CALLIP_VAL             uint32 = 0x00030000
-    OP_CMPIR_VAL              uint32 = 0x00040000
-    OP_CMPRR_VAL              uint32 = 0x00050000
-    OP_JMPCIP_VAL             uint32 = 0x00060000
-    OP_JMPEIP_VAL             uint32 = 0x00070000
-    OP_JMPGEIP_VAL            uint32 = 0x00080000
-    OP_JMPGIP_VAL             uint32 = 0x00090000
-    OP_JMPIP_VAL              uint32 = 0x000a0000
-    OP_JMPLEIP_VAL            uint32 = 0x000b0000
-    OP_JMPLIP_VAL             uint32 = 0x000c0000
-    OP_JMPNCIP_VAL            uint32 = 0x000d0000
-    OP_JMPNEIP_VAL            uint32 = 0x000e0000
-    OP_JMPNOIP_VAL            uint32 = 0x000f0000
-    OP_JMPNSIP_VAL            uint32 = 0x00100000
-    OP_JMPNZIP_VAL            uint32 = 0x00110000
-    OP_JMPOIP_VAL             uint32 = 0x00120000
-    OP_JMPSIP_VAL             uint32 = 0x00130000
-    OP_JMPZIP_VAL             uint32 = 0x00140000
-    OP_LSHIR_VAL              uint32 = 0x00150000
-    OP_MOVDR_VAL              uint32 = 0x00160000
-    OP_MOVID_VAL              uint32 = 0x00170000
-    OP_MOVIR_VAL              uint32 = 0x00180000
-    OP_MOVRD_VAL              uint32 = 0x00190000
-    OP_MOVRR_VAL              uint32 = 0x001a0000
-    OP_MOVZXDR_VAL            uint32 = 0x001b0000
-    OP_MOVZXIR_VAL            uint32 = 0x001c0000
-    OP_ORIR_VAL               uint32 = 0x001d0000
-    OP_POP_VAL                uint32 = 0x001e0000
-    OP_PUSHI_VAL              uint32 = 0x001f0000
-    OP_PUSHR_VAL              uint32 = 0x00200000
-    OP_ROL_VAL                uint32 = 0x00210000
-    OP_ROR_VAL                uint32 = 0x00220000
-    OP_RSHIR_VAL              uint32 = 0x00230000
-    OP_SUBIR_VAL              uint32 = 0x00240000
-    OP_XCHGDR_VAL             uint32 = 0x00250000
-    OP_XORIR_VAL              uint32 = 0x00260000
-    OP_ANDRR_VAL              uint32 = 0x01010000
-    OP_CALL_VAL               uint32 = 0x02010000
-    OP_CDF_VAL                uint32 = 0x03010000
-    OP_CLR_VAL                uint32 = 0x04010000
-    OP_DECR_VAL               uint32 = 0x05010000
-    OP_DIVRR_VAL              uint32 = 0x06010000
-    OP_EXITI_VAL              uint32 = 0x07010000
-    OP_EXITR_VAL              uint32 = 0x08010000
-    OP_INCR_VAL               uint32 = 0x09010000
-    OP_JMP_VAL                uint32 = 0x0a010000
-    OP_JMPC_VAL               uint32 = 0x0b010000
-    OP_JMPE_VAL               uint32 = 0x0c010000
-    OP_JMPG_VAL               uint32 = 0x0d010000
-    OP_JMPGE_VAL              uint32 = 0x0e010000
-    OP_JMPL_VAL               uint32 = 0x0f010000
-    OP_JMPLE_VAL              uint32 = 0x10010000
-    OP_JMPNC_VAL              uint32 = 0x11010000
-    OP_JMPNE_VAL              uint32 = 0x12010000
-    OP_JMPNO_VAL              uint32 = 0x13010000
-    OP_JMPNS_VAL              uint32 = 0x14010000
-    OP_JMPNZ_VAL              uint32 = 0x15010000
-    OP_JMPO_VAL               uint32 = 0x16010000
-    OP_JMPS_VAL               uint32 = 0x17010000
-    OP_JMPZ_VAL               uint32 = 0x18010000
-    OP_LSHRR_VAL              uint32 = 0x19010000
-    OP_MOVREPSB_VAL           uint32 = 0x1a010000
-    OP_MOVREPSH_VAL           uint32 = 0x1b010000
-    OP_MOVREPSQ_VAL           uint32 = 0x1c010000
-    OP_MOVREPSW_VAL           uint32 = 0x1d010000
-    OP_MOVSB_VAL              uint32 = 0x1e010000
-    OP_MOVSH_VAL              uint32 = 0x1f010000
-    OP_MOVSQ_VAL              uint32 = 0x20010000
-    OP_MOVSW_VAL              uint32 = 0x21010000
-    OP_MOVSXRR_VAL            uint32 = 0x22010000
-    OP_MOVZXRR_VAL            uint32 = 0x23010000
-    OP_MULRR_VAL              uint32 = 0x24010000
-    OP_NEG_VAL                uint32 = 0x25010000
-    OP_NOP_VAL                uint32 = 0x26010000
-    OP_NOT_VAL                uint32 = 0x27010000
-    OP_ORRR_VAL               uint32 = 0x28010000
-    OP_RET_VAL                uint32 = 0x29010000
-    OP_RSHRR_VAL              uint32 = 0x2a010000
-    OP_SDF_VAL                uint32 = 0x2b010000
-    OP_SUBRR_VAL              uint32 = 0x2c010000
-    OP_XCHGRR_VAL             uint32 = 0x2d010000
-    OP_XORRR_VAL              uint32 = 0x2e010000
+    OP_MOVRDO1_VAL            uint32 = 0x00000100
+    OP_MOVZXDRO1_VAL          uint32 = 0x00000200
+    OP_MOVDRO1_VAL            uint32 = 0x00000300
+    OP_MOVIDO1_VAL            uint32 = 0x00000400
+    OP_XCHGDRO1_VAL           uint32 = 0x00000500
+    OP_LEADRO1_VAL            uint32 = 0x00000600
+    OP_MOVIDO1_NO_VAL         uint32 = 0x00000700
+    OP_ANDIR_VAL              uint32 = 0x00010000
+    OP_JMPNEIP_VAL            uint32 = 0x00020000
+    OP_MOVRD_VAL              uint32 = 0x00030000
+    OP_JMPLIP_VAL             uint32 = 0x00040000
+    OP_JMPNCIP_VAL            uint32 = 0x00050000
+    OP_CMPIR_VAL              uint32 = 0x00060000
+    OP_MOVRR_VAL              uint32 = 0x00070000
+    OP_MOVDR_VAL              uint32 = 0x00080000
+    OP_XCHGDR_VAL             uint32 = 0x00090000
+    OP_MOVZXDR_VAL            uint32 = 0x000a0000
+    OP_RSHIR_VAL              uint32 = 0x000b0000
+    OP_JMPIP_VAL              uint32 = 0x000c0000
+    OP_JMPGEIP_VAL            uint32 = 0x000d0000
+    OP_JMPSIP_VAL             uint32 = 0x000e0000
+    OP_CMPRR_VAL              uint32 = 0x000f0000
+    OP_ADDIR_VAL              uint32 = 0x00100000
+    OP_XORIR_VAL              uint32 = 0x00110000
+    OP_MOVIR_VAL              uint32 = 0x00120000
+    OP_MOVZXIR_VAL            uint32 = 0x00130000
+    OP_ROL_VAL                uint32 = 0x00140000
+    OP_JMPEIP_VAL             uint32 = 0x00150000
+    OP_JMPZIP_VAL             uint32 = 0x00160000
+    OP_JMPNZIP_VAL            uint32 = 0x00170000
+    OP_JMPGIP_VAL             uint32 = 0x00180000
+    OP_MOVID_VAL              uint32 = 0x00190000
+    OP_JMPNOIP_VAL            uint32 = 0x001a0000
+    OP_SUBIR_VAL              uint32 = 0x001b0000
+    OP_PUSHI_VAL              uint32 = 0x001c0000
+    OP_JMPLEIP_VAL            uint32 = 0x001d0000
+    OP_JMPNSIP_VAL            uint32 = 0x001e0000
+    OP_CALLIP_VAL             uint32 = 0x001f0000
+    OP_ROR_VAL                uint32 = 0x00200000
+    OP_ORIR_VAL               uint32 = 0x00210000
+    OP_JMPOIP_VAL             uint32 = 0x00220000
+    OP_LSHIR_VAL              uint32 = 0x00230000
+    OP_POP_VAL                uint32 = 0x00240000
+    OP_JMPCIP_VAL             uint32 = 0x00250000
+    OP_PUSHR_VAL              uint32 = 0x00260000
+    OP_INCR_VAL               uint32 = 0x01000000
+    OP_MOVSH_VAL              uint32 = 0x02000000
+    OP_XCHGRR_VAL             uint32 = 0x03000000
+    OP_JMPNO_VAL              uint32 = 0x04000000
+    OP_MOVSB_VAL              uint32 = 0x05000000
+    OP_JMPZ_VAL               uint32 = 0x06000000
+    OP_JMPLE_VAL              uint32 = 0x07000000
+    OP_JMPNS_VAL              uint32 = 0x08000000
+    OP_JMPNC_VAL              uint32 = 0x09000000
+    OP_MOVSW_VAL              uint32 = 0x0a000000
+    OP_ANDRR_VAL              uint32 = 0x0b000000
+    OP_JMPNZ_VAL              uint32 = 0x0c000000
+    OP_SDF_VAL                uint32 = 0x0d000000
+    OP_MOVZXRR_VAL            uint32 = 0x0e000000
+    OP_MOVREPSW_VAL           uint32 = 0x0f000000
+    OP_NEG_VAL                uint32 = 0x10000000
+    OP_JMPNE_VAL              uint32 = 0x11000000
+    OP_JMPGE_VAL              uint32 = 0x12000000
+    OP_JMPL_VAL               uint32 = 0x13000000
+    OP_MOVSQ_VAL              uint32 = 0x14000000
+    OP_MOVREPSQ_VAL           uint32 = 0x15000000
+    OP_LSHRR_VAL              uint32 = 0x16000000
+    OP_DECR_VAL               uint32 = 0x17000000
+    OP_JMPE_VAL               uint32 = 0x18000000
+    OP_JMPO_VAL               uint32 = 0x19000000
+    OP_NOT_VAL                uint32 = 0x1a000000
+    OP_ORRR_VAL               uint32 = 0x1b000000
+    OP_RSHRR_VAL              uint32 = 0x1c000000
+    OP_JMPS_VAL               uint32 = 0x1d000000
+    OP_EXITR_VAL              uint32 = 0x1e000000
+    OP_MOVREPSH_VAL           uint32 = 0x1f000000
+    OP_JMPG_VAL               uint32 = 0x20000000
+    OP_CLR_VAL                uint32 = 0x21000000
+    OP_ADDRR_VAL              uint32 = 0x22000000
+    OP_MOVSXRR_VAL            uint32 = 0x23000000
+    OP_MULRR_VAL              uint32 = 0x24000000
+    OP_XORRR_VAL              uint32 = 0x25000000
+    OP_RET_VAL                uint32 = 0x26000000
+    OP_MOVREPSB_VAL           uint32 = 0x27000000
+    OP_DIVRR_VAL              uint32 = 0x28000000
+    OP_CALL_VAL               uint32 = 0x29000000
+    OP_EXITI_VAL              uint32 = 0x2a000000
+    OP_JMP_VAL                uint32 = 0x2b000000
+    OP_JMPC_VAL               uint32 = 0x2c000000
+    OP_CDF_VAL                uint32 = 0x2d000000
+    OP_NOP_VAL                uint32 = 0x2e000000
 )
 
 	

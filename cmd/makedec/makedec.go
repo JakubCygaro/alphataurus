@@ -31,6 +31,8 @@ func exitWithErr(format string, a ...any) {
 }
 
 type Spec struct {
+	// Instruction opcode name
+	Name string
 	// Instruction description
 	Desc string
 	// What bytes from the opcode portion of the instruction
@@ -53,10 +55,9 @@ type Spec struct {
 		Desc string
 	}
 }
-
 type OpSpec struct {
 	// Opcodes defined
-	Op map[string]Spec
+	Op []Spec
 }
 
 func main() {
@@ -122,28 +123,28 @@ package %s
 	}
 }
 
-func verifyOpSpec(opcode string, spec *Spec) error {
-	if strings.ContainsFunc(opcode, func(r rune) bool {
+func verifyOpSpec(spec *Spec) error {
+	if strings.ContainsFunc(spec.Name, func(r rune) bool {
 		return unicode.IsSpace(r) ||
 			(unicode.IsPunct(r) && r != '_') ||
 			unicode.IsControl(r)
 	}) {
 		return fmt.Errorf(
 			"Spec for opcode `%s` contains disallowed characters.",
-			opcode,
+			spec.Name,
 		)
 	}
 	if spec.Desc == "" {
 		return fmt.Errorf(
 			"Spec for opcode `%s` provides no description, "+
 				"please provide a description for this opcode.",
-			opcode,
+			spec.Name,
 		)
 	}
 	if spec.Reserve.Size < 0 || spec.Reserve.Size > 3 {
 		return fmt.Errorf(
 			"Spec for opcode `%s` reserves a disallowed amount of bytes (%d).",
-			opcode,
+			spec.Name,
 			spec.Reserve.Size,
 		)
 	}
@@ -157,7 +158,7 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 					"%d bits over the reserved %d.",
 				i,
 				bitDoc.Desc,
-				opcode,
+				spec.Name,
 				spec.Reserve.Size,
 				-reserved,
 				spec.Reserve.Size*8,
@@ -168,7 +169,7 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 				"Bit doc %d for opcode `%s` provides no usage description (desc). "+
 					"Please provide a usage description for these bits.",
 				i,
-				opcode,
+				spec.Name,
 			)
 		}
 	}
@@ -176,7 +177,7 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 		return fmt.Errorf(
 			"Spec for opcode `%s` does not document all reserved bits."+
 				" %d undocumented bits remain.",
-			opcode,
+			spec.Name,
 			reserved,
 		)
 	}
@@ -190,7 +191,7 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 					"%d bits over the maximum.",
 				i,
 				paramDoc.Desc,
-				opcode,
+				spec.Name,
 				-paramReserved,
 			)
 		}
@@ -199,7 +200,7 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 				"Param doc %d for opcode `%s` provides no usage description (desc). "+
 					"Please provide a description for these bits.",
 				i,
-				opcode,
+				spec.Name,
 			)
 		}
 	}
@@ -207,7 +208,7 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 		return fmt.Errorf(
 			"Spec for opcode `%s` does not document all parameter bits."+
 				" %d undocumented bits remain.",
-			opcode,
+			spec.Name,
 			paramReserved,
 		)
 	}
@@ -216,7 +217,6 @@ func verifyOpSpec(opcode string, spec *Spec) error {
 
 type OpcodeVal struct {
 	Prefix int
-	Name   string
 	Spec   Spec
 }
 
@@ -253,13 +253,13 @@ func (om *OpcodeMap) PushLayer(layer *OpcodeMap) error {
 	layer.Prev = om
 	return nil
 }
-func (om *OpcodeMap) PushSpec(name string, s Spec) error {
+func (om *OpcodeMap) PushSpec(s Spec) error {
 	if om.next >= OPCODE_MAP_MAX_LAYER {
 		return fmt.
-			Errorf("Maximum layer size reached with `%s`", name)
+			Errorf("Maximum layer size reached with `%s`", s.Name)
 	}
 	om.Layer[om.next] =
-		opt.MakeRight[*OpcodeMap](OpcodeVal{om.next, name, s})
+		opt.MakeRight[*OpcodeMap](OpcodeVal{om.next, s})
 	om.next++
 	return nil
 }
@@ -277,30 +277,30 @@ var layers = []LayerList{
 	make(LayerList, 0),
 }
 
-func insertIntoMap(m *OpcodeMap, name string, spec Spec) error {
+func insertIntoMap(m *OpcodeMap, spec Spec) error {
 	if m.depth > spec.Reserve.Size {
 		if m.LastNewLayer != nil &&
 			m.LastNewLayer.HasSpace() {
-			return insertIntoMap(m.LastNewLayer, name, spec)
+			return insertIntoMap(m.LastNewLayer, spec)
 		}
 		// backtrack case
 		if !m.HasSpace() {
 			if m.depth == 3 {
 				return fmt.
-					Errorf("Instruction opcode space exhausted with `%s`", name)
+					Errorf("Instruction opcode space exhausted with `%s`", spec.Name)
 			}
 			m.Prev.LastNewLayer = nil
-			return insertIntoMap(m.Prev, name, spec)
+			return insertIntoMap(m.Prev, spec)
 		}
 		lay := &OpcodeMap{}
 		if err := m.PushLayer(lay); err != nil {
 			return err
 		} else {
 			layers[lay.depth] = append(layers[lay.depth], lay)
-			return insertIntoMap(m.LastNewLayer, name, spec)
+			return insertIntoMap(m.LastNewLayer, spec)
 		}
 	} else if m.depth == spec.Reserve.Size {
-		return m.PushSpec(name, spec)
+		return m.PushSpec(spec)
 	}
 	return nil
 }
@@ -331,7 +331,7 @@ func assignLayer(ll LayerList) {
 }
 func writeOpcodeVals(sb *strings.Builder, code uint32, s OpcodeVal) {
 	maxWidth := 25
-	opV := fmt.Sprintf("OP_%s_VAL", s.Name)
+	opV := fmt.Sprintf("OP_%s_VAL", s.Spec.Name)
 	pad := maxWidth - len(opV)
 	fmt.Fprintf(
 		sb,
@@ -408,7 +408,7 @@ func writeOpcodeDecls(sb *strings.Builder, s OpcodeVal) {
 	fmt.Fprintf(
 		sb,
 		"    OP_%s OpCodeVal = iota\n",
-		s.Name,
+		s.Spec.Name,
 	)
 }
 
@@ -417,7 +417,7 @@ func writeOpcodeMap(sb *strings.Builder, code uint32, s OpcodeVal) {
 		sb,
 		"    0x%08x : OP_%s,\n",
 		code,
-		s.Name,
+		s.Spec.Name,
 	)
 }
 
@@ -455,24 +455,33 @@ func buildSourceAndTest(
 	source := strings.Builder{}
 	test := strings.Builder{}
 	layers[3] = append(layers[3], &m)
-	type pair struct {
-		Opcode string
-		Spec   Spec
-	}
-	sortedSpecs := make([]pair, 0)
-	for _, code := range slices.Sorted(maps.Keys(spec.Op)) {
-		sortedSpecs = append(sortedSpecs, pair{
-			Opcode: code,
-			Spec:   spec.Op[code],
-		})
-	}
-	for _, s := range sortedSpecs {
-		opcode := s.Opcode
-		spec := s.Spec
-		if err := verifyOpSpec(opcode, &spec); err != nil {
+	checkMap := make(map[string]struct{})
+	// type pair struct {
+	// 	Opcode string
+	// 	Spec   Spec
+	// }
+	// sortedSpecs := make([]pair, 0)
+	// for _, code := range slices.Sorted(maps.Keys(spec.Op)) {
+	// 	sortedSpecs = append(sortedSpecs, pair{
+	// 		Opcode: code,
+	// 		Spec:   spec.Op[code],
+	// 	})
+	// }
+	for _, s := range spec.Op {
+		opcode := s.Name
+		if _, used := checkMap[opcode]; used {
+			return "", "", fmt.Errorf(
+				"'%s' opcode duplication",
+				opcode,
+			)
+		} else {
+			checkMap[opcode] = struct{}{}
+		}
+		spec := s
+		if err := verifyOpSpec(&spec); err != nil {
 			return "", "", err
 		}
-		if err := insertIntoMap(&m, opcode, spec); err != nil {
+		if err := insertIntoMap(&m, spec); err != nil {
 			return "", "", err
 		}
 	}
@@ -487,7 +496,7 @@ func buildSourceAndTest(
 		"type OpCodeVal uint32\n" +
 			"const (\n",
 	)
-	if len(assignedOpcodes) != len(sortedSpecs) {
+	if len(assignedOpcodes) != len(spec.Op) {
 		return "", "", fmt.Errorf(
 			"Failed to assign all opcodes, input does not match output " +
 				"(this should not happen)",
@@ -556,8 +565,8 @@ func writeDecoderTest(sb *strings.Builder, code uint32, op OpcodeVal) {
 	}
 `,
 		testCode,
-		op.Name,
-		op.Name,
-		op.Name,
+		op.Spec.Name,
+		op.Spec.Name,
+		op.Spec.Name,
 	)
 }

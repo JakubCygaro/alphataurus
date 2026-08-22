@@ -1,1723 +1,2342 @@
-# Each instruction is comprised of an opcode section and a parameter section
-# The opcode section is 4 bytes and the parameter section is 8 bytes
-# Those sizes are fixed, every instruction is the same size
-# Some instructions store parameter information in the opcode section
-# For example the MOVIR instruction puts in the last byte of its opcode
-# the destination register and its size.
-# This is important when it comes to decoding the instructions since
-# parts of the opcode are variable and can be different yet still map to the same
-# instruction. An opcode for MOVIR with destination register r0 will look different
-# then the same instruction where the destination register is r1. The first 3 bytes will
-# be the same for both but the last byte will be different. The decoder is aware of this
-# and will disregard that last byte which will be analyzed by the virtual machine instead.
+[[op]]
+name = 'SUBRR'
+desc = 'Subtract source register value from destination register and store in destination'
 
-# defines an instruction in the instruction set
-[op.MOVIR]
-# describes the instruction
-desc = "Move immediate value into a register"
-# describes how many bytes in the opcode are reserved for parameters to the instruction
-reserve.size = 1
-# describes the function of each bit in the reserved bytes
-# from right to left, since the system is big endian
-[[op.MOVIR.reserve.doc]]
-# bits 0-3
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 40
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'Data type: singed integer, unsigned integer or 64-bit float'
+
+[[op.param]]
+bits = 2
+desc = 'size of source register'
+
+[[op.param]]
+bits = 2
+desc = 'size of destination register'
+
+[[op.param]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
 bits = 4
-desc = "Destination register"
-[[op.MOVIR.reserve.doc]]
-# bits 4-5
+desc = 'Source register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'INCR'
+desc = 'Increase the value of a register by one'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 4
+desc = 'operand register'
+
+[[op.param]]
+bits = 60
+desc = 'Unused'
+
+[[op]]
+name = 'MOVRDO1'
+desc = 'Move a value from a register into an address with a base register and an offset'
+
+[op.reserve]
+size = 2
+
+[[op.reserve.doc]]
 bits = 2
-desc = "Unused"
-[[op.MOVIR.reserve.doc]]
-# bits 6-7
+desc = 'Offset operand type'
+
+[[op.reserve.doc]]
 bits = 2
-desc = "Size of the destination register"
-# describes the function of the bits in the parameter section of the instruction
-[[op.MOVIR.param]]
+desc = 'Base register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Scale factor'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Base register'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
 bits = 64
-desc = "Immediate value, will be truncated to fit destination size"
+desc = 'Unsigned 64-bit immediate value offset'
 
+[[op]]
+name = 'MOVZXDRO2'
+desc = "Move a value from an address to a register with the address being derived from\na base register being offset by an index register and immediate value offset with zero extension\n"
 
-[op.MOVRR]
-desc = "Move a value from one register to another register"
-reserve.size = 1
-[[op.MOVRR.reserve.doc]]
+[op.reserve]
+size = 3
+
+[[op.reserve.doc]]
 bits = 2
-desc = "Source size"
-[[op.MOVRR.reserve.doc]]
+desc = "    Destination register size\n"
+
+[[op.reserve.doc]]
 bits = 2
-desc = "Destination size"
-[[op.MOVRR.reserve.doc]]
+desc = "    Scale factor\n"
+
+[[op.reserve.doc]]
 bits = 4
-desc = "Unused"
-[[op.MOVRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.MOVRR.param]]
-bits = 4
-desc = "Source register"
-[[op.MOVRR.param]]
+desc = "    Unused\n"
+
+[[op.reserve.doc]]
 bits = 2
-desc = "Source size"
-[[op.MOVRR.param]]
+desc = "    Offset operator (addition or subtraction)\n"
+
+[[op.reserve.doc]]
 bits = 2
-desc = "Destination size"
-[[op.MOVRR.param]]
+desc = "    size of base and index registers (both at once)\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Index register\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Base register\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Destination register\n"
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value offset'
+
+[[op]]
+name = 'MOVSH'
+desc = 'Move single half-from r5 to r6'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'XCHGRR'
+desc = 'Exchange values between one register and another'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Source register'
+
+[[op.param]]
+bits = 2
+desc = 'Source size'
+
+[[op.param]]
+bits = 2
+desc = 'Destination size'
+
+[[op.param]]
 bits = 52
-desc = "Unused"
+desc = 'Unused'
 
-[op.MOVDR]
-desc = "Move a value from an address to a register"
-reserve.size = 1
-[[op.MOVDR.reserve.doc]]
+[[op]]
+name = 'ANDIR'
+desc = 'Perform a logical bitwise AND operation between the values of source register and immediate value and store the result into the destination register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
 bits = 4
-desc = "Destination register"
-[[op.MOVDR.reserve.doc]]
+desc = 'Source register'
+
+[[op.reserve.doc]]
 bits = 2
-desc = "Destination size"
-[[op.MOVDR.reserve.doc]]
+desc = 'Data size'
+
+[[op.reserve.doc]]
 bits = 2
-desc = "Unused"
-[[op.MOVDR.param]]
+desc = 'Unused'
+
+[[op.param]]
 bits = 64
-desc = "Immediate address value"
+desc = 'Immediate value'
 
-[op.MOVDRO1]
-desc = "Move a value from an address to a register with the address being based in a register"
-reserve.size = 2
-[[op.MOVDRO1.reserve.doc]]
-bits = 2
-desc = "Type of arthmetic operation between the offset and the register"
-[[op.MOVDRO1.reserve.doc]]
-bits = 2
-desc = "Size of the base register"
-[[op.MOVDRO1.reserve.doc]]
-bits = 2
-desc = "Size of the destination register"
-[[op.MOVDRO1.reserve.doc]]
-bits = 2
-desc = "Scale factor type"
-[[op.MOVDRO1.reserve.doc]]
-bits = 4
-desc = "Base register"
-[[op.MOVDRO1.reserve.doc]]
-bits = 4
-desc = "Destination register"
-[[op.MOVDRO1.param]]
+[[op]]
+name = 'JMPNO'
+desc = 'Jump to an address if OF is not set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
 bits = 64
-desc = "Immediate value offset"
+desc = 'Immediate value address'
 
-[op.MOVDRO2]
-desc = '''
-Move a value from an address to a register with the address being derived from
-a base register being offset by an index register and immediate value offset
-'''
-reserve.size = 3
-[[op.MOVDRO2.reserve.doc]]
+[[op]]
+name = 'MOVDRO2'
+desc = "Move a value from an address to a register with the address being derived from\na base register being offset by an index register and immediate value offset\n"
+
+[op.reserve]
+size = 3
+
+[[op.reserve.doc]]
 bits = 2
-desc = '''
-    Destination register size
-'''
-[[op.MOVDRO2.reserve.doc]]
+desc = "    Destination register size\n"
+
+[[op.reserve.doc]]
 bits = 2
-desc = '''
-    Scale factor
-'''
-[[op.MOVDRO2.reserve.doc]]
+desc = "    Scale factor\n"
+
+[[op.reserve.doc]]
 bits = 4
-desc = '''
-    Unused
-'''
-[[op.MOVDRO2.reserve.doc]]
+desc = "    Unused\n"
+
+[[op.reserve.doc]]
 bits = 2
-desc = '''
-    Offset operator (addition or subtraction)
-'''
-[[op.MOVDRO2.reserve.doc]]
+desc = "    Offset operator (addition or subtraction)\n"
+
+[[op.reserve.doc]]
 bits = 2
-desc = '''
-    Size of base and index registers (both at once)
-'''
-[[op.MOVDRO2.reserve.doc]]
+desc = "    size of base and index registers (both at once)\n"
+
+[[op.reserve.doc]]
 bits = 4
-desc = '''
-    Index register
-'''
-[[op.MOVDRO2.reserve.doc]]
+desc = "    Index register\n"
+
+[[op.reserve.doc]]
 bits = 4
-desc = '''
-    Base register
-'''
-[[op.MOVDRO2.reserve.doc]]
+desc = "    Base register\n"
+
+[[op.reserve.doc]]
 bits = 4
-desc = '''
-    Destination register
-'''
-[[op.MOVDRO2.param]]
+desc = "    Destination register\n"
+
+[[op.param]]
 bits = 64
-desc = "Immediate value offset"
+desc = 'Immediate value offset'
 
-[op.MOVID]
-desc = '''
-Move immediate value into an address
-'''
-reserve.size = 1
-[[op.MOVID.reserve.doc]]
-bits = 2
-desc = '''Data size'''
-[[op.MOVID.reserve.doc]]
-bits = 6
-desc = '''Unused '''
-[[op.MOVID.param]]
-bits = 32
-desc = "Immediate value, 32-bit signed integer"
-[[op.MOVID.param]]
-bits = 32
-desc = "Address, 32-bit unsigned integer"
+[[op]]
+name = 'MOVSB'
+desc = 'Move single byte from r5 to r6'
 
-[op.MOVRD]
-desc = "Move a value from a register into an address"
-reserve.size = 1
-[[op.MOVRD.reserve.doc]]
-bits = 4
-desc = '''Source register'''
-[[op.MOVRD.reserve.doc]]
-bits = 2
-desc = '''Source register size'''
-[[op.MOVRD.reserve.doc]]
-bits = 2
-desc = '''Unused'''
+[op.reserve]
+size = 0
+doc = []
 
-[[op.MOVRD.param]]
+[[op.param]]
 bits = 64
-desc = '''Address as 64-bit immediate value unsigned integer'''
+desc = 'Unused'
 
-[op.MOVRDO1]
-desc = "Move a value from a register into an address with a base register and an offset"
-reserve.size = 2
+[[op]]
+name = 'LEADRO2'
+desc = "Load effective address to a register with the address being derived from\na base register being offset by an index register and immediate value offset\n"
 
-[[op.MOVRDO1.reserve.doc]]
+[op.reserve]
+size = 3
+
+[[op.reserve.doc]]
 bits = 2
-desc = 'Offset operand type'
-[[op.MOVRDO1.reserve.doc]]
+desc = "    Destination register size\n"
+
+[[op.reserve.doc]]
 bits = 2
-desc = 'Base register size'
-[[op.MOVRDO1.reserve.doc]]
+desc = "    Scale factor\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Unused\n"
+
+[[op.reserve.doc]]
+bits = 2
+desc = "    Offset operator (addition or subtraction)\n"
+
+[[op.reserve.doc]]
+bits = 2
+desc = "    size of base and index registers (both at once)\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Index register\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Base register\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Destination register\n"
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value offset'
+
+[[op]]
+name = 'JMPZ'
+desc = 'Jump to an address if ZF is set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPLE'
+desc = 'Jump to an address if ZF is set and SF is set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPNS'
+desc = 'Jump to an address if SF is not set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPNC'
+desc = 'Jump to an address if CF is not set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPNEIP'
+desc = 'IP-relative jump to an address if ZF is not set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'MOVRD'
+desc = 'Move a value from a register into an address'
+[op.reserve]
+size = 1
+[[op.reserve.doc]]
+bits = 4
+desc = 'Source register'
+[[op.reserve.doc]]
+bits = 2
+desc = 'Source register size'
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+[[op.param]]
+bits = 64
+desc = 'Address as 64-bit immediate value unsigned integer'
+
+[[op]]
+name = 'MOVRDO2'
+desc = 'Move a value from a register into an address with a base register, index register and an offset'
+
+[op.reserve]
+size = 3
+
+[[op.reserve.doc]]
 bits = 2
 desc = 'Destination register size'
-[[op.MOVRDO1.reserve.doc]]
+
+[[op.reserve.doc]]
 bits = 2
-desc = 'Scale factor'
-[[op.MOVRDO1.reserve.doc]]
+desc = 'size factor'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Unused'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator type'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Base and index register size'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
 bits = 4
 desc = 'Base register'
-[[op.MOVRDO1.reserve.doc]]
+
+[[op.reserve.doc]]
 bits = 4
 desc = 'Destination register'
 
-[[op.MOVRDO1.param]]
+[[op.param]]
 bits = 64
 desc = 'Unsigned 64-bit immediate value offset'
 
-[op.MOVRDO2]
-desc = "Move a value from a register into an address with a base register, index register and an offset"
-reserve.size = 3
+[[op]]
+name = 'MOVZXDRO1'
+desc = 'Move a value from an address to a register with the address being based in a register with zero extension'
 
-[[op.MOVRDO2.reserve.doc]]
+[op.reserve]
+size = 2
+
+[[op.reserve.doc]]
 bits = 2
-desc = 'Destination register size'
-[[op.MOVRDO2.reserve.doc]]
+desc = 'Type of arthmetic operation between the offset and the register'
+
+[[op.reserve.doc]]
 bits = 2
-desc = 'Size factor'
-[[op.MOVRDO2.reserve.doc]]
-bits = 4
-desc = 'Unused'
-[[op.MOVRDO2.reserve.doc]]
+desc = 'size of the base register'
+
+[[op.reserve.doc]]
 bits = 2
-desc = 'Offset operator type'
-[[op.MOVRDO2.reserve.doc]]
+desc = 'size of the destination register'
+
+[[op.reserve.doc]]
 bits = 2
-desc = 'Base and index register size'
-[[op.MOVRDO2.reserve.doc]]
-bits = 4
-desc = 'Index register'
-[[op.MOVRDO2.reserve.doc]]
+desc = 'Scale factor type'
+
+[[op.reserve.doc]]
 bits = 4
 desc = 'Base register'
-[[op.MOVRDO2.reserve.doc]]
+
+[[op.reserve.doc]]
 bits = 4
 desc = 'Destination register'
 
-[[op.MOVRDO2.param]]
+[[op.param]]
 bits = 64
-desc = 'Unsigned 64-bit immediate value offset'
+desc = 'Immediate value offset'
 
-[op.MOVIDO1_NO]
-desc = "Move immediate value into an address with a base register and NO offset"
-reserve.size = 2
+[[op]]
+name = 'MOVSW'
+desc = 'Move single word r5 to r6'
 
-[[op.MOVIDO1_NO.reserve.doc]]
-bits = 2
-desc = 'Offset operand type'
-[[op.MOVIDO1_NO.reserve.doc]]
-bits = 2
-desc = 'Base register size'
-[[op.MOVIDO1_NO.reserve.doc]]
-bits = 2
-desc = 'Destination address size'
-[[op.MOVIDO1_NO.reserve.doc]]
-bits = 2
-desc = 'Scale factor'
-[[op.MOVIDO1_NO.reserve.doc]]
-bits = 4
-desc = 'Base register'
-[[op.MOVIDO1_NO.reserve.doc]]
-bits = 4
-desc = 'Unused'
+[op.reserve]
+size = 0
+doc = []
 
-[[op.MOVIDO1_NO.param]]
+[[op.param]]
 bits = 64
-desc = "Unsigned 64-bit integer immediate value"
+desc = 'Unused'
 
+[[op]]
+name = 'ANDRR'
+desc = 'Perform a logical bitwise AND operation between the values of source and destination registers and store the result into the destination register'
 
-[op.MOVIDO1]
-desc = "Move immediate value into an address with a base register and NO offset"
-reserve.size = 2
+[op.reserve]
+size = 0
+doc = []
 
-[[op.MOVIDO1.reserve.doc]]
+[[op.param]]
+bits = 40
+desc = 'Unused'
+
+[[op.param]]
 bits = 2
-desc = 'Offset operand type'
-[[op.MOVIDO1.reserve.doc]]
+desc = 'Unused'
+
+[[op.param]]
 bits = 2
-desc = 'Base register size'
-[[op.MOVIDO1.reserve.doc]]
+desc = 'size of source register'
+
+[[op.param]]
 bits = 2
-desc = 'Destination address size'
-[[op.MOVIDO1.reserve.doc]]
+desc = 'size of destination register'
+
+[[op.param]]
 bits = 2
-desc = 'Scale factor'
-[[op.MOVIDO1.reserve.doc]]
+desc = 'Unused'
+
+[[op.param]]
 bits = 4
-desc = 'Base register'
-[[op.MOVIDO1.reserve.doc]]
+desc = 'Source register'
+
+[[op.param]]
 bits = 4
 desc = 'Unused'
 
-[[op.MOVIDO1.param]]
-bits = 32
-desc = "Unsigned 32-bit integer immediate value"
-[[op.MOVIDO1.param]]
-bits = 32
-desc = "Signed 32-bit integer immediate value offset"
-
-[op.MOVIDO2_NO]
-desc = "Move immediate value into an address with a base register, index register and NO offset"
-reserve.size = 3
-
-[[op.MOVIDO2_NO.reserve.doc]]
-bits = 2
-desc = 'Unused'
-[[op.MOVIDO2_NO.reserve.doc]]
-bits = 2
-desc = 'Size factor'
-[[op.MOVIDO2_NO.reserve.doc]]
-bits = 4
-desc = 'Unused'
-[[op.MOVIDO2_NO.reserve.doc]]
-bits = 2
-desc = 'Offset operator type'
-[[op.MOVIDO2_NO.reserve.doc]]
-bits = 2
-desc = 'Base and index register size'
-[[op.MOVIDO2_NO.reserve.doc]]
-bits = 4
-desc = 'Index register'
-[[op.MOVIDO2_NO.reserve.doc]]
-bits = 4
-desc = 'Base register'
-[[op.MOVIDO2_NO.reserve.doc]]
+[[op.param]]
 bits = 4
 desc = 'Destination register'
 
-[[op.MOVIDO2_NO.param]]
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'JMPLIP'
+desc = 'IP-relative jump to an address if ZF is not set and SF is set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'JMPNCIP'
+desc = 'IP-relative jump to an address if CF not is set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'CMPIR'
+desc = 'Compare values in registers by subtracting the immediate value subtrahent register from the minuend and setting flags'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data type'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data size'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Minuend register'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value subtrahent'
+
+[[op]]
+name = 'MOVRR'
+desc = 'Move a value from one register to another register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Source size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination size'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Source register'
+
+[[op.param]]
+bits = 2
+desc = 'Source size'
+
+[[op.param]]
+bits = 2
+desc = 'Destination size'
+
+[[op.param]]
+bits = 52
+desc = 'Unused'
+
+[[op]]
+name = 'MOVDR'
+desc = 'Move a value from an address to a register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate address value'
+
+[[op]]
+name = 'MOVIDO2_NO'
+desc = 'Move immediate value into an address with a base register, index register and NO offset'
+
+[op.reserve]
+size = 3
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size factor'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Unused'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator type'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Base and index register size'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Base register'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
 bits = 64
 desc = '64-bit immediate value'
 
+[[op]]
+name = 'XCHGDR'
+desc = 'Exchange values between an address and a register'
 
-[op.MOVIDO2]
-desc = "Move immediate value into an address with a base register, index register and NO offset"
-reserve.size = 3
+[op.reserve]
+size = 1
 
-[[op.MOVIDO2.reserve.doc]]
-bits = 2
-desc = 'Unused'
-[[op.MOVIDO2.reserve.doc]]
-bits = 2
-desc = 'Size factor'
-[[op.MOVIDO2.reserve.doc]]
-bits = 4
-desc = 'Unused'
-[[op.MOVIDO2.reserve.doc]]
-bits = 2
-desc = 'Offset operator type'
-[[op.MOVIDO2.reserve.doc]]
-bits = 2
-desc = 'Base and index register size'
-[[op.MOVIDO2.reserve.doc]]
-bits = 4
-desc = 'Index register'
-[[op.MOVIDO2.reserve.doc]]
-bits = 4
-desc = 'Base register'
-[[op.MOVIDO2.reserve.doc]]
+[[op.reserve.doc]]
 bits = 4
 desc = 'Destination register'
 
-[[op.MOVIDO2.param]]
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate address value'
+
+[[op]]
+name = 'JMPNZ'
+desc = 'Jump to an address if ZF is not set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'MOVZXDR'
+desc = 'Move a value from an address to a register with zero extension'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate address value'
+
+[[op]]
+name = 'RSHIR'
+desc = 'Perform a logical bitwise RSH operation between the values of source register and immediate value and store the result into the destination register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Source register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value'
+
+[[op]]
+name = 'JMPIP'
+desc = 'IP-relative unconditional jump to an address'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'JMPGEIP'
+desc = 'IP-relative jump to an address if ZF is set and SF is not set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'JMPSIP'
+desc = 'IP-relative jump to an address if SF is set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'CMPRR'
+desc = 'Compare values in registers by subtracting the subtrahent register from the minuend and setting flags'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Minuend register'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Subtrahent register'
+
+[[op.param]]
+bits = 2
+desc = 'Data type'
+
+[[op.param]]
+bits = 6
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'Data size'
+
+[[op.param]]
+bits = 54
+desc = 'Unused'
+
+[[op]]
+name = 'SDF'
+desc = 'Set direction flag DF'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'MOVIDO2'
+desc = 'Move immediate value into an address with a base register, index register and NO offset'
+
+[op.reserve]
+size = 3
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size factor'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Unused'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator type'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Base and index register size'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Base register'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
 bits = 32
 desc = '32-bit immediate value'
-[[op.MOVIDO2.param]]
+
+[[op.param]]
 bits = 32
 desc = 'Signed 32-bit immediate value'
 
-[op.MOVSXRR]
-desc = "Move a value from one register to another register with sign extension"
-reserve.size = 0
-[[op.MOVSXRR.param]]
+[[op]]
+name = 'MOVZXRR'
+desc = 'Move a value from one register to another register with zero extension'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
 bits = 4
-desc = "Destination register"
-[[op.MOVSXRR.param]]
+desc = 'Destination register'
+
+[[op.param]]
 bits = 4
-desc = "Source register"
-[[op.MOVSXRR.param]]
+desc = 'Source register'
+
+[[op.param]]
 bits = 2
-desc = "Source size"
-[[op.MOVSXRR.param]]
+desc = 'Source size'
+
+[[op.param]]
 bits = 2
-desc = "Destination size"
-[[op.MOVSXRR.param]]
+desc = 'Destination size'
+
+[[op.param]]
 bits = 52
-desc = "Unused"
+desc = 'Unused'
 
-[op.MOVZXRR]
-desc = "Move a value from one register to another register with zero extension"
-reserve.size = 0
-[[op.MOVZXRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.MOVZXRR.param]]
-bits = 4
-desc = "Source register"
-[[op.MOVZXRR.param]]
-bits = 2
-desc = "Source size"
-[[op.MOVZXRR.param]]
-bits = 2
-desc = "Destination size"
-[[op.MOVZXRR.param]]
-bits = 52
-desc = "Unused"
+[[op]]
+name = 'MOVREPSW'
+desc = 'Move single word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.'
 
-[op.MOVZXIR]
-desc = "Move immediate value into a register with zero extension"
-reserve.size = 1
-[[op.MOVZXIR.reserve.doc]]
-bits = 4
-desc = "Destination register"
-[[op.MOVZXIR.reserve.doc]]
-bits = 2
-desc = "Unused"
-[[op.MOVZXIR.reserve.doc]]
-bits = 2
-desc = "Size of the destination register"
-[[op.MOVZXIR.param]]
-bits = 64
-desc = "Immediate value"
+[op.reserve]
+size = 0
+doc = []
 
-[op.MOVZXDR]
-desc = "Move a value from an address to a register with zero extension"
-reserve.size = 1
-[[op.MOVZXDR.reserve.doc]]
-bits = 4
-desc = "Destination register"
-[[op.MOVZXDR.reserve.doc]]
-bits = 2
-desc = "Destination size"
-[[op.MOVZXDR.reserve.doc]]
-bits = 2
-desc = "Unused"
-[[op.MOVZXDR.param]]
-bits = 64
-desc = "Immediate address value"
-
-[op.MOVZXDRO1]
-desc = "Move a value from an address to a register with the address being based in a register with zero extension"
-reserve.size = 2
-[[op.MOVZXDRO1.reserve.doc]]
-bits = 2
-desc = "Type of arthmetic operation between the offset and the register"
-[[op.MOVZXDRO1.reserve.doc]]
-bits = 2
-desc = "Size of the base register"
-[[op.MOVZXDRO1.reserve.doc]]
-bits = 2
-desc = "Size of the destination register"
-[[op.MOVZXDRO1.reserve.doc]]
-bits = 2
-desc = "Scale factor type"
-[[op.MOVZXDRO1.reserve.doc]]
-bits = 4
-desc = "Base register"
-[[op.MOVZXDRO1.reserve.doc]]
-bits = 4
-desc = "Destination register"
-[[op.MOVZXDRO1.param]]
-bits = 64
-desc = "Immediate value offset"
-
-[op.MOVZXDRO2]
-desc = '''
-Move a value from an address to a register with the address being derived from
-a base register being offset by an index register and immediate value offset with zero extension
-'''
-reserve.size = 3
-[[op.MOVZXDRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Destination register size
-'''
-[[op.MOVZXDRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Scale factor
-'''
-[[op.MOVZXDRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Unused
-'''
-[[op.MOVZXDRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Offset operator (addition or subtraction)
-'''
-[[op.MOVZXDRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Size of base and index registers (both at once)
-'''
-[[op.MOVZXDRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Index register
-'''
-[[op.MOVZXDRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Base register
-'''
-[[op.MOVZXDRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Destination register
-'''
-[[op.MOVZXDRO2.param]]
-bits = 64
-desc = "Immediate value offset"
-
-[op.MOVSB]
-desc = "Move single byte from r5 to r6"
-reserve.size = 0
-[[op.MOVSB.param]]
+[[op.param]]
 bits = 64
 desc = 'Unused'
 
-[op.MOVREPSB]
-desc = "Move single byte from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6."
-reserve.size = 0
-[[op.MOVREPSB.param]]
+[[op]]
+name = 'XCHGDRO2'
+desc = "Exchange values between an address and a register with the address being derived from\na base register being offset by an index register and immediate value offset with zero extension\n"
+
+[op.reserve]
+size = 3
+
+[[op.reserve.doc]]
+bits = 2
+desc = "    Destination register size\n"
+
+[[op.reserve.doc]]
+bits = 2
+desc = "    Scale factor\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Unused\n"
+
+[[op.reserve.doc]]
+bits = 2
+desc = "    Offset operator (addition or subtraction)\n"
+
+[[op.reserve.doc]]
+bits = 2
+desc = "    size of base and index registers (both at once)\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Index register\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Base register\n"
+
+[[op.reserve.doc]]
+bits = 4
+desc = "    Destination register\n"
+
+[[op.param]]
 bits = 64
-desc = 'Unused'
+desc = 'Immediate value offset'
 
-[op.MOVSQ]
-desc = "Move single quarter-word from r5 to r6"
-reserve.size = 0
-[[op.MOVSQ.param]]
+[[op]]
+name = 'ADDIR'
+desc = 'Add immediate value into the destination register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data type - refer to ADDRR documentation'
+
+[[op.param]]
 bits = 64
-desc = 'Unused'
+desc = 'Immediate value'
 
-[op.MOVREPSQ]
-desc = "Move single quarter-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6."
-reserve.size = 0
-[[op.MOVREPSQ.param]]
-bits = 64
-desc = 'Unused'
-
-[op.MOVSH]
-desc = "Move single half-from r5 to r6"
-reserve.size = 0
-[[op.MOVSH.param]]
-bits = 64
-desc = 'Unused'
-
-[op.MOVREPSH]
-desc = "Move single half-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6."
-reserve.size = 0
-[[op.MOVREPSH.param]]
-bits = 64
-desc = 'Unused'
-
-[op.MOVSW]
-desc = "Move single word r5 to r6"
-reserve.size = 0
-[[op.MOVSW.param]]
-bits = 64
-desc = 'Unused'
-
-[op.MOVREPSW]
-desc = "Move single word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6."
-reserve.size = 0
-[[op.MOVREPSW.param]]
-bits = 64
-desc = 'Unused'
-
-[op.XCHGRR]
-desc = "Exchange values between one register and another"
-reserve.size = 0
-[[op.XCHGRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.XCHGRR.param]]
-bits = 4
-desc = "Source register"
-[[op.XCHGRR.param]]
-bits = 2
-desc = "Source size"
-[[op.XCHGRR.param]]
-bits = 2
-desc = "Destination size"
-[[op.XCHGRR.param]]
-bits = 52
-desc = "Unused"
-
-[op.XCHGDR]
-desc = "Exchange values between an address and a register"
-reserve.size = 1
-[[op.XCHGDR.reserve.doc]]
-bits = 4
-desc = "Destination register"
-[[op.XCHGDR.reserve.doc]]
-bits = 2
-desc = "Destination size"
-[[op.XCHGDR.reserve.doc]]
-bits = 2
-desc = "Unused"
-[[op.XCHGDR.param]]
-bits = 64
-desc = "Immediate address value"
-
-[op.XCHGDRO1]
-desc = "Exchange values between an address and a register with the address being based in a register"
-reserve.size = 2
-[[op.XCHGDRO1.reserve.doc]]
-bits = 2
-desc = "Type of arthmetic operation between the offset and the register"
-[[op.XCHGDRO1.reserve.doc]]
-bits = 2
-desc = "Size of the base register"
-[[op.XCHGDRO1.reserve.doc]]
-bits = 2
-desc = "Size of the destination register"
-[[op.XCHGDRO1.reserve.doc]]
-bits = 2
-desc = "Scale factor type"
-[[op.XCHGDRO1.reserve.doc]]
-bits = 4
-desc = "Base register"
-[[op.XCHGDRO1.reserve.doc]]
-bits = 4
-desc = "Destination register"
-[[op.XCHGDRO1.param]]
-bits = 64
-desc = "Immediate value offset"
-
-[op.XCHGDRO2]
-desc = '''
-Exchange values between an address and a register with the address being derived from
-a base register being offset by an index register and immediate value offset with zero extension
-'''
-reserve.size = 3
-[[op.XCHGDRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Destination register size
-'''
-[[op.XCHGDRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Scale factor
-'''
-[[op.XCHGDRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Unused
-'''
-[[op.XCHGDRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Offset operator (addition or subtraction)
-'''
-[[op.XCHGDRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Size of base and index registers (both at once)
-'''
-[[op.XCHGDRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Index register
-'''
-[[op.XCHGDRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Base register
-'''
-[[op.XCHGDRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Destination register
-'''
-[[op.XCHGDRO2.param]]
-bits = 64
-desc = "Immediate value offset"
-
-[op.LEADRO1]
-desc = "Load effective address into a register with the address being based in a register"
-reserve.size = 2
-[[op.LEADRO1.reserve.doc]]
-bits = 2
-desc = "Type of arthmetic operation between the offset and the register"
-[[op.LEADRO1.reserve.doc]]
-bits = 2
-desc = "Size of the base register"
-[[op.LEADRO1.reserve.doc]]
-bits = 2
-desc = "Size of the destination register"
-[[op.LEADRO1.reserve.doc]]
-bits = 2
-desc = "Scale factor type"
-[[op.LEADRO1.reserve.doc]]
-bits = 4
-desc = "Base register"
-[[op.LEADRO1.reserve.doc]]
-bits = 4
-desc = "Destination register"
-[[op.LEADRO1.param]]
-bits = 64
-desc = "Immediate value offset"
-
-[op.LEADRO2]
-desc = '''
-Load effective address to a register with the address being derived from
-a base register being offset by an index register and immediate value offset
-'''
-reserve.size = 3
-[[op.LEADRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Destination register size
-'''
-[[op.LEADRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Scale factor
-'''
-[[op.LEADRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Unused
-'''
-[[op.LEADRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Offset operator (addition or subtraction)
-'''
-[[op.LEADRO2.reserve.doc]]
-bits = 2
-desc = '''
-    Size of base and index registers (both at once)
-'''
-[[op.LEADRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Index register
-'''
-[[op.LEADRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Base register
-'''
-[[op.LEADRO2.reserve.doc]]
-bits = 4
-desc = '''
-    Destination register
-'''
-[[op.LEADRO2.param]]
-bits = 64
-desc = "Immediate value offset"
-
-[op.ADDRR]
-desc = "Add value from the source register into the destination register"
-reserve.size = 0
-
-[[op.ADDRR.param]]
-bits = 40
-desc = "Unused"
-[[op.ADDRR.param]]
-bits = 2
-desc = "Data type: singed integer, unsigned integer or 64-bit float"
-[[op.ADDRR.param]]
-bits = 2
-desc = "Size of source register"
-[[op.ADDRR.param]]
-bits = 2
-desc = "Size of destination register"
-[[op.ADDRR.param]]
-bits = 2
-desc = "Unused"
-[[op.ADDRR.param]]
-bits = 4
-desc = "Source register"
-[[op.ADDRR.param]]
-bits = 4
-desc = "Unused"
-[[op.ADDRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.ADDRR.param]]
-bits = 4
-desc = "Unused"
-
-[op.ADDIR]
-desc = "Add immediate value into the destination register"
-reserve.size = 1
-[[op.ADDIR.reserve.doc]]
-bits = 4
-desc = "Destination register"
-[[op.ADDIR.reserve.doc]]
-bits = 2
-desc = "Destination register size"
-[[op.ADDIR.reserve.doc]]
-bits = 2
-desc = "Data type - refer to ADDRR documentation"
-[[op.ADDIR.param]]
-bits = 64
-desc = "Immediate value"
-
-[op.SUBRR]
-desc = "Subtract source register value from destination register and store in destination"
-reserve.size = 0
-
-[[op.SUBRR.param]]
-bits = 40
-desc = "Unused"
-[[op.SUBRR.param]]
-bits = 2
-desc = "Data type: singed integer, unsigned integer or 64-bit float"
-[[op.SUBRR.param]]
-bits = 2
-desc = "Size of source register"
-[[op.SUBRR.param]]
-bits = 2
-desc = "Size of destination register"
-[[op.SUBRR.param]]
-bits = 2
-desc = "Unused"
-[[op.SUBRR.param]]
-bits = 4
-desc = "Source register"
-[[op.SUBRR.param]]
-bits = 4
-desc = "Unused"
-[[op.SUBRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.SUBRR.param]]
-bits = 4
-desc = "Unused"
-
-[op.SUBIR]
-desc = "Subtract immediate value from the destination register and store in destination"
-reserve.size = 1
-[[op.SUBIR.reserve.doc]]
-bits = 4
-desc = "Destination register"
-[[op.SUBIR.reserve.doc]]
-bits = 2
-desc = "Destination register size"
-[[op.SUBIR.reserve.doc]]
-bits = 2
-desc = "Data type - refer to ADDRR documentation"
-[[op.SUBIR.param]]
-bits = 64
-desc = "Immediate value"
-
-[op.MULRR]
-desc = "Multiply r0 by r1 and store the product into r2"
-reserve.size = 0
-[[op.MULRR.param]]
-bits = 56
-desc = "Unused"
-[[op.MULRR.param]]
-bits = 4
-desc = "Size of operands and r2"
-[[op.MULRR.param]]
-bits = 4
-desc = "Unused"
-
-[op.DIVRR]
-desc = "Divide r0 by r1 and store the quotient into r2 and the remainder into r3"
-reserve.size = 0
-[[op.DIVRR.param]]
-bits = 56
-desc = "Unused"
-[[op.DIVRR.param]]
-bits = 4
-desc = "Size of operands and r2"
-[[op.DIVRR.param]]
-bits = 4
-desc = "Unused"
-
-[op.NOT]
-desc = "Bitwise NOT on register value"
-reserve.size = 0
-[[op.NOT.param]]
-bits = 48
-desc = "Unused"
-[[op.NOT.param]]
-bits = 4
-desc = "Data size"
-[[op.NOT.param]]
-bits = 4
-desc = "Unused"
-[[op.NOT.param]]
-bits = 4
-desc = "Operand register"
-[[op.NOT.param]]
-bits = 4
-desc = "Unused"
-
-[op.NEG]
+[[op]]
+name = 'NEG'
 desc = "Negation (two's complement) of register value"
-reserve.size = 0
-[[op.NEG.param]]
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
 bits = 40
-desc = "Unused"
-[[op.NEG.param]]
-bits = 4
-desc = "Data type"
-[[op.NEG.param]]
-bits = 4
-desc = "Unused"
-[[op.NEG.param]]
-bits = 4
-desc = "Data size"
-[[op.NEG.param]]
-bits = 4
-desc = "Unused"
-[[op.NEG.param]]
-bits = 4
-desc = "Operand register"
-[[op.NEG.param]]
-bits = 4
-desc = "Unused"
+desc = 'Unused'
 
-[op.ROL]
-desc = "Rotate left the bits in a register"
-reserve.size = 1
-[[op.ROL.reserve.doc]]
-desc = "Operand register size"
+[[op.param]]
 bits = 4
-[[op.ROL.reserve.doc]]
-desc = "Operand register"
+desc = 'Data type'
+
+[[op.param]]
 bits = 4
-[[op.ROL.param]]
-desc = "Unsigned 64-bit integer rotation amount immediate value"
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Data size'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'operand register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'XORIR'
+desc = 'Perform a logical bitwise XOR operation between the values of source register and immediate value and store the result into the destination register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Source register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
 bits = 64
+desc = 'Immediate value'
 
-[op.ROR]
-desc = "Rotate right the bits in a register"
-reserve.size = 1
-[[op.ROR.reserve.doc]]
-desc = "Operand register size"
-bits = 4
-[[op.ROR.reserve.doc]]
-desc = "Operand register"
-bits = 4
-[[op.ROR.param]]
-desc = "Unsigned 64-bit integer rotation amount immediate value"
+[[op]]
+name = 'JMPNE'
+desc = 'Jump to an address if ZF is not set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
 bits = 64
+desc = 'Immediate value address'
 
-[op.ANDRR]
-desc = "Perform a logical bitwise AND operation between the values of source and destination registers and store the result into the destination register"
-reserve.size = 0
+[[op]]
+name = 'MOVIR'
+desc = 'Move immediate value into a register'
 
-[[op.ANDRR.param]]
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size of the destination register'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value, will be truncated to fit destination size'
+
+[[op]]
+name = 'MOVZXIR'
+desc = 'Move immediate value into a register with zero extension'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size of the destination register'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value'
+
+[[op]]
+name = 'JMPGE'
+desc = 'Jump to an address if ZF is set and SF is not set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPL'
+desc = 'Jump to an address if ZF is not set and SF is set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'MOVSQ'
+desc = 'Move single quarter-word from r5 to r6'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'MOVREPSQ'
+desc = 'Move single quarter-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'ROL'
+desc = 'Rotate left the bits in a register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'operand register size'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'operand register'
+
+[[op.param]]
+bits = 64
+desc = 'Unsigned 64-bit integer rotation amount immediate value'
+
+[[op]]
+name = 'LSHRR'
+desc = 'Perform a logical bitwise LSH operation between the values of source and destination registers and store the result into the destination register'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
 bits = 40
-desc = "Unused"
-[[op.ANDRR.param]]
-bits = 2
-desc = "Unused"
-[[op.ANDRR.param]]
-bits = 2
-desc = "Size of source register"
-[[op.ANDRR.param]]
-bits = 2
-desc = "Size of destination register"
-[[op.ANDRR.param]]
-bits = 2
-desc = "Unused"
-[[op.ANDRR.param]]
-bits = 4
-desc = "Source register"
-[[op.ANDRR.param]]
-bits = 4
-desc = "Unused"
-[[op.ANDRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.ANDRR.param]]
-bits = 4
-desc = "Unused"
+desc = 'Unused'
 
-[op.ANDIR]
-desc = "Perform a logical bitwise AND operation between the values of source register and immediate value and store the result into the destination register"
-reserve.size = 1
-[[op.ANDIR.reserve.doc]]
-bits = 4
-desc = "Source register"
-[[op.ANDIR.reserve.doc]]
+[[op.param]]
 bits = 2
-desc = "Data size"
-[[op.ANDIR.reserve.doc]]
-bits = 2
-desc = "Unused"
-[[op.ANDIR.param]]
-bits = 64
-desc = "Immediate value"
+desc = 'Unused'
 
-[op.ORRR]
-desc = "Perform a logical bitwise OR operation between the values of source and destination registers and store the result into the destination register"
-reserve.size = 0
-[[op.ORRR.param]]
-bits = 40
-desc = "Unused"
-[[op.ORRR.param]]
+[[op.param]]
 bits = 2
-desc = "Unused"
-[[op.ORRR.param]]
-bits = 2
-desc = "Size of source register"
-[[op.ORRR.param]]
-bits = 2
-desc = "Size of destination register"
-[[op.ORRR.param]]
-bits = 2
-desc = "Unused"
-[[op.ORRR.param]]
-bits = 4
-desc = "Source register"
-[[op.ORRR.param]]
-bits = 4
-desc = "Unused"
-[[op.ORRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.ORRR.param]]
-bits = 4
-desc = "Unused"
+desc = 'size of source register'
 
-[op.ORIR]
-desc = "Perform a logical bitwise OR operation between the values of source register and immediate value and store the result into the destination register"
-reserve.size = 1
-[[op.ORIR.reserve.doc]]
-bits = 4
-desc = "Source register"
-[[op.ORIR.reserve.doc]]
+[[op.param]]
 bits = 2
-desc = "Data size"
-[[op.ORIR.reserve.doc]]
-bits = 2
-desc = "Unused"
-[[op.ORIR.param]]
-bits = 64
-desc = "Immediate value"
+desc = 'size of destination register'
 
-[op.XORRR]
-desc = "Perform a logical bitwise XOR operation between the values of source and destination registers and store the result into the destination register"
-reserve.size = 0
-[[op.XORRR.param]]
-bits = 40
-desc = "Unused"
-[[op.XORRR.param]]
+[[op.param]]
 bits = 2
-desc = "Unused"
-[[op.XORRR.param]]
-bits = 2
-desc = "Size of source register"
-[[op.XORRR.param]]
-bits = 2
-desc = "Size of destination register"
-[[op.XORRR.param]]
-bits = 2
-desc = "Unused"
-[[op.XORRR.param]]
-bits = 4
-desc = "Source register"
-[[op.XORRR.param]]
-bits = 4
-desc = "Unused"
-[[op.XORRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.XORRR.param]]
-bits = 4
-desc = "Unused"
+desc = 'Unused'
 
-[op.XORIR]
-desc = "Perform a logical bitwise XOR operation between the values of source register and immediate value and store the result into the destination register"
-reserve.size = 1
-[[op.XORIR.reserve.doc]]
+[[op.param]]
 bits = 4
-desc = "Source register"
-[[op.XORIR.reserve.doc]]
-bits = 2
-desc = "Data size"
-[[op.XORIR.reserve.doc]]
-bits = 2
-desc = "Unused"
-[[op.XORIR.param]]
-bits = 64
-desc = "Immediate value"
+desc = 'Source register'
 
-[op.LSHRR]
-desc = "Perform a logical bitwise LSH operation between the values of source and destination registers and store the result into the destination register"
-reserve.size = 0
-[[op.LSHRR.param]]
-bits = 40
-desc = "Unused"
-[[op.LSHRR.param]]
-bits = 2
-desc = "Unused"
-[[op.LSHRR.param]]
-bits = 2
-desc = "Size of source register"
-[[op.LSHRR.param]]
-bits = 2
-desc = "Size of destination register"
-[[op.LSHRR.param]]
-bits = 2
-desc = "Unused"
-[[op.LSHRR.param]]
+[[op.param]]
 bits = 4
-desc = "Source register"
-[[op.LSHRR.param]]
-bits = 4
-desc = "Unused"
-[[op.LSHRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.LSHRR.param]]
-bits = 4
-desc = "Unused"
+desc = 'Unused'
 
-[op.LSHIR]
-desc = "Perform a logical bitwise LSH operation between the values of source register and immediate value and store the result into the destination register"
-reserve.size = 1
-[[op.LSHIR.reserve.doc]]
+[[op.param]]
 bits = 4
-desc = "Source register"
-[[op.LSHIR.reserve.doc]]
-bits = 2
-desc = "Data size"
-[[op.LSHIR.reserve.doc]]
-bits = 2
-desc = "Unused"
-[[op.LSHIR.param]]
-bits = 64
-desc = "Immediate value"
+desc = 'Destination register'
 
-[op.RSHRR]
-desc = "Perform a logical bitwise RSH operation between the values of source and destination registers and store the result into the destination register"
-reserve.size = 0
-[[op.RSHRR.param]]
-bits = 40
-desc = "Unused"
-[[op.RSHRR.param]]
-bits = 2
-desc = "Unused"
-[[op.RSHRR.param]]
-bits = 2
-desc = "Size of source register"
-[[op.RSHRR.param]]
-bits = 2
-desc = "Size of destination register"
-[[op.RSHRR.param]]
-bits = 2
-desc = "Unused"
-[[op.RSHRR.param]]
+[[op.param]]
 bits = 4
-desc = "Source register"
-[[op.RSHRR.param]]
-bits = 4
-desc = "Unused"
-[[op.RSHRR.param]]
-bits = 4
-desc = "Destination register"
-[[op.RSHRR.param]]
-bits = 4
-desc = "Unused"
+desc = 'Unused'
 
-[op.RSHIR]
-desc = "Perform a logical bitwise RSH operation between the values of source register and immediate value and store the result into the destination register"
-reserve.size = 1
-[[op.RSHIR.reserve.doc]]
-bits = 4
-desc = "Source register"
-[[op.RSHIR.reserve.doc]]
-bits = 2
-desc = "Data size"
-[[op.RSHIR.reserve.doc]]
-bits = 2
-desc = "Unused"
-[[op.RSHIR.param]]
-bits = 64
-desc = "Immediate value"
+[[op]]
+name = 'DECR'
+desc = 'Decrease the value of a register by one'
 
-[op.INCR]
-desc = "Increase the value of a register by one"
-reserve.size = 0
-[[op.INCR.param]]
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
 bits = 4
-desc = "Operand register"
-[[op.INCR.param]]
+desc = 'operand register'
+
+[[op.param]]
 bits = 60
-desc = "Unused"
+desc = 'Unused'
 
-[op.DECR]
-desc = "Decrease the value of a register by one"
-reserve.size = 0
-[[op.DECR.param]]
+[[op]]
+name = 'JMPE'
+desc = 'Jump to an address if ZF is set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPO'
+desc = 'Jump to an address if OF is set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPEIP'
+desc = 'IP-relative jump to an address if ZF is set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
 bits = 4
-desc = "Operand register"
-[[op.DECR.param]]
-bits = 60
-desc = "Unused"
+desc = 'Index register'
 
-[op.PUSHR]
-desc = "Push value of a register onto the stack"
-reserve.size = 1
-[[op.PUSHR.reserve.doc]]
+[[op.reserve.doc]]
 bits = 2
-desc = "Data size"
-[[op.PUSHR.reserve.doc]]
-bits = 6
-desc = "Unused"
-[[op.PUSHR.param]]
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
 bits = 64
-desc = "Immediate value"
+desc = 'Signed 64-bit integer immediate value offset'
 
-[op.PUSHI]
-desc = "Push immediate value onto the stack"
-reserve.size = 1
-[[op.PUSHI.reserve.doc]]
-bits = 2
-desc = "Data size"
-[[op.PUSHI.reserve.doc]]
-bits = 6
-desc = "Unused"
-[[op.PUSHI.param]]
-bits = 64
-desc = "Immediate value"
+[[op]]
+name = 'MOVDRO1'
+desc = 'Move a value from an address to a register with the address being based in a register'
 
-[op.POP]
-desc = "Pop a value from the stack, possibly into a register"
-reserve.size = 1
-[[op.POP.reserve.doc]]
+[op.reserve]
+size = 2
+
+[[op.reserve.doc]]
 bits = 2
-desc = "Data size"
-[[op.POP.reserve.doc]]
-bits = 6
-desc = "Unused"
-[[op.POP.param]]
+desc = 'Type of arthmetic operation between the offset and the register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size of the base register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size of the destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Scale factor type'
+
+[[op.reserve.doc]]
 bits = 4
-desc = "Destination register, 0x0f if none"
-[[op.POP.param]]
-bits = 60
-desc = "Unused"
+desc = 'Base register'
 
-[op.JMP]
-desc = "Unconditional jump to an address"
-reserve.size = 0
-[[op.JMP.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPE]
-desc = "Jump to an address if ZF is set"
-reserve.size = 0
-[[op.JMPE.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPZ]
-desc = "Jump to an address if ZF is set"
-reserve.size = 0
-[[op.JMPZ.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPNE]
-desc = "Jump to an address if ZF is not set"
-reserve.size = 0
-[[op.JMPNE.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPNZ]
-desc = "Jump to an address if ZF is not set"
-reserve.size = 0
-[[op.JMPNZ.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPG]
-desc = "Jump to an address if ZF and SF are not set"
-reserve.size = 0
-[[op.JMPG.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPGE]
-desc = "Jump to an address if ZF is set and SF is not set"
-reserve.size = 0
-[[op.JMPGE.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPL]
-desc = "Jump to an address if ZF is not set and SF is set"
-reserve.size = 0
-[[op.JMPL.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPLE]
-desc = "Jump to an address if ZF is set and SF is set"
-reserve.size = 0
-[[op.JMPLE.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPS]
-desc = "Jump to an address if SF is set"
-reserve.size = 0
-[[op.JMPS.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPNS]
-desc = "Jump to an address if SF is not set"
-reserve.size = 0
-[[op.JMPNS.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPC]
-desc = "Jump to an address if CF is set"
-reserve.size = 0
-[[op.JMPC.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPNC]
-desc = "Jump to an address if CF is not set"
-reserve.size = 0
-[[op.JMPNC.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPO]
-desc = "Jump to an address if OF is set"
-reserve.size = 0
-[[op.JMPO.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPNO]
-desc = "Jump to an address if OF is not set"
-reserve.size = 0
-[[op.JMPNO.param]]
-bits = 64
-desc = "Immediate value address"
-
-[op.JMPIP]
-desc = "IP-relative unconditional jump to an address"
-reserve.size = 1
-[[op.JMPIP.reserve.doc]]
+[[op.reserve.doc]]
 bits = 4
-desc = "Index register"
-[[op.JMPIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
+desc = 'Destination register'
 
-[op.JMPEIP]
-desc = "IP-relative jump to an address if ZF is set"
-reserve.size = 1
-[[op.JMPEIP.reserve.doc]]
+[[op.param]]
+bits = 64
+desc = 'Immediate value offset'
+
+[[op]]
+name = 'MOVIDO1'
+desc = 'Move immediate value into an address with a base register and NO offset'
+
+[op.reserve]
+size = 2
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operand type'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Base register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination address size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Scale factor'
+
+[[op.reserve.doc]]
 bits = 4
-desc = "Index register"
-[[op.JMPEIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPEIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPEIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
+desc = 'Base register'
 
-[op.JMPZIP]
-desc = "IP-relative jump to an address if ZF is set"
-reserve.size = 1
-[[op.JMPZIP.reserve.doc]]
+[[op.reserve.doc]]
 bits = 4
-desc = "Index register"
-[[op.JMPZIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPZIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPZIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
+desc = 'Unused'
 
-[op.JMPNEIP]
-desc = "IP-relative jump to an address if ZF is not set"
-reserve.size = 1
-[[op.JMPNEIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPNEIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPNEIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPNEIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
+[[op.param]]
+bits = 32
+desc = 'Unsigned 32-bit integer immediate value'
 
-[op.JMPNZIP]
-desc = "IP-relative jump to an address if ZF is not set"
-reserve.size = 1
-[[op.JMPNZIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPNZIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPNZIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPNZIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
+[[op.param]]
+bits = 32
+desc = 'Signed 32-bit integer immediate value offset'
 
-[op.JMPGIP]
-desc = "IP-relative jump to an address if ZF is not set and SF is not set"
-reserve.size = 1
-[[op.JMPGIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPGIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPGIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPGIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
+[[op]]
+name = 'NOT'
+desc = 'Bitwise NOT on register value'
 
-[op.JMPGEIP]
-desc = "IP-relative jump to an address if ZF is set and SF is not set"
-reserve.size = 1
-[[op.JMPGEIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPGEIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPGEIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPGEIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
+[op.reserve]
+size = 0
+doc = []
 
-[op.JMPLIP]
-desc = "IP-relative jump to an address if ZF is not set and SF is set"
-reserve.size = 1
-[[op.JMPLIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPLIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPLIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPLIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
-
-[op.JMPLEIP]
-desc = "IP-relative jump to an address if ZF is set and SF is set"
-reserve.size = 1
-[[op.JMPLEIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPLEIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPLEIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPLEIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
-
-[op.JMPSIP]
-desc = "IP-relative jump to an address if SF is set"
-reserve.size = 1
-[[op.JMPSIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPSIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPSIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPSIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
-
-[op.JMPNSIP]
-desc = "IP-relative jump to an address if SF is not set"
-reserve.size = 1
-[[op.JMPNSIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPNSIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPNSIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPNSIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
-
-[op.JMPCIP]
-desc = "IP-relative jump to an address if CF is set"
-reserve.size = 1
-[[op.JMPCIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPCIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPCIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPCIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
-
-[op.JMPNCIP]
-desc = "IP-relative jump to an address if CF not is set"
-reserve.size = 1
-[[op.JMPNCIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPNCIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPNCIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPNCIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
-
-[op.JMPOIP]
-desc = "IP-relative jump to an address if OF is set"
-reserve.size = 1
-[[op.JMPOIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPOIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPOIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPOIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
-
-[op.JMPNOIP]
-desc = "IP-relative jump to an address if OF not is set"
-reserve.size = 1
-[[op.JMPNOIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.JMPNOIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.JMPNOIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.JMPNOIP.param]]
-bits = 64
-desc = "Signed 64-bit integer immediate value offset"
-
-[op.CMPRR]
-desc = "Compare values in registers by subtracting the subtrahent register from the minuend and setting flags"
-reserve.size = 1
-[[op.CMPRR.reserve.doc]]
-bits = 4
-desc = "Minuend register"
-[[op.CMPRR.reserve.doc]]
-bits = 4
-desc = "Subtrahent register"
-[[op.CMPRR.param]]
-bits = 2
-desc = "Data type"
-[[op.CMPRR.param]]
-bits = 6
-desc = "Unused"
-[[op.CMPRR.param]]
-bits = 2
-desc = "Data size"
-[[op.CMPRR.param]]
-bits = 54
-desc = "Unused"
-
-[op.CMPIR]
-desc = "Compare values in registers by subtracting the immediate value subtrahent register from the minuend and setting flags"
-reserve.size = 1
-[[op.CMPIR.reserve.doc]]
-bits = 2
-desc = "Data type"
-[[op.CMPIR.reserve.doc]]
-bits = 2
-desc = "Data size"
-[[op.CMPIR.reserve.doc]]
-bits = 4
-desc = "Minuend register"
-[[op.CMPIR.param]]
-bits = 64
-desc = "Immediate value subtrahent"
-
-[op.CLR]
-desc = "Clear all flags (set them to false)"
-reserve.size = 0
-[[op.CLR.param]]
-bits = 64
-desc = "Unused"
-
-[op.CALL]
-desc = "Call function at absolute address - push next instruction address onto the stack and jump to procedure"
-reserve.size = 0
-[[op.CALL.param]]
-bits = 64
-desc = "Callee address"
-
-[op.CALLIP]
-desc = "Call function at IP-relative address - push next instruction address onto the stack and jump to procedure"
-reserve.size = 1
-[[op.CALLIP.reserve.doc]]
-bits = 4
-desc = "Index register"
-[[op.CALLIP.reserve.doc]]
-bits = 2
-desc = "Index register size"
-[[op.CALLIP.reserve.doc]]
-bits = 2
-desc = "Offset operator"
-[[op.CALLIP.param]]
-bits = 64
-desc = "Signed immediate value address offset"
-
-[op.RET]
-desc = "Pops return address from the stack and jumps to the instruction that it points to"
-reserve.size = 0
-[[op.RET.param]]
-bits = 64
-desc = "Unused"
-
-[op.EXITI]
-desc = "Halts with immediate value as the exit code"
-reserve.size = 0
-[[op.EXITI.param]]
-bits = 64
-desc = "Exit code, unsigned"
-
-[op.EXITR]
-desc = "Halts with register value as the exit code"
-reserve.size = 0
-[[op.EXITR.param]]
-bits = 4
-desc = "Exit code register"
-[[op.EXITR.param]]
-bits = 4
-desc = "Unused"
-[[op.EXITR.param]]
-bits = 2
-desc = "Data size"
-[[op.EXITR.param]]
-bits = 6
-desc = "Data size"
-[[op.EXITR.param]]
+[[op.param]]
 bits = 48
-desc = "Unused"
+desc = 'Unused'
 
-[op.SDF]
-desc = "Set direction flag DF"
-reserve.size = 0
-[[op.SDF.param]]
-bits = 64
-desc = "Unused"
+[[op.param]]
+bits = 4
+desc = 'Data size'
 
-[op.CDF]
-desc = "Clear direction flag DF"
-reserve.size = 0
-[[op.CDF.param]]
-bits = 64
-desc = "Unused"
+[[op.param]]
+bits = 4
+desc = 'Unused'
 
-[op.NOP]
-desc = "NO OP"
-reserve.size = 0
-[[op.NOP.param]]
+[[op.param]]
+bits = 4
+desc = 'operand register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'ORRR'
+desc = 'Perform a logical bitwise OR operation between the values of source and destination registers and store the result into the destination register'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 40
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'size of source register'
+
+[[op.param]]
+bits = 2
+desc = 'size of destination register'
+
+[[op.param]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Source register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'RSHRR'
+desc = 'Perform a logical bitwise RSH operation between the values of source and destination registers and store the result into the destination register'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 40
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'size of source register'
+
+[[op.param]]
+bits = 2
+desc = 'size of destination register'
+
+[[op.param]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Source register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'JMPZIP'
+desc = 'IP-relative jump to an address if ZF is set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
 bits = 64
-desc = "Unused"
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'JMPNZIP'
+desc = 'IP-relative jump to an address if ZF is not set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'JMPGIP'
+desc = 'IP-relative jump to an address if ZF is not set and SF is not set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'MOVID'
+desc = "Move immediate value into an address\n"
+[op.reserve]
+size = 1
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data size'
+[[op.reserve.doc]]
+bits = 6
+desc = 'Unused '
+[[op.param]]
+bits = 32
+desc = 'Immediate value, 32-bit signed integer'
+[[op.param]]
+bits = 32
+desc = 'Address, 32-bit unsigned integer'
+
+[[op]]
+name = 'JMPS'
+desc = 'Jump to an address if SF is set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPNOIP'
+desc = 'IP-relative jump to an address if OF not is set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'EXITR'
+desc = 'Halts with register value as the exit code'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 4
+desc = 'Exit code register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'Data size'
+
+[[op.param]]
+bits = 6
+desc = 'Data size'
+
+[[op.param]]
+bits = 48
+desc = 'Unused'
+
+[[op]]
+name = 'MOVREPSH'
+desc = 'Move single half-word from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'SUBIR'
+desc = 'Subtract immediate value from the destination register and store in destination'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data type - refer to ADDRR documentation'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value'
+
+[[op]]
+name = 'PUSHI'
+desc = 'Push immediate value onto the stack'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data size'
+
+[[op.reserve.doc]]
+bits = 6
+desc = 'Unused'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value'
+
+[[op]]
+name = 'JMPG'
+desc = 'Jump to an address if ZF and SF are not set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPLEIP'
+desc = 'IP-relative jump to an address if ZF is set and SF is set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'JMPNSIP'
+desc = 'IP-relative jump to an address if SF is not set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'CLR'
+desc = 'Clear all flags (set them to false)'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'CALLIP'
+desc = 'Call function at IP-relative address - push next instruction address onto the stack and jump to procedure'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed immediate value address offset'
+
+[[op]]
+name = 'ADDRR'
+desc = 'Add value from the source register into the destination register'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 40
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'Data type: singed integer, unsigned integer or 64-bit float'
+
+[[op.param]]
+bits = 2
+desc = 'size of source register'
+
+[[op.param]]
+bits = 2
+desc = 'size of destination register'
+
+[[op.param]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Source register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'MOVSXRR'
+desc = 'Move a value from one register to another register with sign extension'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Source register'
+
+[[op.param]]
+bits = 2
+desc = 'Source size'
+
+[[op.param]]
+bits = 2
+desc = 'Destination size'
+
+[[op.param]]
+bits = 52
+desc = 'Unused'
+
+[[op]]
+name = 'XCHGDRO1'
+desc = 'Exchange values between an address and a register with the address being based in a register'
+
+[op.reserve]
+size = 2
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Type of arthmetic operation between the offset and the register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size of the base register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size of the destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Scale factor type'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Base register'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value offset'
+
+[[op]]
+name = 'MULRR'
+desc = 'Multiply r0 by r1 and store the product into r2'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 56
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'size of operands and r2'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'ROR'
+desc = 'Rotate right the bits in a register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'operand register size'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'operand register'
+
+[[op.param]]
+bits = 64
+desc = 'Unsigned 64-bit integer rotation amount immediate value'
+
+[[op]]
+name = 'ORIR'
+desc = 'Perform a logical bitwise OR operation between the values of source register and immediate value and store the result into the destination register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Source register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value'
+
+[[op]]
+name = 'XORRR'
+desc = 'Perform a logical bitwise XOR operation between the values of source and destination registers and store the result into the destination register'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 40
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 2
+desc = 'size of source register'
+
+[[op.param]]
+bits = 2
+desc = 'size of destination register'
+
+[[op.param]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Source register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'JMPOIP'
+desc = 'IP-relative jump to an address if OF is set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'RET'
+desc = 'Pops return address from the stack and jumps to the instruction that it points to'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'MOVREPSB'
+desc = 'Move single byte from r5 to r6, decrement r7 until it becomes zero and then stop. If the DF flag is set then decrement r5 and r6 if not then increment r5 and r6.'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'LEADRO1'
+desc = 'Load effective address into a register with the address being based in a register'
+
+[op.reserve]
+size = 2
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Type of arthmetic operation between the offset and the register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size of the base register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'size of the destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Scale factor type'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Base register'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value offset'
+
+[[op]]
+name = 'DIVRR'
+desc = 'Divide r0 by r1 and store the quotient into r2 and the remainder into r3'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 56
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'size of operands and r2'
+
+[[op.param]]
+bits = 4
+desc = 'Unused'
+
+[[op]]
+name = 'LSHIR'
+desc = 'Perform a logical bitwise LSH operation between the values of source register and immediate value and store the result into the destination register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Source register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Unused'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value'
+
+[[op]]
+name = 'POP'
+desc = 'Pop a value from the stack, possibly into a register'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data size'
+
+[[op.reserve.doc]]
+bits = 6
+desc = 'Unused'
+
+[[op.param]]
+bits = 4
+desc = 'Destination register, 0x0f if none'
+
+[[op.param]]
+bits = 60
+desc = 'Unused'
+
+[[op]]
+name = 'JMPCIP'
+desc = 'IP-relative jump to an address if CF is set'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Index register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Index register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operator'
+
+[[op.param]]
+bits = 64
+desc = 'Signed 64-bit integer immediate value offset'
+
+[[op]]
+name = 'CALL'
+desc = 'Call function at absolute address - push next instruction address onto the stack and jump to procedure'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Callee address'
+
+[[op]]
+name = 'EXITI'
+desc = 'Halts with immediate value as the exit code'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Exit code, unsigned'
+
+[[op]]
+name = 'PUSHR'
+desc = 'Push value of a register onto the stack'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Data size'
+
+[[op.reserve.doc]]
+bits = 6
+desc = 'Unused'
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value'
+
+[[op]]
+name = 'JMP'
+desc = 'Unconditional jump to an address'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'JMPC'
+desc = 'Jump to an address if CF is set'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Immediate value address'
+
+[[op]]
+name = 'CDF'
+desc = 'Clear direction flag DF'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'NOP'
+desc = 'NO OP'
+
+[op.reserve]
+size = 0
+doc = []
+
+[[op.param]]
+bits = 64
+desc = 'Unused'
+
+[[op]]
+name = 'MOVIDO1_NO'
+desc = 'Move immediate value into an address with a base register and NO offset'
+
+[op.reserve]
+size = 2
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Offset operand type'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Base register size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination address size'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Scale factor'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Base register'
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Unused'
+
+[[op.param]]
+bits = 64
+desc = 'Unsigned 64-bit integer immediate value'
+

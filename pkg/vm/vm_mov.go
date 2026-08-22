@@ -175,9 +175,9 @@ func (state *VmState) movDRO2(
 func (state *VmState) movID(lastByte byte, param []byte) error {
 	p := binary.BigEndian.Uint64(param)
 	dest := (p & 0xffff_ffff_0000_0000) >> 32
-	imm := uint64(int32((p & 0x0000_0000_ffff_ffff)))
+	imm := int64(int32((p & 0x0000_0000_ffff_ffff)))
 	dataSz := lastByte & 0b0000_0011
-	return state.putValInStackWithSize(dataSz, imm, dest)
+	return state.putValInStackWithSize(dataSz, uint64(imm), dest)
 }
 func (state *VmState) movRD(lastByte byte, param []byte) error {
 	p := binary.BigEndian.Uint64(param)
