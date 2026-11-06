@@ -36,3 +36,11 @@ func (eth *Either[Left, Right]) GetRight() Right {
 	}
 	return eth.r
 }
+func (eth *Either[Left, Right]) SetLeft(l Left) {
+	eth.hasLeft = true
+	eth.l = l
+}
+func (eth *Either[Left, Right]) SetRight(r Right) {
+	eth.hasLeft = false
+	eth.r = r
+}

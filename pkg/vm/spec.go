@@ -1211,6 +1211,34 @@ const (
     // Immediate value
     OP_PUSHR OpCodeVal = iota
     // Description:
+    // Bit-wise logical and between operands
+    //
+    // Reserved bits:
+    //
+    // 0-3
+    // Destination register
+    //
+    // 4-5
+    // Destination register size
+    //
+    // 6-6
+    // Register or immediate value source flag (1 = immediate value)
+    //
+    // 7-7
+    // Unused
+    //
+    // Parameter bits:
+    // 0-3
+    //
+    // Source register or part of immediate value
+    // 4-5
+    //
+    // Source register size part of immediate value
+    // 6-63
+    //
+    // Unused or rest of immediate value
+    OP_TEST OpCodeVal = iota
+    // Description:
     // Increase the value of a register by one
     //
     // Parameter bits:
@@ -1913,6 +1941,7 @@ var _makedec_opcodeMap = map[uint32]OpCodeVal {
     0x00240000 : OP_POP,
     0x00250000 : OP_JMPCIP,
     0x00260000 : OP_PUSHR,
+    0x00270000 : OP_TEST,
     0x01000000 : OP_INCR,
     0x02000000 : OP_MOVSH,
     0x03000000 : OP_XCHGRR,
@@ -2032,6 +2061,7 @@ const (
     OP_POP_VAL                uint32 = 0x00240000
     OP_JMPCIP_VAL             uint32 = 0x00250000
     OP_PUSHR_VAL              uint32 = 0x00260000
+    OP_TEST_VAL               uint32 = 0x00270000
     OP_INCR_VAL               uint32 = 0x01000000
     OP_MOVSH_VAL              uint32 = 0x02000000
     OP_XCHGRR_VAL             uint32 = 0x03000000

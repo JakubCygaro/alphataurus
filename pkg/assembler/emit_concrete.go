@@ -461,6 +461,44 @@ func (a *Assembler) emitArthRR(data pr.InstArthRR, at int) error {
 		binary.BigEndian.Uint64(param[:]))
 	return nil
 }
+// analogous to emitTestIR
+func (a *Assembler) emitTestRR(data pr.InstLogicalRR, at int) error {
+	opCode := vm.OP_TEST_VAL
+
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
+
+	byte2 := byte(0) |
+		byte(0x0f&data.First.Reg) |
+		byte((0x0f&data.First.Size)<<4)
+
+	a.bytecode[at+2] = byte2
+
+	param := uint64(byte(0) |
+		byte(0x0f&data.Second.Reg) |
+		byte((0x0f&data.Second.Size)<<4))
+
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], param)
+
+	return nil
+}
+// This is a specialized emitLogIR, with data.LogTy being expected to be set to
+// TEST - do not call it in any other case!
+func (a *Assembler) emitTestIR(data pr.InstLogicalIR, at int) error {
+	opCode := vm.OP_TEST_VAL
+
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
+
+	byte2 := byte(0b1000_0000) |
+		byte(0x0f&data.First.Reg) |
+		byte((0x0f&data.First.Size)<<4)
+
+	a.bytecode[at+2] = byte2
+
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], data.Imm)
+
+	return nil
+}
+
 func (a *Assembler) emitLogRR(data pr.InstLogicalRR, at int) error {
 	var opCode uint32
 	switch data.LogTy {
@@ -474,6 +512,8 @@ func (a *Assembler) emitLogRR(data pr.InstLogicalRR, at int) error {
 		opCode = vm.OP_LSHRR_VAL
 	case pr.RSH:
 		opCode = vm.OP_RSHRR_VAL
+	case pr.TEST:
+		return a.emitTestRR(data, at)
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
 	sizesByte := (0b0000_0011&byte(data.First.Size))<<2 |
@@ -505,6 +545,8 @@ func (a *Assembler) emitLogIR(data pr.InstLogicalIR, at int) error {
 		opCode = vm.OP_LSHIR_VAL
 	case pr.RSH:
 		opCode = vm.OP_RSHIR_VAL
+	case pr.TEST:
+		return a.emitTestIR(data, at)
 	}
 	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
 	lastByte := byte(0)

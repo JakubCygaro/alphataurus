@@ -1,5 +1,3 @@
-- rol and ror by other register!!!
-- cwd, cdq, cqo
 - add test instruction
 - lea
 - logical and possibly other instructions setting status flags
@@ -7,7 +5,7 @@
  results of an operation.
 - mul should output a result of double the size of its operands,
  multiplying 2 halfwords yields a word
-- TESTING FOR THE ABOVE
+- TESTING FOR: rolr, rorr
 - static data in object files with proper linking and relocation
 - fix the bullshit that is col and line
 - variables in the assembler, basically how its done in FASM

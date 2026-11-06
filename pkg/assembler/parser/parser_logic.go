@@ -58,6 +58,8 @@ func (p *Parser) parseLogical(logTy int) error {
 		ty = LSH
 	case LOG_TRSH:
 		ty = RSH
+	case LOG_TTEST:
+		ty = TEST
 	}
 	genericLogical.LogTy = ty
 	if concrete, err :=
@@ -122,23 +124,10 @@ func (p *Parser) parseRotate(left bool) error {
 			r,
 		)
 	}
-	if r, ok := p.lexer.Expect(lx.TOKEN_TINTEGER_LIT); !ok {
-		return errors.MakeParserError(
-			r.Line,
-			r.Col,
-			"Expected integer literal, got '%s'",
-			r.ForceValAsString(),
-		)
-	} else if r.Ty == lx.TOKEN_TREG {
-		p.currentInst = Instruction{
-			Data: InstRotateR{
-				Arg:      reg,
-				RotateBy: r.Val.(lx.RegisterData),
-				Left:     left,
-			},
-		}
-	} else {
-		rotateBy = r.Val.(uint64)
+	if t, err := p.lexer.ReadNextTokenReturn(); err != nil {
+		return err
+	} else if t.Ty == lx.TOKEN_TINTEGER_LIT {
+		rotateBy = t.Val.(uint64)
 		p.currentInst = Instruction{
 			Data: InstRotate{
 				Arg:      reg,
@@ -146,6 +135,21 @@ func (p *Parser) parseRotate(left bool) error {
 				RotateBy: rotateBy,
 			},
 		}
+	} else if t.Ty == lx.TOKEN_TREG {
+		p.currentInst = Instruction{
+			Data: InstRotateR{
+				Arg:      reg,
+				RotateBy: t.Val.(lx.RegisterData),
+				Left:     left,
+			},
+		}
+	} else {
+		return errors.MakeParserError(
+			t.Line,
+			t.Col,
+			"Expected integer literal, got '%s'",
+			t.ForceValAsString(),
+		)
 	}
 	return nil
 }

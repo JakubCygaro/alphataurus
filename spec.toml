@@ -2394,3 +2394,37 @@ desc = 'Unused'
 bits = 64
 desc = 'Unsigned 64-bit integer immediate value'
 
+[[op]]
+name = 'TEST'
+desc = 'Bit-wise logical and between operands'
+
+[op.reserve]
+size = 1
+
+[[op.reserve.doc]]
+bits = 4
+desc = 'Destination register'
+
+[[op.reserve.doc]]
+bits = 2
+desc = 'Destination register size'
+
+[[op.reserve.doc]]
+bits = 1
+desc = 'Unused'
+
+[[op.reserve.doc]]
+bits = 1
+desc = 'Register or immediate value source flag (1 = immediate value)'
+
+[[op.param]]
+bits = 4
+desc = 'Source register or part of immediate value'
+
+[[op.param]]
+bits = 2
+desc = 'Source register size part of immediate value'
+
+[[op.param]]
+bits = 58
+desc = 'Unused or rest of immediate value'

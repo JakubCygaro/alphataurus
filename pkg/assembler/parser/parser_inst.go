@@ -1,6 +1,7 @@
 package assembler
 
 import (
+	"github.com/JakubCygaro/alphataurus/internal/pkg/opt"
 	lx "github.com/JakubCygaro/alphataurus/pkg/assembler/lexer"
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
@@ -47,6 +48,7 @@ const (
 	XOR
 	LSH
 	RSH
+	TEST
 )
 
 const (
@@ -68,6 +70,7 @@ const (
 	LOG_TXOR
 	LOG_TLSH
 	LOG_TRSH
+	LOG_TTEST
 )
 
 type Instruction struct {
@@ -159,18 +162,18 @@ type InstNotR struct {
 	First lx.RegisterData
 }
 type InstNegR struct {
-	Arg lx.RegisterData
+	Arg   lx.RegisterData
 	Float bool
 }
 type InstRotate struct {
-	Arg lx.RegisterData
-	Left bool
+	Arg      lx.RegisterData
+	Left     bool
 	RotateBy uint64
 }
 type InstRotateR struct {
-	Arg lx.RegisterData
+	Arg      lx.RegisterData
 	RotateBy lx.RegisterData
-	Left bool
+	Left     bool
 }
 type InstGenericLogical struct {
 	First, Second *Expr
@@ -305,7 +308,7 @@ type InstMovIDO1 struct {
 	// use lexer.TokenTToOpT to get the vm compatible OP type
 	DispOp, RegOp int
 	NoOff         bool
-	SF Scale
+	SF            Scale
 }
 type InstMovRDO1 struct {
 	Src  lx.RegisterData
@@ -326,7 +329,7 @@ type InstMovIDO2 struct {
 	// use lexer.TokenTToOpT to get the vm compatible OP type
 	RegOp, DispOp int
 	NoOff         bool
-	SF Scale
+	SF            Scale
 }
 type InstMovRDO2 struct {
 	Src   lx.RegisterData
@@ -371,4 +374,8 @@ type InstLeaO1 struct {
 }
 type InstLeaO2 struct {
 	Mov InstMovDRO2
+}
+type InstTest struct {
+	Src  opt.Either[lx.RegisterData, *Expr]
+	Dest lx.RegisterData
 }

@@ -50,7 +50,7 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	mov r0, 2
+	mov r0b, 
 	mov r1, 1
 	lsh r0, r1
 `
