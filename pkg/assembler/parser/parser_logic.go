@@ -129,17 +129,23 @@ func (p *Parser) parseRotate(left bool) error {
 			"Expected integer literal, got '%s'",
 			r.ForceValAsString(),
 		)
+	} else if r.Ty == lx.TOKEN_TREG {
+		p.currentInst = Instruction{
+			Data: InstRotateR{
+				Arg:      reg,
+				RotateBy: r.Val.(lx.RegisterData),
+				Left:     left,
+			},
+		}
 	} else {
 		rotateBy = r.Val.(uint64)
+		p.currentInst = Instruction{
+			Data: InstRotate{
+				Arg:      reg,
+				Left:     left,
+				RotateBy: rotateBy,
+			},
+		}
 	}
-
-	p.currentInst = Instruction{
-		Data: InstRotate{
-			Arg: reg,
-			Left: left,
-			RotateBy: rotateBy,
-		},
-	}
-
 	return nil
 }

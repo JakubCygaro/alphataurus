@@ -1448,6 +1448,26 @@ const (
     // Unused
     OP_MOVREPSQ OpCodeVal = iota
     // Description:
+    // Rotate left the bits in a register by the number in a different register
+    //
+    // Parameter bits:
+    // 0-3
+    //
+    // Destination register
+    // 4-7
+    //
+    // Destination register size
+    // 8-11
+    //
+    // Source register
+    // 12-15
+    //
+    // Source register size
+    // 16-63
+    //
+    // Unused
+    OP_ROLR OpCodeVal = iota
+    // Description:
     // Perform a logical bitwise LSH operation between the values of source and destination registers and store the result into the destination register
     //
     // Parameter bits:
@@ -1709,6 +1729,26 @@ const (
     // Unused
     OP_MULRR OpCodeVal = iota
     // Description:
+    // Rotate right the bits in a register by the number in a different register
+    //
+    // Parameter bits:
+    // 0-3
+    //
+    // Destination register
+    // 4-7
+    //
+    // Destination register size
+    // 8-11
+    //
+    // Source register
+    // 12-15
+    //
+    // Source register size
+    // 16-63
+    //
+    // Unused
+    OP_RORR OpCodeVal = iota
+    // Description:
     // Perform a logical bitwise XOR operation between the values of source and destination registers and store the result into the destination register
     //
     // Parameter bits:
@@ -1894,31 +1934,33 @@ var _makedec_opcodeMap = map[uint32]OpCodeVal {
     0x13000000 : OP_JMPL,
     0x14000000 : OP_MOVSQ,
     0x15000000 : OP_MOVREPSQ,
-    0x16000000 : OP_LSHRR,
-    0x17000000 : OP_DECR,
-    0x18000000 : OP_JMPE,
-    0x19000000 : OP_JMPO,
-    0x1a000000 : OP_NOT,
-    0x1b000000 : OP_ORRR,
-    0x1c000000 : OP_RSHRR,
-    0x1d000000 : OP_JMPS,
-    0x1e000000 : OP_EXITR,
-    0x1f000000 : OP_MOVREPSH,
-    0x20000000 : OP_JMPG,
-    0x21000000 : OP_CLR,
-    0x22000000 : OP_ADDRR,
-    0x23000000 : OP_MOVSXRR,
-    0x24000000 : OP_MULRR,
-    0x25000000 : OP_XORRR,
-    0x26000000 : OP_RET,
-    0x27000000 : OP_MOVREPSB,
-    0x28000000 : OP_DIVRR,
-    0x29000000 : OP_CALL,
-    0x2a000000 : OP_EXITI,
-    0x2b000000 : OP_JMP,
-    0x2c000000 : OP_JMPC,
-    0x2d000000 : OP_CDF,
-    0x2e000000 : OP_NOP,
+    0x16000000 : OP_ROLR,
+    0x17000000 : OP_LSHRR,
+    0x18000000 : OP_DECR,
+    0x19000000 : OP_JMPE,
+    0x1a000000 : OP_JMPO,
+    0x1b000000 : OP_NOT,
+    0x1c000000 : OP_ORRR,
+    0x1d000000 : OP_RSHRR,
+    0x1e000000 : OP_JMPS,
+    0x1f000000 : OP_EXITR,
+    0x20000000 : OP_MOVREPSH,
+    0x21000000 : OP_JMPG,
+    0x22000000 : OP_CLR,
+    0x23000000 : OP_ADDRR,
+    0x24000000 : OP_MOVSXRR,
+    0x25000000 : OP_MULRR,
+    0x26000000 : OP_RORR,
+    0x27000000 : OP_XORRR,
+    0x28000000 : OP_RET,
+    0x29000000 : OP_MOVREPSB,
+    0x2a000000 : OP_DIVRR,
+    0x2b000000 : OP_CALL,
+    0x2c000000 : OP_EXITI,
+    0x2d000000 : OP_JMP,
+    0x2e000000 : OP_JMPC,
+    0x2f000000 : OP_CDF,
+    0x30000000 : OP_NOP,
 }
 
 func Decode(code uint32) (bool, OpCodeVal) {
@@ -2011,31 +2053,33 @@ const (
     OP_JMPL_VAL               uint32 = 0x13000000
     OP_MOVSQ_VAL              uint32 = 0x14000000
     OP_MOVREPSQ_VAL           uint32 = 0x15000000
-    OP_LSHRR_VAL              uint32 = 0x16000000
-    OP_DECR_VAL               uint32 = 0x17000000
-    OP_JMPE_VAL               uint32 = 0x18000000
-    OP_JMPO_VAL               uint32 = 0x19000000
-    OP_NOT_VAL                uint32 = 0x1a000000
-    OP_ORRR_VAL               uint32 = 0x1b000000
-    OP_RSHRR_VAL              uint32 = 0x1c000000
-    OP_JMPS_VAL               uint32 = 0x1d000000
-    OP_EXITR_VAL              uint32 = 0x1e000000
-    OP_MOVREPSH_VAL           uint32 = 0x1f000000
-    OP_JMPG_VAL               uint32 = 0x20000000
-    OP_CLR_VAL                uint32 = 0x21000000
-    OP_ADDRR_VAL              uint32 = 0x22000000
-    OP_MOVSXRR_VAL            uint32 = 0x23000000
-    OP_MULRR_VAL              uint32 = 0x24000000
-    OP_XORRR_VAL              uint32 = 0x25000000
-    OP_RET_VAL                uint32 = 0x26000000
-    OP_MOVREPSB_VAL           uint32 = 0x27000000
-    OP_DIVRR_VAL              uint32 = 0x28000000
-    OP_CALL_VAL               uint32 = 0x29000000
-    OP_EXITI_VAL              uint32 = 0x2a000000
-    OP_JMP_VAL                uint32 = 0x2b000000
-    OP_JMPC_VAL               uint32 = 0x2c000000
-    OP_CDF_VAL                uint32 = 0x2d000000
-    OP_NOP_VAL                uint32 = 0x2e000000
+    OP_ROLR_VAL               uint32 = 0x16000000
+    OP_LSHRR_VAL              uint32 = 0x17000000
+    OP_DECR_VAL               uint32 = 0x18000000
+    OP_JMPE_VAL               uint32 = 0x19000000
+    OP_JMPO_VAL               uint32 = 0x1a000000
+    OP_NOT_VAL                uint32 = 0x1b000000
+    OP_ORRR_VAL               uint32 = 0x1c000000
+    OP_RSHRR_VAL              uint32 = 0x1d000000
+    OP_JMPS_VAL               uint32 = 0x1e000000
+    OP_EXITR_VAL              uint32 = 0x1f000000
+    OP_MOVREPSH_VAL           uint32 = 0x20000000
+    OP_JMPG_VAL               uint32 = 0x21000000
+    OP_CLR_VAL                uint32 = 0x22000000
+    OP_ADDRR_VAL              uint32 = 0x23000000
+    OP_MOVSXRR_VAL            uint32 = 0x24000000
+    OP_MULRR_VAL              uint32 = 0x25000000
+    OP_RORR_VAL               uint32 = 0x26000000
+    OP_XORRR_VAL              uint32 = 0x27000000
+    OP_RET_VAL                uint32 = 0x28000000
+    OP_MOVREPSB_VAL           uint32 = 0x29000000
+    OP_DIVRR_VAL              uint32 = 0x2a000000
+    OP_CALL_VAL               uint32 = 0x2b000000
+    OP_EXITI_VAL              uint32 = 0x2c000000
+    OP_JMP_VAL                uint32 = 0x2d000000
+    OP_JMPC_VAL               uint32 = 0x2e000000
+    OP_CDF_VAL                uint32 = 0x2f000000
+    OP_NOP_VAL                uint32 = 0x30000000
 )
 
 	

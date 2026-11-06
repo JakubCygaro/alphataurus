@@ -1237,6 +1237,33 @@ bits = 64
 desc = 'Unsigned 64-bit integer rotation amount immediate value'
 
 [[op]]
+name = 'ROLR'
+desc = 'Rotate left the bits in a register by the number in a different register'
+
+[op.reserve]
+size = 0
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Destination register size'
+
+[[op.param]]
+bits = 4
+desc = 'Source register'
+
+[[op.param]]
+bits = 4
+desc = 'Source register size'
+
+[[op.param]]
+bits = 48
+desc = 'Unused'
+
+[[op]]
 name = 'LSHRR'
 desc = 'Perform a logical bitwise LSH operation between the values of source and destination registers and store the result into the destination register'
 
@@ -1975,6 +2002,33 @@ desc = 'operand register'
 [[op.param]]
 bits = 64
 desc = 'Unsigned 64-bit integer rotation amount immediate value'
+
+[[op]]
+name = 'RORR'
+desc = 'Rotate right the bits in a register by the number in a different register'
+
+[op.reserve]
+size = 0
+
+[[op.param]]
+bits = 4
+desc = 'Destination register'
+
+[[op.param]]
+bits = 4
+desc = 'Destination register size'
+
+[[op.param]]
+bits = 4
+desc = 'Source register'
+
+[[op.param]]
+bits = 4
+desc = 'Source register size'
+
+[[op.param]]
+bits = 48
+desc = 'Unused'
 
 [[op]]
 name = 'ORIR'

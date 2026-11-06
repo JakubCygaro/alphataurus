@@ -123,6 +123,69 @@ func (state *VmState) cmpImpl(minV, subV uint64, ty, dataSz byte) error {
 		diff[:])
 	return err
 }
+func rotate(val uint64, dataSz byte, rotateBy int, right bool) uint64 {
+	if right {
+		rotateBy = -rotateBy
+	}
+	switch dataSz {
+	case SZ_8:
+		return uint64(bits.RotateLeft8(
+			uint8(val), rotateBy))
+	case SZ_16:
+		return uint64(bits.RotateLeft16(
+			uint16(val), rotateBy))
+	case SZ_32:
+		return uint64(bits.RotateLeft32(
+			uint32(val), rotateBy))
+	case SZ_64:
+		return uint64(bits.RotateLeft64(
+			uint64(val), rotateBy))
+	default:
+		return 0
+	}
+}
+func (state *VmState) rolr(param []byte) error {
+	dest := (param[7] & 0x0f)
+	destSz := (param[7] & 0xf0) >> 4
+	src := (param[6] & 0x0f)
+	srcSz := (param[6] & 0xf0) >> 4
+	if !IsGpReg(byte(dest)) {
+		return errors.DisallowedOp1Register(int(dest), state.byteCodePos)
+	}
+	if !IsGpReg(byte(src)) {
+		return errors.DisallowedOp1Register(int(src), state.byteCodePos)
+	}
+	state.putValInRegWithSize(
+		int(dest),
+		destSz,
+		rotate(
+			state.GetRegVAsU64(int(dest), destSz),
+			destSz,
+			int(state.GetRegVAsU64(int(src), srcSz)),
+			false))
+	return nil
+}
+func (state *VmState) rorr(param []byte) error {
+	dest := (param[7] & 0x0f)
+	destSz := (param[7] & 0xf0) >> 4
+	src := (param[6] & 0x0f)
+	srcSz := (param[6] & 0xf0) >> 4
+	if !IsGpReg(byte(dest)) {
+		return errors.DisallowedOp1Register(int(dest), state.byteCodePos)
+	}
+	if !IsGpReg(byte(src)) {
+		return errors.DisallowedOp1Register(int(src), state.byteCodePos)
+	}
+	state.putValInRegWithSize(
+		int(dest),
+		destSz,
+		rotate(
+			state.GetRegVAsU64(int(dest), destSz),
+			destSz,
+			int(state.GetRegVAsU64(int(src), srcSz)),
+			true))
+	return nil
+}
 func (state *VmState) rol(lastByte byte, param []byte) error {
 	reg := (lastByte & 0xf0) >> 4
 	dataSz := (lastByte & 0x0f)
@@ -130,25 +193,34 @@ func (state *VmState) rol(lastByte byte, param []byte) error {
 	if !IsGpReg(byte(reg)) {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
-	switch dataSz {
-	case SZ_8:
-		regV := bits.RotateLeft8(
-			uint8(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
-		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
-	case SZ_16:
-		regV := bits.RotateLeft16(
-			uint16(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
-		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
-	case SZ_32:
-		regV := bits.RotateLeft32(
-			uint32(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
-		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
-	case SZ_64:
-		regV := bits.RotateLeft64(
-			uint64(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
-		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
-	}
+	state.putValInRegWithSize(
+		int(reg),
+		dataSz,
+		rotate(
+			state.GetRegVAsU64(int(reg), dataSz),
+			dataSz,
+			int(rotateBy),
+			false))
 	return nil
+	// switch dataSz {
+	// case SZ_8:
+	// 	regV := bits.RotateLeft8(
+	// 		uint8(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
+	// 	state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	// case SZ_16:
+	// 	regV := bits.RotateLeft16(
+	// 		uint16(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
+	// 	state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	// case SZ_32:
+	// 	regV := bits.RotateLeft32(
+	// 		uint32(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
+	// 	state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	// case SZ_64:
+	// 	regV := bits.RotateLeft64(
+	// 		uint64(state.GetRegVAsU64(int(reg), dataSz)), int(rotateBy))
+	// 	state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	// }
+	// return nil
 }
 func (state *VmState) ror(lastByte byte, param []byte) error {
 	reg := (lastByte & 0xf0) >> 4
@@ -157,23 +229,32 @@ func (state *VmState) ror(lastByte byte, param []byte) error {
 	if !IsGpReg(byte(reg)) {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
-	switch dataSz {
-	case SZ_8:
-		regV := bits.RotateLeft8(
-			uint8(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
-		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
-	case SZ_16:
-		regV := bits.RotateLeft16(
-			uint16(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
-		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
-	case SZ_32:
-		regV := bits.RotateLeft32(
-			uint32(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
-		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
-	case SZ_64:
-		regV := bits.RotateLeft64(
-			uint64(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
-		state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
-	}
+	state.putValInRegWithSize(
+		int(reg),
+		dataSz,
+		rotate(
+			state.GetRegVAsU64(int(reg), dataSz),
+			dataSz,
+			int(rotateBy),
+			true))
 	return nil
+	// switch dataSz {
+	// case SZ_8:
+	// 	regV := bits.RotateLeft8(
+	// 		uint8(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
+	// 	state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	// case SZ_16:
+	// 	regV := bits.RotateLeft16(
+	// 		uint16(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
+	// 	state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	// case SZ_32:
+	// 	regV := bits.RotateLeft32(
+	// 		uint32(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
+	// 	state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	// case SZ_64:
+	// 	regV := bits.RotateLeft64(
+	// 		uint64(state.GetRegVAsU64(int(reg), dataSz)), -int(rotateBy))
+	// 	state.putValInRegWithSize(int(reg), dataSz, uint64(regV))
+	// }
+	// return nil
 }

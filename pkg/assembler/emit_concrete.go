@@ -178,7 +178,7 @@ func (a *Assembler) emitMovSXRR(data pr.InstMovSXRR, at int) error {
 	return err
 }
 func (a *Assembler) emitMovRR(data pr.InstMovRR, at int, omitOpcode bool) error {
-	if !omitOpcode{
+	if !omitOpcode {
 		mov := vm.OP_MOVRR_VAL
 		binary.BigEndian.PutUint32(a.bytecode[at:], uint32(mov))
 	}
@@ -541,6 +541,22 @@ func (a *Assembler) emitNot(data pr.InstNotR, at int) error {
 	}
 	binary.BigEndian.PutUint64(a.bytecode[at+4:],
 		binary.BigEndian.Uint64(param[:]))
+	return nil
+}
+func (a *Assembler) emitRotateR(data pr.InstRotateR, at int) error {
+	var opCode uint32
+	if data.Left {
+		opCode = vm.OP_ROLR_VAL
+	} else {
+		opCode = vm.OP_RORR_VAL
+	}
+	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
+	param := uint64(0) |
+		(uint64(data.Arg.Reg)) |
+		(uint64(data.Arg.Size) << 4) |
+		(uint64(data.RotateBy.Reg) << 8) |
+		(uint64(data.RotateBy.Size) << 12)
+	binary.BigEndian.PutUint64(a.bytecode[at+4:], param)
 	return nil
 }
 func (a *Assembler) emitRotate(data pr.InstRotate, at int) error {

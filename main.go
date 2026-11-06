@@ -50,27 +50,9 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	;; code size should be 216 (18 instructions)
-	;; stack base should thus be 4312 (0x10d8)
-	;; fake stack size is 144
-	mov WORD [0x10df], 15
-	mov WORD [0x10e7], 19
-	mov WORD [0x10ef], 32
-	mov WORD [0x10f7], 21
-	mov WORD [0x10ff], -11
-	mov WORD [0x1107], -30
-	mov WORD [0x110f], -10
-	mov WORD [0x1117], -34
-	mov WORD [0x111f], -1
-	mov WORD [0x1127], 49
-	mov WORD [0x112f], 6
-	mov WORD [0x1137], -50
-	mov WORD [0x113f], 33
-	mov WORD [0x1147], 6
-	mov WORD [0x114f], -40
-	mov WORD [0x1157], 44
-	mov WORD [0x115f], 45
-	mov WORD [0x1167], -2
+	mov r0, 2
+	mov r1, 1
+	lsh r0, r1
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {

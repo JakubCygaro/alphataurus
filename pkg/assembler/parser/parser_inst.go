@@ -167,6 +167,11 @@ type InstRotate struct {
 	Left bool
 	RotateBy uint64
 }
+type InstRotateR struct {
+	Arg lx.RegisterData
+	RotateBy lx.RegisterData
+	Left bool
+}
 type InstGenericLogical struct {
 	First, Second *Expr
 	LogTy         LogTy
