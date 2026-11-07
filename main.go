@@ -51,7 +51,7 @@ const assembly = `
 section '.code'
 @entry
 	mov r0, -2
-	test r0, r0
+	test r0, -2
 	js neg
 	exit 0
 neg:
