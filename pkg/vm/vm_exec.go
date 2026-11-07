@@ -167,6 +167,8 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 		err = state.logRR(int(opcode), param)
 	case OP_ORIR:
 		err = state.logIR(int(opcode), opCodeBytes[0], param)
+	case OP_TEST:
+		err = state.test(int(opcode), opCodeBytes[0], param)
 	case OP_ANDIR:
 		err = state.logIR(int(opcode), opCodeBytes[0], param)
 	case OP_XORIR:

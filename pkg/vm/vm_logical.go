@@ -10,13 +10,29 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm/errors"
 )
 
+func (state *VmState) test(opType int, lastByte byte, param []byte) error {
+	if ((lastByte >> 7) & 1) == 1 {
+		return state.logIR(opType, lastByte, param)
+	} else {
+		dest := 0b0000_1111 & lastByte
+		destSz := (0b0011_0000 & lastByte) >> 4
+		src := 0b0000_1111 & param[7]
+		fVal, sVal :=
+			state.GetRegVAsU64(int(dest), destSz),
+			state.GetRegVAsU64(int(src), destSz)
+		fVal = state.logImpl(fVal, sVal, destSz, OpCodeVal(opType))
+		state.putValInRegWithSize(int(dest), destSz, fVal)
+	}
+	return nil
+}
+
 func (state *VmState) logIR(opType int, lastByte byte, param []byte) error {
 	first := 0b0000_1111 & lastByte
 	dataSize := (0b0011_0000 & lastByte) >> 4
 	fVal, sVal :=
 		state.GetRegVAsU64(int(first), dataSize),
 		binary.BigEndian.Uint64(param)
-	fVal = state.logImpl(fVal, sVal, OpCodeVal(opType))
+	fVal = state.logImpl(fVal, sVal, dataSize, OpCodeVal(opType))
 	state.putValInRegWithSize(int(first), dataSize, fVal)
 	return nil
 }
@@ -31,23 +47,37 @@ func (state *VmState) logRR(opType int, param []byte) error {
 	fVal, sVal :=
 		state.GetRegVAsU64(int(data.src), data.r1sz),
 		state.GetRegVAsU64(int(data.dest), data.r2sz)
-	fVal = state.logImpl(fVal, sVal, OpCodeVal(opType))
+	fVal = state.logImpl(fVal, sVal, data.r1sz, OpCodeVal(opType))
 	state.putValInRegWithSize(int(data.src), data.r1sz, fVal)
 	return nil
 }
-func (state *VmState) logImpl(a, b uint64, opType OpCodeVal) uint64 {
-	switch {
-	case opType == OP_ORRR || opType == OP_ORIR:
+func (state *VmState) logImpl(a, b uint64, dataSz byte, opType OpCodeVal) uint64 {
+	switch opType {
+	case OP_ORRR:
+		fallthrough
+	case OP_ORIR:
 		a = a | b
-	case opType == OP_ANDRR || opType == OP_ANDIR:
+	case OP_ANDRR:
+		fallthrough
+	case OP_ANDIR:
 		a = a & b
-	case opType == OP_XORRR || opType == OP_XORIR:
+	case OP_TEST:
+		a = a & b
+	case OP_XORRR:
+		fallthrough
+	case OP_XORIR:
 		a = a ^ b
-	case opType == OP_LSHRR || opType == OP_LSHIR:
+	case OP_LSHRR:
+		fallthrough
+	case OP_LSHIR:
 		a = a << b
-	case opType == OP_RSHRR || opType == OP_RSHIR:
+	case OP_RSHRR:
+		fallthrough
+	case OP_RSHIR:
 		a = a >> b
 	}
+	state.flags.Sf = (a >> ((uint64(dataSz+1) * 8) - 1)) == 1
+	state.flags.Zf = a == 0
 	return a
 }
 func (state *VmState) not(param []byte) error {

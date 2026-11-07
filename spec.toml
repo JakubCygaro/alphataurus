@@ -2422,9 +2422,5 @@ bits = 4
 desc = 'Source register or part of immediate value'
 
 [[op.param]]
-bits = 2
-desc = 'Source register size part of immediate value'
-
-[[op.param]]
-bits = 58
+bits = 60
 desc = 'Unused or rest of immediate value'
