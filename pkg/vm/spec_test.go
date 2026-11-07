@@ -13,319 +13,319 @@ func TestDecoder(t* testing.T){
 		t.Errorf("Decoded wrong opcode, wanted OP_SUBRR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x62e4cb01); !ok {
+	if ok, v := Decode(0x3b0fd401); !ok {
 		t.Error("Failed to decode opcode OP_MOVZXDRO2")
 	} else if v != OP_MOVZXDRO2 {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVZXDRO2_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x5d2e7e02); !ok {
+	if ok, v := Decode(0x209dfd02); !ok {
 		t.Error("Failed to decode opcode OP_MOVDRO2")
 	} else if v != OP_MOVDRO2 {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVDRO2_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x0f70c603); !ok {
+	if ok, v := Decode(0x2f86d603); !ok {
 		t.Error("Failed to decode opcode OP_LEADRO2")
 	} else if v != OP_LEADRO2 {
 		t.Errorf("Decoded wrong opcode, wanted OP_LEADRO2_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x21f44104); !ok {
+	if ok, v := Decode(0x53ea6104); !ok {
 		t.Error("Failed to decode opcode OP_MOVRDO2")
 	} else if v != OP_MOVRDO2 {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVRDO2_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x4c9a6405); !ok {
+	if ok, v := Decode(0x1b2ba305); !ok {
 		t.Error("Failed to decode opcode OP_MOVIDO2_NO")
 	} else if v != OP_MOVIDO2_NO {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVIDO2_NO_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x3171d206); !ok {
+	if ok, v := Decode(0x10944406); !ok {
 		t.Error("Failed to decode opcode OP_MOVIDO2")
 	} else if v != OP_MOVIDO2 {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVIDO2_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x0613ce07); !ok {
+	if ok, v := Decode(0x07818407); !ok {
 		t.Error("Failed to decode opcode OP_XCHGDRO2")
 	} else if v != OP_XCHGDRO2 {
 		t.Errorf("Decoded wrong opcode, wanted OP_XCHGDRO2_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x3b9f0100); !ok {
+	if ok, v := Decode(0x668e0100); !ok {
 		t.Error("Failed to decode opcode OP_MOVRDO1")
 	} else if v != OP_MOVRDO1 {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVRDO1_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x10980200); !ok {
+	if ok, v := Decode(0x3e8d0200); !ok {
 		t.Error("Failed to decode opcode OP_MOVZXDRO1")
 	} else if v != OP_MOVZXDRO1 {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVZXDRO1_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x42b50300); !ok {
+	if ok, v := Decode(0x3a2d0300); !ok {
 		t.Error("Failed to decode opcode OP_MOVDRO1")
 	} else if v != OP_MOVDRO1 {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVDRO1_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x6cbc0400); !ok {
+	if ok, v := Decode(0x70d80400); !ok {
 		t.Error("Failed to decode opcode OP_MOVIDO1")
 	} else if v != OP_MOVIDO1 {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVIDO1_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x5cc90500); !ok {
+	if ok, v := Decode(0x1bd40500); !ok {
 		t.Error("Failed to decode opcode OP_XCHGDRO1")
 	} else if v != OP_XCHGDRO1 {
 		t.Errorf("Decoded wrong opcode, wanted OP_XCHGDRO1_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x646b0600); !ok {
+	if ok, v := Decode(0x18880600); !ok {
 		t.Error("Failed to decode opcode OP_LEADRO1")
 	} else if v != OP_LEADRO1 {
 		t.Errorf("Decoded wrong opcode, wanted OP_LEADRO1_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x46570700); !ok {
+	if ok, v := Decode(0x05d10700); !ok {
 		t.Error("Failed to decode opcode OP_MOVIDO1_NO")
 	} else if v != OP_MOVIDO1_NO {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVIDO1_NO_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x41010000); !ok {
+	if ok, v := Decode(0x2f010000); !ok {
 		t.Error("Failed to decode opcode OP_ANDIR")
 	} else if v != OP_ANDIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_ANDIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x01020000); !ok {
+	if ok, v := Decode(0x10020000); !ok {
 		t.Error("Failed to decode opcode OP_JMPNEIP")
 	} else if v != OP_JMPNEIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPNEIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x0a030000); !ok {
+	if ok, v := Decode(0x20030000); !ok {
 		t.Error("Failed to decode opcode OP_MOVRD")
 	} else if v != OP_MOVRD {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVRD_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x1f040000); !ok {
+	if ok, v := Decode(0x49040000); !ok {
 		t.Error("Failed to decode opcode OP_JMPLIP")
 	} else if v != OP_JMPLIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPLIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x26050000); !ok {
+	if ok, v := Decode(0x62050000); !ok {
 		t.Error("Failed to decode opcode OP_JMPNCIP")
 	} else if v != OP_JMPNCIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPNCIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x25060000); !ok {
+	if ok, v := Decode(0x74060000); !ok {
 		t.Error("Failed to decode opcode OP_CMPIR")
 	} else if v != OP_CMPIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_CMPIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x4d070000); !ok {
+	if ok, v := Decode(0x60070000); !ok {
 		t.Error("Failed to decode opcode OP_MOVRR")
 	} else if v != OP_MOVRR {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVRR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x03080000); !ok {
+	if ok, v := Decode(0x25080000); !ok {
 		t.Error("Failed to decode opcode OP_MOVDR")
 	} else if v != OP_MOVDR {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVDR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x4e090000); !ok {
+	if ok, v := Decode(0x63090000); !ok {
 		t.Error("Failed to decode opcode OP_XCHGDR")
 	} else if v != OP_XCHGDR {
 		t.Errorf("Decoded wrong opcode, wanted OP_XCHGDR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x1b0a0000); !ok {
+	if ok, v := Decode(0x4c0a0000); !ok {
 		t.Error("Failed to decode opcode OP_MOVZXDR")
 	} else if v != OP_MOVZXDR {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVZXDR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x750b0000); !ok {
+	if ok, v := Decode(0x3b0b0000); !ok {
 		t.Error("Failed to decode opcode OP_RSHIR")
 	} else if v != OP_RSHIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_RSHIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x780c0000); !ok {
+	if ok, v := Decode(0x0a0c0000); !ok {
 		t.Error("Failed to decode opcode OP_JMPIP")
 	} else if v != OP_JMPIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x390d0000); !ok {
+	if ok, v := Decode(0x450d0000); !ok {
 		t.Error("Failed to decode opcode OP_JMPGEIP")
 	} else if v != OP_JMPGEIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPGEIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x770e0000); !ok {
+	if ok, v := Decode(0x1e0e0000); !ok {
 		t.Error("Failed to decode opcode OP_JMPSIP")
 	} else if v != OP_JMPSIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPSIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x320f0000); !ok {
+	if ok, v := Decode(0x510f0000); !ok {
 		t.Error("Failed to decode opcode OP_CMPRR")
 	} else if v != OP_CMPRR {
 		t.Errorf("Decoded wrong opcode, wanted OP_CMPRR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x16100000); !ok {
+	if ok, v := Decode(0x72100000); !ok {
 		t.Error("Failed to decode opcode OP_ADDIR")
 	} else if v != OP_ADDIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_ADDIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x44110000); !ok {
+	if ok, v := Decode(0x12110000); !ok {
 		t.Error("Failed to decode opcode OP_XORIR")
 	} else if v != OP_XORIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_XORIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x5e120000); !ok {
+	if ok, v := Decode(0x58120000); !ok {
 		t.Error("Failed to decode opcode OP_MOVIR")
 	} else if v != OP_MOVIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x20130000); !ok {
+	if ok, v := Decode(0x1c130000); !ok {
 		t.Error("Failed to decode opcode OP_MOVZXIR")
 	} else if v != OP_MOVZXIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVZXIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x5e140000); !ok {
+	if ok, v := Decode(0x3d140000); !ok {
 		t.Error("Failed to decode opcode OP_ROL")
 	} else if v != OP_ROL {
 		t.Errorf("Decoded wrong opcode, wanted OP_ROL_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x60150000); !ok {
+	if ok, v := Decode(0x3f150000); !ok {
 		t.Error("Failed to decode opcode OP_JMPEIP")
 	} else if v != OP_JMPEIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPEIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x5e160000); !ok {
+	if ok, v := Decode(0x71160000); !ok {
 		t.Error("Failed to decode opcode OP_JMPZIP")
 	} else if v != OP_JMPZIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPZIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x1c170000); !ok {
+	if ok, v := Decode(0x19170000); !ok {
 		t.Error("Failed to decode opcode OP_JMPNZIP")
 	} else if v != OP_JMPNZIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPNZIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x34180000); !ok {
+	if ok, v := Decode(0x52180000); !ok {
 		t.Error("Failed to decode opcode OP_JMPGIP")
 	} else if v != OP_JMPGIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPGIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x0c190000); !ok {
+	if ok, v := Decode(0x45190000); !ok {
 		t.Error("Failed to decode opcode OP_MOVID")
 	} else if v != OP_MOVID {
 		t.Errorf("Decoded wrong opcode, wanted OP_MOVID_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x341a0000); !ok {
+	if ok, v := Decode(0x621a0000); !ok {
 		t.Error("Failed to decode opcode OP_JMPNOIP")
 	} else if v != OP_JMPNOIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPNOIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x7d1b0000); !ok {
+	if ok, v := Decode(0x591b0000); !ok {
 		t.Error("Failed to decode opcode OP_SUBIR")
 	} else if v != OP_SUBIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_SUBIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x571c0000); !ok {
+	if ok, v := Decode(0x4c1c0000); !ok {
 		t.Error("Failed to decode opcode OP_PUSHI")
 	} else if v != OP_PUSHI {
 		t.Errorf("Decoded wrong opcode, wanted OP_PUSHI_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x571d0000); !ok {
+	if ok, v := Decode(0x441d0000); !ok {
 		t.Error("Failed to decode opcode OP_JMPLEIP")
 	} else if v != OP_JMPLEIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPLEIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x0e1e0000); !ok {
+	if ok, v := Decode(0x7e1e0000); !ok {
 		t.Error("Failed to decode opcode OP_JMPNSIP")
 	} else if v != OP_JMPNSIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPNSIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x0b1f0000); !ok {
+	if ok, v := Decode(0x181f0000); !ok {
 		t.Error("Failed to decode opcode OP_CALLIP")
 	} else if v != OP_CALLIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_CALLIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x44200000); !ok {
+	if ok, v := Decode(0x13200000); !ok {
 		t.Error("Failed to decode opcode OP_ROR")
 	} else if v != OP_ROR {
 		t.Errorf("Decoded wrong opcode, wanted OP_ROR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x54210000); !ok {
+	if ok, v := Decode(0x08210000); !ok {
 		t.Error("Failed to decode opcode OP_ORIR")
 	} else if v != OP_ORIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_ORIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x49220000); !ok {
+	if ok, v := Decode(0x55220000); !ok {
 		t.Error("Failed to decode opcode OP_JMPOIP")
 	} else if v != OP_JMPOIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPOIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x52230000); !ok {
+	if ok, v := Decode(0x4e230000); !ok {
 		t.Error("Failed to decode opcode OP_LSHIR")
 	} else if v != OP_LSHIR {
 		t.Errorf("Decoded wrong opcode, wanted OP_LSHIR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x3a240000); !ok {
+	if ok, v := Decode(0x61240000); !ok {
 		t.Error("Failed to decode opcode OP_POP")
 	} else if v != OP_POP {
 		t.Errorf("Decoded wrong opcode, wanted OP_POP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x55250000); !ok {
+	if ok, v := Decode(0x41250000); !ok {
 		t.Error("Failed to decode opcode OP_JMPCIP")
 	} else if v != OP_JMPCIP {
 		t.Errorf("Decoded wrong opcode, wanted OP_JMPCIP_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x6d260000); !ok {
+	if ok, v := Decode(0x7b260000); !ok {
 		t.Error("Failed to decode opcode OP_PUSHR")
 	} else if v != OP_PUSHR {
 		t.Errorf("Decoded wrong opcode, wanted OP_PUSHR_VAL, got '0x%08x'", v)
 	}
 
-	if ok, v := Decode(0x09270000); !ok {
+	if ok, v := Decode(0x2d270000); !ok {
 		t.Error("Failed to decode opcode OP_TEST")
 	} else if v != OP_TEST {
 		t.Errorf("Decoded wrong opcode, wanted OP_TEST_VAL, got '0x%08x'", v)

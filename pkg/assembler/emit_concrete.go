@@ -461,17 +461,18 @@ func (a *Assembler) emitArthRR(data pr.InstArthRR, at int) error {
 		binary.BigEndian.Uint64(param[:]))
 	return nil
 }
+
 // analogous to emitTestIR
 func (a *Assembler) emitTestRR(data pr.InstLogicalRR, at int) error {
 	opCode := vm.OP_TEST_VAL
 
-	binary.BigEndian.PutUint32(a.bytecode[at:], uint32(opCode))
+	binary.BigEndian.PutUint32(a.bytecode[at:], opCode)
 
 	byte2 := byte(0) |
 		byte(0x0f&data.First.Reg) |
 		byte((0x0f&data.First.Size)<<4)
 
-	a.bytecode[at+2] = byte2
+	a.bytecode[at] = byte2
 
 	param := uint64(byte(0) |
 		byte(0x0f&data.Second.Reg) |
@@ -481,6 +482,7 @@ func (a *Assembler) emitTestRR(data pr.InstLogicalRR, at int) error {
 
 	return nil
 }
+
 // This is a specialized emitLogIR, with data.LogTy being expected to be set to
 // TEST - do not call it in any other case!
 func (a *Assembler) emitTestIR(data pr.InstLogicalIR, at int) error {
@@ -492,7 +494,7 @@ func (a *Assembler) emitTestIR(data pr.InstLogicalIR, at int) error {
 		byte(0x0f&data.First.Reg) |
 		byte((0x0f&data.First.Size)<<4)
 
-	a.bytecode[at+2] = byte2
+	a.bytecode[at] = byte2
 
 	binary.BigEndian.PutUint64(a.bytecode[at+4:], data.Imm)
 

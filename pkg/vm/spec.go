@@ -1222,19 +1222,16 @@ const (
     // Destination register size
     //
     // 6-6
-    // Register or immediate value source flag (1 = immediate value)
+    // Unused
     //
     // 7-7
-    // Unused
+    // Register or immediate value source flag (1 = immediate value)
     //
     // Parameter bits:
     // 0-3
     //
     // Source register or part of immediate value
-    // 4-5
-    //
-    // Source register size part of immediate value
-    // 6-63
+    // 4-63
     //
     // Unused or rest of immediate value
     OP_TEST OpCodeVal = iota

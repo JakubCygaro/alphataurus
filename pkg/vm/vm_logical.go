@@ -76,7 +76,8 @@ func (state *VmState) logImpl(a, b uint64, dataSz byte, opType OpCodeVal) uint64
 	case OP_RSHIR:
 		a = a >> b
 	}
-	state.flags.Sf = (a >> ((uint64(dataSz+1) * 8) - 1)) == 1
+	shiftBy := ((1 << dataSz) * 8) - 1
+	state.flags.Sf = (a >> shiftBy) == 1
 	state.flags.Zf = a == 0
 	return a
 }

@@ -50,9 +50,12 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	mov r0b, 
-	mov r1, 1
-	lsh r0, r1
+	mov r0, -2
+	test r0, r0
+	js neg
+	exit 0
+neg:
+	exit 1
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {

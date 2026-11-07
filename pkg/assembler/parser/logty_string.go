@@ -13,11 +13,12 @@ func _() {
 	_ = x[XOR-2]
 	_ = x[LSH-3]
 	_ = x[RSH-4]
+	_ = x[TEST-5]
 }
 
-const _LogTy_name = "ANDORXORLSHRSH"
+const _LogTy_name = "ANDORXORLSHRSHTEST"
 
-var _LogTy_index = [...]uint8{0, 3, 5, 8, 11, 14}
+var _LogTy_index = [...]uint8{0, 3, 5, 8, 11, 14, 18}
 
 func (i LogTy) String() string {
 	idx := int(i) - 0
