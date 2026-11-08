@@ -50,8 +50,8 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	mov r0, -2
-	test r0, -2
+	mov r0, 5
+	test r0, 5
 	js neg
 	exit 0
 neg:

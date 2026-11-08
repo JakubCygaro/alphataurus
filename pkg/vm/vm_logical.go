@@ -79,6 +79,20 @@ func (state *VmState) logImpl(a, b uint64, dataSz byte, opType OpCodeVal) uint64
 	shiftBy := ((1 << dataSz) * 8) - 1
 	state.flags.Sf = (a >> shiftBy) == 1
 	state.flags.Zf = a == 0
+	switch dataSz {
+	case SZ_8:
+		state.flags.Pf = bits.OnesCount8(uint8(a))&
+			1 == 0
+	case SZ_16:
+		state.flags.Pf = bits.OnesCount16(uint16(a))&
+			1 == 0
+	case SZ_32:
+		state.flags.Pf = bits.OnesCount32(uint32(a))&
+			1 == 0
+	case SZ_64:
+		state.flags.Pf = bits.OnesCount64(a)&
+			1 == 0
+	}
 	return a
 }
 func (state *VmState) not(param []byte) error {

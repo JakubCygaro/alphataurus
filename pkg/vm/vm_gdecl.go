@@ -1,5 +1,7 @@
 package vm
 
+import "math"
+
 const (
 	ADDRESSDEADZONE_SIZE = 0x1000
 )
@@ -17,9 +19,9 @@ const (
 	IP_IDX
 )
 const (
-	GP_REG_MAX = R7_IDX
+	GP_REG_MAX  = R7_IDX
 	MAX_REG_IDX = IP_IDX
-	MAX_SZ = SZ_64
+	MAX_SZ      = SZ_64
 )
 
 const (
@@ -32,4 +34,12 @@ const (
 	SZ_16 = iota
 	SZ_32
 	SZ_64
+)
+const (
+	SZ_8_64_HMASK  uint64 = math.MaxInt64 & uint64(math.MaxInt8)
+	SZ_16_64_HMASK        = math.MaxInt64 & uint64(math.MaxInt16)
+	SZ_32_64_HMASK        = math.MaxInt64 & uint64(math.MaxInt32)
+	SZ_8_64_LMASK         = math.MaxInt64 ^ uint64(math.MaxInt8)
+	SZ_16_64_LMASK        = math.MaxInt64 ^ uint64(math.MaxInt16)
+	SZ_32_64_LMASK        = math.MaxInt64 ^ uint64(math.MaxInt32)
 )
