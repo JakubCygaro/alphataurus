@@ -2,6 +2,7 @@ package alphavm
 
 import (
 	"fmt"
+	"math/bits"
 	"math/rand"
 	"strings"
 	"testing"
@@ -447,6 +448,65 @@ func TestLogIR1(t *testing.T) {
 				UNSIGNED,
 			),
 		)
+		switch ir.Size {
+		case vm.SZ_8:
+			lines = append(lines,
+				fmt.Sprintf(
+					"mov %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"rol %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					b,
+				),
+				macroAssertEqRI(
+					lx.RegisterData(ir),
+					bits.RotateLeft8(uint8(a), int(b)),
+					UNSIGNED,
+				),
+			)
+			// case vm.SZ_16:
+			// 	lines = append(lines,
+			// 		fmt.Sprintf(
+			// 			"rol %s, %v",
+			// 			tc.RegStr(byte(ir.Reg), ir.Size),
+			// 			b,
+			// 		),
+			// 		macroAssertEqRI(
+			// 			lx.RegisterData(ir),
+			// 			bits.RotateLeft16(uint16(a), int(b)),
+			// 			UNSIGNED,
+			// 		),
+			// 	)
+			// case vm.SZ_32:
+			// 	lines = append(lines,
+			// 		fmt.Sprintf(
+			// 			"rol %s, %v",
+			// 			tc.RegStr(byte(ir.Reg), ir.Size),
+			// 			b,
+			// 		),
+			// 		macroAssertEqRI(
+			// 			lx.RegisterData(ir),
+			// 			bits.RotateLeft32(uint32(a), int(b)),
+			// 			UNSIGNED,
+			// 		),
+			// 	)
+			// case vm.SZ_64:
+			// 	lines = append(lines,
+			// 		fmt.Sprintf(
+			// 			"rol %s, %v",
+			// 			tc.RegStr(byte(ir.Reg), ir.Size),
+			// 			b,
+			// 		),
+			// 		macroAssertEqRI(
+			// 			lx.RegisterData(ir),
+			// 			bits.RotateLeft64(a, int(b)),
+			// 			UNSIGNED,
+			// 		),
+			// 	)
+		}
 	}
 	lines = append(lines,
 		"exit 0")

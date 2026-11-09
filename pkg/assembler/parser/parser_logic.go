@@ -129,7 +129,7 @@ func (p *Parser) parseRotate(left bool) error {
 	} else if t.Ty == lx.TOKEN_TINTEGER_LIT {
 		rotateBy = t.Val.(uint64)
 		p.currentInst = Instruction{
-			Data: InstRotate{
+			Data: InstRotateIR{
 				Arg:      reg,
 				Left:     left,
 				RotateBy: rotateBy,
@@ -137,7 +137,7 @@ func (p *Parser) parseRotate(left bool) error {
 		}
 	} else if t.Ty == lx.TOKEN_TREG {
 		p.currentInst = Instruction{
-			Data: InstRotateR{
+			Data: InstRotateRR{
 				Arg:      reg,
 				RotateBy: t.Val.(lx.RegisterData),
 				Left:     left,

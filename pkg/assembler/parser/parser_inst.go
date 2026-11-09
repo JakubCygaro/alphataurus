@@ -165,12 +165,12 @@ type InstNegR struct {
 	Arg   lx.RegisterData
 	Float bool
 }
-type InstRotate struct {
+type InstRotateIR struct {
 	Arg      lx.RegisterData
 	Left     bool
 	RotateBy uint64
 }
-type InstRotateR struct {
+type InstRotateRR struct {
 	Arg      lx.RegisterData
 	RotateBy lx.RegisterData
 	Left     bool

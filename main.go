@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"math/bits"
 	"os"
 	"strings"
 
@@ -50,12 +51,9 @@ foo:
 const assembly = `
 section '.code'
 @entry
-	mov r0, 5
-	test r0, 5
-	js neg
-	exit 0
-neg:
-	exit 1
+        mov r1b, 253
+        rol r1b, 37
+        cmp UNSIGNED r1b, 191
 `
 
 func logWarnings(awd assembler.AssemblerWarningData) {
@@ -162,5 +160,9 @@ func main() {
 	}
 	//0x00010000
 	// fmt.Printf("0x%08x\n", m.GetBytes(vm.OP_MOVIR))
+	// mov r0b, 57
+	// rol r0b, 81
+	// cmp UNSIGNED r0b, 114
+	println(bits.RotateLeft8(57, 81))
 	os.Exit(int(mach.GetExitCode()))
 }

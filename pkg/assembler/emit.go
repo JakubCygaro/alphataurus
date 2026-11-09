@@ -114,10 +114,10 @@ func (a *Assembler) emitInst(inst pr.Instruction, at int) error {
 		err = a.emitArthIR(i, at)
 	case pr.InstNotR:
 		err = a.emitNot(i, at)
-	case pr.InstRotate:
-		err = a.emitRotate(i, at)
-	case pr.InstRotateR:
-		err = a.emitRotateR(i, at)
+	case pr.InstRotateIR:
+		err = a.emitRotateIR(i, at)
+	case pr.InstRotateRR:
+		err = a.emitRotateRR(i, at)
 	case pr.InstNegR:
 		err = a.emitNegR(i, at)
 	case pr.InstGenericLogical:
