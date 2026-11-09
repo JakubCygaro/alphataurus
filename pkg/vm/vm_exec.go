@@ -186,9 +186,9 @@ func (state *VmState) exec(opCodeBytes, param []byte) error {
 	case OP_ROLR:
 		err = state.rolRR(param)
 	case OP_ROR:
-		err = state.ror(opCodeBytes[0], param)
+		err = state.rorIR(opCodeBytes[0], param)
 	case OP_RORR:
-		err = state.rorr(param)
+		err = state.rorRR(param)
 	case OP_JMP:
 		err = state.jmp(opCodeBytes[0], param)
 	case OP_JMPE:

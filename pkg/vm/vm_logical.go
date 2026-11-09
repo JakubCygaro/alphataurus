@@ -198,10 +198,10 @@ func (state *VmState) rolRR(param []byte) error {
 	destSz := (param[7] & 0xf0) >> 4
 	src := (param[6] & 0x0f)
 	srcSz := (param[6] & 0xf0) >> 4
-	if !IsGpReg(byte(dest)) {
+	if !IsLogRAllowed(byte(dest)) {
 		return errors.DisallowedOp1Register(int(dest), state.byteCodePos)
 	}
-	if !IsGpReg(byte(src)) {
+	if !IsLogRAllowed(byte(src)) {
 		return errors.DisallowedOp1Register(int(src), state.byteCodePos)
 	}
 	state.putValInRegWithSize(
@@ -214,15 +214,15 @@ func (state *VmState) rolRR(param []byte) error {
 			false))
 	return nil
 }
-func (state *VmState) rorr(param []byte) error {
+func (state *VmState) rorRR(param []byte) error {
 	dest := (param[7] & 0x0f)
 	destSz := (param[7] & 0xf0) >> 4
 	src := (param[6] & 0x0f)
 	srcSz := (param[6] & 0xf0) >> 4
-	if !IsGpReg(byte(dest)) {
+	if !IsLogRAllowed(byte(dest)) {
 		return errors.DisallowedOp1Register(int(dest), state.byteCodePos)
 	}
-	if !IsGpReg(byte(src)) {
+	if !IsLogRAllowed(byte(src)) {
 		return errors.DisallowedOp1Register(int(src), state.byteCodePos)
 	}
 	state.putValInRegWithSize(
@@ -239,7 +239,7 @@ func (state *VmState) rolIR(lastByte byte, param []byte) error {
 	reg := (lastByte & 0xf0) >> 4
 	dataSz := (lastByte & 0x0f)
 	rotateBy := binary.BigEndian.Uint64(param)
-	if !IsGpReg(byte(reg)) {
+	if !IsLogRAllowed(byte(reg)) {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
 	state.putValInRegWithSize(
@@ -252,11 +252,11 @@ func (state *VmState) rolIR(lastByte byte, param []byte) error {
 			false))
 	return nil
 }
-func (state *VmState) ror(lastByte byte, param []byte) error {
+func (state *VmState) rorIR(lastByte byte, param []byte) error {
 	reg := (lastByte & 0xf0) >> 4
 	dataSz := (lastByte & 0x0f)
 	rotateBy := binary.BigEndian.Uint64(param)
-	if !IsGpReg(byte(reg)) {
+	if !IsLogRAllowed(byte(reg)) {
 		return errors.DisallowedOp1Register(int(reg), state.byteCodePos)
 	}
 	state.putValInRegWithSize(

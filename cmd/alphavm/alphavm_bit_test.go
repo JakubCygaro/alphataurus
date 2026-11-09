@@ -466,46 +466,121 @@ func TestLogIR1(t *testing.T) {
 					bits.RotateLeft8(uint8(a), int(b)),
 					UNSIGNED,
 				),
+				fmt.Sprintf(
+					"mov %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"ror %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					b,
+				),
+				macroAssertEqRI(
+					lx.RegisterData(ir),
+					bits.RotateLeft8(uint8(a), -int(b)),
+					UNSIGNED,
+				),
 			)
-			// case vm.SZ_16:
-			// 	lines = append(lines,
-			// 		fmt.Sprintf(
-			// 			"rol %s, %v",
-			// 			tc.RegStr(byte(ir.Reg), ir.Size),
-			// 			b,
-			// 		),
-			// 		macroAssertEqRI(
-			// 			lx.RegisterData(ir),
-			// 			bits.RotateLeft16(uint16(a), int(b)),
-			// 			UNSIGNED,
-			// 		),
-			// 	)
-			// case vm.SZ_32:
-			// 	lines = append(lines,
-			// 		fmt.Sprintf(
-			// 			"rol %s, %v",
-			// 			tc.RegStr(byte(ir.Reg), ir.Size),
-			// 			b,
-			// 		),
-			// 		macroAssertEqRI(
-			// 			lx.RegisterData(ir),
-			// 			bits.RotateLeft32(uint32(a), int(b)),
-			// 			UNSIGNED,
-			// 		),
-			// 	)
-			// case vm.SZ_64:
-			// 	lines = append(lines,
-			// 		fmt.Sprintf(
-			// 			"rol %s, %v",
-			// 			tc.RegStr(byte(ir.Reg), ir.Size),
-			// 			b,
-			// 		),
-			// 		macroAssertEqRI(
-			// 			lx.RegisterData(ir),
-			// 			bits.RotateLeft64(a, int(b)),
-			// 			UNSIGNED,
-			// 		),
-			// 	)
+		case vm.SZ_16:
+			lines = append(lines,
+				fmt.Sprintf(
+					"mov %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"rol %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					b,
+				),
+				macroAssertEqRI(
+					lx.RegisterData(ir),
+					bits.RotateLeft16(uint16(a), int(b)),
+					UNSIGNED,
+				),
+				fmt.Sprintf(
+					"mov %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"ror %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					b,
+				),
+				macroAssertEqRI(
+					lx.RegisterData(ir),
+					bits.RotateLeft16(uint16(a), -int(b)),
+					UNSIGNED,
+				),
+			)
+		case vm.SZ_32:
+			lines = append(lines,
+				fmt.Sprintf(
+					"mov %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"rol %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					b,
+				),
+				macroAssertEqRI(
+					lx.RegisterData(ir),
+					bits.RotateLeft32(uint32(a), int(b)),
+					UNSIGNED,
+				),
+				fmt.Sprintf(
+					"mov %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"ror %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					b,
+				),
+				macroAssertEqRI(
+					lx.RegisterData(ir),
+					bits.RotateLeft32(uint32(a), -int(b)),
+					UNSIGNED,
+				),
+			)
+		case vm.SZ_64:
+			lines = append(lines,
+				fmt.Sprintf(
+					"mov %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"rol %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					b,
+				),
+				macroAssertEqRI(
+					lx.RegisterData(ir),
+					bits.RotateLeft64(a, int(b)),
+					UNSIGNED,
+				),
+				fmt.Sprintf(
+					"mov %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					a,
+				),
+				fmt.Sprintf(
+					"ror %s, %v",
+					tc.RegStr(byte(ir.Reg), ir.Size),
+					b,
+				),
+				macroAssertEqRI(
+					lx.RegisterData(ir),
+					bits.RotateLeft64(uint64(a), -int(b)),
+					UNSIGNED,
+				),
+			)
 		}
 	}
 	lines = append(lines,
@@ -629,6 +704,180 @@ func TestLogIRR(t *testing.T) {
 					UNSIGNED,
 				),
 			)
+			switch ar.Size {
+			case vm.SZ_8:
+				lines = append(lines,
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						a,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(br.Reg), br.Size),
+						b,
+					),
+					fmt.Sprintf(
+						"rol %s, %s",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						tc.RegStr(byte(br.Reg), br.Size),
+					),
+					macroAssertEqRI(
+						lx.RegisterData(ar),
+						bits.RotateLeft8(uint8(a), int(b)),
+						UNSIGNED,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						a,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(br.Reg), br.Size),
+						b,
+					),
+					fmt.Sprintf(
+						"ror %s, %s",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						tc.RegStr(byte(br.Reg), br.Size),
+					),
+					macroAssertEqRI(
+						lx.RegisterData(ar),
+						bits.RotateLeft8(uint8(a), -int(b)),
+						UNSIGNED,
+					),
+				)
+			case vm.SZ_16:
+				lines = append(lines,
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						a,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(br.Reg), br.Size),
+						b,
+					),
+					fmt.Sprintf(
+						"rol %s, %s",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						tc.RegStr(byte(br.Reg), br.Size),
+					),
+					macroAssertEqRI(
+						lx.RegisterData(ar),
+						bits.RotateLeft16(uint16(a), int(b)),
+						UNSIGNED,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						a,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(br.Reg), br.Size),
+						b,
+					),
+					fmt.Sprintf(
+						"ror %s, %s",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						tc.RegStr(byte(br.Reg), br.Size),
+					),
+					macroAssertEqRI(
+						lx.RegisterData(ar),
+						bits.RotateLeft16(uint16(a), -int(b)),
+						UNSIGNED,
+					),
+				)
+			case vm.SZ_32:
+				lines = append(lines,
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						a,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(br.Reg), br.Size),
+						b,
+					),
+					fmt.Sprintf(
+						"rol %s, %s",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						tc.RegStr(byte(br.Reg), br.Size),
+					),
+					macroAssertEqRI(
+						lx.RegisterData(ar),
+						bits.RotateLeft32(uint32(a), int(b)),
+						UNSIGNED,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						a,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(br.Reg), br.Size),
+						b,
+					),
+					fmt.Sprintf(
+						"ror %s, %s",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						tc.RegStr(byte(br.Reg), br.Size),
+					),
+					macroAssertEqRI(
+						lx.RegisterData(ar),
+						bits.RotateLeft32(uint32(a), -int(b)),
+						UNSIGNED,
+					),
+				)
+			case vm.SZ_64:
+				lines = append(lines,
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						a,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(br.Reg), br.Size),
+						b,
+					),
+					fmt.Sprintf(
+						"rol %s, %s",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						tc.RegStr(byte(br.Reg), br.Size),
+					),
+					macroAssertEqRI(
+						lx.RegisterData(ar),
+						bits.RotateLeft64(a, int(b)),
+						UNSIGNED,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						a,
+					),
+					fmt.Sprintf(
+						"mov %s, %v",
+						tc.RegStr(byte(br.Reg), br.Size),
+						b,
+					),
+					fmt.Sprintf(
+						"ror %s, %s",
+						tc.RegStr(byte(ar.Reg), ar.Size),
+						tc.RegStr(byte(br.Reg), br.Size),
+					),
+					macroAssertEqRI(
+						lx.RegisterData(ar),
+						bits.RotateLeft64(uint64(a), -int(b)),
+						UNSIGNED,
+					),
+				)
+			}
 		}
 	}
 	lines = append(lines,
