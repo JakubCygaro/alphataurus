@@ -21,7 +21,6 @@ func (state *VmState) test(opType int, lastByte byte, param []byte) error {
 			state.GetRegVAsU64(int(dest), destSz),
 			state.GetRegVAsU64(int(src), destSz)
 		fVal = state.logImpl(fVal, sVal, destSz, OpCodeVal(opType))
-		state.putValInRegWithSize(int(dest), destSz, fVal)
 	}
 	return nil
 }

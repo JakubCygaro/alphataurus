@@ -8,6 +8,13 @@ import (
 	"github.com/JakubCygaro/alphataurus/pkg/vm"
 )
 
+func LabelGenerator(name string) func() string {
+	start := 0
+	return func() string {
+		ret := start + 1
+		return fmt.Sprintf("_genlab_%s_%d", name, ret)
+	}
+}
 func RandomRegisterWord() byte {
 	return byte(rand.Int()%vm.MAX_REG_IDX + 1)
 }

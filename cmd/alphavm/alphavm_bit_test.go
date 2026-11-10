@@ -355,6 +355,7 @@ func TestLogIR1(t *testing.T) {
 		"@entry",
 		"_start:",
 	)
+	// testInstLabgen := tc.LabelGenerator("optest_fail")
 	for _, ir := range into {
 		if !vm.IsLogRAllowed(byte(ir.Reg)) ||
 			ir.Reg == vm.SP_IDX {
@@ -581,6 +582,98 @@ func TestLogIR1(t *testing.T) {
 					UNSIGNED,
 				),
 			)
+		}
+		// failLab := testInstLabgen()
+		lines = append(lines,
+			fmt.Sprintf(
+				"mov %s, %v",
+				tc.RegStr(byte(ir.Reg), ir.Size),
+				a,
+			),
+			fmt.Sprintf(
+				"test %s, %v",
+				tc.RegStr(byte(ir.Reg), ir.Size),
+				b,
+			),
+		)
+		commonBits := a & b
+		switch ir.Size {
+		case vm.SZ_8:
+			if int8(commonBits) < 0 {
+				lines = append(lines,
+					"js [ip+12] ;; SF not set\n exit -1",
+				)
+			} else {
+				lines = append(lines,
+					"jns [ip+12] ;; SF set\n exit -1",
+				)
+			}
+			if int8(commonBits) == 0 {
+				lines = append(lines,
+					"jz [ip+12] ;; ZF not set\n exit -1",
+				)
+			} else {
+				lines = append(lines,
+					"jnz [ip+12] ;; ZF set\n exit -1",
+				)
+			}
+		case vm.SZ_16:
+			if int16(commonBits) < 0 {
+				lines = append(lines,
+					"js [ip+12] ;; SF not set\n exit -1",
+				)
+			} else {
+				lines = append(lines,
+					"jns [ip+12] ;; SF set\n exit -1",
+				)
+			}
+			if int16(commonBits) == 0 {
+				lines = append(lines,
+					"jz [ip+12] ;; ZF not set\n exit -1",
+				)
+			} else {
+				lines = append(lines,
+					"jnz [ip+12] ;; ZF set\n exit -1",
+				)
+			}
+		case vm.SZ_32:
+			if int32(commonBits) < 0 {
+				lines = append(lines,
+					"js [ip+12] ;; SF not set\n exit -1",
+				)
+			} else {
+				lines = append(lines,
+					"jns [ip+12] ;; SF set\n exit -1",
+				)
+			}
+			if int32(commonBits) == 0 {
+				lines = append(lines,
+					"jz [ip+12] ;; ZF not set\n exit -1",
+				)
+			} else {
+				lines = append(lines,
+					"jnz [ip+12] ;; ZF set\n exit -1",
+				)
+			}
+		case vm.SZ_64:
+			if int64(commonBits) < 0 {
+				lines = append(lines,
+					"js [ip+12] ;; SF not set\n exit -1",
+				)
+			} else {
+				lines = append(lines,
+					"jns [ip+12] ;; SF set\n exit -1",
+				)
+			}
+			if int64(commonBits) == 0 {
+				lines = append(lines,
+					"jz [ip+12] ;; ZF not set\n exit -1",
+				)
+			} else {
+				lines = append(lines,
+					"jnz [ip+12] ;; ZF set\n exit -1",
+				)
+			}
 		}
 	}
 	lines = append(lines,
